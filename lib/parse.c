@@ -442,7 +442,7 @@ get_hex( spocp_charbuf_t * io)
 
 /*! \brief I'm waiting for a hexadecimal character */
 #define HEXCHAR 1
-/*! \brief I'm waiting for a escape character */
+/*! \brief I'm waiting for a '\' character */
 #define SLASH   2
 /*! \brief I'm waiting for a duo of hexadecimal characters */
 #define HEXDUO  4
@@ -450,7 +450,7 @@ get_hex( spocp_charbuf_t * io)
 static octet_t *
 get_quote( spocp_charbuf_t * io)
 {
-	char           *cp, *res = 0, ec = '%';
+	char           *cp, *res = 0;
 	int             len, sofar = 0;
 	int             expect = 0, done = 0;
 	octet_t 	*oct = 0;
@@ -470,7 +470,7 @@ get_quote( spocp_charbuf_t * io)
 						return 0;
 					}
 				} else {
-					if (*cp == ec)
+					if (*cp == '\\')
 						expect = 0;
 					else if (HEX(*cp))
 						expect = HEXCHAR;
@@ -484,7 +484,7 @@ get_quote( spocp_charbuf_t * io)
 				continue;
 			}
 
-			if (*cp == ec)
+			if (*cp == '\\')
 				expect = HEXDUO | SLASH;
 			else if (*cp == '"')
 				break;
@@ -514,7 +514,7 @@ get_quote( spocp_charbuf_t * io)
 		/*
 		 * de escape 
 		 */
-		oct_de_escape(oct,ec);
+		oct_de_escape(oct);
 	}
 
 	if (res == 0 || oct->len == 0) { /* trusting the lazy evaluation here */
@@ -616,14 +616,8 @@ get_chunk(spocp_charbuf_t * io)
 		break;
 
 	default:
-		if (VCHAR(*io->start)) {
+		if (VCHAR(*io->start))
 			o = get_token(io);
-			/*
-			s = oct2strdup( o, '%');
-			traceLog(LOG_INFO, "token:%s", s );
-			free(s);
-			*/
-		}
 		else {
 			traceLog(LOG_ERR,
 			    "Non token char, where token char was expected \"%s\"",
@@ -725,7 +719,7 @@ chunk2sexp( spocp_chunk_t *c )
 		ck = ck->next ;
 	} while( p ) ;
  
-	res = oct_new( len, NULL );
+	res = oct_new( len+1, NULL );
 	sp = res->val;
 	res->len = len;
 
@@ -737,8 +731,8 @@ chunk2sexp( spocp_chunk_t *c )
 			p--, *sp++ = ')' ;
 		else {
 			/* This is where deescaping should happen */
-			if ( octchr( ck->val, '%' ) >= 0 ) 
-				oct_de_escape( ck->val, '%' );
+			if ( octchr( ck->val, '\\' ) >= 0 ) 
+				oct_de_escape( ck->val );
 			
 			snprintf( lf, 16, "%d:", (unsigned int) ck->val->len ) ;
 			memcpy( sp, lf, strlen(lf)) ;
