@@ -95,6 +95,8 @@ char     *sexp_printv( char *sexp, unsigned int *bsize, char *fmt, ... ) ;
 void      oct_assign( octet_t *oct, char *s ) ;
 void      octln( octet_t *a, octet_t *b ) ;
 
+char     *lstrndup( char *s, int len ) ;
+
 /* free.c */
 
 void atom_free( atom_t *ap ) ;

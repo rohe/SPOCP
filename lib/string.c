@@ -243,3 +243,16 @@ __attribute__((unused)) static int expand_string( char *src, keyval_t *kvp, char
   return 1 ;
 }
 
+/* ---------------- */
+
+char *lstrndup( char *s, int n )
+{
+  char *tmp ;
+
+  tmp = ( char * ) Malloc(( n + 1 ) * sizeof( char )) ;
+  strncpy( tmp, s, n )  ;
+  tmp[n] = '\0' ;
+
+  return tmp ;
+}
+
