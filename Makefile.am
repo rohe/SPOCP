@@ -10,7 +10,6 @@ EXTRA_DIST = \
 	aclocal.m4 \
 	config.guess \
 	config.sub \
-	depcomp \
 	install-sh \
 	ltmain.sh \
 	missing \
