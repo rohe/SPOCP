@@ -433,9 +433,10 @@ char	*rm_lt_sp( char *s, int shift );
 /* ruleset.c */
 
 void		ruleset_free( ruleset_t *rs );
+void		ruleset_tree( ruleset_t *rs, int lev );
 ruleset_t	*ruleset_new( octet_t *name );
-ruleset_t	*ruleset_create( octet_t *name, ruleset_t **root );
-int		ruleset_find( octet_t *name, ruleset_t **rs );
+ruleset_t	*ruleset_create( octet_t *name, ruleset_t *root );
+ruleset_t	*ruleset_find( octet_t *name, ruleset_t *rs );
 
 spocp_result_t	ruleset_name( octet_t *orig, octet_t *rsn );
 spocp_result_t	search_in_tree( ruleset_t *, octet_t *, octet_t *, spocp_req_info_t *, int );

@@ -14,5 +14,7 @@ EXTRA_DIST = \
 	ltmain.sh \
 	missing \
 	Setup.mk \
-	spocp.doxy
+	spocp.doxy \
+	cf/check_sasl2.m4 \
+	cf/check_ssl.m4
 

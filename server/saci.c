@@ -354,7 +354,7 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 	/*
 	 * No ruleset means everything is allowed !!! 
 	 */
-	if (ruleset_find(&oct, &rs) == 0 || rs->db == 0)
+	if ((rs = ruleset_find(&oct, rs)) == 0 || rs->db == 0)
 		return SPOCP_SUCCESS;
 	/*
 	 * The same if there is no rules in the ruleset 
