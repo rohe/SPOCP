@@ -27,10 +27,10 @@
 #include <varr.h>
 
 /*
-#define SPOCP_TEST
- */
+#define AVLUS
 
 static void slnode_print( slnode_t *s );
+ */
 
 /*
  * An implementation of a skip-list 
@@ -94,7 +94,7 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 	if (b2p == 0)
 		return -1;
 
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG(SPOCP_DMATCH) {
 		char *b1, *b2 ;
 
@@ -132,7 +132,7 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 		if ((v = (b1p->v.num - b2p->v.num)) == 0) {
 			v = b1p->type - b2p->type;
 		}
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 		traceLog(LOG_DEBUG,"Numeric %ld, %ld => %d", b1p->v.num,
 			  b2p->v.num, v);
 #endif
@@ -155,7 +155,7 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 #endif
 	}
 
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG(SPOCP_DMATCH) {
 		traceLog(LOG_DEBUG, "res: %d", v ) ; 
 	}
@@ -363,7 +363,7 @@ slnode_t       *
 sl_rec_find(slnode_t * node, boundary_t * item, int n, int *flag)
 {
 
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG( SPOCP_DMATCH) {
 		traceLog(LOG_DEBUG, "sl_rec_find" );
 		slnode_print( node);
@@ -380,7 +380,7 @@ sl_rec_find(slnode_t * node, boundary_t * item, int n, int *flag)
 
 	if (boundary_xcmp(item, node->next[n]->item) < 0) {
 		if (n == 0) {	/* reached the bottom */
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 			DEBUG( SPOCP_DMATCH )
 				traceLog(LOG_DEBUG, "Reached bottom");
 #endif
@@ -414,6 +414,7 @@ sl_find(slist_t * slp, boundary_t * item)
 
 /************************************************************************/
 
+#if AVLUS
 static void
 slnode_print( slnode_t *s )
 {
@@ -428,6 +429,7 @@ slnode_print( slnode_t *s )
 	}
 
 }
+#endif
 
 /************************************************************************/
 
@@ -539,13 +541,13 @@ sl_match(slist_t * slp, boundary_t * item)
 		return 0;
 	}
 
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG(SPOCP_DMATCH) sl_print(slp);
 #endif
 
 	node = sl_rec_find(slp->head, item, slp->lgn, &flag);
 
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG( SPOCP_DMATCH) {
 		traceLog(LOG_DEBUG,"sl_rec_find returned flag:%d, %p",
 			flag,node);
@@ -587,7 +589,7 @@ sl_match(slist_t * slp, boundary_t * item)
 	}
 
 	/* sieve out all the ones that are both below and above */
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG(SPOCP_DMATCH) {
 		varr_print(lp, NULL);
 		varr_print(up, NULL);
@@ -598,7 +600,7 @@ sl_match(slist_t * slp, boundary_t * item)
 	varr_free(lp);
 	varr_free(up);
 
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG(SPOCP_DMATCH) { 
 		traceLog(LOG_DEBUG,"RES:");
 		varr_print(res, NULL);
@@ -695,7 +697,7 @@ sl_range_add(slist_t * slp, range_t * rp)
 	slnode_t       *low, *upp;
 	junc_t         *jp;
 
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 	DEBUG(SPOCP_DMATCH) {
 		char *l,*u ;
 

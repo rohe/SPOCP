@@ -29,7 +29,7 @@ char	*motd = "/etc/motd";
 char	*type = "Text/plain";
 
 spocp_result_t set_name( void **lh, void *cd, int argc, char **argv);
-spocp_result_t release_name( void **lh, void *cd, int argc, char **argv);
+spocp_result_t release_name( void **lh );
 
 /* ====================================================================== */
 
@@ -45,7 +45,7 @@ set_name( void **lh, void *cd, int argc, char **argv)
 }
 
 spocp_result_t
-release_name( void **lh, void *cd, int argc, char **argv)
+release_name( void **lh )
 {
 	if (*lh)
 		free( *lh );

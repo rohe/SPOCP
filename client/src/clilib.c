@@ -49,7 +49,7 @@
 #include <wrappers.h>
 #include <spocpcli.h>
 
-#define AVLUSNING 1
+#define AVLUS 1
 
 #if!defined(MAXHOSTNAMELEN) || (MAXHOSTNAMELEN < 64)
 #undef MAXHOSTNAMELEN
@@ -1222,7 +1222,7 @@ spocpc_readn(SPOCP * spocp, char *buf, ssize_t size)
 
 	FD_SET(spocp->fd, &rset);
 
-#ifdef AVLUSNING
+#ifdef AVLUS
 	traceLog(LOG_DEBUG,"Waiting %ld seconds and %ld milliseconds",
 				tv->tv_sec, tv->tv_usec) ;
 #endif

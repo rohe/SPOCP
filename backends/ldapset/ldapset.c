@@ -558,12 +558,14 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 				return 0;
 			}
 
-			sp++;
-			l--;
+			while (*sp == ' ') {
+				sp++;
+				l--;
+			}
 
 		case '&':
 		case '|':
-			if ((*sp != '&' && *sp != '|') || *(sp + 1) != ' ') {
+			if ((*sp != '&' && *sp != '|')) {
 				*rc = SC_SYNTAXERROR;
 				scnode_free(tree_top(psc));
 				return 0;
@@ -575,8 +577,12 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 			nsc->left = psc;
 			psc->up = nsc;
 			psc = nsc;
-			sp += 2;
-			l -= 2;
+			sp++;
+			l--;
+			while (*sp == ' ') {
+				sp++;
+				l--;
+			}
 			break;
 
 		case '/':
