@@ -988,6 +988,9 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 	while (ep->memberof)
 		ep = ep->memberof;
 
+	DEBUG(SPOCP_DSTORE)
+		traceLog(LOG_INFO, "%d rules to check", id->n);
+
 	for (i = 0; i < id->n; i++) {
 		ri = id->arr[i];
 

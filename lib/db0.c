@@ -489,7 +489,7 @@ rule_end(junc_t * ap, ruleinst_t * ri)
 {
 	branch_t       *bp;
 
-	if ((bp = ARRFIND(ap, SPOC_ENDOFLIST)) == 0) {
+	if ((bp = ARRFIND(ap, SPOC_ENDOFRULE)) == 0) {
 		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"New rule end");
 
 		bp = (branch_t *) Calloc(1, sizeof(branch_t));
@@ -503,7 +503,7 @@ rule_end(junc_t * ap, ruleinst_t * ri)
 		bp->count++;
 		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Old rule end: count [%d]",
 					     bp->count);
-		index_add(bp->val.id, (void *) ri);
+		bp->val.id = index_add(bp->val.id, (void *) ri);
 	}
 
 	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"done rule %s", ri->uid);

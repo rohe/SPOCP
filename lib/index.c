@@ -1,10 +1,10 @@
 
 /***************************************************************************
-                          index.c  -  description
-                             -------------------
-    begin                : Wen Aug 27 2003
-    copyright            : (C) 2003 by Umeå University, Sweden
-    email                : roland@catalogix.se
+			index.c  -  description
+			-------------------
+	begin		: Wen Aug 27 2003
+	copyright	: (C) 2003 by Umeå University, Sweden
+	email		: roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
    of this package for details.
@@ -19,10 +19,10 @@
 #include <func.h>
 #include <wrappers.h>
 
-spocp_index_t        *
+spocp_index_t	*
 index_new(int size)
 {
-	spocp_index_t        *new;
+	spocp_index_t	*new;
 
 	new = (spocp_index_t *) Malloc(sizeof(spocp_index_t));
 
@@ -44,12 +44,12 @@ index_new(int size)
  * good pointing to the old since that one will be deleted 
  */
 
-spocp_index_t        *
+spocp_index_t		*
 index_dup(spocp_index_t * id, ruleinfo_t * ri)
 {
-	spocp_index_t        *new;
-	int             i;
-	ruleinst_t     *r;
+	spocp_index_t		*new;
+	int			 i;
+	ruleinst_t	 *r;
 
 	new = index_new(id->size);
 
@@ -72,7 +72,7 @@ index_dup(spocp_index_t * id, ruleinfo_t * ri)
 void
 index_free(spocp_index_t * id)
 {
-	int             i;
+	int			 i;
 
 	if (id) {
 		if (id->size) {
@@ -84,16 +84,24 @@ index_free(spocp_index_t * id)
 	}
 }
 
-spocp_index_t        *
+spocp_index_t		*
 index_add(spocp_index_t * id, ruleinst_t * ri)
 {
-	ruleinst_t    **ra;
+	ruleinst_t	**ra;
 
 	if (ri == 0)
 		return id;
 
-	if (id == 0)
+	if (id == 0) {
+		DEBUG(SPOCP_DSTORE)
+			traceLog( LOG_INFO, "First rule of it's kind");
 		id = index_new(2);
+	}
+	else {
+		DEBUG(SPOCP_DSTORE)
+			traceLog(LOG_INFO, "Already got one of these (%d)",
+				id->n);
+	}
 
 	if (id->n == id->size) {
 		id->size *= 2;
@@ -110,7 +118,7 @@ index_add(spocp_index_t * id, ruleinst_t * ri)
 int
 index_rm(spocp_index_t * id, ruleinst_t * ri)
 {
-	int             i, j;
+	int i, j;
 
 	for (i = 0; i < id->n; i++) {
 		if (id->arr[i] == ri) {
