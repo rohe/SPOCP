@@ -76,6 +76,13 @@ iobuf_shift(spocp_iobuf_t * io)
 	while (io->r <= io->w && WHITESPACE(*io->r))
 		io->r++;
 
+/*
+	traceLog("is10 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	    io->buf, io->p, io->r, io->w, io->left);
+	traceLog( "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	    io->w - io->buf, io->left );
+*/
+
 	if (io->r >= io->w) {	/* nothing in buffer */
 		io->p = io->r = io->w = io->buf;
 		io->left = io->bsize - 1;
@@ -92,13 +99,19 @@ iobuf_shift(spocp_iobuf_t * io)
 		io->r = io->buf;
 		io->w = io->buf + len;
 		io->p = io->buf + last;
-		io->left = io->bsize - len;
+		io->left = io->bsize - len - 1;
 		*io->w = '\0';
 	}
 
-
 	DEBUG(SPOCP_DSRV) traceLog("DONE Shifting buffer b:%p r:%p w:%p left:%d",
 		 io->buf, io->r, io->w, io->left);
+
+/*
+	traceLog("is11 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	    io->buf, io->p, io->r, io->w, io->left);
+	traceLog( "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	    io->w - io->buf, io->left );
+*/
 
 	pthread_mutex_unlock(&io->lock);
 

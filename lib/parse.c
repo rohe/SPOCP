@@ -100,6 +100,33 @@ base64_decode(char *str)
 
 /*--------------------------------------------------------------------------------*/
 
+spocp_charbuf_t *
+charbuf_new( FILE *fp, size_t size )
+{
+	spocp_charbuf_t *buf;
+
+	buf = ( spocp_charbuf_t * ) Malloc( sizeof( spocp_charbuf_t ));
+
+	buf->fp = fp;
+	buf->str = (char *) calloc ( size, sizeof( char ));
+	buf->size = size;
+	buf->start = buf->str ; 
+
+	return buf;
+}
+
+/*--------------------------------------------------------------------------------*/
+
+void charbuf_free( spocp_charbuf_t *sc )
+{
+	if( sc ) {
+		if( sc->str ) free(sc->str);
+		free(sc);
+	}
+}
+
+/*--------------------------------------------------------------------------------*/
+
 /*!
  * \brief Grabs a line from some input
  * \param io Information about the input 
@@ -202,9 +229,7 @@ get_token(spocp_charbuf_t * io)
 		io->start = cp;
 	}
 
-	oct = oct_new( 0, 0 ) ;
-	oct_assign( oct, res ) ;
-
+	oct = str2oct( res, 1 );
 
 	return oct;
 }
@@ -238,8 +263,7 @@ get_path(spocp_charbuf_t * io)
 		io->start = cp;
 	}
 
-	oct = oct_new( 0, 0 ) ;
-	oct_assign( oct, res ) ;
+	oct = str2oct( res, 1 ) ;
 
 
 	return oct;
@@ -293,8 +317,7 @@ get_base64( spocp_charbuf_t * io)
 	}
 
 
-	oct = oct_new( 0, 0 ) ;
-	oct_assign( oct, res ) ;
+	oct = str2oct( res, 1 ) ;
 
 	return oct;
 }
@@ -372,8 +395,7 @@ get_hex( spocp_charbuf_t * io)
 	if (res == 0)
 		return 0;
 
-	oct = oct_new( 0, 0 ) ;
-	oct_assign( oct, res ) ;
+	oct = str2oct( res, 1 ) ;
 
 	return oct;
 }
@@ -453,9 +475,7 @@ get_quote( spocp_charbuf_t * io)
 	if (res == 0)
 		return 0;	/* not allowed */
 
-	oct = oct_new( 0, 0 ) ;
-	oct_assign( oct, res ) ;
-
+	oct = str2oct( res, 1 );
 
 	return oct;
 }

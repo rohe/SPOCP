@@ -337,14 +337,30 @@ spocp_conn_read(conn_t * conn)
 
 	pthread_mutex_lock(&io->lock);
 
+/*
+	traceLog("is00 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	    io->buf, io->p, io->r, io->w, io->left);
+	traceLog( "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	    io->w - io->buf, io->left );
+*/
+
 	n = conn->readn(conn, io->w, io->left);
 
 	if (n > 0) {
 		io->left -= n;
 		io->w += n;
-		*io->w = '\0';
+		*io->w = '\0'; 
+/*
+		traceLog( "spocp_conn_read: %d %d", io->left, io->w - io->buf);
+*/
 	}
 
+/*
+	traceLog("is01 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	    io->buf, io->p, io->r, io->w, io->left);
+	traceLog( "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	    io->w - io->buf, io->left );
+*/
 	pthread_mutex_unlock(&io->lock);
 
 	return n;

@@ -237,6 +237,7 @@ int		oct2strncmp(octet_t * o, char *s, size_t l);
 char		*oct2strdup(octet_t * op, char ec);
 int		oct2strcpy(octet_t * op, char *str, size_t len, char ec);
 
+octet_t		*str2oct( char *, int );
 int		octtoi(octet_t * o);
 
 int		oct_de_escape(octet_t * op);
@@ -293,6 +294,9 @@ void		timestamp(char *s);
 /*
  * =============================================================================== 
  */
+
+spocp_charbuf_t *charbuf_new( FILE *fp, size_t size );
+void		charbuf_free( spocp_charbuf_t * );
 
 void		chunk_free(spocp_chunk_t *);
 char		charbuf_peek( spocp_charbuf_t *cb );

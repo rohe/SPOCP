@@ -762,3 +762,20 @@ octtoi(octet_t * o)
 
 	return r;
 }
+
+/*
+ * ---------------------------------------------------------------------- 
+ */
+octet_t *str2oct( char *str, int dynamic )
+{
+	octet_t *op;
+
+	op = (octet_t *) Calloc ( 1, sizeof( octet_t ));
+
+	op->len = strlen( str );
+	op->val = str;
+	if( dynamic ) op->size = op->len;
+
+	return op;
+}
+

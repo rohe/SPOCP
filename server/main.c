@@ -86,7 +86,7 @@ main(int argc, char **argv)
 	struct sockaddr_in cliaddr;
 	struct timeval  start, end;
 	char           *cnfg =
-	    "config", localhost[NAME_MAX + 1], path[NAME_MAX + 1];
+	    "config", localhost[MAXNAMLEN + 1], path[MAXNAMLEN + 1];
 	srv_t           srv;
 	FILE           *pidfp;
 	octet_t         oct;
@@ -107,8 +107,8 @@ main(int argc, char **argv)
 	pthread_mutex_init(&(srv.mutex), NULL);
 	pthread_mutex_init(&(srv.mlock), NULL);
 
-	gethostname(localhost, NAME_MAX);
-	getdomainname(path, NAME_MAX);
+	gethostname(localhost, MAXNAMLEN);
+	getdomainname(path, MAXNAMLEN);
 
 	if (0)
 		printf("Domain: %s\n", path);

@@ -135,7 +135,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	octarr_t       *oa = 0;
 	ruleset_t      *rs = 0, *trs;
 	spocp_result_t  rc = SPOCP_SUCCESS;
-	spocp_charbuf_t	buf;
+	spocp_charbuf_t	*buf;
 	spocp_chunk_t	*chunk = 0, *ck;
 	spocp_ruledef_t	rdef;
 
@@ -160,12 +160,9 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	if (rs->db == 0)
 		rs->db = db_new();
 
-	buf.fp = fp;
-	buf.str = (char *) calloc ( BUFSIZ, sizeof( char ));
-	buf.size = BUFSIZ;
-	buf.start = buf.str ; 
+	buf = charbuf_new( fp, BUFSIZ );
 
-	if (get_more(&buf) == 0) return 0;
+	if (get_more(buf) == 0) return 0;
 
 	/*
 	 * have to escape CR since fgets stops reading when it hits a newline
@@ -173,7 +170,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	 * the length of the 'string'. '\' hex hex is probably going to be the 
 	 * choice 
 	 */
-	while (rc == SPOCP_SUCCESS && ( chunk = get_object( &buf, 0 )) != 0 ) {
+	while (rc == SPOCP_SUCCESS && ( chunk = get_object( buf, 0 )) != 0 ) {
 		if (oct2strcmp(chunk->val, ";include ") == 0) {	/* include
 								 * file */
 			ck = chunk->next;
@@ -260,6 +257,9 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 
 		chunk_free( chunk ) ;
 	}
+
+	fclose( fp );
+	charbuf_free( buf );
 
 	if (rc != SPOCP_SUCCESS)
 		return -1;
