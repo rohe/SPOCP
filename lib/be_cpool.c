@@ -55,7 +55,7 @@ static void becon_free( becon_t *bc, int close )
 
 /* ------------------------------------------------------------------- */
 
-static void becpool_rm( becpool_t *bcp, int close )
+void becpool_rm( becpool_t *bcp, int close )
 {
   becon_t *pres, *next ;
 
@@ -123,7 +123,7 @@ becpool_t *becpool_new( size_t max )
  */
 becon_t *becon_push( octet_t *arg, closefn *close, void *con, becpool_t *bcp )
 {
-  becon_t *bc, *old = 0 ;
+  becon_t *bc ;
  
   if( becpool_full( bcp ) ) return 0 ;
 
