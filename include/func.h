@@ -153,9 +153,6 @@ varr_t         *get_all_bcond_followers( branch_t *bp, varr_t *in ) ;
 int            nrules( ruleinfo_t *ri ) ;
 int            rules( db_t *db ) ;
 
-ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcondname ) ;
-ruleinst_t *aci_save( db_t *db, octet_t *aci ) ;
-
 void       ruleinst_free( ruleinst_t *rt ) ;
 
 ruleinfo_t *ruleinfo_dup( ruleinfo_t *old ) ;
