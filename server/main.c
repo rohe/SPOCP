@@ -127,10 +127,11 @@ int main( int  argc, char **argv )
   unsigned int        clilen ;
   struct sockaddr_in  cliaddr ;
   struct timeval      start, end ;
-  char                *cnfg = "config" ;
+  char                *cnfg = "config", localhost[NAME_MAX+1], path[NAME_MAX+1] ;
   srv_t               srv ;
   keyval_t            *globals = 0 ;
   FILE                *pidfp ;
+  octet_t             oct ;
 
   /* Who am I running as ? */
 
@@ -144,13 +145,20 @@ int main( int  argc, char **argv )
   pthread_mutex_init( &(srv.mutex), NULL ) ;
   pthread_mutex_init( &(srv.mlock), NULL ) ;
 
+  gethostname( localhost, NAME_MAX ) ;
+
+  localcontext = ( char *) Calloc( strlen(localhost)+strlen( "//" ) + 1,
+                                   sizeof( char) ) ;
+
+  sprintf( localcontext, "//%s", localhost ) ;
+
   /*
    * truncating input strings to reasonable length
    */
   for( i = 0 ; i < argc ; i++ )
     if( strlen( argv[i] ) > 512 ) argv[i][512] = '\0' ;
 
-  while(( i = getopt(argc,argv,"shf:d:")) != EOF ) {
+  while(( i = getopt(argc,argv,"hf:d:")) != EOF ) {
     switch(i) {
 
       case 'f':
@@ -162,9 +170,11 @@ int main( int  argc, char **argv )
 	if( debug < 0 ) debug = 0 ;
         break ;
 
+/*
       case 's':
         srv.protocol = SOAP ;
         break ;
+*/
 
       case 'h' :
       default:
@@ -173,9 +183,19 @@ int main( int  argc, char **argv )
     }
   }
 
-  if( srv.root == 0 ) 
-    srv.root = new_ruleset( "", 0 ) ;
+  if( srv.root == 0 ) srv.root = ruleset_new( 0 ) ;
  
+  /* where I put the access rules for access to this server and its rules */
+  sprintf( path, "%s/server", localcontext) ;
+  oct.val = path ;
+  oct.len = strlen(path) ;
+  ruleset_create( &oct, &srv.root ) ;
+
+  sprintf( path, "%s/rules", localcontext ) ;
+  oct.val = path ;
+  oct.len = strlen(path) ;
+  ruleset_create( &oct, &srv.root ) ;
+
   if( read_config( cnfg, &srv ) == 0 ) exit( 1 ) ;
 
   if( srv.port && srv.uds ) {
@@ -188,9 +208,11 @@ int main( int  argc, char **argv )
   else if( debug ) spocp_open_log( 0, debug ) ;
 
 
+  traceLog( "Local context: \"%s\"", localcontext ) ;
   traceLog( "initializing backends" ) ; 
   if( srv.root->db ) init_plugin( srv.root->db->plugins ) ;
   LOG( SPOCP_INFO ) if( srv.root->db ) plugin_display( srv.root->db->plugins ) ;
+  if( srv.root->db->plugins ) run_plugin_init( &srv ) ;
 
   if( srv.rulefile == 0 ) {
     LOG( SPOCP_INFO ) traceLog( "No rule file to start with" ) ;
@@ -238,6 +260,7 @@ int main( int  argc, char **argv )
     /* ---------------------------------------------------------- */
 #endif
 
+    saci_init() ;
     daemon_init( "spocp", 0) ;
 
     if ( srv.pidfile ) {
