@@ -81,10 +81,12 @@ element_set_print( octet_t *oct, element_t *ep)
 	if (octcat( oct, "(1:*3:set", 9 ) != SPOCP_SUCCESS)
 		return 0;
 
-	for( i = 0 ; i < (int)va->n ; i++ ) {
-		vep = ( element_t * ) va->arr[i];
-		if (element_print(oct, vep) == 0)
-			return 0;	
+	if (va) {
+		for( i = 0 ; i < (int)va->n ; i++ ) {
+			vep = ( element_t * ) va->arr[i];
+			if (element_print(oct, vep) == 0)
+				return 0;	
+		}
 	}
 
 	if (octcat( oct, ")", 1 ) != SPOCP_SUCCESS)

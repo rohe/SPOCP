@@ -251,12 +251,15 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		bp = jp->item[SPOC_ENDOFLIST];
 
 		if (ep) {
+
+#ifdef AVLUS
 			octet_t *eop ;
 
 			eop = oct_new( 512,NULL);
 			element_print( eop, ep );
 			oct_print( "ELEMENT:", eop);
 			oct_free( eop);
+#endif
 
 			/*
 			 * better safe then sorry, this should not be
@@ -474,7 +477,6 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 	branch_t	*bp;
 	junc_t		*ju;
 	varr_t		*avp = 0;
-	element_t	*nep;
 	slist_t		**slp;
 	int		i;
 	atom_t		*atom;
@@ -527,10 +529,12 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 
 			DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"matched suffix");
 
+#ifdef AVLUS
 			eop = oct_new( 512,NULL);
 			element_print( eop, ep );
 			oct_print( "ep", eop);
 			oct_free( eop);
+#endif
 
 			rs = resset_join(rs,do_arr(avp, ep, comp));
 			if (rs && !comp->all)
@@ -582,10 +586,12 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 	if (db == 0)
 		return 0;
 
+#ifdef AVLUS
 	eop = oct_new( 512,NULL);
 	element_print( eop, ep );
 	oct_print( "element_match", eop);
 	oct_free( eop);
+#endif
 
 	/*
 	 * may have several roads to follow, this might just be one of them 
