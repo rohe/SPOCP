@@ -17,9 +17,12 @@
 #include <string.h>
 
 #include <struct.h>
+#include <plugin.h>
+#include <varr.h>
 #include <db0.h>
 #include <func.h>
 #include <wrappers.h>
+#include <spocp.h>
 
 #define MAX_CACHED_VALUES 1024
 
@@ -55,8 +58,6 @@ unsigned int hash_arr( int argc, char **argv )
 **********************************************************/
 /*
 Arguments:
-  arg	The argument, normally a external reference after variable
-	substitutions
   h 	the hashvalue calculated for arg
   ct    cache time
   r     the result of evaluation of the external reference (1/0)
@@ -64,7 +65,7 @@ Arguments:
 Returns:	a cacheval struct with everything filled in
  */
 
-cacheval_t *cacheval_new( octet_t *arg, unsigned int h, unsigned int ct, int r)
+cacheval_t *cacheval_new( unsigned int h, unsigned int ct, int r)
 {
   cacheval_t *cvp ;
   time_t      t ;
@@ -75,17 +76,15 @@ cacheval_t *cacheval_new( octet_t *arg, unsigned int h, unsigned int ct, int r)
 
   cvp->timeout = t + ct ;
   cvp->hash = h ;
-  cvp->arg = octdup( arg ) ;
   cvp->res = r ;
+  memset( &cvp->blob, 0, sizeof( octet_t )) ;
 
   return cvp ;
 }
 
-void cacheval_free( void *vp )
+void cacheval_free( cacheval_t *cvp )
 {
-  if( vp ) {
-    cacheval_t *cvp = ( cacheval_t *) vp ;
-    if( cvp->arg ) free( cvp->arg ) ;
+  if( cvp ) {
     free( cvp ) ;
   }
 }
@@ -96,11 +95,65 @@ void *cacheval_dup( void *vp)
 
   old = ( cacheval_t * ) vp ;
 
-  new = cacheval_new( old->arg, old->hash, 0, old->res ) ;
+  new = cacheval_new( old->hash, 0, old->res ) ;
   new->timeout = old->timeout ;
   
   return (void *) new ;
 }
+
+/* ---------------------------------------------------------------------- */
+
+cache_t *cache_new( void )
+{
+  cache_t *new ;
+
+  new = ( cache_t * ) Calloc (1, sizeof( cache_t )) ;
+
+#ifdef HAVE_LIBPTHREAD
+  pthread_rdwr_init( &new->rw_lock ) ;
+#endif
+
+  return new ;
+}
+
+cache_t *cache_add( cache_t *c, void *v ) 
+{
+  if( c == 0 ) c = cache_new() ;
+
+  c->va = varr_add( c->va, v ) ;
+
+  return c ; 
+}
+
+cacheval_t *cache_find( cache_t *c, octet_t *arg )
+{
+  unsigned int hash ;
+  cacheval_t  *cvp ;
+  void        *vp ;
+
+  hash = lhash( (unsigned char *) arg->val, arg->len, 0 ) ;
+  /* traceLog( "Hash: %u", hash ) ;  */
+
+  for( vp = varr_first( c->va ) ; vp ; vp = varr_next( c->va, vp )) {
+    cvp = (cacheval_t *) vp ;
+    /* traceLog( "Stored hash: %u (%d)", cvp->hash, cvp->res ) ; */
+    if( cvp->hash == hash ) return cvp ;
+  }
+
+  return 0 ;
+}
+
+void cache_del( cache_t *c, cacheval_t *cvp )
+{
+  varr_rm( c->va, (void *) cvp ) ;
+}
+
+void cache_fifo_rm( cache_t *cp )
+{
+  varr_fifo_pop( cp->va ) ;
+}
+
+/* ---------------------------------------------------------------------- */
 
 /***********************************************************
 * Cache a result of the evaluation of a external reference *
@@ -116,23 +169,25 @@ Arguments:
 Returns:	TRUE if OK
 */
 
-int cache_value( ll_t **ll, octet_t *arg, unsigned int ct, int r, octet_t *blob )
+cache_t *cache_value( cache_t *cp, octet_t *arg, unsigned int ct, int r, octet_t *blob )
 {
   unsigned int hash ;
-  cacheval_t  *cvp, *tmp ;
+  cacheval_t   *cvp ;
 
   hash = lhash( (unsigned char *) arg->val, arg->len, 0 ) ;
 
-  cvp = cacheval_new( arg, hash, ct, r ) ;
+  cvp = cacheval_new( hash, ct, r ) ;
 
-  if( *ll && (*ll)->n == MAX_CACHED_VALUES ) {
-    tmp = ll_pop( *ll ) ; 
-    cacheval_free( (void *) tmp ) ;
+  if( cp == 0 ) cp = cache_new() ;
+
+  /* max number of cachevalues should be configurable */
+  if( cp->va && varr_len(cp->va) == MAX_CACHED_VALUES ) {
+    cache_fifo_rm( cp ) ;
   }
 
-  if( *ll == 0 ) *ll = ll_new( 0, 0, 0, 0 ) ;
+  if( ! cp ) cp = cache_new( ) ;
 
-  ll_push( *ll, ( void * ) cvp, 0 ) ;
+  cache_add( cp, ( void * ) cvp ) ;
 
   if( blob && blob->len ) {
     cvp->blob.len = blob->len ;
@@ -141,7 +196,7 @@ int cache_value( ll_t **ll, octet_t *arg, unsigned int ct, int r, octet_t *blob 
     blob->size = 0 ; /* should be kept and not deleted upstream */
   }
 
-  return TRUE ;
+  return cp ;
 }
 
 /************************************************************************
@@ -156,39 +211,30 @@ Arguments:
 Returns:	CACHED | result(0/1)
 */
 
-int cached( ll_t *ll, octet_t *arg, octet_t *blob )
+int cached( cache_t *cp, octet_t *arg, octet_t *blob )
 {
-  unsigned int hash ;
   cacheval_t  *cvp ;
   time_t       t ;
-  node_t      *np ;
 
-  if( ll == 0 ) return FALSE ;
+  if( cp == 0 ) return 0 ;
+
+  if(( cvp = cache_find( cp, arg )) == 0 ) return 0 ;
 
   time( &t ) ;
 
-  hash = lhash( (unsigned char *) arg->val, arg->len, 0 ) ;
+  if( (time_t) cvp->timeout < t ) return EXPIRED ;
 
-  for( np = ll->head ; np ; np = np->next ) {
-    cvp = (cacheval_t *) np->payload ;
-    if( cvp->hash == hash ) {
-      if( (time_t) cvp->timeout < t ) return CACHED|EXPIRED ;
-      else {
-        if( blob ) {
-          blob->len = cvp->blob.len ;
-          blob->val = cvp->blob.val ;
-          blob->size = 0 ; /* static data, shouldn't be deleted upstream */
-        }
-        return CACHED|cvp->res ;
-      }
-    }
+  if( blob ) {
+    blob->len = cvp->blob.len ;
+    blob->val = cvp->blob.val ;
+    blob->size = 0 ; /* static data, shouldn't be deleted upstream */
   }
 
-  return FALSE ;
+  return cvp->res ;
 }
 
 /************************************************************
-*          replaces a previously cached result              *
+*          remove a previously cached result              *
 ************************************************************/
 /*
 Arguments:
@@ -201,42 +247,11 @@ Arguments:
 Returns:	TRUE if OK
 */ 
 
-int cache_replace_value( ll_t *ll, octet_t *arg, unsigned int ct, int r, octet_t *blob )
+void cached_rm( cache_t *cp, octet_t *arg )
 {
-  unsigned int hash ;
-  cacheval_t  *cvp ;
-  time_t       t ;
-  node_t      *np ;
+  cacheval_t *cvp ;
+  
+  if(( cvp = cache_find( cp, arg ))) return ;
 
-  time( &t ) ;
-
-  hash = lhash( (unsigned char *) arg->val, arg->len, 0 ) ;
-
-  for( np = ll->head ; np ; np = np->next ) {
-    cvp = (cacheval_t *) np->payload ;
-    if( cvp->hash == hash ) {
-      cvp->timeout = t + ct ;
-      cvp->res = r ;
-      if( blob ) {
-        if( cvp->blob.len ) {
-          if( octcmp( &cvp->blob, blob ) != 0 ) {
-            free( cvp->blob.val ) ;
-            cvp->blob.len = blob->len ;
-            cvp->blob.val = blob->val ;
-            cvp->blob.size = blob->size ;
-            blob->size = 0 ; /* mark so it want be deleted by someone else */
-          }
-        }
-        else {
-          cvp->blob.len = blob->len ;
-          cvp->blob.val = blob->val ;
-          cvp->blob.size = blob->size ;
-          blob->size = 0 ; /* mark so it want be deleted by someone else */
-        }
-      }
-      return TRUE ;
-    }
-  }
-
-  return FALSE ;
+  cache_del( cp, cvp ) ; 
 }
