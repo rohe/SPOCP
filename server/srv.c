@@ -248,8 +248,9 @@ spocp_result_t com_auth( conn_t *conn )
 {
   spocp_result_t  r = SPOCP_SUCCESS ;
   int             wr ;
-  char            data[8192];
+  const char     *data;
   size_t          len;
+  octet_t         blob;
 
   LOG (SPOCP_INFO ) traceLog("Attempt to authenticate");
 
@@ -286,16 +287,22 @@ spocp_result_t com_auth( conn_t *conn )
 			   &len);
   }
 
+  memset(&blob,0,sizeof(blob));
+  if (data) {
+    blob.val = (char *)data;
+    blob.len = len;
+  }
+
  check:
 
   switch (wr) {
   case SASL_OK:
     wr = sasl_getprop(conn->sasl,SASL_USERNAME,(const void **)&conn->sasl_username);
-    add_response_blob( conn->out, SPOCP_MULTI, data) ;
+    add_response_blob( conn->out, SPOCP_MULTI, &blob) ;
     add_response(conn->out,SPOCP_SUCCESS,"Authentication OK");
     break;
   case SASL_CONTINUE:
-    add_response_blob( conn->out, SPOCP_AUTHDATA, data) ;
+    add_response_blob( conn->out, SPOCP_AUTHDATA, &blob) ;
     add_response(conn->out,SPOCP_AUTHINPROGRESS,NULL);
     break;
   default:
