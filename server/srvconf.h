@@ -15,4 +15,3 @@
 #define SSLVERIFYDEPTH  14
 #define PIDFILE         15
 #define MAXCONN         16
-#define CACHETIME       17
