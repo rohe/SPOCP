@@ -19,6 +19,7 @@
 #include <basefn.h>
 #include <plugin.h>
 #include <rbtree.h>
+#include <dback.h>
 
 #define SHA1HASHLEN 40
 
@@ -229,6 +230,7 @@ typedef struct _db {
   junc_t         *acit ;
   struct _plugin *plugins ;
   bcdef_t        *bcdef ;
+  dback_t        *dback ;
 } db_t ;
 
 #endif
