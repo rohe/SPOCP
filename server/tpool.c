@@ -9,6 +9,17 @@
 
 #include "locl.h"
 
+/*
+#ifdef NO_THREADS
+static int waking;
+#define WAKE_LISTENER(w) \
+((w && !waking) ? write( wake_sds[1], "0", 1 ), waking=1 : 0)
+#else
+#define WAKE_LISTENER(w) \
+do { if (w) write( wake_sds[1], "0", 1 ); } while(0)
+#endif
+*/
+
 void           *tpool_thread(void *);
 
 #define DEF_QUEUE_SIZE  16

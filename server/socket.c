@@ -188,8 +188,12 @@ daemon_init(char *procname, int facility)
 	if (0)
 		fprintf(stderr, "Done daemoning\n");
 
+	/*
 	if (lutil_pair(wake_sds) != 0) {
 		fprintf(stderr, "Problem in creating wakeup pair");
 		exit(0);
 	}
+	*/
+
+
 }

@@ -11,7 +11,7 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-#define XYZ 0
+#define XYZ 1
 
 /*
  * ---------------------------------------------------------------------- 
@@ -120,12 +120,14 @@ lutil_pair(int sds[2])
 #endif
 }
 
-
 void
 wake_listener(int w)
 {
-	if (w)
+	if (w) {
+		DEBUG(SPOCP_DSRV)
+			traceLog(LOG_DEBUG,"waking listener on %d", wake_sds[1]);
 		write(wake_sds[1], "0", 1);
+	}
 }
 
 /*
@@ -230,6 +232,11 @@ spocp_srv_run(srv_t * srv)
 
 	signal(SIGPIPE, SIG_IGN);
 
+	if (lutil_pair(wake_sds) != 0) {
+		fprintf(stderr, "Problem in creating wakeup pair");
+		exit(0);
+	}
+
 	traceLog(LOG_INFO,"Running server!!");
 
 	memset( ipaddr, 0, 65);
@@ -327,6 +334,8 @@ spocp_srv_run(srv_t * srv)
 
 		if (XYZ) {
 			timestamp("before select");
+			if( FD_ISSET(wake_sds[0], &rfds))
+				traceLog(LOG_INFO, "wakeup listener is on");
 			traceLog(LOG_INFO, "Maxfd:%d", maxfd);
 		}
 		/*
@@ -361,6 +370,8 @@ spocp_srv_run(srv_t * srv)
 
 		if (FD_ISSET(wake_sds[0], &rfds)) {
 			char            c[BUFSIZ];
+
+			traceLog(LOG_DEBUG,"Woken by wake listener");
 			read(wake_sds[0], c, sizeof(c));
 		}
 
