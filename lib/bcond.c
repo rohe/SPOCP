@@ -613,8 +613,10 @@ bcexp_eval(element_t * qp, element_t * rp, bcexp_t * bce, octarr_t ** oa)
 	switch (bce->type) {
 	case SPEC:
 		r = bcond_eval(qp, rp, bce->val.spec, &oct);
-		if (r == SPOCP_SUCCESS && oct.len)
+		if (r == SPOCP_SUCCESS && oct.len) {
 			lo = octarr_add(0, octdup(&oct));
+			octclr(&oct);
+		}
 		break;
 
 	case NOT:
