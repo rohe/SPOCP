@@ -47,7 +47,6 @@ junc_t *
 
 int             get_len( octet_t *oct ) ;
 spocp_result_t  get_str( octet_t *oct, octet_t *str ) ;
-char           *sexp_to_canonical( char *sexp ) ;
 int             ipv4cmp( struct in_addr *ia1, struct in_addr *ia2 ) ;
 int             ipv6cmp( struct in6_addr *ia1, struct in6_addr *ia2 ) ;
 
