@@ -335,7 +335,8 @@ spocp_result_t  bcdef_del( db_t *db, octet_t *name ) ;
 spocp_result_t  bcdef_replace( db_t *db, octet_t *n, octet_t *d ) ;
 bcdef_t        *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc ) ;
 
-spocp_result_t bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
+spocp_result_t	bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
+varr_t *        bcond_users( db_t *, octet_t * );
 
 /* ----- */
 
