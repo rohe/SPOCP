@@ -25,6 +25,8 @@
  * res_query( "_ldap._tcp.umu.se", ns_t_srv, ns_c_in, ans[BUFSIZ], BUFSIZ);
  */
 
+#include <config.h>
+
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
@@ -40,6 +42,11 @@
 
 #include "lber.h"
 #include "ldap.h"
+
+#ifdef HAVE_LIBIDN
+#include <locale.h>
+#include <stringprep.h>
+#endif
 
 #include <spocp.h>
 #include <be.h>
@@ -80,6 +87,109 @@ typedef struct _srvrec {
 
 /* ---------------------------------------------------------------------- */
 
+#define TAG "ldapproxy"
+
+static char	*defattrs[] = { "nyaRole", "ladokInstId", "sn", 
+			"givenName", "telephoneNumber", "mobileTelephoneNumber",
+			"uid", "o", NULL };
+
+typedef struct _ainfo {
+	char		*base;
+	char		**attr;
+	struct _ainfo	*next;
+} ainfo_t ;
+
+spocp_result_t set_attr( void **vpp, void *cd, int argc, char **argv);
+spocp_result_t release_ainfo( void **vp);
+static char **match_base( ainfo_t *ai, char *base );
+
+
+/* ---------------------------------------------------------------------- */
+
+/* expects 
+ * "what" +SP "=" +SP <base> "/" attr *( ',' attr ) in the configuration
+ * file
+ */
+spocp_result_t 
+set_attr( void **vpp, void *cd, int argc, char **argv)
+{
+	ainfo_t *ai=0, *newai ;
+	char	*sp;
+	char	*buf;
+	int	n;
+	LDAPDN	*dn = 0;
+
+	traceLog( LOG_DEBUG, "argc: %d, argv[0]: %s", argc, argv[0]);
+	if( argc != 1 )
+		return SPOCP_PARAM_ERROR;
+
+
+	buf = normalize( argv[0]) ;
+	sp = index( buf, '/' );
+
+	if ( !sp)
+		return SPOCP_PARAM_ERROR;
+
+	*sp++ = '\0';
+
+	newai = ( ainfo_t * ) calloc (1, sizeof( ainfo_t ));
+
+	traceLog( LOG_DEBUG, "Base DN[0]: %s", buf );
+	ldap_str2dn( buf, &dn, LDAP_DN_FORMAT_LDAPV3);
+	ldap_dn2str( dn, &buf, LDAP_DN_FORMAT_LDAPV3);
+
+	ldap_memfree( dn );
+
+	traceLog( LOG_DEBUG, "Base DN[1]: %s", buf);
+	newai->base = buf;
+	newai->attr = line_split( sp, ',', 0, 1, 0, &n);
+
+	if( *vpp == 0 )
+		vpp = (void **) &newai;
+	else
+		ai = (ainfo_t *) *vpp;
+		vpp = (void **) &newai;
+		newai->next = ai;
+
+	return SPOCP_SUCCESS;
+}
+
+static void 
+ainfo_free( ainfo_t *ai )
+{
+	if( ai ){
+		if( ai->base )
+			free( ai->base );
+		if( ai->attr )
+		charmatrix_free( ai->attr );
+	}
+}
+
+spocp_result_t
+release_ainfo( void **vpp)
+{
+	ainfo_t *nai,*ai = *vpp;
+
+	for ( ; ai ; ai = nai ){
+		nai = ai->next;
+		ainfo_free( ai );
+	}
+
+	return SPOCP_SUCCESS;
+}
+
+static char **
+match_base( ainfo_t *ai, char *base )
+{
+	for( ; ai; ai = ai->next )
+		if (strcmp(ai->base, base) == 0)
+			return ai->attr;
+
+	return 0;
+}
+
+/* ---------------------------------------------------------------------- */
+
 static void
 srvrec_free( srvrec_t *sr )
 {
@@ -105,10 +215,10 @@ dnssrv_lookup( char *domain, char *proto )
 	rr_t		rr;
 	srvrec_t	*srv = 0, *nsrv;
 
-	dsize = strlen(domain)+strlen(proto)+8;
+	dsize = strlen(domain)+strlen(proto)+8+1;
 	dname = (char *) calloc(dsize , sizeof( char ));
 
-	snprintf( dname, dsize-1, "_%s._tcp.%s", proto, domain);
+	snprintf( dname, dsize, "_%s._tcp.%s", proto, domain);
 
 	printf( "dname: %s\n", dname );
 
@@ -360,13 +470,11 @@ open_conn(char *server, int port, spocp_result_t * ret)
 /* ---------------------------------------------------------------------- */
 
 static char	***
-do_ldap_query( LDAP * ld, const char *base, const char *filter, spocp_result_t * ret)
+do_ldap_query( LDAP * ld, const char *base, const char *filter, 
+		char **attr, spocp_result_t * ret)
 {
 	int             rc, scope;
 	LDAPMessage	*res = 0;
-	char		*attr[] = { "nyaRole", "ladokInstId", "sn", 
-				"givenName", "telephoneNumber", "mobileTelephoneNumber",
-				"uid", "o",  NULL };
 	char		***ava = NULL;
 
 	/*
@@ -425,7 +533,7 @@ do_xml( char ***ava )
 
 	xp = xml = ( char * ) calloc ( len+14, sizeof( char ));
 
-	sprintf(xp, "<nya>" );
+	sprintf(xp, "<%s>", TAG );
 	xp += strlen(xp);
 	for( i = 0; ava[i] ; i++) {
 		attr = ava[i][0];
@@ -434,7 +542,7 @@ do_xml( char ***ava )
 			xp += strlen(xp);
 		}
 	}
-	sprintf(xp, "</nya>" );
+	sprintf(xp, "</%s>" , TAG);
 	
 	return xml;
 }
@@ -451,7 +559,7 @@ ldapproxy_test(cmd_param_t * cpp, octet_t * blob)
 	octet_t		*oct, *domain;
 	pdyn_t		*dyn = cpp->pd;
 	char		***ava = 0, *tmp, *filter, *fqdn;
-	char 		*attr = 0, *val, *dn;
+	char 		*attr = 0, *val, *dn, **attrs = 0;
 	char 		*xml;
 	srvrec_t	*sr, *nsr;
 	int		i, j;
@@ -468,16 +576,19 @@ ldapproxy_test(cmd_param_t * cpp, octet_t * blob)
 
 	domain = argv->arr[0];
 
-	fqdn = oct2strdup( domain, 0);
+	tmp = oct2strdup( domain, 0);
+	fqdn = normalize(tmp);
+	free(tmp);
+	traceLog( LOG_DEBUG,"domain: %s", fqdn);
 
 	if (dyn == 0 || (bc = becon_get(domain, dyn->bcp)) == 0) {
 		/* find the server/-s */
 		if(( sr = dnssrv_lookup( fqdn, "ldap")) == 0 ) {
 			traceLog(LOG_DEBUG,"SRV record lookup failed");
 			sr = ( srvrec_t * ) calloc( 1, sizeof( srvrec_t ));
-			sr->srv = ( char * ) calloc( domain->len+6, sizeof( char ));
+			sr->srv = ( char * ) calloc( domain->len+7, sizeof( char ));
 			tmp = oct2strdup( domain, 0 );
-			snprintf(sr->srv, domain->len+5,"ldap.%s", tmp );
+			snprintf(sr->srv, domain->len+6,"ldap.%s", tmp );
 			free( tmp ); 
 		}
 
@@ -520,9 +631,15 @@ ldapproxy_test(cmd_param_t * cpp, octet_t * blob)
 
 		traceLog(LOG_DEBUG, "Filter: %s, DN: %s", filter, dn);
 
+		if( cpp->conf )
+			attrs = match_base( (ainfo_t *) cpp->conf, dn );
+
+		if (attrs == 0)
+			attrs = defattrs;
+
 		/* do the stuff */
 	
-		ava = do_ldap_query( ld, dn, filter, &r);
+		ava = do_ldap_query( ld, dn, filter, attrs, &r);
 
 		if (bc)
 			becon_return(bc);
@@ -559,10 +676,18 @@ ldapproxy_test(cmd_param_t * cpp, octet_t * blob)
 	return r;
 }
 
+/* 
+ */
+
+conf_com_t conffunc[] = {
+        { "what", set_attr, NULL, "Which attributes from which subtree" },
+        {NULL}
+};
+
 plugin_t        ldapproxy_module = {
 	SPOCP20_PLUGIN_STUFF,
 	ldapproxy_test,
 	NULL,
-	NULL,
-	NULL
+	conffunc,
+	release_ainfo
 };
