@@ -82,6 +82,7 @@ static void
 sig_term( int signo )
 {
 	received_sigterm = signo;
+	traceLog(LOG_NOTICE, "Received SIGTERM");
 	wake_listener(1);
 }
 
@@ -415,3 +416,4 @@ main(int argc, char **argv)
 
 	exit(0);
 }
+

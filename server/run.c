@@ -519,5 +519,6 @@ spocp_srv_run(srv_t * srv)
 			timestamp("one loop done");
 	}
 	
+	traceLog(LOG_NOTICE,"Closing down");
 	exit(0);
 }
