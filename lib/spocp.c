@@ -28,13 +28,11 @@
    returns
  */
 
-spocp_result_t spocp_allowed( void *vp, octet_t *sexp, octnode_t **on, spocp_req_info_t *sri )
+spocp_result_t spocp_allowed( void *vp, octet_t *sexp, octarr_t **on )
 {
   db_t       *db = ( db_t *) vp ;
   junc_t     *ap ;
-  parr_t     *gap = 0 ;
   element_t  *ep = 0 ;
-  int        i ;
   octet_t    oct ;
   char       *str ;
   spocp_result_t res = SPOCP_SUCCESS ;
@@ -72,30 +70,9 @@ spocp_result_t spocp_allowed( void *vp, octet_t *sexp, octnode_t **on, spocp_req
     free( str ) ;
   }
 
-  DEBUG(SPOCP_DPARSE) traceLog("Parsed OK, getting AV list") ;
- 
-  /* collect tag value pairs, used for the substitutions in
-     constraint references. Might be none */
-  gap = get_simple_lists( ep, 0 ) ;
-
-  DEBUG(SPOCP_DPARSE) {
-    keyval_t *kv = 0 ;
-
-    for( i = 0 ; gap && i < gap->n ; i++ ) {
-      kv = ( keyval_t * ) gap->vect[i] ;
-      str = oct2strdup( kv->key, '\\' ) ;
-      traceLog( "==%s", str ) ;
-      free( str ) ;
-      str = oct2strdup( kv->val, '\\' ) ;
-      traceLog( "==>%s", str ) ;
-      free( str ) ;
-    }
-  }
-
-  res = allowed( ap,  ep, gap, db->bcp, on ) ;
+  res = allowed( ap, ep, on ) ;
 
   element_free( ep ) ;
-  if( gap ) parr_free( gap ) ;
 
   return res ;
 }
@@ -130,7 +107,7 @@ void *spocp_get_rules( void *vp, char *file, int *rc  )
 }
 */
 
-spocp_result_t spocp_del_rule( void *vp, octet_t *op, spocp_req_info_t *sri )
+spocp_result_t spocp_del_rule( void *vp, octet_t *op )
 {
   db_t           *db = ( db_t *) vp ;
   int            n ;
@@ -169,22 +146,21 @@ spocp_result_t spocp_del_rule( void *vp, octet_t *op, spocp_req_info_t *sri )
   return rc ;
 }
 
-spocp_result_t
-spocp_list_rules( void *vp, octet_t *pattern, octarr_t *oa, spocp_req_info_t *sri, char *rs ) 
+spocp_result_t spocp_list_rules( void *vp, octarr_t *pattern, octarr_t *oa, char *rs ) 
 {
   db_t *db = ( db_t *) vp ;
 
   /* LOG( SPOCP_INFO ) traceLog( "List rules" ) ; */
 
-  if( pattern == 0 || pattern->len == 0 ) {
+  if( pattern->n == 0 ) {
     /* get all */
-    return get_all_rules( db, oa, sri, rs );
+    return get_all_rules( db, oa, rs );
   }
   else
-    return get_matching_rules( db, pattern, oa, sri, rs ) ;
+    return get_matching_rules( db, pattern, oa, rs ) ;
 }
 
-spocp_result_t spocp_add_rule( void **vp, octet_t **arg, spocp_req_info_t *sri )
+spocp_result_t spocp_add_rule( void **vp, octarr_t *oa )
 {
   spocp_result_t r ;
   db_t          *db ;
@@ -192,10 +168,12 @@ spocp_result_t spocp_add_rule( void **vp, octet_t **arg, spocp_req_info_t *sri )
 
   LOG( SPOCP_INFO ) traceLog( "spocp_add_rule" ) ; 
 
-  if( vp ) db = (db_t *) *vp ;
-  else return SPOCP_UNWILLINGTOPERFORM ;
+  if( oa->n == 0 ) return SPOCP_MISSING_ARG ;
 
-  r = add_right( &db, arg, sri, &ri ) ;
+  if( vp ) db = (db_t *) *vp ;
+  else return SPOCP_UNWILLING ;
+
+  if(( r = add_right( &db, oa, &ri ))) 
   
   *vp = (void *) db ;
  
