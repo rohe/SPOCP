@@ -38,6 +38,8 @@ conn_init(conn_t * conn)
 	conn->close = conn_close;
 	if( pthread_mutex_init(&conn->clock, 0) != 0 )
 		traceLog(LOG_WARNING, "mutex init of connection lock failed"); 
+	if( pthread_mutex_init(&conn->rlock, 0) != 0 )
+		traceLog(LOG_WARNING, "mutex init of reply queue lock failed"); 
 }
 
 conn_t         *
@@ -427,10 +429,15 @@ send_results(conn_t * conn)
 	if (0)
 		timestamp("Send results");
 
+	if (gather_replies( out, conn ) == 0)
+		return 1;
 
 	LOG(SPOCP_INFO) {
-		*out->w = '\0';
-		traceLog(LOG_INFO,"[%d]SEND_RESULT: [%s]", conn->fd, out->r);
+		char	*tmp;
+
+		tmp = str_esc( out->r, out->w - out->r );
+		traceLog(LOG_INFO,"[%d]SEND_RESULT: [%s]", conn->fd, tmp);
+		free( tmp );
 	}
 
 	if (0)

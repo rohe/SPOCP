@@ -194,26 +194,15 @@ get_oparg(octet_t * arg, octarr_t ** oa)
 	return r;
 }
 
-static void
-oparg_clear(conn_t * con)
-{
-	/*
-	 * reset operation arguments 
-	 */
-	octarr_free(con->oparg);
-	con->oparg = 0;
-	oct_free(con->oppath);
-	con->oppath = 0;
-}
-
 /* ---------------------------------------------------------------------- */
 
 static spocp_result_t 
-opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
+opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 {
 	spocp_result_t r = SPOCP_SUCCESS;
+	octarr_t 	*oparg = wi->oparg;
 
-	if (conn->oparg == 0 ) {
+	if (oparg == 0 ) {
 		if (min) 
 			return SPOCP_MISSING_ARG;
 		else
@@ -221,25 +210,25 @@ opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
 	}
 
 	/* Too many or few arguments? There might not be a max */
-	if (max && conn->oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
-	if (conn->oparg->n < min) return SPOCP_MISSING_ARG;
+	if (max && oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
+	if (oparg->n < min) return SPOCP_MISSING_ARG;
 
 	/* Only path definitions start with '/' and they have to */
-	if( path && *(conn->oparg->arr[0]->val) == '/') 
-		conn->oppath = octarr_pop(conn->oparg);
+	if( path && *(oparg->arr[0]->val) == '/') 
+		wi->oppath = octarr_pop(oparg);
 	else 
-		conn->oppath = 0;
+		wi->oppath = 0;
 	
-	if (conn->oparg->n < min) return SPOCP_MISSING_ARG;
+	if (oparg->n < min) return SPOCP_MISSING_ARG;
 
 	/* allowed to run the operation ? */
-	if (( r = operation_access(conn)) == SPOCP_SUCCESS) {
+	if (( r = operation_access(wi)) == SPOCP_SUCCESS) {
 
 		/* if a ruleset path is defined and exists use it */
-		if( conn->oppath != 0 && (ruleset_find(conn->oppath, rs)) != 1) {
+		if( wi->oppath != 0 && (ruleset_find(wi->oppath, rs)) != 1) {
 			char           *str;
 
-			str = oct2strdup(conn->oppath, '%');
+			str = oct2strdup(wi->oppath, '%');
 			traceLog(LOG_INFO,"ERR: No \"/%s\" ruleset", str);
 			free(str);
 
@@ -251,42 +240,39 @@ opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
 }
 
 static spocp_result_t
-postop( conn_t *conn, spocp_result_t rc, const char *msg)
+postop( work_info_t *wi, spocp_result_t rc, const char *msg)
 {
-	int wr;
-
 	if( msg && *msg ) {
 		traceLog(LOG_INFO,"return message:%s", msg);
-		add_response(conn->out, rc, msg);
+		add_response(wi->buf, rc, msg);
 		free((char *) msg);
 	}
+	else
+		add_response(wi->buf, rc, 0);
 
-	if ((wr = send_results(conn)) == 0)
-		rc = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
+	iobuf_shift(wi->conn->in);
 
 	return rc;
 }
 
 spocp_result_t
-return_busy( conn_t *conn )
+return_busy( work_info_t *wi )
 {
-	return postop( conn, SPOCP_BUSY, NULL );
+	return postop( wi, SPOCP_BUSY, NULL );
 }
 
 /* ---------------------------------------------------------------------- */
 
 spocp_result_t
-com_capa(conn_t * conn)
+com_capa(work_info_t *wi)
 {
-	spocp_result_t  r = SPOCP_SUCCESS;
-	const char     *msg = NULL;
+	spocp_result_t	r = SPOCP_SUCCESS;
+	const char	*msg = NULL;
+	conn_t		*conn = wi->conn;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
 	if (conn->transaction)
-		return postop(conn, SPOCP_UNWILLING, 0);
+		return postop( wi, SPOCP_UNWILLING, 0);
 
 #ifdef HAVE_SASL
 	if (conn->sasl == NULL) {
@@ -303,7 +289,7 @@ com_capa(conn_t * conn)
 		}
 	}
 
-	if (conn->oparg->n == 0) {	/* list auth mechs */
+	if (oparg->n == 0) {	/* list auth mechs */
 		const char	*mechs;
 		size_t		mechlen;
 		int		count;
@@ -323,13 +309,14 @@ com_capa(conn_t * conn)
       capa_don:
 #endif
 
-	return postop( conn, r, msg );
+	return postop( wi, r, msg );
 }
 
 spocp_result_t
-com_auth(conn_t * conn)
+com_auth(work_info_t *wi)
 {
-	const char     *msg = NULL;
+	const char	*msg = NULL;
+	conn_t		*conn = wi->conn;
 #ifdef HAVE_SASL
 	const char     *data;
 	size_t          len;
@@ -338,7 +325,7 @@ com_auth(conn_t * conn)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
 	if (conn->transaction) 
-		return postop(conn, SPOCP_UNWILLING ,msg);
+		return postop(wi, SPOCP_UNWILLING ,msg);
 
 #ifdef HAVE_SASL
 
@@ -354,20 +341,20 @@ com_auth(conn_t * conn)
 	}
 
 	if (conn->sasl_mech == NULL) {	/* start */
-		conn->sasl_mech = oct2strdup(conn->oparg->arr[0], '%');
+		conn->sasl_mech = oct2strdup(oparg->arr[0], '%');
 		wr = sasl_server_start(conn->sasl,
 				       conn->sasl_mech,
-				       conn->oparg->n >
-				       1 ? conn->oparg->arr[1]->val : NULL,
-				       conn->oparg->n >
-				       1 ? conn->oparg->arr[1]->len : 0, &data,
+				       oparg->n >
+				       1 ? oparg->arr[1]->val : NULL,
+				       oparg->n >
+				       1 ? oparg->arr[1]->len : 0, &data,
 				       &len);
 	} else {		/* step */
 		wr = sasl_server_step(conn->sasl,
-				      conn->oparg->n >
-				      0 ? conn->oparg->arr[0]->val : NULL,
-				      conn->oparg->n >
-				      0 ? conn->oparg->arr[0]->len : 0, &data,
+				      oparg->n >
+				      0 ? oparg->arr[0]->val : NULL,
+				      oparg->n >
+				      0 ? oparg->arr[0]->len : 0, &data,
 				      &len);
 	}
 
@@ -383,12 +370,12 @@ com_auth(conn_t * conn)
 	case SASL_OK:
 		wr = sasl_getprop(conn->sasl, SASL_USERNAME,
 				  (const void **) &conn->sasl_username);
-		add_response_blob(conn->out, SPOCP_MULTI, &blob);
+		add_response_blob(out, SPOCP_MULTI, &blob);
 		r = SPOCP_SUCCESS;
 		msg = strdup("Authentication OK");
 		break;
 	case SASL_CONTINUE:
-		add_response_blob(conn->out, SPOCP_AUTHDATA, &blob);
+		add_response_blob(out, SPOCP_AUTHDATA, &blob);
 		r = SPOCP_AUTHINPROGRESS;
 		break;
 	default:
@@ -397,10 +384,10 @@ com_auth(conn_t * conn)
 		r = SPOCP_AUTHERR;
 		msg = strdup("Authentication failed");
 	}
-	postop(conn, r, msg);
+	postop(wi, r, msg);
 
 #else
-	return postop( conn, SPOCP_NOT_SUPPORTED, NULL);
+	return postop( wi, SPOCP_NOT_SUPPORTED, NULL);
 #endif
 }
 
@@ -409,15 +396,17 @@ com_auth(conn_t * conn)
  */
 
 spocp_result_t
-com_starttls(conn_t * conn)
+com_starttls(work_info_t *wi)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
+	conn_t		*conn = wi->conn;
+
 #if (defined(HAVE_SSL) || defined(HAVE_SASL))
 	int             wr;
 #endif
 
 	if (conn->transaction)
-		return postop(conn, SPOCP_UNWILLING, NULL);
+		return postop(wi, SPOCP_UNWILLING, NULL);
 
 	traceLog(LOG_INFO,"Attempting to start SSL/TLS");
 
@@ -440,11 +429,11 @@ com_starttls(conn_t * conn)
 						 * felmeddleande */
 	} else
 #endif
-	if ((r = operation_access(conn)) == SPOCP_SUCCESS) {
+	if ((r = operation_access(wi)) == SPOCP_SUCCESS) {
 		/*
 		 * Ready to start TLS/SSL 
 		 */
-		postop( conn, SPOCP_SSL_START, 0);
+		postop(wi, SPOCP_SSL_START, 0);
 		traceLog(LOG_INFO,"Setting connection status so main wan't touch it") ;
 		conn->status = CNST_SSL_NEG;	/* Negotiation in progress */
 
@@ -462,7 +451,7 @@ com_starttls(conn_t * conn)
 	}
 #endif
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -470,9 +459,10 @@ com_starttls(conn_t * conn)
  */
 
 spocp_result_t
-com_rollback(conn_t * conn)
+com_rollback(work_info_t *wi)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
+	conn_t		*conn = wi->conn;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ROLLBACK");
 
@@ -483,7 +473,7 @@ com_rollback(conn_t * conn)
 	else 
 		r = SPOCP_UNWILLING;
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -491,9 +481,10 @@ com_rollback(conn_t * conn)
  */
 
 spocp_result_t
-com_logout(conn_t * conn)
+com_logout(work_info_t *wi)
 {
 	spocp_result_t  r = SPOCP_CLOSE;
+	conn_t		*conn = wi->conn;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"LOGOUT requested ");
 
@@ -501,7 +492,7 @@ com_logout(conn_t * conn)
 		opstack_free( conn->ops );
 
 	/* place response in write queue before marking connection for closing */
-	r = postop( conn, r, 0);
+	r = postop( wi, r, 0);
 
 	conn->stop = 1;
 
@@ -519,18 +510,20 @@ com_logout(conn_t * conn)
  * 
  */
 static spocp_result_t
-com_delete(conn_t * conn)
+com_delete(work_info_t *wi)
 {
-	spocp_result_t  r = SPOCP_SUCCESS;
-	ruleset_t      *rs = conn->rs;
+	spocp_result_t	r = SPOCP_SUCCESS;
+	conn_t		*conn = wi->conn;
+	ruleset_t	*rs = conn->rs;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"DELETE requested ");
 
 	/* possible pathspecification but apart from that exactly one argument */
-	if ((r = opinitial(conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS){
+	r = opinitial( wi, &rs, 1, 1, 1);
+	if (r == SPOCP_SUCCESS){
 		if (conn->transaction) {
 			opstack_t *ops;
-			ops = opstack_new( SPOCP_DEL, rs, conn->oparg );
+			ops = opstack_new( SPOCP_DEL, rs, wi->oparg );
 			conn->ops = opstack_push( conn->ops, ops );
 		}
 		else {
@@ -539,12 +532,13 @@ com_delete(conn_t * conn)
 			 * locking the whole tree, is that really necessary ? 
 			 */
 			pthread_rdwr_wlock(&rs->rw_lock);
-			r = dbapi_rule_rm(rs->db, &conn->dbc, conn->oparg->arr[0], NULL);
+			r = dbapi_rule_rm(rs->db, &conn->dbc,
+			    wi->oparg->arr[0], NULL);
 			pthread_rdwr_wunlock(&rs->rw_lock);
 		}
 	}
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -552,9 +546,10 @@ com_delete(conn_t * conn)
  */
 
 spocp_result_t
-com_commit(conn_t * conn)
+com_commit(work_info_t *wi)
 {
 	spocp_result_t	r = SPOCP_SUCCESS;
+	conn_t		*conn = wi->conn;
 	opstack_t	*ops;
 	ruleset_t	**rspp;
 	int		i, n;
@@ -596,7 +591,7 @@ com_commit(conn_t * conn)
 				break;
 			case( SPOCP_DEL ):
 				ops->rollback = rollback_info( ops->rs->db,
-				    conn->oparg->arr[0]);
+				    wi->oparg->arr[0]);
 				r = dbapi_rule_rm(ops->rs->db, &conn->dbc,
 				    ops->oparg->arr[0], NULL);
 				break;
@@ -616,7 +611,7 @@ com_commit(conn_t * conn)
 				case( SPOCP_DEL ):
 					r = dbapi_rule_add(&(ops->rs->db),
 					    conn->srv->plugin, &conn->dbc,
-					    conn->oparg, NULL);
+					    wi->oparg, NULL);
 					break;
 				}
 			}
@@ -631,7 +626,7 @@ com_commit(conn_t * conn)
 		conn->transaction = 0;
 	}
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -639,12 +634,13 @@ com_commit(conn_t * conn)
  */
 
 spocp_result_t
-com_query(conn_t * conn)
+com_query(work_info_t *wi)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
+	conn_t		*conn = wi->conn;
 	octarr_t       *on = 0;
 	octet_t        *oct;
-	spocp_iobuf_t  *out = conn->out;
+	spocp_iobuf_t  *out = wi->buf;
 	ruleset_t      *rs = conn->rs;
 	char           *str;
 	/*
@@ -657,22 +653,23 @@ com_query(conn_t * conn)
 		timestamp("QUERY");
 
 	if (conn->transaction)
-		return postop(conn,SPOCP_UNWILLING,0);
+		return postop(wi, SPOCP_UNWILLING,0);
 
 	LOG(SPOCP_INFO) {
-		str = oct2strdup(conn->oparg->arr[0], '%');
+		str = oct2strdup(wi->oparg->arr[0], '%');
 		traceLog(LOG_INFO,"[%d]QUERY:%s", conn->fd, str);
 		free(str);
 	}
 
-	if ((r = opinitial( conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS) {
+	r = opinitial( wi, &rs, 1, 1, 1);
+	if (r == SPOCP_SUCCESS) {
 /*
 		if (0)
 			timestamp("ss_allow");
 */
 
 		pthread_rdwr_rlock(&rs->rw_lock);
-		r = ss_allow(rs, conn->oparg->arr[0], &on, SUBTREE);
+		r = ss_allow(rs, wi->oparg->arr[0], &on, SUBTREE);
 		pthread_rdwr_runlock(&rs->rw_lock);
 
 /*
@@ -695,25 +692,12 @@ com_query(conn_t * conn)
 			DEBUG(SPOCP_DSRV) 
 				traceLog(LOG_DEBUG,"returns \"%s\"", str);
 			free(str);
-
-			/*
-			if ((wr = send_results(conn)) == 0)
-				r = SPOCP_CLOSE;
-			oct_free(oct);
-
-			 *
-			 * wait for the master to empty the queue 
-			 *
-			pthread_mutex_lock(&out->lock);
-			pthread_cond_wait(&out->empty, &out->lock);
-			pthread_mutex_unlock(&out->lock);
-			*/
 		}
 
 		octarr_free(on);
 	}
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -721,7 +705,11 @@ com_query(conn_t * conn)
  */
 
 /*
- * int com_x( conn_t *conn) { int r = 0 ; return postop(conn,r,0) ; } 
+ * int com_x( conn_t *conn, octarr_t *oparg)
+ * {
+ * int r = 0 ;
+ * return postop(wi, r, 0) ;
+ * } 
  */
 
 /*
@@ -729,13 +717,13 @@ com_query(conn_t * conn)
  */
 
 spocp_result_t
-com_login(conn_t * conn)
+com_login(work_info_t *wi)
 {
 	spocp_result_t  r = SPOCP_DENIED;
 
 	LOG(SPOCP_WARNING) traceLog(LOG_WARNING,"LOGIN: not supported");
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -743,16 +731,17 @@ com_login(conn_t * conn)
  */
 
 spocp_result_t
-com_begin(conn_t * conn)
+com_begin(work_info_t *wi)
 {
 	spocp_result_t  rc = SPOCP_SUCCESS;
+	conn_t		*conn = wi->conn;
 	ruleset_t      *rs = conn->srv->root;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"BEGIN requested");
 
 	if (conn->transaction)
 		rc = SPOCP_EXISTS;
-	else if ((rc = operation_access(conn)) == SPOCP_SUCCESS) {
+	else if ((rc = operation_access(wi)) == SPOCP_SUCCESS) {
 
 		pthread_mutex_lock(&rs->transaction);
 		pthread_rdwr_rlock(&rs->rw_lock);
@@ -772,7 +761,7 @@ com_begin(conn_t * conn)
 			conn->transaction = 1;
 	}
 
-	return postop( conn, rc, 0);
+	return postop( wi, rc, 0);
 }
 
 /*
@@ -780,24 +769,26 @@ com_begin(conn_t * conn)
  */
 
 spocp_result_t
-com_subject(conn_t * conn)
+com_subject(work_info_t *wi)
 {
-	spocp_result_t  r = SPOCP_DENIED;
-	ruleset_t      *rs = conn->srv->root;
+	spocp_result_t	r = SPOCP_DENIED;
+	conn_t		*conn = wi->conn;
+	ruleset_t	*rs = conn->srv->root;
 
 	if (conn->transaction)
-		return postop( conn, SPOCP_UNWILLING, 0);
+		return postop( wi, SPOCP_UNWILLING, 0);
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUBJECT definition");
 
-	if ((r = opinitial( conn, &rs, 0, 1, 1)) == SPOCP_SUCCESS) {
-		if (conn->oparg->n)
-			conn->sri.subject = octarr_pop(conn->oparg);
+	r = opinitial(wi, &rs, 0, 1, 1) ;
+	if (r == SPOCP_SUCCESS) {
+		if (wi->oparg->n)
+			conn->sri.subject = octarr_pop(wi->oparg);
 		else
 			oct_free(conn->sri.subject);
 	}
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -809,18 +800,20 @@ com_subject(conn_t * conn)
  */
 
 spocp_result_t
-com_add(conn_t * conn)
+com_add(work_info_t *wi)
 {
 	spocp_result_t	rc = SPOCP_DENIED;	/* The default */
+	conn_t		*conn = wi->conn;
 	ruleset_t	*rs = conn->rs;
 	srv_t		*srv = conn->srv;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ADD rule");
 
-	if ((rc = opinitial( conn, &rs, 1, 1, 3)) == UNKNOWN_RULESET) {
+	rc = opinitial( wi, &rs, 1, 1, 3);
+	if (rc == UNKNOWN_RULESET) {
 		ruleset_t	*trs ;
 
-		if ((trs = ruleset_create(conn->oppath, &rs))){
+		if ((trs = ruleset_create(wi->oppath, &rs))){
 			rc = SPOCP_SUCCESS;
 			rs = trs;
 		}
@@ -829,7 +822,7 @@ com_add(conn_t * conn)
 	if (rc == SPOCP_SUCCESS) {
 		if (conn->transaction) {
 			opstack_t *ops;
-			ops = opstack_new( SPOCP_ADD, rs, conn->oparg );
+			ops = opstack_new( SPOCP_ADD, rs, wi->oparg );
 			conn->ops = opstack_push( conn->ops, ops );
 		}
 		else {
@@ -839,13 +832,13 @@ com_add(conn_t * conn)
 			pthread_rdwr_wlock(&rs->rw_lock);
 
 			rc = dbapi_rule_add(&(rs->db), srv->plugin, &conn->dbc,
-			    conn->oparg, NULL);
+			    wi->oparg, NULL);
 
 			pthread_rdwr_wunlock(&rs->rw_lock);
 		}
 	}
 
-	return postop( conn, rc, 0);
+	return postop( wi, rc, 0);
 }
 
 /*
@@ -855,21 +848,23 @@ com_add(conn_t * conn)
  * list = "4:LIST" [l-path] *( length ":" "+"/"-" s-expr ) 
  */
 spocp_result_t
-com_list(conn_t * conn)
+com_list(work_info_t *wi)
 {
 	spocp_result_t  rc = SPOCP_DENIED;
+	conn_t		*conn = wi->conn;
 	ruleset_t      *rs = conn->rs;
 	int             i, r = 0, wr;
 	octet_t        *op;
 	octarr_t       *oa = 0;	/* where the result is put */
-	spocp_iobuf_t  *out = conn->out;
+	spocp_iobuf_t  *out = wi->buf;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"LIST requested");
 
 	if (conn->transaction)
-		return postop( conn, SPOCP_UNWILLING, 0);
+		return postop( wi, SPOCP_UNWILLING, 0);
 
-	if ((rc = opinitial( conn, &rs, 1, 0, 0)) == SPOCP_SUCCESS ) {
+	rc = opinitial(wi, &rs, 1, 0, 0) ;
+	if (rc == SPOCP_SUCCESS ) {
 
 /*	
 		if (0)
@@ -912,7 +907,7 @@ com_list(conn_t * conn)
 		octarr_free(oa);
 	}
 
-	return postop( conn, rc, 0);
+	return postop( wi, rc, 0);
 }
 
 /*
@@ -920,21 +915,22 @@ com_list(conn_t * conn)
  */
 
 spocp_result_t
-com_summary(conn_t * conn)
+com_summary(work_info_t *wi)
 {
 	spocp_result_t	rc = SPOCP_SUCCESS;
+	conn_t		*conn = wi->conn;
 	ruleset_t	*rs = conn->rs;
 	octet_t		*op;
-	spocp_iobuf_t	*out = conn->out;
+	spocp_iobuf_t	*out = wi->buf;
 	element_t	*ep;
 	char		*tmp;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUMMARYrequested");
 
 	if (conn->transaction)
-		return postop(conn,SPOCP_UNWILLING,0);
+		return postop(wi, SPOCP_UNWILLING,0);
 
-	if ((rc = operation_access(conn)) == SPOCP_SUCCESS) {
+	if ((rc = operation_access(wi)) == SPOCP_SUCCESS) {
 
 		pthread_rdwr_rlock(&rs->rw_lock);
 		ep = get_indexes(rs->db->jp);
@@ -956,7 +952,7 @@ com_summary(conn_t * conn)
 			rc = SPOCP_OPERATIONSERROR;
 	}
 
-	return postop( conn, rc, 0);
+	return postop( wi, rc, 0);
 }
 
 /*
@@ -966,32 +962,33 @@ com_summary(conn_t * conn)
  * 
  */
 spocp_result_t
-com_show(conn_t * conn)
+com_show(work_info_t *wi)
 {
 	spocp_result_t	r = SPOCP_SUCCESS;
-	ruleset_t	*rs = conn->rs;
+	ruleset_t	*rs = wi->conn->rs;
 	ruleinst_t	*ri = 0;
 	char		*uid;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SHOW requested ");
 
 	/* possible pathspecification but apart from that exactly one argument */
-	if ((r = opinitial(conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS){
+	r = opinitial(wi, &rs, 1, 1, 1) ;
+	if (r == SPOCP_SUCCESS){
 		/*
 		 * get write lock, do operation and release lock 
 		 */
-		uid = oct2strdup( conn->oparg->arr[0], 0);
+		uid = oct2strdup( wi->oparg->arr[0], 0);
 		pthread_rdwr_wlock(&rs->rw_lock);
 		ri = ruleinst_find_by_uid(rs->db->ri->rules, uid);
 		pthread_rdwr_wunlock(&rs->rw_lock);
 		free(uid);
 
 		if ( ri ){	
-			r = add_response_blob(conn->out, SPOCP_MULTI, ri->rule);
+			r = add_response_blob(wi->buf, SPOCP_MULTI, ri->rule);
 		}
 	}
 
-	return postop( conn, r, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -999,8 +996,9 @@ com_show(conn_t * conn)
  */
 
 spocp_result_t
-do_reread_rulefile(conn_t *conn)
+do_reread_rulefile( work_info_t *wi)
 {
+	conn_t 		*conn = wi->conn;
 	ruleset_t	*rs = conn->rs;
 	srv_t		*srv = conn->srv;
 	spocp_result_t	rc;
@@ -1078,11 +1076,13 @@ do_reread_rulefile(conn_t *conn)
  */
 
 spocp_result_t
-get_operation(conn_t * conn, proto_op ** oper)
+get_operation(work_info_t *wi )
 {
 	spocp_result_t  r;
 	octet_t         wo, op, arg, oa;
 	int             l = 0;
+	conn_t		*conn = wi->conn;
+	proto_op	*oper = 0;
 	/*
 	 * char *tmp ; 
 	 */
@@ -1122,45 +1122,43 @@ get_operation(conn_t * conn, proto_op ** oper)
 	if ((r = get_str(&oa, &op)) != SPOCP_SUCCESS)
 		return r;
 
-	octln(&conn->oper, &op);
-
-	*oper = 0;
+	octln(&wi->oper, &op);
 
 	l = op.len;
 	switch (op.len) {
 	case 8:
 		if (strncasecmp(op.val, "STARTTLS", 8) == 0) {
-			*oper = &com_starttls;
+			oper = &com_starttls;
 		} else if (strncasecmp(op.val, "ROLLBACK", 8) == 0) {
-			*oper = &com_rollback;
+			oper = &com_rollback;
 		}
 
 		break;
 
 	case 7:
 		if (strncasecmp(op.val, "SUBJECT", 7) == 0) 
-			*oper = &com_subject;
+			oper = &com_subject;
 		else if (strncasecmp(op.val, "SUMMARY", 7) == 0) 
-			*oper = &com_summary;
+			oper = &com_summary;
 		break;
 
 	case 6:
 		if (strncasecmp(op.val, "LOGOUT", 6) == 0) {
-			*oper = &com_logout;
+			oper = &com_logout;
 		} else if (strncasecmp(op.val, "DELETE", 6) == 0) {
-			*oper = &com_delete;
+			oper = &com_delete;
 		} else if (strncasecmp(op.val, "COMMIT", 6) == 0) {
-			*oper = &com_commit;
+			oper = &com_commit;
 		}
 		break;
 
 	case 5:
 		if (strncasecmp(op.val, "QUERY", 5) == 0) {
-			*oper = &com_query;
+			oper = &com_query;
 		} else if (strncasecmp(op.val, "LOGIN", 5) == 0) {
-			*oper = &com_login;
+			oper = &com_login;
 		} else if (strncasecmp(op.val, "BEGIN", 5) == 0) {
-			*oper = &com_begin;
+			oper = &com_begin;
 		}
 		/*
 		 * else if( strncasecmp( op.val, "BCOND", 5 ) == 0 ) { *oper = 
@@ -1170,19 +1168,19 @@ get_operation(conn_t * conn, proto_op ** oper)
 
 	case 4:
 		if (strncasecmp(op.val, "LIST", 4) == 0) {
-			*oper = &com_list;
+			oper = &com_list;
 		} else if (strncasecmp(op.val, "AUTH", 4) == 0) {
-			*oper = &com_auth;
+			oper = &com_auth;
 		} else if (strncasecmp(op.val, "CAPA", 4) == 0) {
-			*oper = &com_capa;
+			oper = &com_capa;
 		} else if (strncasecmp(op.val, "SHOW", 4) == 0) {
-			*oper = &com_show;
+			oper = &com_show;
 		}
 		break;
 
 	case 3:
 		if (strncasecmp(op.val, "ADD", 3) == 0) {
-			*oper = &com_add;
+			oper = &com_add;
 		}
 		break;
 
@@ -1198,18 +1196,21 @@ get_operation(conn_t * conn, proto_op ** oper)
 	}
 
 	/*
-	 * conn->oparg = 0 ; * should be done elsewhere 
+	 * oparg = 0 ; * should be done elsewhere 
 	 */
 
-	if ((r = get_oparg(&oa, &conn->oparg)) != SPOCP_SUCCESS) {
-		oparg_clear( conn );
+	if ((r = get_oparg(&oa, &wi->oparg)) != SPOCP_SUCCESS) {
+		octarr_free(wi->oparg);
+		wi->oparg = 0;
 		return r;
 	}
 
 	if (*oper == 0)
 		return SPOCP_UNKNOWNCOMMAND;
-	else
+	else {
+		wi->routine = oper;
 		return SPOCP_SUCCESS;
+	}
 }
 
 /*
@@ -1238,8 +1239,8 @@ native_server(conn_t * con)
 	spocp_iobuf_t  *in, *out;
 	int             n, wr = 1;
 	octet_t         attr;
-	proto_op       *oper = 0;
 	time_t          now = 0;
+	work_info_t	wi;
 
 	in = con->in;
 	out = con->out;
@@ -1274,8 +1275,11 @@ native_server(conn_t * con)
 		 * If no chars, obviously nothing for me to do 
 		 */
 		while (in->w - in->r) {
-			if ((r = get_operation(con, &oper)) == SPOCP_SUCCESS) {
-				r = (*oper) (con);
+			memset( &wi, 0, sizeof( work_info_t ));
+			wi.conn = con;
+			if ((r = get_operation(&wi))
+				== SPOCP_SUCCESS) {
+				r = (wi.routine) (&wi);
 
 				DEBUG(SPOCP_DSRV) {
 					traceLog(LOG_DEBUG,"command returned %d", r);
@@ -1283,9 +1287,11 @@ native_server(conn_t * con)
 					    "%d chars left in the input buffer",
 				    	    in->w - in->r);
 				}
+				reply_add( con->head, &wi );
+				if ( send_results( con ) == 0 )
+					r = SPOCP_CLOSE ;
 
-				spocp_conn_write(con);
-				oparg_clear(con);
+				octarr_free(wi.oparg);
 
 				if (r == SPOCP_CLOSE)
 					goto clearout;
@@ -1324,13 +1330,13 @@ native_server(conn_t * con)
 					    SPOCP_SUCCESS) {
 						add_response(out, r, 0);
 						send_and_flush_results(con);
-						oparg_clear(con);
+						octarr_free(wi.oparg);
 						conn_iobuf_clear(con);
 					}
 				}
 				goto AGAIN;
 			} else {
-				oparg_clear(con);
+				octarr_free(wi.oparg);
 				conn_iobuf_clear(con);
 			}
 		}

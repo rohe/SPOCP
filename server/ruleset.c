@@ -440,11 +440,14 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 	spocp_result_t  rc = SPOCP_SUCCESS;
 	ruleset_t      *rp;
 	char            pathname[BUFSIZ];
+	work_info_t	wi;
 
 	/*
 	 * check access to operation 
 	 */
-	if ((rc = operation_access(conn)) != SPOCP_SUCCESS) {
+	memset(&wi,0,sizeof(work_info_t));
+	wi.conn = conn;
+	if ((rc = operation_access(&wi)) != SPOCP_SUCCESS) {
 		LOG(SPOCP_INFO) {
 			if (rs->name)
 				traceLog(LOG_INFO,
@@ -462,8 +465,7 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 			return rc;
 
 		if (rs->db) {
-			rc = dbapi_rules_list(rs->db, 0, conn->oparg, oa,
-					      pathname);
+			rc = dbapi_rules_list(rs->db, 0, wi.oparg, oa, pathname);
 		}
 
 		if (0)

@@ -11,7 +11,7 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-#define XYZ 0
+#define XYZ 1
 
 /*
  * ---------------------------------------------------------------------- 
@@ -154,6 +154,65 @@ run_stop( srv_t *srv, conn_t *conn, pool_item_t *pi )
 		traceLog(LOG_ERR,"Panic: unable to release lock on connection: %s",
 		    strerror(err));
 
+}
+
+static int read_work( srv_t *srv, conn_t *conn )
+{
+	int		n;
+	spocp_result_t	res;
+	work_info_t	wi;
+
+	if (XYZ)
+		traceLog(LOG_DEBUG,"input readable on %d", conn->fd);
+
+	/*
+	 * read returns number of bytes read 
+	 */
+	n = spocp_conn_read(conn);
+
+	if (XYZ)
+		traceLog(LOG_DEBUG,"Read returned %d from %d", n, conn->fd);
+	/*
+	 * traceLog(LOG_DEBUG, "[%s]", conn->in->buf ) ; 
+	 */
+	if (n == 0) {	/* connection probably
+			 * terminated by other side */
+			/* Is there a better check ? */
+		conn->stop = 1;
+		return 1;
+	}
+
+	if (XYZ)
+		timestamp("read con");
+
+	while( iobuf_content( conn->in )) {
+		memset( &wi, 0, sizeof( work_info_t ));
+		wi.conn = conn;
+
+		res = get_operation(&wi);
+		if (XYZ)
+			traceLog(LOG_DEBUG,"Getops returned %d", res);
+		if (res != SPOCP_SUCCESS)
+			return 1;
+
+		gettimeofday( &conn->op_start, NULL );
+
+		if (XYZ)
+			timestamp("add work item");
+
+		if( tpool_add_work(srv->work, &wi) == 0 ) {
+			/* place this last in the list */
+			add_reply_queuer( conn, &wi );
+			wi.buf = iobuf_new(512);
+			return_busy( &wi );
+			reply_add( conn->head, &wi );
+			if (send_results(conn) == 0)
+				res = SPOCP_CLOSE;
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 void
@@ -424,8 +483,7 @@ spocp_srv_run(srv_t * srv)
 
 	      fdloop:
 		for (pi = afpool_first(srv->connections); pi; pi = next) {
-			spocp_result_t  res;
-			proto_op       *operation = 0;
+
 			/*
 			 * int f = 0 ; 
 			 */
@@ -454,45 +512,8 @@ spocp_srv_run(srv_t * srv)
 			 */
 
 			if (FD_ISSET(conn->fd, &rfds) && !conn->stop) {
-				if (XYZ)
-					traceLog(LOG_DEBUG,"input readable on %d",
-					    conn->fd);
-
-				/*
-				 * read returns number of bytes read 
-				 */
-				n = spocp_conn_read(conn);
-				if (XYZ)
-					traceLog(LOG_DEBUG,"Read returned %d from %d", n,
-						 conn->fd);
-				/*
-				 * traceLog(LOG_DEBUG, "[%s]", conn->in->buf ) ; 
-				 */
-				if (n == 0) {	/* connection probably
-						 * terminated by other side */
-					/* Are there a better check ? */
-					/*conn->stop = 1;*/
+				if (read_work( srv, conn )) 
 					continue;
-				}
-				if (XYZ)
-					timestamp("read con");
-
-				res = get_operation(conn, &operation);
-				if (XYZ)
-					traceLog(LOG_DEBUG,"Getops returned %d", res);
-				if (res != SPOCP_SUCCESS)
-					continue;
-
-				gettimeofday( &conn->op_start, NULL );
-
-				if (XYZ)
-					timestamp("add work item");
-
-				if( tpool_add_work(srv->work, operation,
-					       (void *) conn) == 0 ) {
-					return_busy( conn );
-					continue;
-				}
 			}
 
 			if ((n = iobuf_content(conn->out))) {

@@ -139,8 +139,12 @@ tpool_init(int wthreads, int max_queue_size, int do_not_block_when_full)
 	return tpool;
 }
 
+/* FIXME: should set a upper limit on work items per connection */
+/* Would that mean that I have to set an upper limit on connections from a 
+ * specific host, of a specific type ?? */
+
 int
-tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
+tpool_add_work(tpool_t * tpool, work_info_t *wi)
 {
 	work_info_t    *workp;
 	pool_item_t    *pi;
@@ -216,8 +220,13 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 
 	workp = (work_info_t *) pi->info;
 
-	workp->routine = routine;
-	workp->conn = c;
+	workp->routine = wi->routine;
+	workp->conn = wi->conn;
+	workp->oparg = wi->oparg;
+	workp->oper = wi->oper;
+	workp->buf = iobuf_new( 1024 );
+
+	add_reply_queuer( wi->conn, workp );
 
 	afpool_push_item(tpool->queue, pi);
 
@@ -365,10 +374,14 @@ tpool_thread(void *arg)
 		/*
 		 * Do this work item 
 		 */
-		res = (*(my_workp->routine)) (conn);
+		res = (*(my_workp->routine)) ( my_workp );
 
 		gettimeofday( &conn->op_end, NULL );
 		conn->operations++;
+
+		reply_add( conn->head, my_workp );
+		if ( send_results(conn) == 0)
+			res = SPOCP_CLOSE;
 
 		DEBUG( SPOCP_DSRV )
 			print_elapsed("Elapsed time", conn->op_start,
@@ -382,20 +395,12 @@ tpool_thread(void *arg)
 		if (res == -1)
 			iobuf_flush(conn->in);
 
-		/*
-		 * if(VV) timestamp( "workitem done" ) ; 
-		 */
+		octarr_free(my_workp->oparg); 
+		memset( my_workp, 0, sizeof( work_info_t ));
 
 		/*
 		 * returned to free list 
 		 */
-		my_workp->conn = 0;
-		my_workp->routine = 0;
-
-		/*
-		 * if(VV) timestamp( "Return work item" ) ; 
-		 */
-
 		afpool_push_empty(workqueue, pi);
 
 		/*

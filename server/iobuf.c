@@ -236,6 +236,33 @@ iobuf_add(spocp_iobuf_t * io, char *s)
 }
 
 spocp_result_t
+iobuf_addn(spocp_iobuf_t * io, char *s, size_t n)
+{
+	spocp_result_t  rc;
+
+	if (s == 0 || *s == 0)
+		return SPOCP_SUCCESS;	/* no error */
+
+	pthread_mutex_lock(&io->lock);
+
+	/*
+	 * are the place enough ? If not make some 
+	 */
+	if ( io->left < n)
+		if ((rc = iobuf_resize(io, n - io->left, 0)) != SPOCP_SUCCESS)
+			return rc;
+
+	memcpy(io->w, s, n);
+
+	io->w += n;
+	*io->w = '\0';
+	io->left -= n;
+
+	pthread_mutex_unlock(&io->lock);
+	return SPOCP_SUCCESS;
+}
+
+spocp_result_t
 iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 {
 	spocp_result_t  rc;

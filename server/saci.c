@@ -92,15 +92,15 @@ sexparg_t         **operq;
  */
 
 static char    *
-get_ip(void * conn)
+get_ip(void *arg)
 {
-	return ((( conn_t *) conn)->sri.hostaddr);
+	return ((( work_info_t *) arg)->conn->sri.hostaddr);
 }
 
 static char    *
-get_host(void * conn)
+get_host(void *arg)
 {
-	return ((( conn_t *) conn)->sri.hostname);
+	return ((( work_info_t *) arg)->conn->sri.hostname);
 }
 
 static char    *
@@ -108,7 +108,7 @@ get_subject(void * vp)
 {
 	char            sexp[512], *sp;
 	unsigned int    size = 512;
-	conn_t          *conn = ( conn_t * ) vp ;
+	conn_t          *conn = (( work_info_t * ) vp)->conn ;
 
 	if (conn->sri.sexp_subject == 0) {
 		sp = sexp_printv(sexp, &size, "o", conn->sri.subject);
@@ -125,7 +125,7 @@ get_inv_host(void * vp)
 	char          **arr, format[16], list[512], *sp;
 	int             n, i, j;
 	unsigned int    size = 512;
-	conn_t		*conn = ( conn_t *) vp;
+	conn_t          *conn = (( work_info_t * ) vp)->conn ;
 
 	if (conn->sri.invhost)
 		return conn->sri.invhost;
@@ -151,21 +151,21 @@ get_inv_host(void * vp)
 	return (conn->sri.invhost);
 }
 
-static char    *
+static char *
 get_path(void * vp)
 {
 	char           *res, *rp;
 	unsigned int    size;
-	const conn_t	*conn = ( conn_t * ) vp;
+	work_info_t	*wi = (work_info_t *) vp;
 
-	if (conn->oppath == 0)
+	if (wi->oppath == 0)
 		return 0;
 
-	size = conn->oppath->len + 9;
+	size = wi->oppath->len + 9;
 
 	res = (char *) Malloc(size * sizeof(char));
 
-	rp = sexp_printv(res, &size, "o", conn->oppath);
+	rp = sexp_printv(res, &size, "o", wi->oppath);
 
 	if (rp == 0)
 		free(res);
@@ -177,8 +177,8 @@ static char    *
 get_action(void * vp)
 {
 	char           *res, *rp;
-	const conn_t	*conn = ( conn_t * ) vp;
-	unsigned int    size = conn->oper.len + 9;
+	work_info_t	*wi = (work_info_t *) vp;
+	unsigned int    size = wi->oper.len + 9;
 
 	/*
 	 * traceLog(LOG_DEBUG,"Get_action") ; 
@@ -186,7 +186,7 @@ get_action(void * vp)
 
 	res = (char *) Malloc(size * sizeof(char));
 
-	rp = sexp_printv(res, &size, "o", &conn->oper);
+	rp = sexp_printv(res, &size, "o", &wi->oper);
 
 	if (rp == 0)
 		free(res);
@@ -200,20 +200,20 @@ get_arguments(void * vp)
 	char           *res, *rp, format[32];
 	unsigned int    size;
 	int             i;
-	const conn_t 	*conn = ( conn_t *) vp ;
+	work_info_t	*wi = (work_info_t *) vp;
 
-	if (conn->oparg == 0)
+	if (wi->oparg == 0)
 		return 0;
 
-	for (i = 0, size = 0; i < conn->oparg->n; i++) {
-		size += conn->oparg->arr[i]->len + 5;
+	for (i = 0, size = 0; i < wi->oparg->n; i++) {
+		size += wi->oparg->arr[i]->len + 5;
 		format[i] = 'o';
 	}
 	format[i] = '\0';
 
 	res = (char *) Malloc(size * sizeof(char));
 
-	rp = sexp_printa(res, &size, format, (void **) conn->oparg->arr);
+	rp = sexp_printa(res, &size, format, (void **) wi->oparg->arr);
 
 	if (rp == 0)
 		free(res);
@@ -223,27 +223,27 @@ get_arguments(void * vp)
 
 #ifdef HAVE_SSL
 static char    *
-get_ssl_vers(void * c)
+get_ssl_vers(void * arg)
 {
-	return ((( conn_t *) c)->ssl_vers);
+	return ((( work_info_t *) arg)->conn->ssl_vers);
 }
 
 static char    *
 get_ssl_cipher(void * c)
 {
-	return ((( conn_t * ) c)->cipher);
+	return ((( work_info_t * ) c)->conn->cipher);
 }
 
 static char    *
 get_ssl_subject(void * c)
 {
-	return ((( conn_t *) c)->subjectDN);
+	return ((( work_info_t *) c)->conn->subjectDN);
 }
 
 static char    *
 get_ssl_issuer(void * c)
 {
-	return ((( conn_t *) c)->issuerDN);
+	return ((( work_info_t *) c)->conn->issuerDN);
 }
 #endif
 
@@ -258,7 +258,7 @@ get_transpsec(void * vp)
 	 * XXX fixa SPOCP_LAYER-jox här 
 	 */
 #ifdef HAVE_SSL
-	conn_t 	*conn = ( conn_t * ) vp ;
+	conn_t *conn= (( work_info_t * ) vp)->conn ;
 
 	if (conn->ssl != NULL) {
 		if (conn->transpsec == 0) {
@@ -323,10 +323,10 @@ saci_init(void)
  */
 
 static spocp_result_t
-spocp_access(conn_t * con, sexparg_t ** arg, char *path)
+spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 {
 	spocp_result_t  res = SPOCP_DENIED;	/* the default */
-	ruleset_t      *rs;
+	ruleset_t      *rs = wi->conn->rs;
 	octet_t         oct;
 	char           *sexp;
 	element_t      *ep = 0;
@@ -335,12 +335,12 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 	/* If I'm running on a unix domain socket I implicitly trust
 	 * processes on that machine
 	 */
-	if (con->srv->uds) return SPOCP_SUCCESS;
+	if (wi->conn->srv->uds) return SPOCP_SUCCESS;
 
 	/*
 	 * no ruleset or rules means everything is allowed 
 	 */
-	if (con->rs == 0 || rules(con->rs->db) == 0) {
+	if (rs == 0 || rules(rs->db) == 0) {
 		if (0)
 			traceLog(LOG_ERR,"No rules to tell me what to do");
 		return SPOCP_SUCCESS;
@@ -349,9 +349,7 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 	oct_assign(&oct, path);
 
 	if (0)
-		traceLog(LOG_DEBUG,"Looking for ruleset [%s](%p)", path, con->rs);
-
-	rs = con->rs;
+		traceLog(LOG_DEBUG,"Looking for ruleset [%s](%p)", path, rs);
 
 	/*
 	 * No ruleset means everything is allowed !!! 
@@ -366,7 +364,7 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 
 	if (0)
 		traceLog(LOG_DEBUG,"Making the internal access query");
-	sexp = sexp_constr(con, arg);
+	sexp = sexp_constr(wi, arg);
 
 	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Internal access Query: \"%s\" in \"%s\"",
 				  sexp, rs->name);
@@ -405,22 +403,25 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 spocp_result_t
 server_access(conn_t * con)
 {
+	work_info_t	wi;
 	char            path[MAXNAMLEN + 1];
 
 	snprintf(path, MAXNAMLEN, "%s/server", localcontext);
+	memset(&wi,0,sizeof(work_info_t));
+	wi.conn = con;
 
-	return spocp_access(con, srvq, path);
+	return spocp_access( &wi, srvq, path);
 }
 
 spocp_result_t
-operation_access(conn_t * con)
+operation_access(work_info_t *wi)
 {
 	char            path[MAXNAMLEN + 1];
 	spocp_result_t  r;
 
 	snprintf(path, MAXNAMLEN, "%s/operation", localcontext);
 
-	r = spocp_access(con, operq, path);
+	r = spocp_access(wi, operq, path);
 
 	if (r != SPOCP_SUCCESS)
 		traceLog(LOG_INFO,"Operation disallowed");

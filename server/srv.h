@@ -38,10 +38,11 @@
 
 struct _conn ;
 struct _server ;
+struct _work_info ;
 
 /* -------------------------------------- */
 
-typedef spocp_result_t (proto_op)( struct _conn * );
+typedef spocp_result_t (proto_op)( struct _work_info *);
 
 /* -------------------------------------- */
 
@@ -207,6 +208,11 @@ typedef struct _server
 
 /* -------------------------------------------------------------------- */
 
+/* forward declaration */
+struct _reply ;
+
+/* -------------------------------------------------------------------- */
+
 typedef struct _conn {
 
 	int		fd ;		/* connection filedescriptor */
@@ -247,10 +253,10 @@ typedef struct _conn {
 	spocp_iobuf_t	*in ;
 	spocp_iobuf_t	*out ;
 
-	/* Information that is filled in per operation */
-	octet_t		oper ;
-	octet_t		*oppath ;
-	octarr_t	*oparg ;
+	/* lock on the reply queue */
+	pthread_mutex_t rlock;
+	/* the reply queue */
+	struct _reply	*head;
 
 #ifdef HAVE_SSL
 	void		*ssl;
@@ -286,7 +292,17 @@ typedef struct _conn {
 typedef struct _work_info {
 	proto_op	*routine ;
 	conn_t		*conn ;
+	octarr_t	*oparg ;
+	octet_t		*oppath;
+	octet_t		oper;
+	spocp_iobuf_t	*buf;
 } work_info_t;
+
+typedef struct _reply {
+	work_info_t	*wi;
+	spocp_iobuf_t	*buf;
+	struct _reply	*next;
+} reply_t ;
 
 /* -------------------------------------------------------------------- */
 
@@ -339,6 +355,7 @@ int	spocp_send_results( conn_t *conn );
 spocp_iobuf_t	*iobuf_new( size_t size );
 spocp_result_t	iobuf_resize( spocp_iobuf_t *io, int increase, int lock );
 spocp_result_t	iobuf_add( spocp_iobuf_t *io, char *s );
+spocp_result_t	iobuf_addn( spocp_iobuf_t *io, char *s, size_t n );
 spocp_result_t	iobuf_add_octet( spocp_iobuf_t *io, octet_t *o );
 spocp_result_t	iobuf_add_len_tag( spocp_iobuf_t *io);
 spocp_result_t	iobuf_insert( spocp_iobuf_t *io, char *where, char *what, int len );
@@ -366,6 +383,18 @@ void	conn_init( conn_t *con );
 int	conn_setup( conn_t *con, srv_t *srv, int fd, char *host, char *ipaddr );
 int	spocp_conn_write( conn_t *conn );
 int	spocp_conn_read( conn_t *conn );
+
+/* ------ reply.c ------- */
+
+/* internal
+reply_t	*reply_new( work_info_t * );
+void	reply_free( reply_t * );
+reply_t	*reply_push( reply_t * );
+reply_t	*reply_pop( reply_t ** );
+*/
+reply_t	*reply_add( reply_t *, work_info_t * );
+int	gather_replies( spocp_iobuf_t *, conn_t *);
+int	add_reply_queuer( conn_t *, work_info_t *);
 
 /* ------ read.c ------- */
 
@@ -429,27 +458,27 @@ void	free_db( db_t *db );
 
 /* srv.c */
 
-spocp_result_t	com_subject( conn_t *conn );
-spocp_result_t	com_begin( conn_t *conn );
-spocp_result_t	com_rollback( conn_t *conn );
-spocp_result_t	com_commit( conn_t *conn );
-spocp_result_t	com_login( conn_t *conn );
-spocp_result_t	com_logout( conn_t *conn );
-spocp_result_t	com_query( conn_t *conn );
-spocp_result_t	com_starttls( conn_t *conn );
-spocp_result_t	com_auth( conn_t *conn );
-spocp_result_t	com_capa( conn_t *conn );
-spocp_result_t	com_remove( conn_t *conn );
-spocp_result_t	com_add( conn_t *conn );
-spocp_result_t	com_list( conn_t *conn );
-spocp_result_t	com_summary( conn_t *conn );
-spocp_result_t	com_show( conn_t *conn );
+spocp_result_t	com_subject( work_info_t *wi );
+spocp_result_t	com_begin( work_info_t *wi );
+spocp_result_t	com_rollback( work_info_t *wi );
+spocp_result_t	com_commit( work_info_t *wi );
+spocp_result_t	com_login( work_info_t *wi );
+spocp_result_t	com_logout( work_info_t *wi );
+spocp_result_t	com_query( work_info_t *wi );
+spocp_result_t	com_starttls( work_info_t *wi );
+spocp_result_t	com_auth( work_info_t *wi );
+spocp_result_t	com_capa( work_info_t *wi );
+spocp_result_t	com_remove( work_info_t *wi );
+spocp_result_t	com_add( work_info_t *wi );
+spocp_result_t	com_list( work_info_t *wi );
+spocp_result_t	com_summary( work_info_t *wi );
+spocp_result_t	com_show( work_info_t *wi );
 
-spocp_result_t	get_operation( conn_t *conn, proto_op **oper );
+spocp_result_t	get_operation(work_info_t *);
 
-spocp_result_t	do_reread_rulefile( conn_t *conn );
+spocp_result_t	do_reread_rulefile( work_info_t *);
 
-spocp_result_t	return_busy( conn_t *conn );
+spocp_result_t	return_busy( work_info_t * );
 
 /* run.c */
 
@@ -491,12 +520,12 @@ int	run_plugin_init( srv_t *srv );
 
 void		saci_init( void );
 spocp_result_t	server_access( conn_t *con );
-spocp_result_t	operation_access( conn_t *con );
+spocp_result_t	operation_access( work_info_t *);
 
 /* tpool.c */
 
 tpool_t	*tpool_init( int, int, int );
-int	tpool_add_work( tpool_t *, proto_op *routine, conn_t *);
+int	tpool_add_work( tpool_t *, work_info_t *);
 int	tpool_destroy( tpool_t *, int );
 
 /* pool.c */

@@ -94,6 +94,7 @@ static void
 sig_usr1( int signo )
 {
 	struct stat	statbuf;
+	work_info_t	wi;
 	conn_t		*con;
 
 	traceLog(LOG_NOTICE, "Received SIGUSR1");
@@ -103,8 +104,12 @@ sig_usr1( int signo )
 		con = conn_new();
 		con->srv = &srv;
 		con->rs = srv.root;
+		memset( &wi, 0, sizeof( work_info_t ));
+		wi.conn = con;
+		wi.routine = &do_reread_rulefile;
+
 		reread_rulefile = 1;
-		tpool_add_work( srv.work, &do_reread_rulefile, (void *) &con);
+		tpool_add_work( srv.work, &wi);
 	}
 }
 
