@@ -254,7 +254,7 @@ spocp_result_t dback_init( dback_t *dback, void *cfg, void *conf )
 {
   spocp_result_t r = SPOCP_UNAVAILABLE ;
 
-  if( dback && dback->init ) dback->init( 0, cfg, conf, &r ) ;
+  if( dback && dback->init ) dback->init( cfg, conf, 0, &r ) ;
 
   return r ;
 }
