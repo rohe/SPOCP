@@ -19,11 +19,6 @@ typedef struct _octet {
   char        *val ;
 } octet_t ;
 
-typedef struct _octnode {
-  octet_t oct ;
-  struct _octnode *next ;
-} octnode_t ;
-
 typedef enum {
   SPOCP_SUCCESS ,
   SPOCP_DENIED ,
@@ -59,6 +54,11 @@ typedef enum {
 } spocp_result_t;
 #endif
   
+typedef struct _octnode {
+  octet_t *oct ;
+  struct _octnode *next ;
+} octnode_t ;
+
 typedef enum {
   UNCONNECTED,
   SOCKET,
@@ -88,10 +88,12 @@ void  _log_err( const char *format, ... ) ;
 char            *oct2strdup( octet_t *op, char ec ) ;
 spocp_result_t   octcpy( octet_t *cpy, octet_t *oct ) ;
 
-SPOCP           *open_con( char *srv ) ;
-int              reopen_con( SPOCP *spocp ) ;
-ssize_t          spocp_readn( SPOCP *spocp, char *str, ssize_t max ) ;
-ssize_t          spocp_writen( SPOCP *spocp, char *str, ssize_t max ) ;
+SPOCP           *spocpc_open( char *srv ) ;
+int              spocpc_reopen( SPOCP *spocp ) ;
+ssize_t          spocpc_readn( SPOCP *spocp, char *str, ssize_t max ) ;
+ssize_t          spocpc_writen( SPOCP *spocp, char *str, ssize_t max ) ;
+
+char *sexp_printa( char *sexp, int *size, char *fmt, void **argv ) ;
 
 char *sexplist_make( char *sexp, int bsize, char *fmt, ... ) ;
 char *sexplist_add( char *sexp, int bsize, char *fmt, ... ) ;
@@ -101,23 +103,30 @@ int              sexp_get_len( char **str, spocp_result_t *rc ) ;
 char            *sexp_get_next_element( char *sexp, int n, spocp_result_t *rc ) ;
 int              spocp_protocol_op( char **argv, char **prot ) ;
 spocp_result_t   sexp_memcpy( octet_t *op, char *str, int n ) ;
-spocp_result_t   sexp_get_response( octet_t *buf, octet_t *code, octet_t *info ) ;
 spocp_result_t   spocp_answer_ok( char *resp, size_t n ) ;
 */
-spocp_result_t   spocp_parse_and_print_list( char *resp, int n, FILE *fp, int wid ) ;
+int spocpc_sexp_elements( char *r, int n, octet_t line[], int s, spocp_result_t *rc ) ;
+int skip_length( char **sexp, int n, spocp_result_t *rc )  ;
 
-spocp_result_t   spocp_send_add( SPOCP *spocp, char *path, char *rule, char *info ) ;
-spocp_result_t   spocp_send_aci( SPOCP *spocp, char *path, char *rule ) ;
-spocp_result_t   spocp_send_subject( SPOCP *spocp, char *subject ) ;
-spocp_result_t   spocp_send_query( SPOCP *spocp, char *path, char *query, octnode_t *info ) ;
-spocp_result_t   spocp_send_delete( SPOCP *spocp, char *path, char *rule ) ;
-spocp_result_t   spocp_send_logout( SPOCP *spocp ) ;
-spocp_result_t   spocp_open_transaction( SPOCP *spocp ) ;
-spocp_result_t   spocp_commit( SPOCP *spocp ) ;
-spocp_result_t   spocp_starttls( SPOCP *spocp ) ;
+spocp_result_t   sexp_get_response( octet_t *buf, octet_t *code, octet_t *info ) ;
+spocp_result_t   spocpc_parse_and_print_list( char *resp, int n, FILE *fp, int wid ) ;
+
+spocp_result_t   spocpc_send_add( SPOCP *spocp, char *path, char *rule, char *info ) ;
+spocp_result_t   spocpc_send_aci( SPOCP *spocp, char *path, char *rule ) ;
+spocp_result_t   spocpc_send_subject( SPOCP *spocp, char *subject ) ;
+spocp_result_t   spocpc_send_query( SPOCP *, char *path, char *query, octnode_t **info ) ;
+spocp_result_t   spocpc_send_delete( SPOCP *spocp, char *path, char *rule ) ;
+spocp_result_t   spocpc_send_logout( SPOCP *spocp ) ;
+spocp_result_t   spocpc_open_transaction( SPOCP *spocp ) ;
+spocp_result_t   spocpc_commit( SPOCP *spocp ) ;
+spocp_result_t   spocpc_starttls( SPOCP *spocp ) ;
 
 void             free_spocp( SPOCP *s ) ;
-void             close_connection( SPOCP *spocp ) ;
+void             spocpc_close( SPOCP *spocp ) ;
+
+octnode_t       *spocpc_octnode_new( void ) ;
+void             spocpc_octnode_free( octnode_t * ) ;
+char            *spocpc_oct2strdup( octet_t *op, char ec ) ;
 
 #ifdef HAVE_LIBSSL
 
@@ -125,7 +134,7 @@ void  init_tls_env( SPOCP *spocp, char *cert, char *priv, char *ca, char *pwd ) 
 
 #endif
 
-int   debug ;
+int   spocpc_debug ;
 
 #define DIGITS(n) ( (n) >= 100000 ? 6 : (n) >= 10000 ? 5 : (n) >= 1000 ? 4 : (n) >= 100 ? 3 : ( (n) >= 10 ? 2 : 1 ) )
 
