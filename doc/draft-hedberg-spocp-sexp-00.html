@@ -1,0 +1,1387 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en"><head><title>Restricted S-expressions for use in a generalized authorization service</title>
+<meta name="description" content="Restricted S-expressions for use in a generalized authorization service">
+<meta name="generator" content="xml2rfc v1.21 (http://xml.resource.org/)">
+<style type='text/css'>
+<!--
+    body {
+        font-family: verdana, charcoal, helvetica, arial, sans-serif;
+        font-size: small ; color: #000000 ; background-color: #ffffff ; }
+    .title { color: #990000; font-size: x-large ;
+        font-weight: bold; text-align: right;
+        font-family: helvetica, monaco, "MS Sans Serif", arial, sans-serif;
+        background-color: transparent; }
+    .filename { color: #666666; font-size: 18px; line-height: 28px;
+        font-weight: bold; text-align: right;
+        font-family: helvetica, arial, sans-serif;
+        background-color: transparent; }
+    td.rfcbug { background-color: #000000 ; width: 30px ; height: 30px ; 
+        text-align: justify; vertical-align: middle ; padding-top: 2px ; }
+    td.rfcbug span.RFC { color: #666666; font-weight: bold; text-decoration: none;
+        background-color: #000000 ;
+        font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+        font-size: x-small ; }
+    td.rfcbug span.hotText { color: #ffffff; font-weight: normal; text-decoration: none;
+        text-align: center ;
+        font-family: charcoal, monaco, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+        font-size: x-small ; background-color: #000000; }
+
+     A { font-weight: bold; }
+     A:link { color: #990000; background-color: transparent ; }
+     A:visited { color: #333333; background-color: transparent ; }
+     A:active { color: #333333; background-color: transparent ; }
+
+    p { margin-left: 2em; margin-right: 2em; }
+    p.copyright { font-size: x-small ; }
+    p.toc { font-size: small ; font-weight: bold ; margin-left: 3em ;}
+
+    span.emph { font-style: italic; }
+    span.strong { font-weight: bold; }
+    span.verb { font-family: "Courier New", Courier, monospace ; }
+
+    ol.text { margin-left: 2em; margin-right: 2em; }
+    ul.text { margin-left: 2em; margin-right: 2em; }
+    li { margin-left: 3em;  }
+
+    pre { margin-left: 3em; color: #333333;  background-color: transparent;
+        font-family: "Courier New", Courier, monospace ; font-size: small ;
+        }
+
+    h3 { color: #333333; font-size: medium ;
+        font-family: helvetica, arial, sans-serif ;
+        background-color: transparent; }
+    h4 { font-size: small; font-family: helvetica, arial, sans-serif ; }
+
+    table.bug { width: 30px ; height: 15px ; }
+    td.bug { color: #ffffff ; background-color: #990000 ;
+        text-align: center ; width: 30px ; height: 15px ;
+         }
+    td.bug A.link2 { color: #ffffff ; font-weight: bold;
+        text-decoration: none;
+        font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, sans-serif;
+        font-size: x-small ; background-color: transparent }
+
+    td.header { color: #ffffff; font-size: x-small ;
+        font-family: arial, helvetica, sans-serif; vertical-align: top;
+        background-color: #666666 ; width: 33% ; }
+    td.author { font-weight: bold; margin-left: 4em; font-size: x-small ; }
+    td.author-text { font-size: x-small; }
+    table.data { vertical-align: top ; border-collapse: collapse ;
+        border-style: solid solid solid solid ;
+        border-color: black black black black ;
+        font-size: small ; text-align: center ; }
+    table.data th { font-weight: bold ;
+        border-style: solid solid solid solid ;
+        border-color: black black black black ; }
+    table.data td {
+        border-style: solid solid solid solid ;
+        border-color: #333333 #333333 #333333 #333333 ; }
+
+    hr { height: 1px }
+-->
+</style>
+</head>
+<body>
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<table summary="layout" width="66%" border="0" cellpadding="0" cellspacing="0"><tr><td><table summary="layout" width="100%" border="0" cellpadding="2" cellspacing="1">
+<tr><td class="header">Network Working Group</td><td class="header">R. Hedberg</td></tr>
+<tr><td class="header">Internet-Draft</td><td class="header">Stockholm University</td></tr>
+<tr><td class="header">Expires: July 1, 2004</td><td class="header">O. Bandmann</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">L4i</td></tr>
+<tr><td class="header">&nbsp;</td><td class="header">January 2004</td></tr>
+</table></td></tr></table>
+<div align="right"><span class="title"><br />Restricted S-expressions for use in a generalized authorization service</span></div>
+<div align="right"><span class="title"><br />draft-hedberg-spocp-sexp-00</span></div>
+
+<h3>Status of this Memo</h3>
+<p>
+This document is an Internet-Draft and is in full conformance with all provisions of Section 10 of RFC2026.</p>
+<p>
+Internet-Drafts are working documents of the Internet Engineering
+Task Force (IETF), its areas, and its working groups.
+Note that other groups may also distribute working documents as
+Internet-Drafts.</p>
+<p>
+Internet-Drafts are draft documents valid for a maximum of six months
+and may be updated, replaced, or obsoleted by other documents at any time.
+It is inappropriate to use Internet-Drafts as reference material or to cite
+them other than as "work in progress."</p>
+<p>
+The list of current Internet-Drafts can be accessed at
+<a href='http://www.ietf.org/ietf/1id-abstracts.txt'>http://www.ietf.org/ietf/1id-abstracts.txt</a>.</p>
+<p>
+The list of Internet-Draft Shadow Directories can be accessed at
+<a href='http://www.ietf.org/shadow.html'>http://www.ietf.org/shadow.html</a>.</p>
+<p>
+This Internet-Draft will expire on July 1, 2004.</p>
+
+<h3>Copyright Notice</h3>
+<p>
+Copyright (C) The Internet Society (2004). All Rights Reserved.</p>
+<a name="toc"></a><br /><hr />
+<h3>Table of Contents</h3>
+<p class="toc">
+<a href="#anchor1">1.</a>&nbsp;
+Abstract<br />
+<a href="#anchor2">2.</a>&nbsp;
+Introduction<br />
+<a href="#anchor3">3.</a>&nbsp;
+Background<br />
+<a href="#anchor4">4.</a>&nbsp;
+Problems with Access Control Lists<br />
+<a href="#anchor5">5.</a>&nbsp;
+Restricted S-expressions for authorization<br />
+<a href="#anchor6">5.1</a>&nbsp;
+Simple S-expressions<br />
+<a href="#theory">5.2</a>&nbsp;
+Basic theory<br />
+<a href="#star form">5.3</a>&nbsp;
+Star forms<br />
+<a href="#wildcard">5.3.1</a>&nbsp;
+The wildcard star form<br />
+<a href="#set">5.3.2</a>&nbsp;
+The set star form<br />
+<a href="#range">5.3.3</a>&nbsp;
+The range star form<br />
+<a href="#prefix">5.3.4</a>&nbsp;
+The prefix star form<br />
+<a href="#suffix">5.3.5</a>&nbsp;
+The suffix star form<br />
+<a href="#sexpcomp">6.</a>&nbsp;
+S-expression comparison<br />
+<a href="#anchor7">7.</a>&nbsp;
+Security considerations<br />
+<a href="#anchor8">8.</a>&nbsp;
+Acknowledgment<br />
+<a href="#rfc.references1">&#167;</a>&nbsp;
+References<br />
+<a href="#rfc.authors">&#167;</a>&nbsp;
+Authors' Addresses<br />
+<a href="#abnf">A.</a>&nbsp;
+Collected Grammar<br />
+<a href="#anchor9">B.</a>&nbsp;
+Representing hierarchies<br />
+<a href="#anchor10">C.</a>&nbsp;
+Representing Security Connection<br />
+<a href="#rfc.copyright">&#167;</a>&nbsp;
+Intellectual Property and Copyright Statements<br />
+</p>
+<br clear="all" />
+
+<a name="anchor1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1"></a><h3>1.&nbsp;Abstract</h3>
+
+<p>
+This document describes restricted S-expressions as they are used for storing and
+querying for access rights within the SPOCP (Simple POlicy Control Protocol) project.
+We describe the restrictions we have made to basic S-expressions and also the theory
+that allows us to use S-expressions in a policy engine.
+
+</p>
+<a name="anchor2"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2"></a><h3>2.&nbsp;Introduction</h3>
+
+<p>
+<p>
+The aim of the SPOCP project is to first develop a model for a generalized
+authorization service 
+server and then to implement such a server. 
+Generalized in this context means that it shall be
+equally good in supporting several different types of applications and that one and
+the same server shall be able to simultaneously support several applications.
+
+</p>
+<p>
+To achieve this goal we needed to design a policy engine that could evaluate
+policies without knowing what applications the policies referred to. The first
+step towards this goal was to pick a rule syntax that was independent of the
+applications, and we think we have found such a syntax in S-expressions
+<a href="#s-expression" title="Rivest, R., S-Expressions, May 1997.">[s-expression]</a>.
+
+</p>
+<p>
+The goal of this document is to describe how S-expressions can be used in a
+generalized authorization service, and what restrictions we have applied to
+S-expressions to make them really useful.
+
+</p>
+<p>
+The two companion documents <a href="#spocp_prot" title="Hedberg, R., The Simple Policy Protocol, .">[spocp_prot]</a> and
+<a href="#spocp_prot_tcp" title="Hedberg, R., The Simple Policy Control Protocol over TCP/IP, .">[spocp_prot_tcp]</a>
+describes the Simple Policy Control Protocol and one implementation of it.
+
+</p>
+<p>
+The terms used in this draft is defined in <a href="#RFC2828" title="Shirey, R., Internet Security Glossary, May 2000.">[RFC2828]</a>.
+
+</p>
+
+<a name="anchor3"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3"></a><h3>3.&nbsp;Background</h3>
+
+<p>
+S-expressions is not something new on the Internet arena, 
+"The Simple Public Key Infrastructure" (SPKI) working group within the IETF, based 
+its work on S-expressions. They also made restrictions on the syntax of the S-expressions 
+(See for instance <a href="#RFC2693" title="Ellison, C., Frantz, B., Lampson, B., Rivest, R., Thomas, B. and T. Ylonen, SPKI Certificate Theory, September 1999.">[RFC2693]</a>), something we have built on in our work.
+
+</p>
+<p>
+In contrast to the SPKI work we are not dealing with certificates but have 
+instead concentrated on using S-expressions as a policy language syntax. A
+language suitable to express both access policies and queries for permissions.
+
+</p>
+<p>
+The differences between restricted S-expressions as defined by SPKI and the
+restrcited S-expressions defined in this document are slight but
+significant. They can be enumerated as:
+
+</p>
+<ol class="text">
+<li>We have added a companion to prefix called suffix
+</li>
+<li>We do not distinguish between ALPHA and BINARY, there are treated as one and
+the same
+</li>
+<li>We have added the restriction that all lists in a set construct have to have
+different tags
+</li>
+</ol><p>
+
+An important change is that we have replaced the AIntersect operation
+ with a partial order (pre-order, strictly speaking) compatible with
+ AIntersect. In order to guarantee completeness of the decision
+ algorithm described in section 6, the restriction in item 4 above
+ is needed (cf. <a href="#spki_authz" title="Bandmann, O. and M. Dam, A Note On SPKI's Authorisation syntax, .">[spki_authz]</a>).
+
+</p>
+<a name="anchor4"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4"></a><h3>4.&nbsp;Problems with Access Control Lists</h3>
+
+<p>
+There are several problems with ACLs as they are normally used in applications,
+that disappear if access control is based on policy articulated in S-expressions.
+We list some of these problems below and explain how they can be handled in a 
+authorization policy written using S-expressions.
+
+</p>
+<p></p>
+<ol class="text">
+<li>The identity of future clients has to be known
+</li>
+<blockquote class="text">
+<p>An application that wants to use S-expressions for authorization decisions,
+has a template for S-expression construction. Whether a token representing the
+identity of the client is part of that template or not, is a local matter and
+irrelevant to the use of S-expressions. Hence neither the application nor the
+authorization system needs to know the identity of the client.
+</p>
+</blockquote>
+<li><p>
+ACLs are static 
+
+</li></p>
+<blockquote class="text">
+<p>When constructing the rules, you might not know or care about who will
+fulfill the restrictions when an access right is requested. Even if a rule
+appears to be static, the set of persons and/or entities that
+fulfills the restrictions might be highly dynamic.
+</p>
+</blockquote>
+<li><p>
+The application has to have all the information necessary for making the access decision.
+
+</li></p>
+<blockquote class="text">
+<p>It is not a problem if the application does not have access to all the
+necessary information, as long as the Spocp server, or an application it
+can use, has.
+</p>
+</blockquote>
+</ol>
+
+<a name="anchor5"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5"></a><h3>5.&nbsp;Restricted S-expressions for authorization</h3>
+
+<a name="rfc.section.5.1"></a><h4><a name="anchor6">5.1</a>&nbsp;Simple S-expressions</h4>
+
+<p>
+A simple S-expression is a nested list enclosed in matching "(" and ")". 
+The first element in the list MUST be an atom (string) and is
+the "tag" or "name" of the object represented 
+by the list. With that exception, every element in 
+the list may in turn be a S-expression. 
+Note that empty lists are not allowed.
+
+</p>
+<p>
+As in SPKI, we have chosen Rivest's compact "canonical form", 
+see <a href="#s-expression" title="Rivest, R., S-Expressions, May 1997.">[s-expression]</a>, as our internal representation of an
+S-expression. 
+
+</p>
+<p>
+A complete description of restricted S-expressions using ABNF <a href="#RFC2234" title="Crocker, D. and P. Overell, Augmented BNF for Syntax Specifications: ABNF, November 1997.">[RFC2234]</a>
+is given in <a href="#abnf">Appendix A</a> .
+
+</p>
+<p>
+S-expressions are used at the core in the authorization server, and may be 
+sent from a client to a server. If they are, the canonical form is to be used
+<a href="#s-expression" title="Rivest, R., S-Expressions, May 1997.">[s-expression]</a>. 
+A canonical S-expression is formed from octet strings (that is every octet 
+can assume any byte value between and including 0x00 and 0xFF), each prefixed by
+its length. The length of a byte string is a
+non-negative ASCII decimal number, with no leading "0" digits,
+terminated by ":". The canonical form is a unique representation of an S-expression
+and is used as the input to all hash and signature functions.
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>s-expr      = "(" tag *s-part ")"
+</p>
+<p>tag         = octet-string
+</p>
+<p>s-part      = octet-string / s-expr / star-form
+</p>
+<p>octet-string = decimal ":" 1*octet
+                ; The number of octets should be equal to the decimal specification
+</p>
+<p>decimal     = nzdigit *digit
+</p>
+<p>nzdigit     = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+</p>
+<p>digit       = "0" / nzdigit
+</p>
+<p>octet       = %x00-FF
+</p>
+<p>star-form   = "(1:*" [ set / range / prefix / suffix ] ")"
+</p>
+</blockquote>
+
+<p>
+The specification of the star forms can be found in <a href="#star form">Section 5.3</a>.
+
+</p>
+<p><span class="emph">Note:</span>
+Even though the canonical form is the one described by the ABNF definition,
+the so called advanced form will be used in the examples in this document
+since it is much easier for humans to read.
+
+</p>
+<p>
+Example:
+
+<p>
+  (5:spocp(8:Resource6:mailer)) -- canonical form
+
+</p>
+<p>
+  (spocp (Resource mailer))     -- advanced form
+
+</p>
+
+<p>
+These are two representations of the same S-expression, consisting of an octet string 
+(the tag) "spocp" and another S-expression, that consists of two octet strings 
+"Resource" and "mailer". 
+
+</p>
+<a name="rfc.section.5.2"></a><h4><a name="theory">5.2</a>&nbsp;Basic theory</h4>
+
+<p>
+In order to be able to use S-expressions for authorization, two
+criteria have to be fulfilled.
+THe first is that S-expressions must have the expressive power needed for 
+conveniently stating an authorization policy. Our practical experience
+has convinced us that this criterion is satisfied,
+The other thing needed is the definition of a binary relation
+'&lt;=', that can be used to order S-expressions.
+
+</p>
+<p>
+We want a relation where A '&lt;=' B means that
+rule A is less permissive than rule B. Once the relation is defined, we also 
+need an efficient way to decide (compute) if A '&lt;=' B. A decision algorithm
+for restricted S-expressions is given in <a href="#sexpcomp">Section 6</a>
+We begin by defining '&lt;=' for simple S-expressions; in the next subsection, 
+'&lt;=' will be extended to general restricted S-expressions.
+
+</p>
+<p>
+In <a href="#spki_authz" title="Bandmann, O. and M. Dam, A Note On SPKI's Authorisation syntax, .">[spki_authz]</a> '&lt;=' has been defined inductively as
+follows: Let x and y be simple S-expressions then
+
+</p>
+<p></p>
+<ol class="text">
+<li>if x and y are simple 'atomic' elements (strings) then x '&lt;=' y if and only
+if x = y.
+</li>
+<li>If x = (x[0] x[1] ... x[N]) and y = (y[0] y[1] ... y[M] ), then x '&lt;=' y 
+if and only if N &gt;= M and x[i] '&lt;=' y[i], for i = 0, ..., M
+</li>
+</ol>
+
+<p>
+Example 1, If,
+
+</p>
+<p>
+x = (http (page index.html)(action GET)(user olav))
+
+</p>
+<p>
+then x is intended to represent the authorization to the user olav to read ( in HTTP
+terms GET ) the page index.html using HTTP.
+
+</p>
+<p>
+Let
+
+</p>
+<p>
+y = (http (page index.html)(action GET)(user))
+
+</p>
+<p>
+Then y means almost the same as x except for the fact that the permission to read
+index.html is given to any user. By definition x '&lt;=' y. Furthermore, if
+
+</p>
+<p>
+z = (http (page index.html)(action)(user olav))
+
+</p>
+<p>
+then z means almost the same as x except for the fact that now Olav can perform
+any operation on index.html that HTTP supports. Note  that y and z are unrelated 
+with respect to the partial order '&lt;='.
+
+</p>
+<p>
+From the example above it should be obvious that the application generating these 
+S-expressions has restrictions on the format of them, restrictions that correspond
+to the desired semantics.
+It is essential to the idea of a centralized authorization service that this
+semantic does not require a modification of the '&lt;=' relation.
+
+</p>
+<p>
+The intended use of S-expressions for authorization evaluation is as follows.
+Assume that a certain principal
+P wants to perform an action A requiring the authorization X. Then P has the 
+authorization for A if and only if P has the some authorization Y satisfying
+X '&lt;=' Y.
+
+</p>
+<p>More about partial ordering in <a href="#sexpcomp">Section 6</a>, we have to
+introduce you to star forms first.
+
+</p>
+<p>
+So by the use of S-expressions, and the partial order we get an important
+benefit: we can build an authorization system that works independently 
+of what the policies actually mean. 
+
+</p>
+<a name="rfc.section.5.3"></a><h4><a name="star form">5.3</a>&nbsp;Star forms</h4>
+
+<p>
+To extend simple S-expressions to restricted S-expressions we have to
+add a new type of element: star forms. These can be divided into the
+following categories:
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>wildcard
+</p>
+<p>set
+</p>
+<p>range
+</p>
+<p>prefix
+</p>
+<p>suffix
+</p>
+</blockquote>
+
+<p>
+Despite their list-like apearence (see below), starforms are not lists.
+They are succinct ways of representing every element that fits into a
+specific set. Hence, restricted S-expressions (simple S-expressions
+extended with star forms) really represent _sets_ of simple S-expressions.
+
+</p>
+<p>
+In order to preserve the intended semantics for the ordering '&lt;=' (from
+the previous subsection), the only possible way to extend this
+relation to _sets_ of simple S-expressions, is to define:
+
+</p>
+<blockquote class="text"><dl>
+<dt>X '&lt;=' Y</dt>
+<dd>if and only if every simple S-expression A in X is bounded
+by some simple S-expression B in Y (i.e. A '&lt;=' B in the
+sense of previous subsection)
+</dd>
+</dl></blockquote>
+<p>
+An algorithm for effective computation of this relation is given in
+section 6 (cf. <a href="#spki_authz" title="Bandmann, O. and M. Dam, A Note On SPKI's Authorisation syntax, .">[spki_authz]</a>).
+
+</p>
+<a name="rfc.section.5.3.1"></a><h4><a name="wildcard">5.3.1</a>&nbsp;The wildcard star form</h4>
+
+<p>
+Is written '(*)' and matches any single octet string or s-expression.
+
+</p>
+<a name="rfc.section.5.3.2"></a><h4><a name="set">5.3.2</a>&nbsp;The set star form</h4>
+
+<p>
+Described by the ABNF
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>set = "3:set" 1*s-expr
+</p>
+</blockquote>
+
+<p>
+They are a way of specifying a limited set of elements, a group. 
+
+</p>
+<p>
+ Example:
+
+</p>
+<p>
+  (* set apple orange lemon)
+
+</p>
+<p>
+The important difference between this star form 'set' and the one in SPKI
+(<a href="#RFC2693" title="Ellison, C., Frantz, B., Lampson, B., Rivest, R., Thomas, B. and T. Ylonen, SPKI Certificate Theory, September 1999.">[RFC2693]</a>), is that here, 'set' is restricted in the following way:
+all lists appearing at the top level in a 'set'-construction MUST have
+different tags. This restriction implies completeness of the algorithm
+for computation of '&lt;=' presented in <a href="#sexpcomp">Section 6</a>. The following is an
+example of a valid restricted S-expression:
+
+</p>
+<blockquote class="text">
+<p>(t (* set (a x) (b (a y)) (c) a) a)
+</p>
+</blockquote><p>
+
+and this one is not:
+
+</p>
+<blockquote class="text">
+<p> (t (* set (a (x y)) (b c) (a d)))
+</p>
+</blockquote>
+
+<p>
+Furthermore, to simplify and streamline the algorithm description in
+<a href="#sexpcomp">Section 6</a>, we will also make the trivial restriction on the set star
+form, that a set is not permitted to contain a set as a top level
+element. E.g.
+</p>
+<blockquote class="text">
+<p> (* set (* set x y) z )
+</p>
+</blockquote><p>
+can not be part of a restricted S-expression. While, on the other hand,
+</p>
+<blockquote class="text">
+<p>(* set x y z )
+</p>
+</blockquote><p>
+can. Immediately nested sets can always be eliminated in this fashion
+(without changing the semantics). Note that deeper nestings (i.e.
+within lists) are permitted. E.g.
+</p>
+<blockquote class="text">
+<p>(* set (x (* set y z)) t)
+</p>
+</blockquote><p>
+can be part of a restricted S-expression.
+
+</p>
+<a name="rfc.section.5.3.3"></a><h4><a name="range">5.3.3</a>&nbsp;The range star form</h4>
+
+<p>
+Since one needs to know the type when one deals with ranges, there are a couple
+of types predefined.
+
+</p>
+<p></p>
+<blockquote class="text"><dl>
+<dt>alpha:</dt>
+<dd>which is normal text
+</dd>
+<dt>numeric:</dt>
+<dd> non-negative numbers between 0 and 4294967295 (UINT32_MAX)
+</dd>
+<dt>date:</dt>
+<dd> date specification of the form YYYY-MM-DD_HH:MM:SS or using
+       the notation used by strftime %G:%m:%d_%H:%M:%S
+</dd>
+<dt>time:</dt>
+<dd> time of day specification HH:MM:SS
+</dd>
+<dt>ipv4:</dt>
+<dd> the IPv4 address in the normal dot notation format
+</dd>
+<dt>ipv6:</dt>
+<dd> IPv6 address in their normal notation
+</dd>
+</dl></blockquote>
+
+<p>
+In the specification of a range you may use constants in 
+these types in combination with relational operators in a straight forward way. 
+The ABNF specification for range is: 
+
+</p>
+<blockquote class="text">
+<p>rangespec      = alpha / numeric / date / time / ipv4 / ipv6
+</p>
+<p>alpha          = "5:alpha" [lole utf8string [goge utf8string]] / [goge utf8string [lole utf8string]]
+</p>
+<p>numeric        = "7:numeric" [ lole number [ goge number ]] / [ goge number [ lole number ]]
+</p>
+<p>date           = "4:date" [ goge dat [ lole dat ]] / [ lole dat [ goge dat ]]
+</p>
+<p>time           = "4:time" [ lole hms [ goge hms ]] / [ goge hms [ lole hms ]]
+</p>
+<p>ipv4           = "4:ipv4" [ lole ipnum [ goge ipnum ]] / [ goge ipnum [lole ipnum ]]
+</p>
+<p>ipv6           = "4:ipv6" [ lole ip6num [ goge ip6num ]] / [ goge ip6num [lole ip6num ]]
+</p>
+<p>lole           = "2:lt" / "2:le"
+</p>
+<p>goge           = "2:gt" / "2:ge"
+</p>
+<p>number         = decimal ":" 1*digit
+</p>
+<p>dat            = decimal ":" date-time   ; date format as specified by RFC3339
+</p>
+<p>date-fullyear  = 4DIGIT
+</p>
+<p>date-month     = 2DIGIT  ; 01-12
+</p>
+<p>date-mday      = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 dependent on month/year
+</p>
+<p>time-hour      = 2DIGIT  ; 00-23
+</p>
+<p>time-minute    = 2DIGIT  ; 00-59
+</p>
+<p>time-second    = 2DIGIT  ; 00-58, 00-59, 00-60 based on leap second rules
+</p>
+<p>time-secfrac   = "." 1*DIGIT
+</p>
+<p>time-numoffset = ("+" / "-") time-hour ":" time-minute
+</p>
+<p>time-offset    = "Z" / time-numoffset
+</p>
+<p>partial-time   = time-hour ":" time-minute ":" time-second
+</p>
+<p>full-date      = date-fullyear "-" date-month "-" date-mday
+</p>
+<p>full-time      = partial-time time-offset
+</p>
+<p>date-time      = full-date "T" full-time
+</p>
+<p>hms            = decimal ":" partial-time
+</p>
+<p>ipnum          = decimal ":" 1*3digit "." 1*3digit "." 1*3digit "." 1*3digit
+</p>
+<p>ip6num         = IPv6address ; as defined in <a href="#RFC2373" title="Hinden, R. and S. Deering, IP Version 6 Addressing Architecture, July 1998.">[RFC2373]</a>
+</p>
+<p>utf8string     = decimal ":" 1*UTF8
+</p>
+<p>UTF8           = %x01-09 / %x0B-0C / %x0E-7F / UTF8-2 / UTF8-3 / UTF8-4 / UTF8-5 / UTF8-6
+</p>
+<p>UTF8-1         = %x80-BF
+</p>
+<p>UTF8-2         = %xC0-DF UTF8-1
+</p>
+<p>UTF8-3         = %xE0-EF 2UTF8-1
+</p>
+<p>UTF8-4         = %xF0-F7 3UTF8-1
+</p>
+<p>UTF8-5         = %xF8-FB 4UTF8-1
+</p>
+<p>UTF8-6         = %xFC-FD 5UTF8-1
+</p>
+</blockquote>
+<p>
+Finally, note that there is the extra requirement (compared to SPKI)
+that a range star form always must contain at least two elements.
+In other words, redundant singleton ranges MUST be replaced by (single)
+atoms.
+
+</p>
+<p>
+Example
+
+</p>
+<p>
+  (worktime (* range time ge 08:00:00 le 17:00:00))
+
+</p>
+<p>
+or
+
+</p>
+<p>
+  (* range numeric l 15 ge 10)
+
+</p>
+<p>
+which is the same as
+
+</p>
+<p>
+  (* set 10 11 12 13 14)
+
+</p>
+<p>
+If in a date specification, time-offset is not 'Z' but a time-numoffset the
+equivalent date without time-numoffset must be calculated before the value is used.
+"2002-12-31T23:59:59+01" must be transform to "2003-01-01T00:59:59" before usage.
+
+</p>
+<a name="rfc.section.5.3.4"></a><h4><a name="prefix">5.3.4</a>&nbsp;The prefix star form</h4>
+
+<p>
+Used to represent sets of strings that all have the same prefix
+ABNF:
+
+</p>
+<p>
+  prefix = "6:prefix" utf8string
+
+</p>
+<p>
+Example
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>(file (* prefix conf))
+</p>
+</blockquote>
+
+<p>
+ This expression will match any expression with the tag "file",
+ whose second element is an octet string that starts with the string "conf". 
+
+</p>
+<a name="rfc.section.5.3.5"></a><h4><a name="suffix">5.3.5</a>&nbsp;The suffix star form</h4>
+
+<p>
+Used to represent sets of strings that all have the same suffix
+
+</p>
+<p>
+ABNF:
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>suffix = "6:suffix" utf8string
+</p>
+</blockquote>
+
+<p>
+Example
+
+</p>
+<p>
+  (file (* suffix pdf))
+
+</p>
+<p>
+This expression will match any expression with the tag "file",
+whose second element is an octet string that ends with the string "pdf". 
+
+</p>
+<a name="sexpcomp"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.6"></a><h3>6.&nbsp;S-expression comparison</h3>
+
+<p>
+In this section we present an effective algorithm ( from <a href="#spki_authz" title="Bandmann, O. and M. Dam, A Note On SPKI's Authorisation syntax, .">[spki_authz]</a>)
+to decide the other relation '&lt;=' defined in <a href="#theory">Section 5.2</a> 
+and <a href="#star form">Section 5.3</a>.
+
+</p>
+<p>
+Recall the definition of '&lt;=' for simple S-expressions from <a href="#theory">Section 5.2</a>:
+
+</p>
+<blockquote class="text">
+<p>For two octet strings A and B, A '&lt;=' B if and only if A == B
+</p>
+<p>If S and T are lists, then S '&lt;=' T if S has at least
+as many elements as T and every element in S is '&lt;=' the
+corresponding element in T (if S has more elements than T, just
+ignore the extra elements in S).
+</p>
+</blockquote>
+<p>
+Example:
+
+</p>
+<blockquote class="text">
+<p>(fruit apple large red) '&lt;=' (fruit apple)
+</p>
+<p>(fruit apple (size large) red) '&lt;=' (fruit apple (size) red)
+</p>
+</blockquote>
+<p>
+and these are not '&lt;='
+
+</p>
+<blockquote class="text">
+<p>(fruit apple large red) compared to (fruit apple (large) red)
+</p>
+<p>(fruit apple large red) compared to (fruit apple red large)
+</p>
+</blockquote>
+<p>order is absolutely vital
+</p>
+<blockquote class="text">
+<p>(apple (weight 100)(color red)) is not '&lt;=' (apple (color red)(weight 100))
+</p>
+</blockquote>
+<p>
+Thus, in the case of simple S-expressions the definition of '&lt;='
+immediately gives us an algorithm. For general restricted S-expressions
+the following recursive procedure gives us an algorithm. 
+Before the algorithm can be applied, however, the restricted
+S-expressions which are to be compared need to be normalized.
+
+</p>
+<p>
+To normalize an element of a restricted S-expression means that
+in each set star form, ranges of the same type and atoms are joined
+together in single ranges, whenever possible. E.g.
+</p>
+<blockquote class="text">
+<p>(* set 44 (* range numeric ge 4 le 8) 11 (* range numeric ge 6 le 10))
+</p>
+</blockquote><p>
+   normalizes to
+</p>
+<blockquote class="text">
+<p>(* set (* range numeric ge 4 le 11) 44)
+</p>
+</blockquote><p>
+The "normal form" is obviously not syntactically unique (even though it
+is semantically unique), but further reductions should not be possible.
+
+</p>
+<p>
+After normalization, the algorithm proceeds as follows.
+If any of the nine cases below applies, the comparison returns true,
+otherwise it returns false.
+
+</p>
+<p>
+S '&lt;=' T, when S and T are normalized elements of S-expressions, if:
+
+</p>
+<ol class="text">
+<li>T = (*)
+</li>
+<li>S and T are strings and S == T
+</li>
+<li>S is a string and T is a set, range, suffix or prefix star form that contains S
+</li>
+<li>S and T are range-forms where T contains S
+</li>
+<li>S and T are prefix-forms where T contains S
+</li>
+<li>S and T are suffix-forms where T contains S
+</li>
+<li>S = (X[0] ... X[m]), T = (Y[0] ... Y[n]) n &lt= m and X[i] '&lt;=' Y[i] for 
+i = 0,...,n 
+</li>
+<li>S = (* set X[0] ... X[m]) and X[i] '&lt;=' T for all i=0,..,m
+</li>
+<li>T = (* set Y[0] ... Y[n]) and S '&lt;=' Y[i] for some i=0,..,n
+</li>
+</ol>
+<p>
+Strictly speaking, there are a few other (trivial) pathological cases to deal with,
+see <a href="#spki_authz" title="Bandmann, O. and M. Dam, A Note On SPKI's Authorisation syntax, .">[spki_authz]</a>. In particular, here we have made the
+simplifying assumption that range and prefix/suffix star forms are
+incomparable w.r.t. '&lt;='.
+
+</p>
+<p>
+Finally, a proof of soundness and completeness for this algorithm, when
+applied to restricted S-expressions, can also be found in <a href="#spki_authz" title="Bandmann, O. and M. Dam, A Note On SPKI's Authorisation syntax, .">[spki_authz]</a>.
+
+</p>
+<a name="anchor7"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.7"></a><h3>7.&nbsp;Security considerations</h3>
+
+<p>
+Authorization decisions obviously have an immediate impact on security.
+Concerning the choice of S-expressions as a syntax for representing
+access policies, the only real security concern, on this level, is whether
+using S-expressions in some way, is inherently insecure. On a
+theoretical level it has been shown (see <a href="#spki_authz" title="Bandmann, O. and M. Dam, A Note On SPKI's Authorisation syntax, .">[spki_authz]</a>) that
+the algorithm to decide the '&lt;=' relation on restricted S-expressions
+is both sound (never falsely claims that the relation holds) and complete
+(whenever the relation holds, the algorithm returns 'true').
+
+</p>
+<a name="anchor8"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.8"></a><h3>8.&nbsp;Acknowledgment</h3>
+
+<p>
+This work originated at at the Swedish Institute of Computer Science (SICS).
+Babak Sadighi had the original thoughts on management of rigths, Olav Bandmann brought
+S-expressions into the process and together with Mads Dam he did the mathematical
+evaluation of the less permissive relationship between S-expressions.
+
+</p>
+<p>
+The Spocp project is funded by SUNET (The Swedish University Network), UNINETT ( The
+Norwegian University Network), the universities in Umeå, Uppsala, Stockholm and Lund,
+The Karolinska Intitute and the NyA project.
+
+</p>
+<p>
+Torbjörn Wiberg is the project leader for the Spocp project and has been very active in
+the project work. Leif Johansson and Ola Gustafsson has been heavily involved in the
+technical development of the project.
+
+</p>
+<a name="rfc.references1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>References</h3>
+<table width="99%" border="0">
+<tr><td class="author-text" valign="top"><a name="RFC1738">[RFC1738]</a></td>
+<td class="author-text"><a href="mailto:timbl@info.cern.ch">Berners-Lee, T.</a>, <a href="mailto:masinter@parc.xerox.com">Masinter, L.</a> and <a href="mailto:mpm@boombox.micro.umn.edu">M. McCahill</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc1738.txt">Uniform Resource Locators (URL)</a>", RFC 1738, December 1994.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2828">[RFC2828]</a></td>
+<td class="author-text">Shirey, R., "<a href="ftp://ftp.isi.edu/in-notes/rfc2828.txt">Internet Security Glossary</a>", RFC 2828, May 2000.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2234">[RFC2234]</a></td>
+<td class="author-text"><a href="mailto:dcrocker@imc.org">Crocker, D.</a> and <a href="mailto:paulo@turnpike.com">P. Overell</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2234.txt">Augmented BNF for Syntax Specifications: ABNF</a>", RFC 2234, November 1997.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2252">[RFC2252]</a></td>
+<td class="author-text"><a href="mailto:M.Wahl@critical-angle.com">Wahl, M.</a>, <a href="mailto:A.Coulbeck@isode.com">Coulbeck, A.</a>, <a href="mailto:howes@netscape.com">Howes, T.</a> and <a href="mailto:S.Kille@isode.com">S. Kille</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2252.txt">Lightweight Directory Access Protocol (v3):
+Attribute Syntax Definitions</a>", RFC 2252, December 1997 (<a href="http://xml.resource.org/public/rfc/html/rfc2252.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2252.xml">XML</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2253">[RFC2253]</a></td>
+<td class="author-text"><a href="mailto:M.Wahl@critical-angle.com">Wahl, M.</a>, <a href="mailto:S.Kille@ISODE.COM">Kille, S.</a> and <a href="mailto:howes@netscape.com">T. Howes</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2253.txt">Lightweight Directory Access Protocol (v3):
+UTF-8 String Representation of Distinguished Names</a>", RFC 2253, December 1997 (<a href="http://xml.resource.org/public/rfc/html/rfc2253.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2253.xml">XML</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2373">[RFC2373]</a></td>
+<td class="author-text"><a href="mailto:hinden@iprg.nokia.com">Hinden, R.</a> and <a href="mailto:deering@cisco.com">S. Deering</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2373.txt">IP Version 6 Addressing Architecture</a>", RFC 2373, July 1998 (<a href="http://xml.resource.org/public/rfc/html/rfc2373.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2373.xml">XML</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2693">[RFC2693]</a></td>
+<td class="author-text"><a href="mailto:carl.m.ellison@intel.com">Ellison, C.</a>, <a href="mailto:frantz@netcom.com">Frantz, B.</a>, <a href="mailto:blampson@microsoft.com">Lampson, B.</a>, <a href="mailto:rivest@theory.lcs.mit.edu">Rivest, R.</a>, <a href="mailto:bt0008@sbc.com">Thomas, B.</a> and <a href="mailto:ylo@ssh.fi">T. Ylonen</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2693.txt">SPKI Certificate Theory</a>", RFC 2693, September 1999.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2712">[RFC2712]</a></td>
+<td class="author-text"><a href="mailto:amedvins@excitecorp.com">Medvinsky, A.</a> and <a href="mailto:matt.hur@cybersafe.com">M. Hur</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2712.txt">Addition of Kerberos Cipher Suites to Transport Layer Security (TLS)</a>", RFC 2712, October 1999.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2904">[RFC2904]</a></td>
+<td class="author-text">Vollbrecht, J., Calhoun, P., Farrell, S., Gommans, L., Gross, G., de Bruijn, B., de Laat, C., Holdrege, M. and D. Spence, "<a href="ftp://ftp.isi.edu/in-notes/rfc2904.txt">AAA Authorization Framework</a>", RFC 2904, August 2000.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC3339">[RFC3339]</a></td>
+<td class="author-text">Klyne, G. and C. Newman, "<a href="ftp://ftp.isi.edu/in-notes/rfc3339.txt">Date and Time on the Internet: Timestamps</a>", RFC 3339, July 2002.</td></tr>
+<tr><td class="author-text" valign="top"><a name="SDSI">[SDSI]</a></td>
+<td class="author-text"><a href="mailto:rivest@theory.lcs.mit.edu">Rivest, R.</a> and <a href="mailto:blampson@microsoft.com">B. Lampson</a>, "<a href="http://theory.lcs.mit.edu/~cis/sdsi.htm">SDSI - A Simple Distributed Security Infrastructure</a>" (<a href="http://theory.lcs.mit.edu/~cis/sdsi.htm">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="sexp_code">[sexp_code]</a></td>
+<td class="author-text"><a href="mailto:rivest@theory.lcs.mit.edu">Rivest, R.</a>, "<a href="http://theory.lcs.mit.edu/~rivest/sexp.html">code and description of S-expressions</a>" (<a href="http://theory.lcs.mit.edu/~rivest/sexp.html">TXT</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="s-expression">[s-expression]</a></td>
+<td class="author-text"><a href="mailto:rivest@theory.lcs.mit.edu">Rivest, R.</a>, "<a href="http://theory.lcs.mit.edu/~rivest/sexp.txt">S-Expressions</a>", ID draft-rivest-sexp-00.txt, May 1997.</td></tr>
+<tr><td class="author-text" valign="top"><a name="spocp_prot">[spocp_prot]</a></td>
+<td class="author-text"><a href="mailto:roland@it.su.se">Hedberg, R.</a>, "The Simple Policy Protocol".</td></tr>
+<tr><td class="author-text" valign="top"><a name="spocp_prot_tcp">[spocp_prot_tcp]</a></td>
+<td class="author-text"><a href="mailto:roland@it.su.se">Hedberg, R.</a>, "The Simple Policy Control Protocol over TCP/IP".</td></tr>
+<tr><td class="author-text" valign="top"><a name="spki_authz">[spki_authz]</a></td>
+<td class="author-text"><a href="mailto:olav@L4i.se">Bandmann, O.</a> and <a href="mailto:mfd@kth.se">M. Dam</a>, "<a href="http://www.cs.dartmouth.edu/~pki02/Bandmann/">A Note On SPKI's Authorisation syntax</a>" (<a href="http://www.cs.dartmouth.edu/~pki02/Bandmann/">TXT</a>).</td></tr>
+</table>
+
+<a name="rfc.authors"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>Authors' Addresses</h3>
+<table width="99%" border="0" cellpadding="0" cellspacing="0">
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Roland Hedberg</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Stockholm University</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Kasamark 114</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Umea  90586</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Sweden</td></tr>
+<tr><td class="author" align="right">Phone:&nbsp;</td>
+<td class="author-text">+46 90 147275</td></tr>
+<tr><td class="author" align="right">EMail:&nbsp;</td>
+<td class="author-text"><a href="mailto:roland@it.su.se">roland@it.su.se</a></td></tr>
+<tr cellpadding="3"><td>&nbsp;</td><td>&nbsp;</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Olav Bandmann</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Industrilogik L4i AB</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Odengatan 87</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Stockholm  11322</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Sweden</td></tr>
+<tr><td class="author" align="right">EMail:&nbsp;</td>
+<td class="author-text"><a href="mailto:olav@L4i.se">olav@L4i.se</a></td></tr>
+</table>
+
+<a name="abnf"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.A"></a><h3>Appendix A.&nbsp;Collected Grammar</h3>
+
+<p>
+This appendix contains the complete ABNF <a href="#RFC2234" title="Crocker, D. and P. Overell, Augmented BNF for Syntax Specifications: ABNF, November 1997.">[RFC2234]</a> grammar for all
+the syntax specified by this document.
+
+</p>
+<p>
+ By itself, however, this grammar is incomplete.  It refers by name to
+ syntax rules that are defined by RFC 3339.  Rather than
+ reproduce those definitions here, and risk unintentional differences
+ between the two, this document simply refers the reader to RFC 3339 
+ for the remaining definitions.
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>s-expr         = "(" tag *s-part ")"
+</p>
+<p>tag            = octet-string
+</p>
+<p>s-part         = octet-string / s-expr / star-form
+</p>
+<p>octet-string   = decimal ":" 1*octet ; The number of octets must be equal to the decimal specification
+</p>
+<p>decimal        = nzdigit *digit
+</p>
+<p>nzdigit        = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+</p>
+<p>digit          = "0" / nzdigit
+</p>
+<p>octet          = %x00-FF
+</p>
+<p>star-form      = "(1:*" [ set / range / prefix / suffix ] ")"
+</p>
+<p>set            = "3:set" 1*s-expr 
+</p>
+<p>range          = "5:range" rangespec
+</p>
+<p>rangespec      = alpha / numeric / date / time / ipv4 / ipv6 
+</p>
+<p>alpha          = "5:alpha" [lole utf8string [goge utf8string]] / [goge utf8string [lole utf8string]]
+</p>
+<p>numeric        = "7:numeric" [ lole number [ goge number ]] / [ goge number [ lole number ]]
+</p>
+<p>date           = "4:date" [ goge dat [ lole dat ]] / [ lole dat [ goge dat ]]
+</p>
+<p>time           = "4:time" [ lole hms [ goge hms ]] / [ goge hms [ lole hms ]]
+</p>
+<p>ipv4           = "4:ipv4" [ lole ipnum [ goge ipnum ]] / [ goge ipnum [lole ipnum ]]
+</p>
+<p>ipv6           = "4:ipv6" [ lole ip6num [ goge ip6num ]] / [ goge ip6num [lole ip6num ]]
+</p>
+<p>lole           = "2:lt" / "2:le"
+</p>
+<p>goge           = "2:gt" / "2:ge"
+</p>
+<p>number         = decimal ":" 1*digit
+</p>
+<p>dat            = decimal ":" date-time ; date-time format as specified by RFC3339
+</p>
+<p>hms            = decimal ":" partial-time  ; partial-time as define by RFC3339
+</p>
+<p>ipnum          = decimal ":" 1*3digit "." 1*3digit "." 1*3digit "." 1*3digit
+</p>
+<p>ip6num         = IPv6address ; as defined in <a href="#RFC2373" title="Hinden, R. and S. Deering, IP Version 6 Addressing Architecture, July 1998.">[RFC2373]</a>
+</p>
+<p>utf8string     = decimal ":" 1*UTF8
+</p>
+<p>UTF8           = %x01-09 / %x0B-0C / %x0E-7F / UTF8-2 / UTF8-3 / UTF8-4 / UTF8-5 / UTF8-6
+</p>
+<p>UTF8-1         = %x80-BF
+</p>
+<p>UTF8-2         = %xC0-DF UTF8-1
+</p>
+<p>UTF8-3         = %xE0-EF 2UTF8-1
+</p>
+<p>UTF8-4         = %xF0-F7 3UTF8-1
+</p>
+<p>UTF8-5         = %xF8-FB 4UTF8-1
+</p>
+<p>UTF8-6         = %xFC-FD 5UTF8-1
+</p>
+<p>prefix         = "6:prefix" utf8string
+</p>
+<p>suffix         = "6:suffix" utf8string
+</p>
+<p>typespecific   = *UTF8
+</p>
+</blockquote>
+
+<a name="anchor9"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.B"></a><h3>Appendix B.&nbsp;Representing hierarchies</h3>
+
+<p>
+When we have been working with S-expression we have found it useful to split
+queries and rules into three parts: 
+</p>
+<blockquote class="text"><dl>
+<dt>Resource</dt>
+<dd>The resource that someone want to use or perform some action on
+</dd>
+<dt>Action</dt>
+<dd>The action that is to be performed on the said resource
+</dd>
+<dt>Subject</dt>
+<dd>The entity that wants to perform the action on the resource
+</dd>
+</dl></blockquote>
+
+<p>
+In many situations your application has organised and named both subjects, sctions 
+and resources as hierarchies. If you want to take full advantage of the hierarchical 
+names in rules and queries you have to study carefully how S-expressions are evaluated 
+by the policy engine.
+Assume that a name is represented as (name p[0] ... p[n]) where p[0] 
+is the part of the name that is closest to the root of the hierarchy. Then you 
+can represent the whole space of names below p[0], by just specifying the top part 
+of the namespace: (name p[0]). Correspondingly you can represent a specific part of 
+the namespace by defining a larger part of the hierarchy (name p[0] ... p[m]), m &lt; n. 
+
+</p>
+<p>
+But what if you would like to represent every object who has the same last name p[n] ?
+
+</p>
+<p>
+An example of when this would be is if you defined role names within a organization 
+as a concatenation of the organization name, the name of all the organizational 
+units from the top with the roletype. Like this: (role o ou[0] ... ou[n] r) 
+
+</p>
+<p>
+"(role UmU Umdac boss)" would then be the rolename for the boss of the
+organizational unit Umdac within the organization UmU.
+
+</p>
+<p>
+Using this structure you could say (role UmU Umdac) and mean every role within
+that organizational unit and all the organizational units below. But if you
+said (role UmU boss ) you would refer to the boss of UmU and not all the bosses within
+UmU. This since (role UmU umdac boss) is not '&lt;=' (role UmU boss). So adding a
+role type to a list of O and OU's would mean exactly that role at that level in
+the organization.
+
+</p>
+<p>
+If you instead would define the role name to be represented as (role r o ou[0] .. ou[n]),
+then you could address every specific roletype within the organization by writing 
+things like (role boss UmU), which would then mean every 'boss' within the organization 
+UmU. This follows since (role boss UmU OU) is '&lt;=' (role boss UmU). On the other hand you 
+could not specifically target the boss at UmU using this representation. 
+
+</p>
+<p>
+One can add complexity to this by using role types that are hierarchical such 
+that the name would be (role o ou[0] ... ou[n] r[0] ... r[m]) or
+(role r[0] ... r[m] o ou[0] ... ou[n]). By using the first form you could address every
+role within a role hierarchy at a specific place in the organization hierarchy but not in 
+the whole organization tree. Using the later role you could address one whole 
+subtree of the role hierarchy anywhere within a subtree of the organizational 
+hierarchy. 
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>(role UmU admin finance) '&lt;=' (role UmU admin)
+</p>
+<p>(role UmU umdac admin) is not '&lt;=' (role UmU admin)
+</p>
+<p>and
+</p>
+<p>(role admin UmU umdac) '&lt;=' (role admin UmU)
+</p>
+<p>(role admin finance UmU) is not '&lt;=' (role admin UmU)
+</p>
+</blockquote>
+
+<p>
+Remember that the decision of the meaning of a particular rule is taken when 
+modelling the authorisation policy for a particular application. The Policy 
+Engine does not know anything about the application. It only compares queries 
+to rules according to builtin evaluation rules for restricted S-expressions, 
+as described in this document. What we are discussing in this section are the 
+consequences of choosing certain meanings of a particular S-expression, given 
+how the Policy Engine tests for the '&lt;='-relation. These properties of the 
+Policy Engine must be fully understood by those deciding the structures of rules 
+and queries. 
+
+</p>
+<p>
+When you have two hierarchies that are linked to each other it might be best 
+to decouple them and make two lists of them,
+(role (org o ou[0] ... ou[n])(type r[0] ... r[m])) which gives you freedome to
+express the relationship "any role whithin a role hierarchy anywhere within a
+organization hierarchy". 
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>(role (org UmU) (type admin finance)) '&lt;=' (role (org UmU) (type admin))
+</p>
+<p>(role (org UmU umdac) (type admin)) '&lt;=' (role (org UmU) (type admin))
+</p>
+</blockquote>
+
+<p>
+ There is of course nothing that prevents you from using one nameform in one 
+  set of rules and another form in another as long as the queries you pose to
+  the policy engine use the appropriate one. What you should make certain though 
+  is that the form you choose gives you the possibility to express exactly what 
+  you are aiming for. 
+
+</p>
+<a name="anchor10"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.C"></a><h3>Appendix C.&nbsp;Representing Security Connection</h3>
+
+<p>
+Lots of applications uses SSL/TLS to protect the connection between a client
+and a server. This is a good reason for specify how the information about
+such a connection should be represented in a S-expression. 
+
+</p>
+<p>
+The information present are:
+</p>
+<blockquote class="text">
+<p>SSL/TLS version
+</p>
+<p>Cipher Suite used
+</p>
+<p>SubjectDN
+</p>
+<p>IssuerDN
+</p>
+</blockquote>
+
+<p>
+So a plausible structure which then would describe the connection as viewed from
+one of the partners ( either the client of the server) would be: 
+
+</p>
+<p>
+(TransportLayerSec
+  (protocolVersion &lt;major&gt; &lt;minor&gt;) 
+  (chipherSuite &lt;ciphersuite&gt;  )
+  (autname "X509"
+    (subject &lt;subjectDN&gt; )
+    (issuer &lt;issuerDN&gt; )))
+
+</p>
+<p>
+If X.509 certificates are in use, if instead kerberos <a href="#RFC2712" title="Medvinsky, A. and M. Hur, Addition of Kerberos Cipher Suites to Transport Layer Security (TLS), October 1999.">[RFC2712]</a>
+was used that would only change the later part of the structure:
+
+</p>
+<p>
+(TransportLayerSec
+  (protocolVersion &lt;major&gt; &lt;minor&gt;) 
+  (chipherSuite &lt;ciphersuite&gt;  )
+  (autname "gss-name"
+    (uid &lt;uid&gt; )
+    (realm &lt;realm&gt; )))
+
+</p>
+<p>
+Remembering that this connection information is about the connection between a
+client and a application server that gives access to some resource, and that the
+application server 
+probably has its restrictions on what kind of connections, ciphersuites and
+clientcertificates combinations it will accept. So this is about having a second
+opinion from the owner of the resource on which combination it allows. If it is
+more restrictive than the application server you might end up with the situation
+where the client gets a SSL/TLS protected connection to the server but no data
+will flow over the connection because the resource owner demands that a different
+ciphersuite must be used. 
+
+</p><a name="rfc.copyright"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>Intellectual Property Statement</h3>
+<p class='copyright'>
+The IETF takes no position regarding the validity or scope of
+any intellectual property or other rights that might be claimed
+to  pertain to the implementation or use of the technology
+described in this document or the extent to which any license
+under such rights might or might not be available; neither does
+it represent that it has made any effort to identify any such
+rights. Information on the IETF's procedures with respect to
+rights in standards-track and standards-related documentation
+can be found in BCP-11. Copies of claims of rights made
+available for publication and any assurances of licenses to
+be made available, or the result of an attempt made
+to obtain a general license or permission for the use of such
+proprietary rights by implementors or users of this
+specification can be obtained from the IETF Secretariat.</p>
+<p class='copyright'>
+The IETF invites any interested party to bring to its
+attention any copyrights, patents or patent applications, or
+other proprietary rights which may cover technology that may be
+required to practice this standard. Please address the
+information to the IETF Executive Director.</p>
+<h3>Full Copyright Statement</h3>
+<p class='copyright'>
+Copyright (C) The Internet Society (2004). All Rights Reserved.</p>
+<p class='copyright'>
+This document and translations of it may be copied and furnished to
+others, and derivative works that comment on or otherwise explain it
+or assist in its implementation may be prepared, copied, published and
+distributed, in whole or in part, without restriction of any kind,
+provided that the above copyright notice and this paragraph are
+included on all such copies and derivative works. However, this
+document itself may not be modified in any way, such as by removing
+the copyright notice or references to the Internet Society or other
+Internet organizations, except as needed for the purpose of
+developing Internet standards in which case the procedures for
+copyrights defined in the Internet Standards process must be
+followed, or as required to translate it into languages other than
+English.</p>
+<p class='copyright'>
+The limited permissions granted above are perpetual and will not be
+revoked by the Internet Society or its successors or assignees.</p>
+<p class='copyright'>
+This document and the information contained herein is provided on an
+&quot;AS IS&quot; basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING
+TASK FORCE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
+HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.</p>
+<h3>Acknowledgment</h3>
+<p class='copyright'>
+Funding for the RFC Editor function is currently provided by the
+Internet Society.</p>
+</body></html>
