@@ -205,12 +205,13 @@ int main( int argc, char **argv )
 	spocp_charbuf_t scb;
 	spocp_chunk_t	*sc = 0;
 	octet_t		*op,loc, *ext = 0;
-	spocp_result_t	rc, sr;
-	char 		*cnfg = 0, str[1024];
+	spocp_result_t	rc, sr = SPOCP_SUCCESS;
+	char 		*cnfg = 0, str[1024], answ[32];
 	int		i, runbc = 0, m, c = 1;
 	octarr_t	*info = 0;
 
 	memset( &srv, 0, sizeof( srv_t ));
+	memset( &answ, 0, sizeof(answ));
 
 	while ((i = getopt(argc, argv, "hbxf:d:")) != EOF) {
 		switch (i) {
@@ -258,6 +259,9 @@ int main( int argc, char **argv )
 		exit(1) ;
 	}
 
+	if (debug)
+		spocp_open_log(0, debug);
+
 	if (n == 0) {
 		printf( "Didn't find any rules to use\n");
 		exit(0);
@@ -301,19 +305,19 @@ int main( int argc, char **argv )
 				}
 	
 				if ( elementcmp( ep, r->ep, ext ) == 0 ) {
-					printf( "(%d) YES [%s", c, r->strrule);
 					if (runbc && r->bcond ) {
 						sr = bcexp_eval(ep, r->ep,
 						    r->bcond->exp, &info);
 						if (sr==SPOCP_SUCCESS)
-							printf(", bcond: OK]\n");
-						else if (sr==SPOCP_DENIED)
-							printf(", bcond: DENIED]\n");
-						else
-							printf(", bcond: %d]\n",sr);
+							sprintf(answ,
+							    ", bcond: OK");
+						else 
+							sprintf(answ,
+							    ", bcond: DENIED (%d)",
+							    (int) sr);
 					}
-					else
-						printf("]\n");
+					printf( "(%d) Matched rule: %s%s\n",
+					    c, r->strrule, answ);
 					m++;
 				}
 				else if( extended ) {
