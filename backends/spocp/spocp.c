@@ -10,7 +10,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
-#include "../../client/include/spocpcli.h"
+#include <spocpcli.h>
 
 /*
  * arg is composed of the following parts spocphost:path:rule

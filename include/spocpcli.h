@@ -8,140 +8,136 @@
 #include <openssl/ssl.h>
 #endif
 
-/*
- * The same as in include/spocp.h, but I don't need the other stuff in that
- * file 
- */
-
-#ifndef __SPOCP_H
-typedef struct _octet {
-	size_t          len;
-	size_t          size;
-	char           *val;
-} octet_t;
-
-typedef enum {
-	SPOCP_SUCCESS,
-	SPOCP_DENIED,
-	SPOCP_CLOSE,
-	SPOCP_EXISTS,
-	SPOCP_OPERATIONSERROR,
-	SPOCP_PROTOCOLERROR,
-	SPOCP_UNKNOWNCOMMAND,
-	SPOCP_SYNTAXERROR,
-	SPOCP_TIMELIMITEXCEEDED,
-	SPOCP_SIZELIMITEXCEEDED,
-	SPOCP_SASLBINDINPROGRESS,
-	SPOCP_BUSY,
-	SPOCP_UNAVAILABLE,
-	SPOCP_UNWILLINGTOPERFORM,
-	SPOCP_SERVER_DOWN,
-	SPOCP_LOCAL_ERROR,
-	SPOCP_TIMEOUT,
-	SPOCP_FILTER_ERROR,
-	SPOCP_PARAM_ERROR,
-	SPOCP_NO_MEMORY,
-	SPOCP_CONNECT_ERROR,
-	SPOCP_NOT_SUPPORTED,
-	SPOCP_BUF_OVERFLOW,
-	SPOCP_MISSING_CHAR,
-	SPOCP_MISSING_ARG,
-	SPOCP_SSLCON_EXIST,
-	SPOCP_SSL_ERR,
-	SPOCP_CERT_ERR,
-	SPOCP_OTHER,
-	SPOCP_UNKNOWN_TYPE,
-	SPOCP_NOT_DONE
-} spocp_result_t;
+#ifndef TRUE
+#define TRUE	1
+#define FALSE	0
 #endif
 
-typedef struct _octnode {
-	octet_t        *oct;
+/* TLS states */
+#define USE	1
+#define DEMAND  2
+#define VERIFY	4
+
+#include <spocp.h>
+
+typedef struct _spocp_rescode
+{
+	int code;
+	char *num;
+} spocp_rescode_t;
+
+enum spocpc_res
+{
+	SPOCPC_SYNTAXERROR = 1,
+	SPOCPC_MISSING_CHAR,
+	SPOCPC_OK,
+	SPOCPC_SYNTAX_ERROR,
+	SPOCPC_PROTOCOL_ERROR,
+	SPOCPC_OTHER,
+	SPOCPC_TIMEDOUT,
+	SPOCPC_CON_ERR,
+	SPOCPC_PARAM_ERROR,
+	SPOCPC_STATE_VIOLATION,
+	SPOCPC_NOSUPPORT
+};
+/*
+typedef struct _octnode
+{
+	octet_t *oct;
 	struct _octnode *next;
 } octnode_t;
-
-typedef enum {
+*/
+typedef enum
+{
 	UNCONNECTED,
 	SOCKET,
 	SSL_TLS
 } spocp_contype_t;
 
-typedef struct _spocp {
+typedef struct _spocp
+{
 	spocp_contype_t contype;
-	int             fd;
-	char           *srv;
+	int fd;
+	char *srv;
+	int timeout;		/* timeout in seconds */
 
 #ifdef HAVE_SSL
-	SSL_CTX        *ctx;
-	SSL            *ssl;
+	/* A couple of cases:
+	 * don't demand server certificate
+	 * demand server certificate, fail or not depending on whether the verification fails */
+	int servercert;		/* whether server cert is demanded or not */
+	int verify_ok;		/* TRUE means fail is verify isn't OK */
+	int tls;
+
+	SSL_CTX *ctx;
+	SSL *ssl;
 #endif
 
-	char           *sslEntropyFile;
-	char           *certificate;
-	char           *privatekey;
-	char           *calist;
-	char           *passwd;
+	char *sslEntropyFile;
+	char *certificate;
+	char *privatekey;
+	char *calist;
+	char *passwd;
 
 } SPOCP;
 
-void            _log_err(const char *format, ...);
+typedef struct _queres
+{
+	int		rescode;
+	char		*str;
+	octarr_t	*blob;
+} queres_t;
 
-char           *oct2strdup(octet_t * op, char ec);
-spocp_result_t  octcpy(octet_t * cpy, octet_t * oct);
 
-SPOCP          *spocpc_open(char *srv);
-int             spocpc_reopen(SPOCP * spocp);
-ssize_t         spocpc_readn(SPOCP * spocp, char *str, ssize_t max);
-ssize_t         spocpc_writen(SPOCP * spocp, char *str, ssize_t max);
+SPOCP	*spocpc_init(char *srv);
+SPOCP	*spocpc_open(SPOCP * spocp, char *srv, int nsec);
+int	spocpc_reopen(SPOCP * spocp, int nsec);
+ssize_t	spocpc_readn(SPOCP * spocp, char *str, ssize_t max);
+ssize_t	spocpc_writen(SPOCP * spocp, char *str, ssize_t max);
 
-char           *sexp_printa(char *sexp, int *size, char *fmt, void **argv);
+int spocpc_sexp_elements(char *r, int n, octet_t line[], int s, int *rc);
+int skip_length(char **sexp, int n, int *rc);
 
-char           *sexplist_make(char *sexp, int bsize, char *fmt, ...);
-char           *sexplist_add(char *sexp, int bsize, char *fmt, ...);
+int sexp_get_response(octet_t * buf, octet_t * code, octet_t * info);
+int spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid);
+
+int spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
+	char *info, queres_t * qr);
+int spocpc_send_subject(SPOCP * spocp, char *subject, queres_t * qr);
+int spocpc_send_query(SPOCP *, char *path, char *query, queres_t * qr);
+int spocpc_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr);
+int spocpc_send_logout(SPOCP * spocp, queres_t * qr);
+int spocpc_open_transaction(SPOCP * spocp, queres_t * qr);
+int spocpc_commit(SPOCP * spocp, queres_t * qr);
+int spocpc_attempt_tls(SPOCP * spocp, queres_t * qr);
+int spocpc_start_tls(SPOCP * spocp);
+
+void free_spocp(SPOCP * s);
+void spocpc_close(SPOCP * spocp);
 
 /*
- * int sexp_get_len( char **str, spocp_result_t *rc ) ; char
- * *sexp_get_next_element( char *sexp, int n, spocp_result_t *rc ) ; int
- * spocp_protocol_op( char **argv, char **prot ) ; spocp_result_t sexp_memcpy( 
- * octet_t *op, char *str, int n ) ; spocp_result_t spocp_answer_ok( char
- * *resp, size_t n ) ; 
- */
-int             spocpc_sexp_elements(char *r, int n, octet_t line[], int s,
-				     spocp_result_t * rc);
-int             skip_length(char **sexp, int n, spocp_result_t * rc);
-
-spocp_result_t  sexp_get_response(octet_t * buf, octet_t * code,
-				  octet_t * info);
-spocp_result_t  spocpc_parse_and_print_list(char *resp, int n, FILE * fp,
-					    int wid);
-
-spocp_result_t  spocpc_send_add(SPOCP * spocp, char *path, char *rule,
-				char *info);
-spocp_result_t  spocpc_send_aci(SPOCP * spocp, char *path, char *rule);
-spocp_result_t  spocpc_send_subject(SPOCP * spocp, char *subject);
-spocp_result_t  spocpc_send_query(SPOCP *, char *path, char *query,
-				  octnode_t ** info);
-spocp_result_t  spocpc_send_delete(SPOCP * spocp, char *path, char *rule);
-spocp_result_t  spocpc_send_logout(SPOCP * spocp);
-spocp_result_t  spocpc_open_transaction(SPOCP * spocp);
-spocp_result_t  spocpc_commit(SPOCP * spocp);
-spocp_result_t  spocpc_starttls(SPOCP * spocp);
-
-void            free_spocp(SPOCP * s);
-void            spocpc_close(SPOCP * spocp);
-
-octnode_t      *spocpc_octnode_new(void);
-void            spocpc_octnode_free(octnode_t *);
-char           *spocpc_oct2strdup(octet_t * op, char ec);
+octnode_t *spocpc_octnode_new(void);
+void spocpc_octnode_free(octnode_t *);
+void spocpc_octnode_list_free(octnode_t *);
+char *spocpc_oct2strdup(octet_t * op, char ec);
+*/
 
 #ifdef HAVE_SSL
 
-void            init_tls_env(SPOCP * spocp, char *cert, char *priv, char *ca,
-			     char *pwd);
+void spocpc_tls_use_cert(SPOCP * spocp, char *str);
+void spocpc_tls_use_ca(SPOCP * spocp, char *str);
+void spocpc_tls_use_calist(SPOCP * spocp, char *str);
+void spocpc_tls_use_key(SPOCP * spocp, char *str);
+void spocpc_tls_use_passwd(SPOCP * spocp, char *str);
+void spocpc_tls_set_demand_server_cert(SPOCP * spocp);
+void spocpc_tls_set_verify_server_cert(SPOCP * spocp);
+
+void	spocpc_use_tls(SPOCP * spocp);
+int	start_tls(SPOCP * spocp);
 
 #endif
 
-int             spocpc_debug;
+int spocpc_debug;
 
 #define DIGITS(n) ( (n) >= 100000 ? 6 : (n) >= 10000 ? 5 : (n) >= 1000 ? 4 : (n) >= 100 ? 3 : ( (n) >= 10 ? 2 : 1 ) )
 
