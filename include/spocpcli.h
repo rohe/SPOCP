@@ -100,11 +100,16 @@ ssize_t	spocpc_writen(SPOCP * spocp, char *str, ssize_t max);
 
 int spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid);
 
-int spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
-	char *info, queres_t * qr);
-int spocpc_send_subject(SPOCP * spocp, char *subject, queres_t * qr);
-int spocpc_send_query(SPOCP *, char *path, char *query, queres_t * qr);
-int spocpc_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr);
+int spocpc_send_add(SPOCP *, octet_t *, octet_t *, octet_t *, octet_t *, queres_t *);
+int spocpc_send_subject(SPOCP *, octet_t *, queres_t *);
+int spocpc_send_query(SPOCP *, octet_t *, octet_t *, queres_t *);
+int spocpc_send_delete(SPOCP *, octet_t *, octet_t *, queres_t *);
+
+int spocpc_str_send_add(SPOCP *, char *, char *, char *, char *, queres_t *);
+int spocpc_str_send_subject(SPOCP *, char *, queres_t *);
+int spocpc_str_send_query(SPOCP *, char *, char *, queres_t *);
+int spocpc_str_send_delete(SPOCP *, char *, char *, queres_t *);
+
 int spocpc_send_logout(SPOCP * spocp);
 int spocpc_open_transaction(SPOCP * spocp, queres_t * qr);
 int spocpc_commit(SPOCP * spocp, queres_t * qr);

@@ -62,6 +62,11 @@ typedef struct sockaddr SA;
  */
 char prbuf[BUFSIZ];
 
+int spocpc_str_send_query(SPOCP *, char *, char *, queres_t *);
+int spocpc_str_send_delete(SPOCP *, char *, char *, queres_t *);
+int spocpc_str_send_subject(SPOCP *, char *, queres_t *);
+int spocpc_str_send_add(SPOCP *, char *, char *, char *, char *, queres_t *);
+
 /*--------------------------------------------------------------------------------*/
 
 /*!
@@ -319,7 +324,7 @@ check_cert_chain(SSL * ssl, char *host)
 			    hostname, host);
 
 /*
-  if(strcasecmp(peer_CN,host)) {
+  if (strcasecmp(peer_CN,host)) {
     traceLog("Common name doesn't match host name");
     return 0 ;
   }
@@ -730,6 +735,8 @@ spocpc_connect(char *srv, int nsec)
 	char *cp, *host, buf[256];
 
 
+	if (srv == 0) return -1;
+
 	if (*srv == '/') {	/* unix domain socket */
 
 		sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
@@ -899,6 +906,7 @@ SPOCP *
 spocpc_open(SPOCP * spocp, char *srv, int nsec)
 {
 	int fd = 0;
+	char **srvs;
 
 	if (srv) {
 		if ((fd = spocpc_connect(srv, nsec)) > 0 ) {
@@ -920,11 +928,13 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 	}
 
 	if (fd <= 0 && spocp && spocp->srv) {
-		while( spocp->cursrv ) {
-			fd = spocpc_connect(*spocp->cursrv, nsec);
-			if( fd <= 0 ) spocp->cursrv++;
+		for( srvs = spocp->cursrv ; *srvs ; srvs++) {
+			if(( fd = spocpc_connect(*srvs, nsec)) >0 ) {
+				spocp->cursrv = srvs;
+				break;
+			}
 		}
-		if (spocp->cursrv == 0) spocp->cursrv = spocp->srv;
+		if (srvs == 0) spocp->cursrv = spocp->srv;
 	}
 
 	if (fd == 0)
@@ -963,13 +973,13 @@ spocpc_reopen(SPOCP * spocp, int nsec)
 
 	while( arr ) {
 		spocp->fd = spocpc_connect(*arr, nsec);
-		if( spocp->fd <= 0 ) spocp->cursrv++;
+		if (spocp->fd <= 0) spocp->cursrv++;
 	}
 	if (arr == 0) {
 		arr = spocp->srv;
 		while( arr != spocp->cursrv ) {
 			spocp->fd = spocpc_connect(*arr, nsec);
-			if( spocp->fd <= 0 ) spocp->cursrv++;
+			if (spocp->fd <= 0) spocp->cursrv++;
 		}
 	}
 
@@ -1201,53 +1211,64 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 /*--------------------------------------------------------------------------------*/
 
 static int
-spocpc_protocol_op(char **argv, char **prot)
+spocpc_protocol_op(octarr_t *oa, octet_t *prot)
 {
 	char *op, *sp;
 	int i, l, la, tot;
+	size_t n;
 
-	for (i = 0, l = 0; argv[i]; i++) {
-		la = strlen(argv[i]);
+	for (i = 0, l = 0; i < oa->n ; i++) {
+		la = oa->arr[i]->len ;
 		l += la + DIGITS(la) + 1;
 	}
 
 	tot = (l + DIGITS(l) + 1);
-	op = (char *) malloc((tot + 1) * sizeof(char));
+	op = prot->val = (char *) malloc((tot + 1) * sizeof(char));
 
 	sprintf(op, "%d:", l);
-	sp = op + DIGITS(l) + 1;
+	l = strlen(op);
+	op += l;
+	n = (size_t) tot - l;
 
-	for (i = 0; argv[i]; i++) {
-		la = strlen(argv[i]);
-		sprintf(sp, "%d:%s", la, argv[i]);
-		sp += la + DIGITS(la) + 1;
-	}
-	*sp = 0;
+	sp = sexp_printv( op, &n, "X", oa);
 
-	*prot = op;
+	if (sp == 0) return -1;
 
-	return tot;
+	prot->len = tot - (int) n;
+
+	return prot->len;
 }
 
 /* ============================================================================== */
 
 static int
-spocpc_just_send_X(SPOCP * spocp, char **argv)
+spocpc_just_send_X(SPOCP * spocp, octarr_t *argv)
 {
-	char	*op;
+	octet_t o;
 	int	l, n;
 
-	l = spocpc_protocol_op(argv, &op);
+	l = spocpc_protocol_op(argv, &o);
 
-	if (spocpc_debug)
-		traceLog("[%s](%d) ->(%d/%d)", op, l, spocp->fd,
+	if (spocpc_debug) {
+		char *tmp;
+		tmp = oct2strdup( &o, '%');
+
+		traceLog("[%s](%d) ->(%d/%d)", tmp, l, spocp->fd,
 		    spocp->contype);
 
+		free( tmp );
+	}
+
 	/* what if I haven't been able to write everything ? */
-	if ((n = spocpc_writen(spocp, op, l)) < 0)
+	n = spocpc_writen(spocp, o.val, o.len);
+	octclr(&o);
+
+	if (n < 0) {
 		return SPOCPC_CON_ERR;
-	else if ( n == 0 && spocp->rc ) 
+	}
+	else if ( n == 0 && spocp->rc ) {
 		return spocp->rc;
+	}
 
 	if (spocpc_debug)
 		traceLog("Wrote %d chars", n);
@@ -1284,7 +1305,7 @@ spocpc_get_result(SPOCP * spocp, queres_t * qr)
 /* ============================================================================== */
 
 static int
-spocpc_send_X(SPOCP * spocp, char **argv, queres_t * qr)
+spocpc_send_X(SPOCP * spocp, octarr_t *argv, queres_t * qr)
 {
 	int	ret;
 
@@ -1305,20 +1326,48 @@ spocpc_send_X(SPOCP * spocp, char **argv, queres_t * qr)
  * \return A Spocpc result code
  */
 int
-spocpc_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
+spocpc_str_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
 {
-	char *argv[4];
-	int i = 1;
+	octarr_t	argv;
+	octet_t		arr[3], *ap = arr;
 
-	argv[0] = "QUERY";
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 3;
+
+	oct_assign(&arr[0], "QUERY");
 
 	if (path && *path)
-		argv[i++] = path;
+		oct_assign(&arr[1],path);
+	else
+		arr[1].len = 0;
 
-	argv[i++] = query;
-	argv[i++] = 0;
+	oct_assign(&arr[2], query);
 
-	return spocpc_send_X(spocp, argv, qr);
+	return spocpc_send_X(spocp, &argv, qr);
+}
+
+int
+spocpc_send_query(SPOCP * spocp, octet_t *path, octet_t *query, queres_t * qr)
+{
+	octarr_t	argv;
+	octet_t		*arr[3], op;
+
+	argv.arr = arr;
+	argv.size = 0;
+	argv.n = 3;
+
+	oct_assign(&op, "QUERY");
+	arr[0] = &op;
+
+	if (path)
+		arr[1] = path;
+	else
+		arr[1] = 0;
+
+	arr[2] = query;
+
+	return spocpc_send_X(spocp, &argv, qr);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1333,20 +1382,48 @@ spocpc_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
  * \return A Spocpc result code
  */
 int
-spocpc_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
+spocpc_str_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 {
-	char *argv[4];
-	int i = 1;
+	octarr_t	argv;
+	octet_t		arr[3], *ap = arr;
 
-	argv[0] = "DELETE";
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 3;
+
+	oct_assign(&arr[0], "DELETE");
 
 	if (path && *path)
-		argv[i++] = path;
+		oct_assign(&arr[1],path);
+	else
+		arr[1].len = 0;
 
-	argv[i++] = rule;
-	argv[i++] = 0;
+	oct_assign(&arr[2], rule);
 
-	return spocpc_send_X(spocp, argv, qr);
+	return spocpc_send_X(spocp, &argv, qr);
+}
+
+int
+spocpc_send_delete(SPOCP * spocp, octet_t *path, octet_t *rule, queres_t * qr)
+{
+	octarr_t	argv;
+	octet_t		*arr[3], op;
+
+	argv.arr = arr;
+	argv.size = 0;
+	argv.n = 3;
+
+	oct_assign(&op, "DELETE");
+	arr[0] = &op;
+
+	if (path)
+		arr[1] = path;
+	else
+		arr[1] = 0;
+
+	arr[2] = rule;
+
+	return spocpc_send_X(spocp, &argv, qr);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1361,15 +1438,46 @@ spocpc_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
  * \return A Spocpc result code
  */
 int
-spocpc_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
+spocpc_str_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
 {
-	char *argv[3];
+	octarr_t	argv;
+	octet_t		arr[2], *ap = arr;
 
-	argv[0] = "SUBJECT";
-	argv[1] = subject;
-	argv[2] = 0;
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 1;
 
-	return spocpc_send_X(spocp, argv, qr);
+	oct_assign(&arr[0], "SUBJECT");
+
+	if (subject && *subject) {
+		oct_assign(&arr[1],subject);
+		argv.n = 2;
+	}
+
+	return spocpc_send_X(spocp, &argv, qr);
+}
+
+/*--------------------------------------------------------------------------------*/
+
+int
+spocpc_send_subject(SPOCP * spocp, octet_t *subject, queres_t * qr)
+{
+	octarr_t	argv;
+	octet_t		*arr[3], op;
+
+	argv.arr = arr;
+	argv.size = 0;
+	argv.n = 1;
+
+	oct_assign(&op, "SUBJECT");
+	arr[0] = &op;
+
+	if (subject) {
+		arr[1] = subject;
+		argv.n = 2;
+	}
+
+	return spocpc_send_X(spocp, &argv, qr);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1386,35 +1494,85 @@ spocpc_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
  * \return A Spocpc result code
  */
 int
-spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
-	 char *info, queres_t * qr)
+spocpc_str_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
+	char *info, queres_t * qr)
 {
-	char *argv[5];
-	int i = 1;
+	octarr_t	argv;
+	octet_t		arr[5], *ap = arr;
 
 	if (rule == 0 || *rule == '\0')
 		return SPOCPC_PARAM_ERROR;
 
-	argv[0] = "ADD";
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 3;
+
+	oct_assign(&arr[0], "ADD");
 
 	if (path && *path)
-		argv[i++] = path;
+		oct_assign(&arr[1],path);
+	else
+		arr[1].len = 0;
 
-	argv[i++] = rule;
+	oct_assign(&arr[2], rule);
 
-	if (bcond && *bcond)
-		argv[i++] = bcond;
-
-	if (info && *info) {
-		if( bcond == 0 || *bcond == 0 )
-			argv[i++] = "NULL";
-
-		argv[i++] = info;
+	if (bcond && *bcond) {
+		oct_assign(&arr[3], bcond);
+		argv.n = 4;
 	}
 
-	argv[i] = 0;
+	if (info && *info) {
+		if (bcond == 0 || *bcond == 0)
+			oct_assign(&arr[3], "NULL");
 
-	return spocpc_send_X(spocp, argv, qr);
+		oct_assign(&arr[4], info);
+		argv.n = 5;
+	}
+
+	return spocpc_send_X(spocp, &argv, qr);
+}
+
+/*--------------------------------------------------------------------------------*/
+int
+spocpc_send_add(SPOCP * spocp, octet_t *path, octet_t *rule, octet_t *bcond,
+	octet_t *info, queres_t * qr)
+{
+	octarr_t	argv;
+	octet_t		*arr[5], op, bc;
+
+	if (rule == 0 )
+		return SPOCPC_PARAM_ERROR;
+
+	argv.arr = arr;
+	argv.size = 0;
+	argv.n = 3;
+
+	oct_assign(&op, "ADD");
+	arr[0] = &op;
+
+	if (path)
+		arr[1] = path;
+	else
+		arr[1] = 0;
+
+	arr[2] = rule;
+
+	if (bcond) {
+		arr[3] = bcond;
+		argv.n = 4;
+	}
+
+	if (info) {
+		if (bcond == 0) {
+			oct_assign(&bc, "NULL");
+			arr[3] = &bc;
+		}
+
+		arr[4] = info;
+		argv.n = 5;
+	}
+
+	return spocpc_send_X(spocp, &argv, qr);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1427,14 +1585,19 @@ spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
 int
 spocpc_send_logout(SPOCP * spocp)
 {
-	char *argv[3];
-	queres_t qres;
+	octarr_t	argv;
+	octet_t		arr[1], *ap = arr;
+	queres_t	qres;
+
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 1;
+
+	oct_assign(&arr[0], "LOGOUT");
 
 	memset( &qres, 0, sizeof( queres_t));
-	argv[0] = "LOGOUT";
-	argv[1] = 0;
 
-	return spocpc_send_X(spocp, argv, &qres);
+	return spocpc_send_X(spocp, &argv, &qres);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1449,12 +1612,16 @@ spocpc_send_logout(SPOCP * spocp)
 int
 spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 {
-	char *argv[3];
+	octarr_t	argv;
+	octet_t		arr[1], *ap = arr;
 
-	argv[0] = "BEGIN";
-	argv[1] = 0;
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 1;
 
-	return spocpc_send_X(spocp, argv, qr);
+	oct_assign(&arr[0], "BEGIN");
+
+	return spocpc_send_X(spocp, &argv, qr);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1469,12 +1636,16 @@ spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 int
 spocpc_commit(SPOCP * spocp, queres_t * qr)
 {
-	char *argv[3];
+	octarr_t	argv;
+	octet_t		arr[1], *ap = arr;
 
-	argv[0] = "COMMIT";
-	argv[1] = 0;
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 1;
 
-	return spocpc_send_X(spocp, argv, qr);
+	oct_assign(&arr[0], "COMMIT");
+
+	return spocpc_send_X(spocp, &argv, qr);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1491,15 +1662,19 @@ spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
 {
 	int res = SPOCPC_OK;
 #ifdef HAVE_SSL
-	char *argv[3];
+	octarr_t	argv;
+	octet_t		arr[1], *ap = arr;
 
 	if (spocp->contype == SSL_TLS)
 		return SPOCPC_STATE_VIOLATION;
 
-	argv[0] = "STARTTLS";
-	argv[1] = 0;
+	argv.arr = &ap;
+	argv.size = 0;
+	argv.n = 1;
 
-	return spocpc_send_X(spocp, argv, qr);
+	oct_assign(&arr[0], "STARTTLS");
+
+	return spocpc_send_X(spocp, &argv, qr);
 #else
 	res = SPOCPC_NOSUPPORT;
 #endif
