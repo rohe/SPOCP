@@ -57,7 +57,6 @@ ruleinst_t *allowing_rule( junc_t *ap )
  */
 spocp_result_t allowed( junc_t *ap, element_t *ep, octarr_t **on )
 {  
-  ruleinst_t    *rt = 0 ;
   spocp_result_t rc = SPOCP_SUCCESS, res = SPOCP_DENIED ;
 
   if(( ap = element_match_r( ap, ep, &rc, ep, on ))) res = SPOCP_SUCCESS ;
