@@ -1,3 +1,8 @@
+/*!
+ * \file lib/bcond.c
+ * \author Roland Hedberg <roland@catalogix.se>
+ */
+
 #include <string.h>
 
 #include <db0.h>
@@ -20,7 +25,7 @@ typedef struct _stree {
 
 /* ---------------------------------------------------------------------- */
 
-bcspec_t *bcspec_new( plugin_t *plt, octet_t *spec )
+static bcspec_t *bcspec_new( plugin_t *plt, octet_t *spec )
 {
   octet_t   oct ;
   bcspec_t  *bcs = 0 ;
@@ -47,7 +52,7 @@ bcspec_t *bcspec_new( plugin_t *plt, octet_t *spec )
 
 /* ---------------------------------------------------------------------- */
 
-void bcspec_free( bcspec_t *bcs )
+static void bcspec_free( bcspec_t *bcs )
 {
   if( bcs ) {
     if( bcs->name ) free( bcs->name ) ;
@@ -59,7 +64,11 @@ void bcspec_free( bcspec_t *bcs )
 }
 
 /* ---------------------------------------------------------------------- */
-
+/*!
+ * Is this a proper specification of a boundary condition ?
+ * \param A pointer to the boundary condition specification
+ * \return TRUE is true or FALSE if not
+ */
 int bcspec_is( octet_t *spec ) 
 {
   int n ;
@@ -68,13 +77,15 @@ int bcspec_is( octet_t *spec )
   
   for( n-- ; n >= 0 && DIRCHAR( spec->val[n] ) ; n-- ) ;
 
+  /* should I check the XPath definitions ? */
+
   if( n == -1 ) return TRUE ;
   else return FALSE ;
 }
 
 /* ---------------------------------------------------------------------- */
 
-bcexp_t *bcexp_new()
+static bcexp_t *bcexp_new()
 {
   return ( bcexp_t * ) Calloc( 1, sizeof( bcexp_t )) ;
 }
@@ -88,7 +99,7 @@ static bcexp_t *varr_bcexp_pop( varr_t *va )
 
 /* ---------------------------------------------------------------------- */
 
-void bcexp_free( bcexp_t *bce ) 
+static void bcexp_free( bcexp_t *bce ) 
 {
   bcexp_t *bp ;
 
@@ -117,7 +128,7 @@ void bcexp_free( bcexp_t *bce )
   }
 }
 
-void bcdef_free( bcdef_t *bcd )
+static void bcdef_free( bcdef_t *bcd )
 {
   bcexp_t *bce ;
 
@@ -133,7 +144,7 @@ void bcdef_free( bcdef_t *bcd )
   }
 }
 
-bcdef_t *bcdef_new( void )
+static bcdef_t *bcdef_new( void )
 {
   bcdef_t *new ;
 
@@ -142,7 +153,7 @@ bcdef_t *bcdef_new( void )
   return new ;
 }
 
-bcdef_t *bcdef_find( bcdef_t *bcd, octet_t *pattern )
+static bcdef_t *bcdef_find( bcdef_t *bcd, octet_t *pattern )
 {
   for( ; bcd ; bcd = bcd->next ) 
     if( oct2strcmp( pattern, bcd->name ) == 0 ) return bcd ;
@@ -150,7 +161,8 @@ bcdef_t *bcdef_find( bcdef_t *bcd, octet_t *pattern )
   return 0 ;
 }
 
-bcdef_t *bcdef_append( bcdef_t *bcd, bcdef_t *new )
+/*
+static bcdef_t *bcdef_append( bcdef_t *bcd, bcdef_t *new )
 {
   if( bcd == 0 ) return new ;
   for( ; bcd->next ; bcd = bcd->next ) ;
@@ -160,7 +172,14 @@ bcdef_t *bcdef_append( bcdef_t *bcd, bcdef_t *new )
   return bcd ;
 }
 
-bcdef_t *bcdef_rm( bcdef_t *root, bcdef_t *rm ) 
+static varr_t *varr_bcexp_add( varr_t *va, bcexp_t *bce )
+{
+  return varr_add( va, (void *) bce ) ;
+}
+
+*/
+
+static bcdef_t *bcdef_rm( bcdef_t *root, bcdef_t *rm ) 
 {
   if( rm == root ) {
     if( root->next ) {
@@ -178,6 +197,44 @@ bcdef_t *bcdef_rm( bcdef_t *root, bcdef_t *rm )
 
 /* ---------------------------------------------------------------------- */
 
+
+static char *make_name( char *str, octet_t *input )
+{
+  struct sha1_context ctx ;
+  unsigned char       sha1sum[21], *ucp ;
+  int                 j ;
+
+  if( input == 0 || input->len == 0 ) return 0 ;
+
+  sha1_starts( &ctx ) ;
+
+  sha1_update( &ctx, (uint8 *) input->val, input->len ) ;
+
+  sha1_finish( &ctx, (unsigned char *) sha1sum ) ;
+
+  for( j = 1, ucp = (unsigned char *) str ; j < 20; j++, ucp += 2 )
+    sprintf( (char *) ucp, "%02x", sha1sum[j] );
+
+  str[0] = '_' ;
+  str[41] = '_' ;
+  str[42] = '\0' ;
+
+  return str ;
+}
+
+/* ----------------------------------------------------------------------------- */
+
+static void stree_free( stree_t *stp )
+{
+  if( stp ) {
+    if( stp->part ) stree_free( stp->part ) ;
+    if( stp->next ) stree_free( stp->next ) ;
+    if( stp->val.size ) free( stp->val.val ) ;
+    free( stp ) ;
+  }
+}
+
+/* ====================================================================== */
 /*
   bcond        = bcondexpr / bcondref
 
@@ -210,49 +267,6 @@ bcdef_t *bcdef_rm( bcdef_t *root, bcdef_t *rm )
   num          = 1*DIG
   DIG          = %x30-39
 */
-
-static char *make_name( char *str, octet_t *input )
-{
-  struct sha1_context ctx ;
-  unsigned char       sha1sum[21], *ucp ;
-  int                 j ;
-
-  if( input == 0 || input->len == 0 ) return 0 ;
-
-  sha1_starts( &ctx ) ;
-
-  sha1_update( &ctx, (uint8 *) input->val, input->len ) ;
-
-  sha1_finish( &ctx, (unsigned char *) sha1sum ) ;
-
-  for( j = 1, ucp = (unsigned char *) str ; j < 20; j++, ucp += 2 )
-    sprintf( (char *) ucp, "%02x", sha1sum[j] );
-
-  str[0] = '_' ;
-  str[41] = '_' ;
-  str[42] = '\0' ;
-
-  return str ;
-}
-
-varr_t *varr_bcexp_add( varr_t *va, bcexp_t *bce )
-{
-  return varr_add( va, (void *) bce ) ;
-}
-
-/* ----------------------------------------------------------------------------- */
-
-static void stree_free( stree_t *stp )
-{
-  if( stp ) {
-    if( stp->part ) stree_free( stp->part ) ;
-    if( stp->next ) stree_free( stp->next ) ;
-    if( stp->val.size ) free( stp->val.val ) ;
-    free( stp ) ;
-  }
-}
-
-/* ---------------------------------------------------------------------- */
 
 static stree_t *parse_sexp( octet_t *sexp )
 {
@@ -298,7 +312,7 @@ static stree_t *parse_sexp( octet_t *sexp )
 
 /* ---------------------------------------------------------------------- */
 
-bcexp_t *transv_stree( plugin_t *plt, stree_t *st, bcdef_t *list, bcdef_t *parent )
+static bcexp_t *transv_stree( plugin_t *plt, stree_t *st, bcdef_t *list, bcdef_t *parent )
 {
   bcexp_t   *bce, *tmp ;
   bcdef_t   *bcd ;
@@ -367,7 +381,7 @@ bcexp_t *transv_stree( plugin_t *plt, stree_t *st, bcdef_t *list, bcdef_t *paren
 
 /* ---------------------------------------------------------------------- */
 
-void bcexp_deref( bcexp_t *bce )
+static void bcexp_deref( bcexp_t *bce )
 {
   bcdef_t *bcd ;
   
@@ -376,7 +390,31 @@ void bcexp_deref( bcexp_t *bce )
   bcd->users = varr_rm( bcd->users, bce ) ;
 }
 
-void bcexp_delink( bcexp_t *bce )
+/* ---------------------------------------------------------------------- */
+
+/* recursively find all the rules that uses this boundary condition directly or
+ * through some intermediate
+ */
+varr_t *all_rule_users( bcdef_t *head, varr_t *rules )
+{
+  void *vp ;
+  bcdef_t *bcd ;
+
+  if( head->users ) {
+    for( vp = varr_first( head->users ) ; vp ; vp = varr_next( head->users, vp ) ) {
+      bcd = ( bcdef_t *) vp ;
+      if( bcd->users || bcd->rules ) rules = all_rule_users( bcd, rules ) ;
+    }
+  }
+
+  if( head->rules ) rules = varr_or( rules, head->rules, 1 ) ;
+
+  return rules ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+static void bcexp_delink( bcexp_t *bce )
 {
   int     i, n ;
   varr_t *va ;
@@ -403,149 +441,16 @@ void bcexp_delink( bcexp_t *bce )
   }
 }
 
-void bcdef_delink( bcdef_t *bcd )
+static void bcdef_delink( bcdef_t *bcd )
 {
   bcexp_delink( bcd->exp ) ;  
 }
 
 /* ---------------------------------------------------------------------- */
 
-bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data ) 
-{
-  bcexp_t   *bce ;
-  bcdef_t   *bcd, *bc ;
-  char       cname[45] ;
-  stree_t   *st ;
-  plugin_t  *plt = db->plugins ;
-  octet_t   dbname ; 
-
-  if( db == 0 ) {
-  }
-
-  if( *data->val == '(' ) {
-    if(( st = parse_sexp( data )) == 0 ) return 0 ;
-  }
-  else {
-    st = ( stree_t * ) Malloc( sizeof( stree_t )) ;
-    st->list = 0 ;
-    st->next = st->part = 0 ;
-    st->val.size = 0 ; /* otherwise octcpy might core dump */
-    octcpy( &st->val, data) ;
-  }
-
-  bcd = bcdef_new() ;
-
-  bce = transv_stree( plt, st, db->bcdef, bcd ) ;
-
-  stree_free( st ) ;
-
-  if( bce == 0 ) {
-    bcdef_free( bcd ) ;
-    return 0 ;
-  }
-
-  if( bce->type != REF ) {
-    if( name == 0 || name->len == 0 ) {
-      make_name( cname, data ) ;
-      bcd->name = Strdup( cname ) ;
-    }
-    else {
-      bcd->name = oct2strdup( name, 0 ) ;
-    }
-  }
-
-  /* create a bcond name that MUST differ from rule ids
-     Since rule ids are SHA1 hashes, it consists of lower case letters a-f and
-     numbers. So making the bcond name in the persistent store start with
-     "BCOND:" will make it absolutely diffrent.
-   */
-
-  dbname.size = dbname.len = strlen( bcd->name ) + 6 + 1 ;
-  dbname.val = (char * ) Malloc( dbname.size ) ;
-  /* Slighly awkward, but has to be done like this */
-  sprintf( dbname.val, "BCOND:%s", bcd->name ) ;
-
-  dback_save( db->dback, &dbname, data, 0, 0 ) ; 
-  free( dbname.val ) ;
-
-  bcd->exp = bce ;
-
-  if( bcd->name ) {
-    if( db->bcdef == 0 ) db->bcdef = bcd ;
-    else {
-      for( bc = db->bcdef ; bc->next ; bc = bc->next ) ;
-      bc->next = bcd ;
-      bcd->prev = bc ;
-    }
-  }
- 
-  return bcd ;
-}
-
-/* ---------------------------------------------------------------------- */
-
-spocp_result_t bcdef_del( bcdef_t **root, octet_t *name ) 
-{
-  bcdef_t *bcd ;
-
-  bcd = bcdef_find( *root, name ) ;
-  
-  if( bcd->users && varr_len( bcd->users ) > 0 ) return SPOCP_UNWILLING ;  
-  if( bcd->rules && varr_len( bcd->rules ) > 0 ) return SPOCP_UNWILLING ;  
-
-  /* this boundary conditions might have links to other those links 
-     should be removed */
-  bcdef_delink( bcd ) ;
-
-  *root = bcdef_rm( *root, bcd ) ;
-
-  bcdef_free( bcd ) ;
-
-  return SPOCP_SUCCESS ;
-}
-
-/* ---------------------------------------------------------------------- */
-
-spocp_result_t
-  bcdef_replace( db_t *db, octet_t *name, octet_t *data ) 
-{
-  bcdef_t    *old, *new ;
-  bcexp_t    *bce ;
-  ruleinst_t *ri ;
-
-  old = bcdef_find( db->bcdef, name ) ;
-  
-  if(( new = bcdef_add( db, name, data )) == 0 ) return SPOCP_PROTOCOLERROR ;
-
-  /* if nothing to replace this is just an add */
-  if( old == 0 ) return SPOCP_SUCCESS ;
-
-  /* links to old should point to new instead */
-  while(( bce = (bcexp_t *) varr_pop( old->users ))) {
-    bce->val.ref = new ;
-    new->users = varr_add( new->users, (void *) bce ) ;
-  }
-  while(( ri = (ruleinst_t *) varr_pop( old->rules ))) {
-    ri->bcond = new ;
-    new->rules = varr_add( new->rules, (void *) ri ) ;
-  }
-  
-  /* this boundary conditions might have links to other those links 
-     should be removed */
-  bcdef_delink( old ) ;
-
-  db->bcdef = bcdef_rm( db->bcdef, old ) ;
-
-  bcdef_free( old ) ;
-
-  return SPOCP_SUCCESS ;
-}
-
-/* ---------------------------------------------------------------------- */
-
 /* expects a sepc of the form {...}{...}:.... */
 
-spocp_result_t bcond_eval( element_t *qp, element_t *rp, bcspec_t *bcond, octet_t *oct ) 
+static spocp_result_t bcond_eval( element_t *qp, element_t *rp, bcspec_t *bcond, octet_t *oct ) 
 {
   octet_t    spec ;
   element_t  *tmp, *xp = 0 ;
@@ -584,7 +489,7 @@ spocp_result_t bcond_eval( element_t *qp, element_t *rp, bcspec_t *bcond, octet_
 
 /* ---------------------------------------------------------------------- */
 
-spocp_result_t bcexp_eval( element_t *qp, element_t *rp, bcexp_t *bce, octarr_t **oa )
+static spocp_result_t bcexp_eval( element_t *qp, element_t *rp, bcexp_t *bce, octarr_t **oa )
 {
   int            n, i ;
   spocp_result_t r = SPOCP_DENIED ;
@@ -636,7 +541,229 @@ spocp_result_t bcexp_eval( element_t *qp, element_t *rp, bcexp_t *bce, octarr_t 
   return r ;
 }
 
+/* If it's a reference to a boundary condition it should be of the
+   form (ref <name>)
+*/
+spocp_result_t is_bcref( octet_t *o, octet_t *res )
+{
+  octet_t lc ;
+  octet_t op ;
+  spocp_result_t r ;
+
+  if( *o->val == '(' ) {
+
+    octln( &lc, o ) ;
+    lc.val++ ;
+    lc.len-- ;
+
+    if(( r = get_str( &lc, &op )) != SPOCP_SUCCESS ) return r ;
+    if( oct2strcmp( &op, "ref" ) != 0 ) return SPOCP_SYNTAXERROR ;
+
+    if(( r = get_str( &lc, &op )) != SPOCP_SUCCESS ) return r ;
+    if(!( *lc.val == ')' && lc.len == 1 )) return SPOCP_SYNTAXERROR ;
+
+    octln( res, &op ) ;
+
+    return SPOCP_SUCCESS ;
+  }
+
+  return SPOCP_SYNTAXERROR ;
+}
+
+static char *bcname_make( octet_t *name )
+{
+  size_t len ;
+  char   *str ;
+
+  len = name->len + 6 + 1 ;
+  str = (char * ) Malloc( len ) ;
+  /* sprintf( str, "BCOND:%s", name->val ) ; */
+  strcat( str, "BCOND:%s" ) ;
+  strncpy( str+6, name->val, name->len ) ;
+  str[ 6 + name->len ] = '\0' ;
+
+  return str ;
+}
+
+/* ---------------------------------------------------------------------- * 
+ *               PUBLIC INTERFACES                                        * 
+ * ---------------------------------------------------------------------- */
+
+/*!
+ * Adds a boundary condition definition to the list of others
+ * \param db A link to the internal database 
+ * \param name The name of the boundary condition specification
+ * \param data The boundary condition specification
+ * \return A pointer to the internal representation of the boundary condition 
+ */
+bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data ) 
+{
+  bcexp_t   *bce ;
+  bcdef_t   *bcd, *bc ;
+  char       cname[45], *bcname ;
+  stree_t   *st ;
+  plugin_t  *plt = db->plugins ;
+  octet_t   tmp ; 
+
+  if( db == 0 ) {
+  }
+
+  if( *data->val == '(' ) {
+    if(( st = parse_sexp( data )) == 0 ) return 0 ;
+  }
+  else {
+    st = ( stree_t * ) Malloc( sizeof( stree_t )) ;
+    st->list = 0 ;
+    st->next = st->part = 0 ;
+    st->val.size = 0 ; /* otherwise octcpy might core dump */
+    octcpy( &st->val, data) ;
+  }
+
+  bcd = bcdef_new() ;
+
+  bce = transv_stree( plt, st, db->bcdef, bcd ) ;
+
+  stree_free( st ) ;
+
+  if( bce == 0 ) {
+    bcdef_free( bcd ) ;
+    return 0 ;
+  }
+
+  if( bce->type != REF ) {
+    if( name == 0 || name->len == 0 ) {
+      make_name( cname, data ) ;
+      bcd->name = Strdup( cname ) ;
+    }
+    else {
+      bcd->name = oct2strdup( name, 0 ) ;
+    }
+  }
+
+  /* create a bcond name that MUST differ from rule ids
+     Since rule ids are SHA1 hashes, it consists of lower case letters a-f and
+     numbers. So making the bcond name in the persistent store start with
+     "BCOND:" will make it absolutely diffrent.
+   */
+
+  oct_assign( &tmp, bcd->name ) ;
+
+  bcname = bcname_make( &tmp ) ;
+
+  dback_save( db->dback, db->dback->conhandle, bcname, data, 0, 0 ) ; 
+  free( bcname ) ;
+
+  bcd->exp = bce ;
+
+  if( bcd->name ) {
+    if( db->bcdef == 0 ) db->bcdef = bcd ;
+    else {
+      for( bc = db->bcdef ; bc->next ; bc = bc->next ) ;
+      bc->next = bcd ;
+      bcd->prev = bc ;
+    }
+  }
+ 
+  return bcd ;
+}
+
 /* ---------------------------------------------------------------------- */
+/*!
+ * Remove a boundary condition from the internal database. 
+ * A boundary condition can not be removed if there is rules that uses it!
+ * 
+ */
+spocp_result_t bcdef_del( db_t *db, octet_t *name ) 
+{
+  bcdef_t *bcd ;
+  char    *bcname ; 
+
+  bcd = bcdef_find( db->bcdef, name ) ;
+  
+  if( bcd->users && varr_len( bcd->users ) > 0 ) return SPOCP_UNWILLING ;  
+  if( bcd->rules && varr_len( bcd->rules ) > 0 ) return SPOCP_UNWILLING ;  
+
+  bcname = bcname_make( name ) ;
+
+  dback_delete( db->dback, db->dback->conhandle, bcname ) ;
+  free( bcname ) ;
+
+  /* this boundary conditions might have links to other those links 
+     should be removed */
+  bcdef_delink( bcd ) ;
+
+  db->bcdef = bcdef_rm( db->bcdef, bcd ) ;
+
+  bcdef_free( bcd ) ;
+
+  return SPOCP_SUCCESS ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+/*!
+ */
+spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data ) 
+{
+  plugin_t   *plt = db->plugins ;
+  bcdef_t    *bcd ;
+  bcexp_t    *bce ;
+  stree_t    *st ;
+  char       *bcname ;
+
+  if( *data->val == '(' ) {
+    if(( st = parse_sexp( data )) == 0 ) return SPOCP_OPERATIONSERROR ;
+  }
+  else {
+    st = ( stree_t * ) Malloc( sizeof( stree_t )) ;
+    st->list = 0 ;
+    st->next = st->part = 0 ;
+    st->val.size = 0 ; /* otherwise octcpy might core dump */
+    octcpy( &st->val, data) ;
+  }
+
+  if(( bcd = bcdef_find( db->bcdef, name )) != 0 ) {
+
+    bce = transv_stree( plt, st, db->bcdef, bcd ) ;
+  
+    bcname = bcname_make( name ) ;
+
+    dback_replace( db->dback, db->dback->conhandle, bcname, data, 0, 0 ) ;
+
+    bcexp_free( bcd->exp ) ;
+  
+    bcd->exp = bce ;
+  }
+  else stree_free( st ) ;
+
+  return SPOCP_SUCCESS ;
+}
+
+/* ---------------------------------------------------------------------- */
+/*!
+ */
+bcdef_t *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc )
+{
+  bcdef_t       *bcd = 0 ;
+  spocp_result_t r ;
+  octet_t        br ;
+ 
+  if( oct2strcmp( o, "NULL" ) == 0 ) bcd = NULL ;
+  else if(( r = is_bcref( o, &br )) == SPOCP_SUCCESS ) {
+    bcd = bcdef_find( db->bcdef, &br ) ;
+    if( bcd == NULL ) *rc = SPOCP_MISSING_ARG ;
+  }
+  else {
+    bcd = bcdef_add( db, 0, o ) ;
+    if( bcd == 0 ) *rc = SPOCP_SYNTAXERROR ;
+  }
+
+  return bcd ;
+}
+
+/* ---------------------------------------------------------------------- */
+/*!
+ */
 
 spocp_result_t bcond_check( element_t *ep, index_t *id, octarr_t **oa )
 {
@@ -673,50 +800,16 @@ spocp_result_t bcond_check( element_t *ep, index_t *id, octarr_t **oa )
   return r ;
 }
 
-/* If it's a reference to a boundary condition it should be of the
-   form (ref <name>)
-*/
-spocp_result_t is_bcref( octet_t *o, octet_t *res )
+/* ---------------------------------------------------------------------- */
+
+varr_t *bcond_users( db_t *db, octet_t *bcname )
 {
-  octet_t lc ;
-  octet_t op ;
-  spocp_result_t r ;
+  bcdef_t *bcd ;
 
-  if( *o->val == '(' ) {
+  bcd = bcdef_find( db->bcdef, bcname ) ;
 
-    octln( &lc, o ) ;
-    lc.val++ ;
-    lc.len-- ;
-
-    if(( r = get_str( &lc, &op )) != SPOCP_SUCCESS ) return r ;
-    if( oct2strcmp( &op, "ref" ) != 0 ) return SPOCP_SYNTAXERROR ;
-
-    if(( r = get_str( &lc, &op )) != SPOCP_SUCCESS ) return r ;
-    if(!( *lc.val == ')' && lc.len == 1 )) return SPOCP_SYNTAXERROR ;
-
-    octln( res, &op ) ;
-
-    return SPOCP_SUCCESS ;
-  }
-
-  return SPOCP_SYNTAXERROR ;
+  return all_rule_users( bcd, 0 ) ;
 }
 
-bcdef_t *bcdef_get( octet_t *o, db_t *db, spocp_result_t *rc )
-{
-  bcdef_t       *bcd = 0 ;
-  spocp_result_t r ;
-  octet_t        br ;
- 
-  if( oct2strcmp( o, "NULL" ) == 0 ) bcd = NULL ;
-  else if(( r = is_bcref( o, &br )) == SPOCP_SUCCESS ) {
-    bcd = bcdef_find( db->bcdef, &br ) ;
-    if( bcd == NULL ) *rc = SPOCP_MISSING_ARG ;
-  }
-  else {
-    bcd = bcdef_add( db, 0, o ) ;
-    if( bcd == 0 ) *rc = SPOCP_SYNTAXERROR ;
-  }
+/* ---------------------------------------------------------------------- */
 
-  return bcd ;
-}

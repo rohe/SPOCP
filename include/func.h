@@ -325,17 +325,12 @@ ruleinst_t *varr_ruleinst_nth( varr_t *va, int n ) ;
 
 /* ----- */
 
-int            bcspec_is( octet_t *spec ) ;
-
-spocp_result_t bcexp_eval( element_t *qp, element_t *rp, bcexp_t *bce, octarr_t **on ) ;
-spocp_result_t bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
-
 bcdef_t        *bcdef_add( db_t *db, octet_t *n, octet_t *d ) ;
-spocp_result_t  bcdef_del( bcdef_t **root, octet_t *name ) ;
+spocp_result_t  bcdef_del( db_t *db, octet_t *name ) ;
 spocp_result_t  bcdef_replace( db_t *db, octet_t *n, octet_t *d ) ;
-spocp_result_t  is_bcref( octet_t *o, octet_t *res ) ;
-bcdef_t        *bcdef_find( bcdef_t *bcd, octet_t *pattern ) ;
-bcdef_t        *bcdef_get( octet_t *o, db_t *db, spocp_result_t *rc ) ;
+bcdef_t        *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc ) ;
+
+spocp_result_t bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
 
 /* ----- */
 

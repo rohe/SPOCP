@@ -35,7 +35,16 @@ static dback_t *dback_new( void )
 }
 
 /* ---------------------------------------------------------------------- */
-
+/*!
+ * Does all the dynamic link loader stuff, that is opens the dynamic library and
+ * connects the defined symbols to functions in the library.
+ * Possible initialization functions contained in the library is NOT run by this routine. 
+ * There exists functions that are necessary for a well functioning persisten datastore
+ * if any of these are not present then this routine will fail.
+ * \param pl A link to the set of plugins defined in the configuration file. The database
+ *   plugin is handle in the same way as the backend plugins in this regard.
+ * \return A pointer to a dback_t struct with all the values filled in.
+ */
 dback_t *init_dback( plugin_t *pl )
 {
   dback_t   *dback = 0 ;
@@ -156,7 +165,9 @@ dback_t *init_dback( plugin_t *pl )
   return dback ;
 }
 
-octet_t *datum_make( octet_t *rule, octet_t *blob, char *bcname )
+/* ---------------------------------------------------------------------- */
+
+static octet_t *datum_make( octet_t *rule, octet_t *blob, char *bcname )
 {
   octet_t *oct = 0 ;
   int      len = 0 ;
@@ -184,11 +195,14 @@ octet_t *datum_make( octet_t *rule, octet_t *blob, char *bcname )
   return oct ;
 }
 
+/* ---------------------------------------------------------------------- */
+
 /*
- The arg follows the following format
-   <rulelen> ':' rule ':' <bloblen> ':' blob ':' <bcnamelen> ':' bcname 
+ The arg has the following format
+   <rulelen> ':' rule ':' [<bloblen> ':' blob] ':' [<bcnamelen> ':' bcname]
+ created by datum_make()
  */
-spocp_result_t datum_parse( octet_t *arg, octet_t *rule, octet_t *blob, char **bcname ) 
+static spocp_result_t datum_parse( octet_t *arg, octet_t *rule, octet_t *blob, char **bcname ) 
 {
   spocp_result_t r ;
   octet_t        oct ;
@@ -226,125 +240,272 @@ spocp_result_t datum_parse( octet_t *arg, octet_t *rule, octet_t *blob, char **b
   return SPOCP_SUCCESS ;
 }
 
+/* ---------------------------------------------------------------------- */
+/*!
+ * Runs the initialization function present in the database backend library
+ * \param dback A link to the backend information
+ * \param cfg A pointer to a function that can be used to read information collected from the
+ *        configuration file
+ * \param conf A pointer to configuration information for usage by the function mentioned above.
+ * \return SPOCP_SUCCESS on success otherwise an appropriate error code
+ */
+
 spocp_result_t dback_init( dback_t *dback, void *cfg, void *conf )
 {
   spocp_result_t r = SPOCP_UNAVAILABLE ;
 
-  if( dback && dback->init ) dback->init( cfg, conf, &r ) ;
+  if( dback && dback->init ) dback->init( 0, cfg, conf, &r ) ;
 
   return r ;
 }
 
-spocp_result_t dback_save( dback_t *dback, octet_t *uid, octet_t *rule, octet_t *blob, char *bcname ) 
+/* ---------------------------------------------------------------------- */
+/*!
+ * Stores information in the persistent storage
+ * \param dback A link to the backend information
+ * \param key The key under which the information should be stored.
+ * \param oct0, oct1, str Pieces of the information to be stored
+ * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
+ */
+spocp_result_t
+ dback_save( dback_t *dback, void *handle, char *key, octet_t *oct0, octet_t *oct1, char *str ) 
 {
   octet_t        *datum ;
   spocp_result_t  r ;
 
   if( dback == 0 ) return SPOCP_SUCCESS ;
 
-  datum = datum_make( rule, blob, bcname ) ;
+  datum = datum_make( oct0, oct1, str) ;
 
-  dback->put( (void *) uid, (void *) datum, &r ) ; 
+  dback->put( handle, (void *) key, (void *) datum, &r ) ; 
 
   oct_free( datum ) ;
 
   return r ;
 }
 
+/* ---------------------------------------------------------------------- */
+/*!
+ * Replaces information stored under a specific key in the persistent storage
+ * \param dback A link to the backend information
+ * \param key The key under which the information should be stored.
+ * \param oct0, oct1, str Pieces of the information to be stored
+ * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
+ */
 spocp_result_t
-dback_read( dback_t *dback, octet_t *uid, octet_t *rule, octet_t *blob, char **bcname ) 
+ dback_replace( dback_t *dback, void *handle, char *key, octet_t *oct0, octet_t *oct1, char *s ) 
 {
-  octet_t        *datum = 0 ;
+  octet_t        *datum ;
   spocp_result_t  r ;
-  octet_t         oct ;
-
-  if( dback == 0 ) {
-    return SPOCP_UNAVAILABLE;
-  }
-
-  octln( &oct, uid ) ;
-
-  if(( datum = dback->get( (void *) &oct, 0, &r )) == 0 ) {
-    return SPOCP_UNAVAILABLE ; 
-  }
-  else 
-    return datum_parse( datum, rule, blob, bcname ) ;
-}
-
-void *dback_open( dback_t *dback, spocp_result_t *r )
-{
-  return dback->open( 0, 0, r ) ;
-}
-
-spocp_result_t dback_close( dback_t *dback, void *vp )
-{
-  spocp_result_t r ;
-
-  dback->close( vp, 0, &r ) ;
-
-  return r ;
-}
-
-octet_t *dback_first_key( dback_t *dback, void *vp, spocp_result_t *r )
-{
-  return (octet_t *) dback->firstkey( vp, 0, r ) ;
-}
-
-octet_t *dback_next_key( dback_t *dback, void *vp, octet_t *key, spocp_result_t *r )
-{
-  return (octet_t *) dback->nextkey( vp, (void *) key, r ) ; 
-}
-
-octarr_t *dback_all_keys( dback_t *dback, spocp_result_t *r )
-{
-  if( dback == 0 ) return 0 ;
-
-  return (octarr_t *) dback->allkeys( 0, 0, r ) ; 
-}
-
-spocp_result_t dback_delete( dback_t *dback, char *key )
-{
-  spocp_result_t r ;
-  octet_t oct ;
 
   if( dback == 0 ) return SPOCP_SUCCESS ;
 
-  oct_assign( &oct, key ) ;
+  datum = datum_make( oct0, oct1, s ) ;
 
-  dback->delete( &oct, 0, &r ) ;
+  dback->replace( handle, (void *) key, (void *) datum, &r ) ; 
+
+  oct_free( datum ) ;
 
   return r ;
 }
 
-void *dback_begin( dback_t *dback , spocp_result_t *r )
+/* ---------------------------------------------------------------------- */
+
+/*!
+ * Reads stored information from the persistent storage
+ * \param dback A link to the backend information
+ * \param key The key under which the information should be stored.
+ * \param oct0, oct1, str The information from the persistent storage split into its 
+ *   original pieces.
+ * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
+ */
+spocp_result_t
+ dback_read( dback_t *dback, void *handle, char *key, octet_t *oct0, octet_t *oct1, char **str ) 
 {
-  return dback->begin( 0, 0, r ) ;
+  octet_t        *datum = 0 ;
+  spocp_result_t  r ;
+
+  if( dback == 0 ) return SPOCP_UNAVAILABLE;
+
+  if(( datum = dback->get( handle, (void *) key, 0, &r )) == 0 ) {
+    return SPOCP_UNAVAILABLE ; 
+  }
+  else 
+    return datum_parse( datum, oct0, oct1, str ) ;
 }
+
+/* ---------------------------------------------------------------------- */
+/*!
+ * Deletes a information pieces connected to a specific key from the persistent 
+ * storage.
+ * \param dback A link to the backend information
+ * \param key The key under which the information was stored.
+ * \returns An appropriate result code
+ */
+
+spocp_result_t dback_delete( dback_t *dback, void *handle, char *key )
+{
+  spocp_result_t r ;
+
+  if( dback == 0 ) return SPOCP_SUCCESS ;
+
+  dback->delete( handle, (void *) key, 0, &r ) ;
+
+  return r ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+/*!
+ * Opens a connection to the persisten storage. Such a connection is usable
+ * When you need to keep a connection open while doing other computations.
+ * \param dback A link to the backend information
+ * \param r     A pointer to a int where the resultcode is placed
+ * \returns A void pointer to a handle the database backend has return as a
+ *  connection token.
+ */
+void *dback_open( dback_t *dback, spocp_result_t *r )
+{
+  return dback->open( 0, 0, 0, r ) ;
+}
+
+/* ---------------------------------------------------------------------- */
+/*!
+ * Closes the connection to the persistent store.
+ * \param dback A link to the backend information
+ * \param vp The connection handle cast as a (void *)
+ * \return The result code
+ */
+spocp_result_t dback_close( dback_t *dback, void *handle )
+{
+  spocp_result_t r ;
+
+  dback->close( handle, 0, 0, &r ) ;
+
+  return r ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+/*!
+ * Gets the key to the first (in some sense) information pieces in the 
+ * persistent store. One can not make any assumptions that it is the 
+ * oldest, newest or anything like that. The only valid assumption is that
+ * if dback_first_key() is followed by dback_next_key()'s until dback_next_key()
+ * returns NULL, and no keys has been added or deleted during the time this 
+ * has taken. Then all keys has been returned.
+ * \param dback A link to the backend information
+ * \param vp A connection handle to the storage facility.
+ * \param r A pointer to an int where the result code can be placed.
+ * \return The key expressed as a octet_t struct.
+ */
+octet_t *dback_first_key( dback_t *dback, void *handle, spocp_result_t *r )
+{
+  return (octet_t *) dback->firstkey( handle, 0, 0, r ) ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+/*!
+ * Gets the next ( according to some definition ) key from the persistent store.
+ * \param dback A link to the backend information
+ * \param vp A connection handle to the storage facility
+ * \param key The previous key.
+ * \param r A pointer to an int where the result code can be placed.
+ * \return The next key expressed as a octet_t struct.
+ */
+octet_t *dback_next_key( dback_t *dback, void *handle, octet_t *key, spocp_result_t *r )
+{
+  return (octet_t *) dback->nextkey( handle, (void *) key, 0, r ) ; 
+}
+
+/* ---------------------------------------------------------------------- */
+/*!
+ * Gets all keys from the persistent storage
+ * This is dback_open(), dback_first_key(), dback_next_key(), dback_close rolled into
+ * one function.
+ * \param dback A link to the backend information
+ * \param r A pointer to an int where the result code can be placed.
+ * \return A octetarr struct containing all the keys as octet_t structs
+ */
+
+octarr_t *dback_all_keys( dback_t *dback, void *handle, spocp_result_t *r )
+{
+  if( dback == 0 ) return 0 ;
+
+  return (octarr_t *) dback->allkeys( handle, 0, 0, r ) ; 
+}
+
+/* ---------------------------------------------------------------------- */
+/*!
+ * Begins a transaction against the persistent store
+ * \param dback A link to the backend information
+ * \param r A pointer to an int where the result code can be placed.
+ * \return A transaction handle cast, to be used when commands are to be run
+ *   within this transaction, as a (void *)
+ */
+
+void *dback_begin( dback_t *dback, void *handle, spocp_result_t *r )
+{
+  if( dback->begin ) return dback->begin( handle, 0, 0, r ) ;
+  else {
+    *r = SPOCP_NOT_SUPPORTED ;
+    return NULL ;
+  }
+}
+
+/* ---------------------------------------------------------------------- */
+/*!
+ * Ends a transaction
+ * \param dback A link to the backend information
+ * \param transhandle A handle to the transaction
+ * \return The result code
+ */
 
 spocp_result_t dback_end( dback_t *dback, void *transhandle )
 {
-  spocp_result_t r ;
+  spocp_result_t r = SPOCP_NOT_SUPPORTED ;
 
-  dback->end( transhandle, 0, &r ) ;
+  if( dback->end ) dback->end( transhandle, 0, 0, &r ) ;
 
   return r ;
 }
+
+/* ---------------------------------------------------------------------- */
+/*!
+ * Commit the changes to the store
+ * \param dback A link to the backend information
+ * \param transhandle A handle to the transaction
+ * \return The result code
+ */
 
 spocp_result_t dback_commit( dback_t *dback, void *transhandle )
 {
-  spocp_result_t r ;
+  spocp_result_t r = SPOCP_NOT_SUPPORTED ;
 
-  dback->commit( transhandle, 0, &r ) ;
+  if( dback->commit ) dback->commit( transhandle, 0, 0, &r ) ;
   
   return r ;
 }
+
+/* ---------------------------------------------------------------------- */
+/*!
+ * Discards all the changes that has been done so far in this
+ * transaction.
+ * \param dback A link to the backend information
+ * \param transhandle A handle to the transaction
+ * \return The result code
+ */
 
 spocp_result_t dback_rollback( dback_t *dback, void *transhandle )
 {
-  spocp_result_t r ;
+  spocp_result_t r = SPOCP_NOT_SUPPORTED ;
 
-  dback->rollback( transhandle, 0, &r ) ;
+  if( dback->rollback ) dback->rollback( transhandle, 0, 0, &r ) ;
   
   return r ;
 }
+
+/* ---------------------------------------------------------------------- */
+
 

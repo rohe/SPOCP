@@ -181,7 +181,7 @@ spocp_result_t spocp_add_rule( void **vp, octarr_t *oa )
     /* pick out the second ( = index 1 ) octet */
     o = octarr_rm( oa, 1 ) ;
 
-    bcd = bcdef_get( o, db, &r ) ;
+    bcd = bcdef_get( db, o, &r ) ;
   }
 
   if(( r = add_right( &db, oa, &ri, bcd ))) 

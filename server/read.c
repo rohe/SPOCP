@@ -552,7 +552,7 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
   char           *bcname = 0 ;
   ruleset_t      *rs ;
 
-  oa = dback_all_keys( dback, &r ) ;
+  oa = dback_all_keys( dback, dback->conhandle, &r ) ;
 
   if( r == SPOCP_SUCCESS && oa && oa->n ) {
     if( *rspp == 0 ) {
@@ -571,7 +571,7 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
         tmp.val = oa->arr[i]->val + 6 ;
         tmp.len = oa->arr[i]->len - 6 ;
 
-        r = dback_read( dback, oa->arr[i], &dat0, &dat1, &bcname ) ;
+        r = dback_read( dback, dback->conhandle, oa->arr[i], &dat0, &dat1, &bcname ) ;
         if( dat0.len ) {
           bcdef_add( rs->db, &tmp, &dat0) ;
           octclr( &dat0 ) ;
@@ -586,7 +586,7 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
         tmp.val = oa->arr[i]->val + 6 ;
         tmp.len = oa->arr[i]->len - 6 ;
 
-        r = dback_read( dback, oa->arr[i], &dat0, &dat1, &bcname ) ;
+        r = dback_read( dback, dback->conhandle, oa->arr[i], &dat0, &dat1, &bcname ) ;
 
         if( dat0.len ) {
           bcdef_add( rs->db, &tmp, &dat0) ;
@@ -598,7 +598,7 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
     for( i = 0 ; i < oa->n ; i++ ) {
       if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) == 0 ) continue ;
 
-      r = dback_read( dback, oa->arr[i], &dat0, &dat1, &bcname ) ;
+      r = dback_read( dback, dback->conhandle, oa->arr[i], &dat0, &dat1, &bcname ) ;
 
       roa = octarr_add( roa, octdup(&dat0) ) ;
       octclr( &dat0 ) ;

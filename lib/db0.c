@@ -856,8 +856,7 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
     }
   }
 
-  oct_assign( &uid, rt->uid ) ;
-  dback_save( db->dback, &uid, rule, blob, bcondname ) ; 
+  dback_save( db->dback, db->dback->conhandle, rt->uid, rule, blob, bcondname ) ; 
 
   rbt_insert( ri->rules, (item_t) rt ) ;
 

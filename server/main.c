@@ -193,10 +193,12 @@ int main( int  argc, char **argv )
   }
   
   if( !nrules ) {
-    if( srv.rulefile == 0 ) 
+    if( srv.rulefile == 0 ) {
       LOG( SPOCP_INFO ) traceLog( "No rule file to start with" ) ;
-    else 
+    }
+    else { 
       LOG( SPOCP_INFO ) traceLog( "Opening rules file \"%s\"", srv.rulefile ) ;
+    }
 
     if( 0 ) gettimeofday(&start,NULL) ;
 

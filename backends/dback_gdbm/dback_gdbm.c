@@ -43,6 +43,12 @@ static void octet2datum( datum *d, octet_t *o )
   d->dsize = o->len ;
 }
 
+static void char2datum( datum *d, char *str )
+{
+  d->dptr = str ;
+  d->dsize = strlen(str) ;
+}
+
 /* ---------------------------------------------------------------------- */
 
 void *db_gdbm_init( void *vcfg, void *conf, spocp_result_t *rc ) 
@@ -66,22 +72,25 @@ void *db_gdbm_init( void *vcfg, void *conf, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_put( void *vkey, void *vdat, spocp_result_t *rc ) 
+void *db_gdbm_put( void *handle, void *vkey, void *vdat, spocp_result_t *rc ) 
 {
   datum     dkey, dcontent ;
   GDBM_FILE dbf ;
-  octet_t   *key = ( octet_t * ) vkey ;
+  char      *key = ( char * ) vkey ;
   octet_t   *dat = ( octet_t * ) vdat ;
 
-  dbf = gdbm_open( gdbmfile, 0, GDBM_WRCREAT|GDBM_SYNC, S_IRUSR|S_IWUSR, 0 ) ;
+  if( handle ) dbf = ( GDBM_FILE ) handle ;
+  else {
+    dbf = gdbm_open( gdbmfile, 0, GDBM_WRCREAT|GDBM_SYNC, S_IRUSR|S_IWUSR, 0 ) ;
 
-  if( dbf == 0 ) {
-    *rc = SPOCP_OPERATIONSERROR ;
-    return 0 ;
-  } 
-  else *rc = SPOCP_SUCCESS ;
+    if( dbf == 0 ) {
+      *rc = SPOCP_OPERATIONSERROR ;
+      return 0 ;
+    } 
+    else *rc = SPOCP_SUCCESS ;
+  }
 
-  octet2datum( &dkey, key ) ;
+  char2datum( &dkey, key ) ;
   octet2datum( &dcontent, dat ) ;
 
   if( gdbm_store( dbf, dkey, dcontent, GDBM_INSERT ) == 1 ) 
@@ -94,22 +103,56 @@ void *db_gdbm_put( void *vkey, void *vdat, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_get( void *vkey, void *null, spocp_result_t *rc ) 
+void *db_gdbm_replace( void *handle, void *vkey, void *vdat, spocp_result_t *rc ) 
 {
   datum     dkey, dcontent ;
   GDBM_FILE dbf ;
-  octet_t   *key  = ( octet_t * ) vkey ;
+  char      *key = ( char * ) vkey ;
+  octet_t   *dat = ( octet_t * ) vdat ;
+
+  if( handle ) dbf = ( GDBM_FILE ) handle ;
+  else {
+    dbf = gdbm_open( gdbmfile, 0, GDBM_WRCREAT|GDBM_SYNC, S_IRUSR|S_IWUSR, 0 ) ;
+
+    if( dbf == 0 ) {
+      *rc = SPOCP_OPERATIONSERROR ;
+      return 0 ;
+    } 
+    else *rc = SPOCP_SUCCESS ;
+  }
+
+  char2datum( &dkey, key ) ;
+  octet2datum( &dcontent, dat ) ;
+
+  if( gdbm_store( dbf, dkey, dcontent, GDBM_REPLACE ) == 1 ) 
+    *rc = SPOCP_EXISTS ;
+
+  gdbm_close( dbf ) ;
+
+  return 0 ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+void *db_gdbm_get( void *handle, void *vkey, void *null, spocp_result_t *rc ) 
+{
+  datum     dkey, dcontent ;
+  GDBM_FILE dbf ;
+  char      *key  = ( char * ) vkey ;
   octet_t   *content = 0 ;
 
-  dbf = gdbm_open( gdbmfile, 0, GDBM_READER, 0, 0 ) ;
+  if( handle ) dbf = ( GDBM_FILE ) handle ;
+  else {
+    dbf = gdbm_open( gdbmfile, 0, GDBM_READER, 0, 0 ) ;
   
-  if( dbf == 0 ) {
-    *rc = SPOCP_OPERATIONSERROR ;
-    return 0 ;
-  } 
-  else *rc = SPOCP_SUCCESS ;
+    if( dbf == 0 ) {
+      *rc = SPOCP_OPERATIONSERROR ;
+      return 0 ;
+    } 
+    else *rc = SPOCP_SUCCESS ;
+  }
 
-  octet2datum( &dkey, key ) ;
+  char2datum( &dkey, key ) ;
 
   dcontent = gdbm_fetch( dbf, dkey  ) ;
 
@@ -122,22 +165,25 @@ void *db_gdbm_get( void *vkey, void *null, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_delete( void *v0, void *v1, spocp_result_t *rc ) 
+void *db_gdbm_delete( void *handle, void *v0, void *v1, spocp_result_t *rc ) 
 {
   datum     dkey ;
   int       res ;
   GDBM_FILE dbf ;
-  octet_t   *key = ( octet_t * ) v0 ;
+  char      *key = ( char * ) v0 ;
 
-  dbf = gdbm_open( gdbmfile, 0, GDBM_WRITER|GDBM_SYNC, 0, 0 ) ;
+  if( handle ) dbf = ( GDBM_FILE ) handle ;
+  else {
+    dbf = gdbm_open( gdbmfile, 0, GDBM_WRITER|GDBM_SYNC, 0, 0 ) ;
   
-  if( dbf == 0 ) {
-    *rc = SPOCP_OPERATIONSERROR ;
-    return 0 ;
-  } 
-  else *rc = SPOCP_SUCCESS ;
+    if( dbf == 0 ) {
+      *rc = SPOCP_OPERATIONSERROR ;
+      return 0 ;
+    } 
+    else *rc = SPOCP_SUCCESS ;
+  }
 
-  octet2datum( &dkey, key ) ;
+  char2datum( &dkey, key ) ;
 
   res = gdbm_delete( dbf, dkey  ) ;
 
@@ -168,9 +214,13 @@ void *db_gdbm_open( void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_close( void *v0, void *v1, spocp_result_t *rc )
+void *db_gdbm_close( void *handle, void *v1, spocp_result_t *rc )
 {
-  GDBM_FILE dbf = ( GDBM_FILE ) v0 ;
+  GDBM_FILE dbf ;
+
+  if( !handle ) return SPOCP_SUCCESS ;
+
+  dbf = ( GDBM_FILE ) handle ;
 
   gdbm_close( dbf ) ;
 
@@ -181,9 +231,9 @@ void *db_gdbm_close( void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_firstkey( void *v0, void *v1, spocp_result_t *rc )
+void *db_gdbm_firstkey( void *handle, void *v1, spocp_result_t *rc )
 {
-  GDBM_FILE dbf = ( GDBM_FILE ) v0 ;
+  GDBM_FILE dbf = ( GDBM_FILE ) handle ;
   datum     key ;
   octet_t  *res = 0 ;
 
@@ -196,13 +246,13 @@ void *db_gdbm_firstkey( void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_nextkey( void *v0, void *v1, spocp_result_t *rc )
+void *db_gdbm_nextkey( void *handle, void *v1, spocp_result_t *rc )
 {
-  GDBM_FILE dbf = ( GDBM_FILE ) v0 ;
+  GDBM_FILE dbf = ( GDBM_FILE ) handle ;
   datum     key, nextkey ;
   octet_t  *res = 0 ;
 
-  octet2datum( &key, (octet_t *) v0 ) ;
+  octet2datum( &key, (octet_t *) v1 ) ;
 
   nextkey = gdbm_nextkey( dbf, key ) ;
 
@@ -213,20 +263,23 @@ void *db_gdbm_nextkey( void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_allkeys( void *v0, void *v1, spocp_result_t *rc )
+void *db_gdbm_allkeys( void *handle, void *v1, spocp_result_t *rc )
 {
   GDBM_FILE dbf ;
   datum     key, nextkey ;
   octet_t  *oct ;
   octarr_t *oa = 0 ;
 
-  dbf = gdbm_open( gdbmfile, 0, GDBM_READER, 0, 0 ) ;
+  if( handle ) dbf = ( GDBM_FILE ) handle ;
+  else {
+    dbf = gdbm_open( gdbmfile, 0, GDBM_READER, 0, 0 ) ;
   
-  if( dbf == 0 ) {
-    *rc = SPOCP_OPERATIONSERROR ;
-    return 0 ;
-  } 
-  else *rc = SPOCP_SUCCESS ;
+    if( dbf == 0 ) {
+      *rc = SPOCP_OPERATIONSERROR ;
+      return 0 ;
+    } 
+    else *rc = SPOCP_SUCCESS ;
+  }
 
   key = gdbm_firstkey( dbf ) ;
   while( key.dptr )  {
@@ -241,7 +294,7 @@ void *db_gdbm_allkeys( void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_begin( void *v0, void *v1, spocp_result_t *rc )
+void *db_gdbm_begin( void *handle, void *v1, spocp_result_t *rc )
 {
   *rc = SPOCP_NOT_SUPPORTED ;
 
