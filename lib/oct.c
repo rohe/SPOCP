@@ -421,7 +421,7 @@ octmove(octet_t * a, octet_t * b)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*! \brief finds a string of bytes in a octet string. The strin has to be
+/*! \brief finds a string of bytes in a octet string. The string has to be
  * NULL terminated
  * \param o The octet string
  * \param needle the pattern that is searched for
@@ -840,5 +840,14 @@ octset( octet_t *oct, char *s, int len)
 {
 	oct->val = s;
 	oct->len = oct->size = len;
+}
+
+char *str_esc( char *str, int len)
+{
+	octet_t oct;
+
+	oct.val = str;
+	oct.len = len;
+	return oct2strdup( &oct, '%');
 }
 
