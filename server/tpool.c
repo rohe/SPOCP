@@ -141,8 +141,13 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 	work_info_t    *workp;
 	pool_item_t    *pi;
 
-	if (0)
+	if (0) {
 		timestamp("tpool_add_work");
+		traceLog("cur_queue_size:%d", tpool->cur_queue_size);
+		traceLog("max_queue_size:%d", tpool->max_queue_size);
+		traceLog("shutdown:%d", tpool->shutdown);
+		traceLog("queue_closed:%d", tpool->queue_closed);
+	}
 
 	/*
 	 * traceLog( "queued items: %d", number_of_active( tpool->queue )) ; 
