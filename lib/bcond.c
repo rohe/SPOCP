@@ -15,7 +15,7 @@
 #include <proto.h>
 #include <dback.h>
 
-static struct _stree {
+typedef struct _stree {
   int list ;
   octet_t val ;
   struct _stree *next ;
