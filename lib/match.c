@@ -211,7 +211,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 	if (jp->item[SPOC_ENDOFRULE]) {
 		DEBUG(SPOCP_DMATCH) 
-			traceLog(LOG_DEBUG,"ENDOFRULE marker");
+			traceLog(LOG_DEBUG,"ENDOFRULE marker(0)");
 		/*
 		 * THIS IS WHERE BCOND IS CHECKED 
 		 */
@@ -237,7 +237,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 				if (vl && vl->item[SPOC_ENDOFRULE]) {
 					DEBUG(SPOCP_DMATCH) 
-						traceLog(LOG_DEBUG,"ENDOFRULE marker");
+						traceLog(LOG_DEBUG,"ENDOFRULE marker(1)");
 					/*
 					 * THIS IS WHERE BCOND IS CHECKED 
 					 */
@@ -297,18 +297,19 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 				if (jp && jp->item[SPOC_ENDOFRULE]) {
 					DEBUG(SPOCP_DMATCH) 
-						traceLog(LOG_DEBUG,"ENDOFRULE marker");
-
+						traceLog(LOG_DEBUG,"ENDOFRULE marker(2)");
+/*
 					r = bcond_check(comp->head,
 						jp->item[SPOC_ENDOFRULE]->val.
 						id, comp->blob);
 					if (r == SPOCP_SUCCESS)
+*/
 						return jp;
 				}
 
 			} else if (vl->item[SPOC_ENDOFRULE]) {
 				DEBUG(SPOCP_DMATCH) 
-					traceLog(LOG_DEBUG,"ENDOFRULE marker");
+					traceLog(LOG_DEBUG,"ENDOFRULE marker(3)");
 				/*
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */
@@ -322,7 +323,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 			vl = bp->val.list;
 			if (vl->item[SPOC_ENDOFRULE]) {
 				DEBUG(SPOCP_DMATCH) 
-					traceLog(LOG_DEBUG,"ENDOFRULE marker");
+					traceLog(LOG_DEBUG,"ENDOFRULE marker(4)");
 				/*
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */
@@ -339,7 +340,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		}
 	} else if (jp->item[SPOC_ENDOFRULE]) {
 		DEBUG(SPOCP_DMATCH) 
-			traceLog(LOG_DEBUG,"ENDOFRULE marker");
+			traceLog(LOG_DEBUG,"ENDOFRULE marker(5)");
 		/*
 		 * THIS IS WHERE BCOND IS CHECKED 
 		 */
@@ -380,6 +381,9 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 	junc_t         *jp;
 	branch_t       *bp;
 
+	if (ju->item[SPOC_ENDOFRULE])
+		return ju;
+
 	if (ep->next == 0) {	/* end of list */
 		do {
 			if (!ep->memberof)
@@ -391,11 +395,11 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 		} while (ep->next == 0 && ju->item[SPOC_ENDOFLIST]);
 
 		if (!ep->memberof) {	/* reached the end */
-			if ((jp = ending(ju, ep, comp))) {
-				DEBUG(SPOCP_DMATCH) 
-					traceLog(LOG_DEBUG,"reached ending");	
+			DEBUG(SPOCP_DMATCH)
+			    traceLog(LOG_DEBUG,"ending called from next");
+
+			if ((jp = ending(ju, ep, comp))) 
 				return jp;
-			}
 		}
 	}
 
