@@ -13,13 +13,6 @@
 #include "locl.h"
 RCSID("$Id$");
 
-#include <macros.h>
-#include <struct.h>
-#include <spocp.h>
-#include <func.h>
-
-#include <srv.h>
-
 spocp_iobuf_t *iobuf_new( size_t size ) 
 {
   spocp_iobuf_t *io ;
@@ -215,7 +208,7 @@ void iobuf_flush( spocp_iobuf_t *io )
 
 }
 
-void iobuf_print( char *s, spocp_iobuf_t *io )
+__attribute__((unused)) static void iobuf_print( char *s, spocp_iobuf_t *io )
 {
   pthread_mutex_lock( &io->lock ) ;
   traceLog( "[%s] %p:%p:%p %d/%d", s, io->buf, io->r, io->w, io->left, io->bsize ) ;
