@@ -29,7 +29,7 @@ AC_ARG_ENABLE(warnings, [  --disable-warnings         Turn off compiler warnings
 fi])
 
 if test x$GCC = xyes -a $spocp_cv_warnings = yes; then
-        CFLAGS="-Wall -pedantic $CFLAGS"
+        CFLAGS="-Wall -pedantic -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs $CFLAGS"
 fi
 
 dnl *************************************************
