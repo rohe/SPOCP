@@ -37,7 +37,7 @@ int add_work_structs( pool_t *pool, int n )
     pi = ( pool_item_t *) Calloc( 1, sizeof( pool_item_t )) ;
     pi->info = tw ;
   
-    add_to_pool( pool, pi ) ;
+    pool_add( pool, pi ) ;
   }
 
   return i ;
@@ -62,7 +62,7 @@ void free_wpool( afpool_t *afp )
     if( afp->free ) {
       pool = afp->free ;
 
-      while(( pi = pop_from_pool( pool ))) {
+      while(( pi = pool_pop( pool ))) {
         free_work_struct( pi->info ) ;
         free( pi ) ;
       }
@@ -101,7 +101,7 @@ tpool_t *tpool_init( int wthreads, int max_queue_size, int do_not_block_when_ful
   if( max_queue_size < DEF_QUEUE_SIZE ) tpool->cur_queue_size = max_queue_size ;
   else tpool->cur_queue_size = DEF_QUEUE_SIZE ;
 
-  tpool->queue = new_afpool() ;
+  tpool->queue = afpool_new() ;
 
   add_work_structs( tpool->queue->free , tpool->cur_queue_size ) ;
 
@@ -132,9 +132,9 @@ int tpool_add_work( tpool_t *tpool, proto_op *routine, conn_t *c )
   work_info_t *workp ;
   pool_item_t *pi ;
 
-  afpool_lock(tpool->queue) ;
+  if(0) timestamp( "tpool_add_work" ) ;
 
-  if(0)timestamp( "tpool_add_work" ) ;
+  /* traceLog( "queued items: %d", number_of_active( tpool->queue )) ; */
 
   /* traceLog( "queue size: %d, max_size: %d", tpool->cur_queue_size,
              tpool->max_queue_size)  ; */
@@ -144,9 +144,10 @@ int tpool_add_work( tpool_t *tpool, proto_op *routine, conn_t *c )
       ( tpool->cur_queue_size == tpool->max_queue_size ) && 
       (!(tpool->shutdown || tpool->queue_closed)) ) {
  
+    traceLog( "current queue_size=%d", tpool->cur_queue_size ) ;
+
     /* and this caller doesn't want to wait */
     if ( tpool->do_not_block_when_full ) {
-      afpool_unlock(tpool->queue) ;
       return -1;
     }
 
@@ -156,14 +157,12 @@ int tpool_add_work( tpool_t *tpool, proto_op *routine, conn_t *c )
 
   /* the pool is in the process of being destroyed */
   if (tpool->shutdown || tpool->queue_closed) {
-    afpool_unlock(tpool->queue) ;
     return -1;
   }
 
-  /* traceLog("Free workstructs ??" ) ; */
-
   /* Any free workp structs around ? */
   if( afpool_free_item( tpool->queue ) == 0 ) { /* NO ! */
+    traceLog( "No free workp structs !! " ) ;
     if( tpool->cur_queue_size < tpool->max_queue_size ) {
       if( tpool->cur_queue_size + DEF_QUEUE_SIZE < tpool->max_queue_size ) 
         add_work_structs( tpool->queue->free, DEF_QUEUE_SIZE ) ;
@@ -171,20 +170,22 @@ int tpool_add_work( tpool_t *tpool, proto_op *routine, conn_t *c )
         add_work_structs( tpool->queue->free, tpool->max_queue_size - tpool->cur_queue_size ) ;
     }
     else { /* shouldn't happen */
+      traceLog( "Reached the max_queue_size" ) ;
+      return -1 ;
     }
   }
 
-  pi =  get_item( tpool->queue ) ;
-
-  afpool_unlock(tpool->queue) ;
+  pi = afpool_get_empty( tpool->queue ) ;
 
   workp = ( work_info_t * ) pi->info ;
 
   workp->routine = routine;
   workp->conn = c ;
 
-  if(0)timestamp("Broadcast the workitem" ) ; 
-  pthread_cond_broadcast(&(tpool->queue_not_empty)) ;
+  afpool_push_item( tpool->queue, pi ) ;
+
+  if(0) timestamp("Signal the workitem" ) ; 
+  pthread_cond_signal(&(tpool->queue_not_empty)) ;
 
   return 1;
 }
@@ -218,8 +219,8 @@ int tpool_destroy( tpool_t *tpool, int finish )
   afpool_unlock(tpool->queue) ;
 
   /* Wake up any workers so they recheck shutdown flag */
-  pthread_cond_broadcast(&(tpool->queue_not_empty)) ;
-  pthread_cond_broadcast(&(tpool->queue_not_full)) ;
+  pthread_cond_signal(&(tpool->queue_not_empty)) ;
+  pthread_cond_signal(&(tpool->queue_not_full)) ;
 
 
   /* Wait for workers to exit */
@@ -246,7 +247,6 @@ void *tpool_thread(void *arg)
   work_info_t	*my_workp;
   int           res, id ;
   pool_item_t   *pi ;
-  pool_t        *active ;
   afpool_t      *workqueue ;
 
   tpool = ptharg->tpool ;
@@ -258,31 +258,32 @@ void *tpool_thread(void *arg)
     /* Get the queue lock */
     afpool_lock( workqueue ) ; 
 
+    /* if(1) traceLog( "Thread %d looking for work", id ) ; */
+
     /* nothing in the queue, wait for something to appear */
     while ( afpool_active_item( workqueue ) == 0 && (!tpool->shutdown)) {
       /* cond_wait unlocks aflock on entering, locks it on return */
       pthread_cond_wait(&(tpool->queue_not_empty), &(workqueue->aflock)) ;
+      /*traceLog("%d awaken", id ) ;
+      timestamp("Any work around" ) ; */
     }
 
-    traceLog( "Thread %d working", id ) ;
+    afpool_unlock(workqueue) ;
+
+    /* if(1) traceLog( "Thread %d working", id ) ; */
 
     /* Has a shutdown started while I was sleeping? */
     if (tpool->shutdown == 1) {
-      afpool_unlock( workqueue ) ; 
       pthread_exit(NULL);
     }
 
     /* Get to work, dequeue the next item */
 
-    pi = first_active( workqueue ) ;
+    pi = afpool_get_item( workqueue ) ;
 
-    active = workqueue->active ;
-
-    rm_from_pool( active, pi ) ;
+    /* traceLog( "Active workitems %d", number_of_active( workqueue )) ; */
 
     my_workp = ( work_info_t * ) pi->info ;
-
-    afpool_unlock(workqueue) ;
 
     /* Handle waiting destroyer threads *
     if( afpool_active_items( afp ) == 0 && 
@@ -293,23 +294,30 @@ void *tpool_thread(void *arg)
 
     /* Do this work item */
     res = (*(my_workp->routine))(my_workp->conn);
-    /* If error get a clean sheat */
-    if( res == -1 ) flush_io_buffer( my_workp->conn->in ) ; 
 
-    if(0) timestamp( "workitem done" ) ;
+    wake_listener( 1 ) ;
+
+    /* If error get a clean sheat */
+    if( res == -1 ) iobuf_flush( my_workp->conn->in ) ; 
+
+    /* if(1) timestamp( "workitem done" ) ; */
 
     /* returned to free list */
     my_workp->conn = 0 ;
     my_workp->routine = 0 ;
     
-    add_to_pool( workqueue->free, pi ) ;
+    /*if( 1 ) timestamp( "Return work item" ) ; */
+
+    afpool_push_empty( workqueue, pi ) ; 
 
     /* tell the world there are room for more work */
     if ((!tpool->do_not_block_when_full) &&
         ( workqueue->free->size == 1 )) {
 
-      pthread_cond_broadcast(&(tpool->queue_not_full)) ;
+      pthread_cond_signal(&(tpool->queue_not_full)) ;
     }
+
+    if( 0 ) timestamp( "loopturn done" ) ;
   } 
 
   return(NULL);            
