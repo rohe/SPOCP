@@ -151,7 +151,7 @@ varr_t *range2range_match( range_t *ra, slist_t *slp )
   return sl_range_match( slp, ra ) ;
 }
 
-element_t *skip_list_tails( element_t *ep )
+__attribute__((unused)) static element_t *skip_list_tails( element_t *ep )
 {
   for( ep = ep->memberof ; ep && ep->next == 0 ; ep = ep->memberof ) ;
 
@@ -441,7 +441,7 @@ static junc_t *atom_match(
 
 /*****************************************************************/
 
-int common_type( varr_t *va )
+static int common_type( varr_t *va )
 {
   int        i, n, type ;
   element_t *ep ;
@@ -458,7 +458,7 @@ int common_type( varr_t *va )
   return type ;
 }
 
-varr_t *set_match( junc_t *db, varr_t *set, spocp_result_t *rc ) 
+__attribute__((unused)) static varr_t *set_match( junc_t *db, varr_t *set, spocp_result_t *rc ) 
 {
   int         type = common_type( set ) ;
   int         i, n ;
