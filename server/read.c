@@ -510,15 +510,6 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
 
  ***************************************************************/
 
-__attribute__((unused)) static void *get_rules( void *vp, char *file, int *rc  )
-{   
-  keyval_t *globals = 0  ;
-
-  return (void *) read_rules( vp, file, rc, &globals ) ;
-}
-
-/* ---------------------------------------------------------------------- */
-
 static octet_t *bcref_create( char *bcname )
 {
   octet_t *ref ;
