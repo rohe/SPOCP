@@ -225,8 +225,10 @@ get_token(spocp_charbuf_t * io)
 			len = cp - io->start;
 			res = mycpy(res, io->start, len, sofar);
 
-			if (get_more(io) == 0)
+			if (get_more(io) == 0) {
+				traceLog("End of input reached unexpected");
 				return 0;
+			}
 		} else
 			break;
 	} while (1);
@@ -238,9 +240,15 @@ get_token(spocp_charbuf_t * io)
 		io->start = cp;
 	}
 
-	oct = str2oct( res, 1 );
-
-	return oct;
+	if( res == 0 ) {
+		traceLog("No token specification where one was expected\"%s\"",
+		    io->start);
+		return NULL;
+	}
+	else {
+		oct = str2oct( res, 1 );
+		return oct;
+	}
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -259,23 +267,30 @@ get_path(spocp_charbuf_t * io)
 			len = cp - io->start;
 			res = mycpy(res, io->start, len, sofar);
 
-			if (get_more(io) == 0)
+			if (get_more(io) == 0) {
+				traceLog("End of input reached unexpected");
 				return 0;
+			}
 		} else
 			break;
 	} while (1);
 
-	if (cp != io->start) {	/* never got off the ground */
+	if (cp != io->start) {	/* never got off the ground  ? */
 		len = cp - io->start;
 		res = mycpy(res, io->start, len, sofar);
 		sofar += len;
 		io->start = cp;
 	}
 
-	oct = str2oct( res, 1 ) ;
-
-
-	return oct;
+	if( res == 0 ) {
+		traceLog("No path specification where one was expected\"%s\"",
+		    io->start);
+		return NULL;
+	}
+	else {
+		oct = str2oct( res, 1 ) ;
+		return oct;
+	}
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -297,8 +312,10 @@ get_base64( spocp_charbuf_t * io)
 			len = cp - io->start;
 			res = mycpy(res, io->start, len, sofar);
 			sofar += len;
-			if (get_more(io) == 0)
+			if (get_more(io) == 0) {
+				traceLog("End of input reached unexpected");
 				return 0;
+			}
 		} else
 			break;
 	} while (1);
@@ -323,12 +340,15 @@ get_base64( spocp_charbuf_t * io)
 
 		sofar = base64_decode(res);
 		res[sofar] = 0;
+
+		oct = str2oct( res, 1 ) ;
+
+		return oct;
 	}
-
-
-	oct = str2oct( res, 1 ) ;
-
-	return oct;
+	else {
+		traceLog( "No base64 string where I expected one \"%s\"", io->start);
+		return NULL;
+	}
 }
 
 static octet_t *
@@ -349,8 +369,10 @@ get_hex( spocp_charbuf_t * io)
 			len = cp - io->start;
 			res = mycpy(res, io->start, len, sofar);
 			sofar += len;
-			if (get_more(io) == 0)
+			if (get_more(io) == 0) {
+				traceLog("End of input reached unexpected");
 				return 0;
+			}
 		} else
 			break;
 	} while (1);
@@ -380,8 +402,11 @@ get_hex( spocp_charbuf_t * io)
 				c = (*rp - 0x37) << 4;
 			else if (*rp >= '0' && *rp <= '9')
 				c = (*rp - 0x30) << 4;
-			else
+			else {
+				traceLog("Non hex value where there should have been one",
+				    rp);
 				return 0;
+			}
 
 			rp++;
 
@@ -391,8 +416,11 @@ get_hex( spocp_charbuf_t * io)
 				c += (*rp - 0x37);
 			else if (*rp >= '0' && *rp <= '9')
 				c += (*rp - 0x30);
-			else
+			else {
+				traceLog("Non hex value where there should have been one",
+				    rp);
 				return 0;
+			}
 
 			*cp = c;
 			i += 2;
@@ -433,14 +461,19 @@ get_quote( spocp_charbuf_t * io)
 							expect = 0;
 						else
 							expect = HEXCHAR;
-					} else
+					} else {
+						traceLog("Expected hex value \"%s\"",cp);
 						return 0;
+					}
 				} else {
 					if (*cp == '\\')
 						expect = 0;
 					else if (HEX(*cp))
 						expect = HEXCHAR;
 					else
+						traceLog(
+						    "Expected hex or escape char \"%s\""
+						    ,cp);
 						return 0;
 				}
 				continue;
@@ -456,8 +489,10 @@ get_quote( spocp_charbuf_t * io)
 			len = cp - io->start;
 			res = mycpy(res, io->start, len, sofar);
 			sofar += len;
-			if (get_more(io) == 0)
+			if (get_more(io) == 0) {
+				traceLog("End of input reached unexpected");
 				return 0;
+			}
 		} else
 			break;
 	} while (!done);
@@ -471,18 +506,15 @@ get_quote( spocp_charbuf_t * io)
 
 	if (res) {
 		/*
-			len = sofar;
-			sofar = rm_sp(res, sofar);
-		*/
-
-		/*
 		 * de escape 
 		 */
 		sofar = de_escape(res, sofar);
 	}
 
-	if (res == 0)
+	if (res == 0) {
+		traceLog("Empty string encountered");
 		return 0;	/* not allowed */
+	}
 
 	oct = str2oct( res, 1 );
 
@@ -501,8 +533,9 @@ skip_whites(spocp_charbuf_t * io)
 			bp++;
 
 		if (*bp == 0) {
-			if (get_more(io) == 0)
+			if (get_more(io) == 0) {
 				return 0;
+			}
 			bp = io->start;
 		} else
 			break;
@@ -581,8 +614,11 @@ get_chunk(spocp_charbuf_t * io)
 	default:
 		if (VCHAR(*io->start))
 			o = get_token(io);
-		else
+		else {
+			traceLog("Non token char, where token char was expected \"%s\"",
+			    io->start);
 			return NULL;
+		}
 		break;
 	}
 

@@ -41,19 +41,26 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 	bcspec_t       *bcs = 0;
 	plugin_t       *p;
 	int             n;
+	char		*tmp;
 
 	/*
 	 * two parts name ":" typespec 
 	 */
-	if ((n = octchr(spec, ':')) < 0)
+	if ((n = octchr(spec, ':')) < 0) {
+		tmp = oct2strdup( spec, 0 );
+		traceLog( "Error in boundary condition specification \"%s\"", tmp);
+		free(tmp);
 		return 0;
+	}
 
 	oct.len = spec->len - n - 1;
 	oct.val = spec->val + n + 1;
 	spec->len = n;
 
 	if ((p = plugin_match(plt, spec)) == 0) {
-		traceLog("Doesn't match any known plugin");
+		tmp = oct2strdup(spec, 0 );
+		traceLog("Doesn't match any known plugin \"%s\"",tmp);
+		free(tmp);
 		return 0;
 	}
 
@@ -374,8 +381,11 @@ transv_stree(plugin_t * plt, stree_t * st, bcdef_t * list, bcdef_t * parent)
 
 	if (!st->list) {
 		if (!st->next) {	/* should be a bcond spec */
-			if (plt == 0 || (bcs = bcspec_new(plt, &st->val)) == 0)
+			if (plt == 0 || (bcs = bcspec_new(plt, &st->val)) == 0) {
+				if (plt == 0)
+					traceLog("Reference to plugin while non is defined");
 				return 0;
+			}
 			bce = bcexp_new();
 			bce->type = SPEC;
 			bce->parent = parent;
