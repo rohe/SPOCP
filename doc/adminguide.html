@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
 	<META NAME="CREATED" CONTENT="20040415;7592800">
 	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
-	<META NAME="CHANGED" CONTENT="20040416;13464100">
+	<META NAME="CHANGED" CONTENT="20040422;16565600">
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H1>SPOCP Administrators manual</H1>
@@ -14,17 +14,11 @@
 2004-02-23<BR>Authors: Roland Hedberg and Torbj&ouml;rn Wiberg 
 </P>
 <H1>Content</H1>
-<OL>
+<OL START=0>
 	<LI><P STYLE="margin-bottom: 0in"><A HREF="#intro">Introduction</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#native">Running the
+	<LI><P STYLE="margin-bottom: 0in"><A HREF="#native">Configuring the
 	SPOCP server</A> 
-	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#pam">Using Spocp as a
-	PAM module</A> 
-	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#apache_mod">Spocp as
-	access control for a Apache server</A> 
 	</P>
 </OL>
 <H1><A NAME="intro"></A>0. Introduction</H1>
@@ -52,7 +46,7 @@ not using the administrative interface to keep the rules updated, you
 have to modify the text file and then restart the server when you
 want to update the rule set. 
 </P>
-<H1><A NAME="native"></A>1. Using the native SPOCP serve</H1>
+<H1><A NAME="native"></A>1. Configuring the SPOCP serve</H1>
 <H2>1.0 Introduction</H2>
 <P>The Spocd server can listen on Internet ports as well as unix
 domain sockets and as protocol it can presently only use TCP. In the
@@ -61,8 +55,10 @@ future UDP might also be supported.
 <H2>1.1 Configuration file</H2>
 <H3>1.1.0 Server part</H3>
 <P>The server has to know a couple of things when it starts and these
-things are supposed to be learnt from the configuration file.<BR>The
-format of the configuration file is as follows: 
+things are supposed to be learnt from the configuration file. If the
+configuration file is 'empty' it has some default values for some of
+the configurable things.<BR>The format of the configuration file is
+as follows: 
 </P>
 <PRE>  file    = [servercnf] [dbackcnf] *plugincnf
 
@@ -76,20 +72,18 @@ format of the configuration file is as follows:
            / &quot;unixdomainsocket&quot; / &quot;sslverifydepth&quot; / &quot;pidfile&quot;
 
 
-  dbackcnf   = &ldquo;[dback]&rdquo; CRLF dbackassgn assignment
+  dbackcnf   = &ldquo;[dback]&rdquo; CRLF dbackassgn
 
   dbackassgn = name load *assignment
 
-  name       = &ldquo;name&rdquo; *SP &ldquo;=&rdquo; *SP printablea CRLF
-  load       = &ldquo;load&rdquo; *SP &ldquo;=&rdquo; *SP printable CRLF
+  name       = &ldquo;name&rdquo; *SP &ldquo;=&rdquo; *SP string CRLF
+  load       = &ldquo;load&rdquo; *SP &ldquo;=&rdquo; *SP string CRLF
   poolsize   = &ldquo;poolsize&rdquo; *SP &ldquo;=&rdquo; *SP number CRLF
   cachetime  = &ldquo;cachetime&rdquo; *SP &ldquo;=&rdquo; *SP number CRLF
 
-  plugincnf  = pluginhead CRLF *assignment
+  plugincnf = &quot;[&quot; string &quot;]&quot; CRLF load [poolsize] [cachetime] *assignment
 
-  pluginhead = &quot;[&quot; printable &quot;]&quot; CRLF load *assignment
-
-  assignment = printable &ldquo;=&rdquo; *UTF8 CRLF
+  assignment = string &ldquo;=&rdquo; 1*UTF8 CRLF
 
   CRLF       = %x0D [ %x0A ]
 
@@ -98,6 +92,7 @@ format of the configuration file is as follows:
   digit      = %x30-39
   number     = 1*digit
 
+  string     = 1*printable
   printable  = digit / %x41-5A / %x61-7A
 
   UTF8    = %x01-09 / %x0B-0C / %x0E-7F / UTF8-2 / UTF8-3 / UTF8-4 / UTF8-5 / UTF8-6
@@ -182,14 +177,12 @@ format of the configuration file is as follows:
 	means that self-signed client certificates are accepted only, the
 	default depth of 1 means the client certificate can be self-signed
 	or has to be signed by a CA which is directly known to the server
-	(i.e. the CA's certificate is under). 
-	</DD><DT>
+	(i.e. the CA's certificate is under). Default is 1.</DD><DT>
 	<B>threads</B> 
 	</DT><DD STYLE="margin-bottom: 0.2in">
 	The number of threads the server will use to service requests. This
 	number is static, that is it will not change over time depending on
-	load. 
-	</DD><DT>
+	load. Default is 5.</DD><DT>
 	<B>timeout</B> 
 	</DT><DD STYLE="margin-bottom: 0.2in">
 	The inactivity timeout. If a client has been silent for this long
@@ -242,16 +235,23 @@ passwd      = NewKey
 calist      = /usr/local/spocp/certs/cacert.pem
 logfile     = /var/log/spocp
 port        = 3456
-rulefile    = /usr/local/spocp/test/pam/pam
+rulefile    = /usr/local/spocp/pam/rules.pam
 
 [strmatch]
-load    =/local/develop/spocp/backends/strmatch/.libs/libstrmatchplugin.so
+load    =/usr/local/spocp/lib/libstrmatchplugin.so
 
 [dback]
 name    =gdbm
-load    =/local/develop/spocp/backends/dback_gdbm/.libs/libdbackgdbm.so
-gdbmfile=spocp.gdbm</PRE><H2>
-1.2 Commandline options</H2>
+load    =/usr/local/spocp/lib/libdbackgdbm.so
+gdbmfile=/usr/local/spocp/db/spocp.gdbm</PRE><H3>
+1.1.4 Persistent rule store</H3>
+<P>If a dback is defined, then if the presistent store is not
+initialized the rules are read from the rule file. If on the other
+hand it is in existence the rules will be read from the persistent
+store and whatever is in the rule file will be ignored. During
+operation ir rules are added or deleted the persistent store will be
+updated accordingly.</P>
+<H2>1.2 Commandline options</H2>
 <P>When you start the server you probably want to tell it where to
 find the configuration file. The default is to look for a file named
 &quot;config&quot; in the directory where you stood when you started
@@ -272,28 +272,28 @@ everything it can produce and it's quite a lot.
 <H2><A NAME="rulefile"></A>1.3 Rulefile format</H2>
 <P>A formal definition: 
 </P>
-<PRE> 
-  line       = ( rule / comment / &quot;&quot; / bconddef / include )
-  rule       = sexp [ 1*SP &ldquo;=&gt;&rdquo; 1*SP bcond] [ 1*SP &ldquo;==&rdquo; 1*SP blob ]
-  sexp       = &quot;(&quot; *SP atom *( 1*SP element ) *SP &quot;)&quot;
+<PRE>  line       = ( rule / comment / &quot;&quot; / bconddef / include )
+  rule       = sexp [ 1*SP &ldquo;=&gt;&rdquo; 1*SP bcexp] [ 1*SP &ldquo;==&rdquo; 1*SP blob ]
+  sexp       = &quot;(&quot; *SP string *( 1*SP element ) *SP &quot;)&quot;
   element    = sexp / atom
-  blob       = atom 
+  blob       = atom
   atom       = string / quoted-string / hex-string / base64-string
   
   string     = 1*vchar
-  vhar       = x%21 / x%23 / x%24 / x%26 / x%27 / x%2A-%x2E / x%30-5B / x%5C-7B / x%7D / x%7E
+               ; printable except '&rdquo;', '#', '%', '(', ')', '*', '/', 
+               ; '[', '\', ']', '{', '|', '}'
+  vhar       = x%21 / x%23 / x%24 / x%26 / x%27 / x%2B-%x2E / x%30-5A / x%5E-7B / x%7E
 
   quoted-string = '&rdquo;' 1*printchar '&rdquo;'
   printchar     = x%21 / x%23-7E
 
   comment    = &quot;#&quot; *UTF8 CRLF ; has to be first on the line
 
-  bconddef   = key *SP &quot;:=&quot; *SP bcond
-  key        = string
-  bcond      = 1*pchar &ldquo;:&rdquo; *unitsel &ldquo;:&rdquo; atom
+  bconddef   = string *SP &quot;:=&quot; *SP bcond
+  bcond      = pname &ldquo;:&rdquo; *unitsel &ldquo;:&rdquo; atom
 
   unitsel    = &ldquo;{&ldquo; 1*path unit &ldquo;}&rdquo;
-  path       = &ldquo;/&rdquo; 1*pchar 
+  path       = &ldquo;/&rdquo; string 
   unit       = ( &ldquo;/*&rdquo; / 
                  &ldquo;[&ldquo; ( num [ &ldquo;-&rdquo; [ num ]] / &ldquo;-&rdquo; num / &ldquo;last&rdquo; ) &ldquo;]&rdquo; )
 
@@ -312,11 +312,12 @@ everything it can produce and it's quite a lot.
   base64-string = &ldquo;|&rdquo; 1*bchar 1*2&rdquo;=&rdquo;            ; a bit loose
   bchar         = DIGIT / %x41-5A / %x61-7A / %x2B / %x2F
 
+  pname      = 1*pchar
   pchar      = DIGIT / 0x41-5A / 0x61-7A / %x2E
 
-  bcond      = bcexp / bcomp
+  bcexp      = bcond / bcomp
   bcomp      = and / or / not / ref
-  ref        = &quot;(&ldquo; *SP &ldquo;ref&quot; 1*SP key *SP &quot;)&quot;
+  ref        = &quot;(&ldquo; *SP &ldquo;ref&quot; 1*SP pname *SP &quot;)&quot;
   and        = &quot;(&ldquo; *SP &ldquo;and&quot; 2*( 1*SP bcomp ) *SP &quot;)&quot;
   or         = &quot;(&ldquo; *SP &ldquo;or&quot; 2*( 1*SP bcomp ) *SP &quot;)&quot;
   not        = &quot;(&ldquo; *SP &ldquo;not&quot; 1*SP bcomp *SP &quot;)&quot;
@@ -327,407 +328,61 @@ Example of a rulefile:
 ;include bconddef
 #
 (
-	nya
-	AF11_write1
-	(
-		role
-		s
-		(
-			*
-			set
-			1
-			2
-		)
-	)
+        nya
+        AF11_write1
+        (
+                role
+                s
+                (
+                        *
+                        set
+                        1
+                        2
+                )
+        )
 )
 
 (nya AF11_write2
      (role s 2))
 #
 (nya AF12_read (role ah (* set 2 3 4 5)))
-	== &quot;This is a blob, which is supposted to be turned back with a positive answer&quot;
+        == &quot;This is a blob, which is supposted to be turned back with a positive answer&quot;
 
 (nya AF12_write (role ah (* set 4 5)))
 
 (nya AF12_writeO (role ah (* set 4 5)))
 #detta &auml;r ett randvillkorsuttryck som h&ouml;r till ovanst&aring;ende rad
-	=&gt; (ref strcmp)
+        =&gt; (ref strcmp)
 #
 (nya AF13_read (role ah (* set 2 3 4 5)))
 (nya AF13_write (role ah (* set 4 5)))
 #
-(nya AF13_writeO (role ah (* set 4 5)))	=&gt; (ref strcmp) == |Rm9vQmFyCg==
+(nya AF13_writeO (role ah (* set 4 5))) =&gt; (ref strcmp) == |Rm9vQmFyCg==
 (nya AF41_write (role ah (* set  2 3 4 5)))
 
 # Server and operation access restrictions
 //marcia/server/(server( ip(* prefix 213.79.154)))
 //marcia/server/(server( ip 127.0.0.1))
 //marcia/operation/(operation STARTTLS)
-//marcia/operation/(operation QUERY (path)(server (ip)(host)(TransportSec (vers1 TLSv1/SSLv3))))
-</PRE><P>
-Inclusion of other files are done where the reference to them appear
-in the text. 
+//marcia/operation/(operation QUERY 
+    (server (ip)(host)(TransportSec (vers (* set &quot;TLSv1/SSLv3&quot; SSLv3)))))
+//marcia/operation/(operation LOGOUT 
+    (server (ip)(host)(TransportSec (vers (* set &quot;TLSv1/SSLv3&quot; SSLv3)))))</PRE><P>
+<B>Note:</B> Inclusion of other files are done where the reference to
+them appear in the text. 
 </P>
-<P>Rules can be divided into rulesets, they way to ackomplish this is
-to prepend the ruledefinition itself with a path name. 
-</P>
+<P><B>Note:</B> Rules can be divided into rulesets, they way to
+ackomplish this is to prepend the ruledefinition itself with a path
+name. This is normally not used for application rules but definitely
+for the access rules for the Spocp server itself. The default base
+for access rules to the Spocp server is &ldquo;/&rdquo;&lt;hostname&gt;&rdquo;/operation&rdquo;
+for operation access rules and &ldquo;/&rdquo;&lt;hostname&gt;&rdquo;/server&rdquo;
+for access to the server itself. In the example above Spocp clients
+with IP addresses 213.79.154/24 or 127.0.0.1 are allowed access to
+the Spocp server. These servers has as long as they are not using
+SSLv3 not access to any other command than STARTTLS. Using TLS/SSL
+they have access to the &ldquo;QUERY&rdquo; and &ldquo;LOGOUT&rdquo;
+operations.</P>
 <HR>
-<H2><A NAME="pam"></A>2. Spocp as a Pluggable Authentication Module
-(PAM) for Linux</H2>
-<H3>2.1 Account queries to S-expression conversion</H3>
-<P>The information presented to the PAM module are service requested,
-on what host,by who ( uid and gid ) and finally from where the
-request came. It might come from a tty or a completely other host. 
-</P>
-<P>From this information, S-expression of this form is constructed
-(it is are wrapped into several lines to make it more readable) : 
-</P>
-<PRE>(5:spocp
-  (8:resource&lt;host&gt;)
-  (6:action&lt;service&gt;)
-  (7:subject(3:uid&lt;uid&gt;)(3:gid&lt;gid&gt;)(4:host&lt;wherefrom&gt;)))</PRE><P>
-<BR>So a 'realworld' example of a query would then be (also wrapped):
-</P>
-<PRE>(5:spocp
-  (8:resource6:theano)
-  (6:action7:useradd)
-  (7:subject(3:uid3:501)(3:gid3:100)(4:host5:pts/2)))</PRE><P>
-<BR>And one could imaging having a matching rule that could be : 
-</P>
-<PRE>(5:spocp
-  (8:resource6:theano)
-  (6:action7:useradd)
-  (7:subject(3:uid(1:*5:range2:ge3:5002:le:600))(3:gid)(4:host(1:*6:prefix4:pts/))))</PRE><P>
-<BR>The interpretation of this rule is that anyone with a user id
-between 500 and 600 connected to the machine through a tty with a
-name starting with &quot;pty/&quot; is allowed to run the command
-'useradd'. If this was the only rule defined and used then root would
-not be able to run 'useradd' ! 
-</P>
-<H2>2.2 PAM configuration file format</H2>
-<P>PAM separates the tasks of authentication into four independent
-management groups: 
-</P>
-<UL>
-	<LI><P STYLE="margin-bottom: 0in">account management; 
-	</P>
-	<LI><P STYLE="margin-bottom: 0in">authentication management; 
-	</P>
-	<LI><P STYLE="margin-bottom: 0in">password management; 
-	</P>
-	<LI><P>and session management. 
-	</P>
-</UL>
-<P>SPOCP is used for the <EM>account</EM>management, which is
-basically for answering queries like 
-</P>
-<UL>
-	<LI><P STYLE="margin-bottom: 0in">has the user's password expired? 
-	</P>
-	<LI><P>is this user permitted access to the requested service? 
-	</P>
-</UL>
-<P>The second question to me looks more like authorisation than
-authentication but then what is in a word ? <BR>Anyway this type of
-questions are the rationale for using a authorization system like
-spocp in the PAM context. 
-</P>
-<P>There are two places where information about when and how a module
-should be used. Either in /etc/pam.conf or in files in the directory
-/etc/pam.d .If the directory exists then the file is ignored. 
-</P>
-<P>The format of each rule is a space separated collection of tokens,
-the first three being case-insensitive: 
-</P>
-<PRE STYLE="margin-bottom: 0.2in">  service  type  control  module-path  module-arguments</PRE><P>
-The syntax of files contained in the /etc/pam.d/ directory, are
-identical except for the absence of any service field. In this case,
-the service is the name of the file in the /etc/pam.d/ directory.
-This filename must be in lower case. 
-</P>
-<P>More information on PAM can be gotten on any Linux system by
-running &quot;<B>man pam</B>&quot; 
-</P>
-<P>Below is a example on how to configure PAM to use the spocp module
-when authenticating the use of the command <EM>useradd</EM>. This is
-the content of the file /etc/pam.d/useradd : 
-</P>
-<PRE>#%PAM-1.0
-auth     sufficient     pam_rootok.so
-auth     required       pam_permit.so
-account  required       pam_spocp.so   \
-        spocpserver=theano.catalogix.se:3456 \
-        ssl \
-        privatekey=/usr/local/spocp/certs/pam.pem \
-        calist=/usr/local/spocp/certs/cacert.pem passwd=pampem \
-        certificate=/usr/local/spocp/certs/pam.pem
-account  required       pam_permit.so
-password required       pam_permit.so
-session  required       pam_deny.so</PRE><P>
-Notice that if the PAM module should use TLS to protect the
-communication with the SPOCP server then all relevant information,
-like where the certificate and private key of the client are place,
-has to be provided in the configuration file. If <EM>ssl</EM> is not
-defined as an argument then TLS is not used.<BR>So, as another
-example, if the PAM module is suppost to talk to the server over a
-unix domain socket on the same machine ( in which case TLS seems
-quite unnecessary ) the spocp line in the configuration file would
-become: 
-</P>
-<PRE STYLE="margin-bottom: 0.2in">account  required       pam_spocp.so    spocpserver=/tmp/spocp </PRE><H1>
-<A NAME="apache_mod"></A>3. Spocp as accesscontrol system for a
-Apache server</H1>
-<H2>3.1 Apache configuration: (httpd.conf)</H2>
-<P>This directive is suppost to be used inside &lt;Directory&gt; or
-&lt;Location&gt; within *.conf files. It can not be used in
-.htaccess. &lt;/Location&gt;&lt;/Directory&gt; 
-</P>
-<P>Spocp domain serverlocation 
-</P>
-<DL>
-	<DT>domain 
-	</DT><DD STYLE="margin-bottom: 0.2in">
-	a tag to be used to group several directories, and to let them all
-	be governed by the same set of rules. 
-	</DD><DT>
-	serverlocation 
-	</DT><DD STYLE="margin-bottom: 0.2in">
-	serverlocation is where the spocp server can be found, this is
-	either host:port ( remember there is no default spocp port ) or a
-	unix domain socket specification. 
-	</DD></DL>
-<H2>
-3.2 Defining the Spocp rules</H2>
-<P>There are 5 different cases when it comes to http requests: 
-</P>
-<OL>
-	<LI><P STYLE="margin-bottom: 0in">http without authentication 
-	</P>
-	<LI><P STYLE="margin-bottom: 0in">http with authentication 
-	</P>
-	<LI><P STYLE="margin-bottom: 0in">https without authentication 
-	</P>
-	<LI><P STYLE="margin-bottom: 0in">https with user authentication 
-	</P>
-	<LI><P>https with client certificate authentication 
-	</P>
-</OL>
-<P>Depending on which one is in use, the webserver has access to
-different types of information. This means that the webserver will
-build different Spocp queries depending on which case is in use. The
-name of the resource that is requested is always present together
-with the spocp domain name. Apart from that the following information
-is present in the different cases: 
-</P>
-<DL>
-	<DT><B>http without authentication</B> 
-	</DT><DD>
-	client ip address and 
-	</DD><DD STYLE="margin-bottom: 0.2in">
-	possibly client domain name 
-	</DD><DT>
-	<B>http with authentication</B> 
-	</DT><DD>
-	client ip address, 
-	</DD><DD>
-	possibly client domain name, 
-	</DD><DD>
-	user name, 
-	</DD><DD>
-	authentication domain name and 
-	</DD><DD STYLE="margin-bottom: 0.2in">
-	authentication type 
-	</DD><DT>
-	<B>https without authentication</B> 
-	</DT><DD>
-	client ip address, 
-	</DD><DD>
-	possibly client domain name and 
-	</DD><DD STYLE="margin-bottom: 0.2in">
-	whether SSLv2, SSLv3 or TLSv1 is used. 
-	</DD><DT>
-	<B>https with user authentication</B> 
-	</DT><DD>
-	client ip address, 
-	</DD><DD>
-	possibly client domain name, 
-	</DD><DD>
-	user name, 
-	</DD><DD>
-	authentication domain name, 
-	</DD><DD>
-	authentication type and 
-	</DD><DD STYLE="margin-bottom: 0.2in">
-	whether SSLv2, SSLv3 or TLSv1 is used. 
-	</DD><DT>
-	<B>https with client certificate authentication</B> 
-	</DT><DD>
-	client ip address, 
-	</DD><DD>
-	possibly client domain name, 
-	</DD><DD>
-	subjectname from the client certificate, 
-	</DD><DD>
-	issuername from the client certificate, 
-	</DD><DD>
-	and whether SSLv2, SSLv3 or TLSv1 is used. 
-	</DD><DD STYLE="margin-bottom: 0.2in">
-	If SSLOption +fakeBasicAuth is specified the client certificate
-	subjectname also appears as user name. 
-	</DD></DL>
-<P>
-Whether domain name will be available or not depends on what DNS
-contains. The module will do a DNS lookup and then do a double
-reverse lookup. The result is the (double reverse checked) hostname,
-or NULL if any of the lookups fail. The construction of the Spocp
-query follows the default 3-tuple contruct with separate parts for
-resource, action and subject.<BR>The different part are constructed
-as follows : 
-</P>
-<DL>
-	<DT><B>resource:</B> 
-	</DT><DD STYLE="margin-bottom: 0.2in">
-	spocpdomain and resourcename 
-	</DD><DT>
-	<B>action:</B> 
-	</DT><DD>
-	action as number, 0 (GET), 1(PUT), 2(POST), and so on 
-	</DD><DD STYLE="margin-bottom: 0.2in">
-	and access control (1) or authorization check 
-	</DD><DT>
-	<B>source:</B> 
-	</DT><DD STYLE="margin-bottom: 0.2in">
-	ipnumber hostname [sslversion [issuerDN subjectDN]] [user authname
-	authtype] 
-	</DD></DL>
-<P>
-A typical Spocp query (split into several lines to make it more
-readable) 
-</P>
-<PRE>  (4:http
-    (8:resource10:index.html1:-)        ; resource name (index.html)
-    (6:action1:01:0)                    ; 0 = GET, 0 = access check
-    (7:subject
-      (2:ip9:127.0.0.1)                 ; client ip
-      (4:host9:localhost)               ; client hostname
-    )
-  )
-</PRE><P>
-And after a https request, after authentication has completed. No
-client certificate demanded. 
-</P>
-<PRE>  (5:spocp
-    (8:resource
-     9:internal                         ; spocp domain
-     9:internal10:index.html1:-         ; resource name (internal/index.html)
-    )
-    (6:action1:01:1)                    ; 0 = GET, 1 = authorization check
-    (7:subject
-      (2:ip14:213.79.154.114)           ; client ip
-      (4:host2:se9:catalogix6:theano)   ; client hostname
-      (7:sslvers3:300)                  ; SSLv3
-      (4:user6:roland)
-      (8:authname6:secret)
-      (8:authtype5:Basic)
-    )
-  )</PRE><P>
-<EM><B>Beware!</B></EM> that in Apache access control really consists
-of tree parts; access control, identity control and authorization
-control. This means that if you have a protected part of you
-webserver where you demand authentication and authorization. Then you
-will get two Spocp queries. The first a access check ( without any
-user, authtype and authname specifications ) and the second one a
-authorization check with user, authtype and authname. The mod_spocp
-implementation allows you to distinguish between these by adding a
-'0' element to the action list if it is a access check and a '1' if
-it is a authorisation check. 
-</P>
-<H2>3.2 A simple example 
-</H2>
-<P>Given a httpd.conf with the following parts: 
-</P>
-<PRE>DocumentRoot &quot;/srv/www/htdocs&quot;
-
-&lt;Directory &quot;/srv/www/htdocs&quot;&gt;
-    Options Indexes FollowSymLinks MultiViews
-    AllowOverride None
-
-    Spocp docs /tmp/spocp
-&lt;/Directory&gt;</PRE><P>
-Having the simple ruleset:
-<BR>(5:spocp(8:resource4:docs)(6:action1:0)(7:subject)) <BR>in the
-Spocp server would allow anyone access to the top directory. 
-</P>
-<P>So a request for http://127.0.0.1/index.html, which would generate
-the query: 
-</P>
-<PRE>(5:spocp
-  (8:resource4:docs10:index.html1:-)
-  (6:action1:0)
-  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost))
-)</PRE><P>
-would be permitted. 
-</P>
-<P>Let us add another directory to the HTTP server, 
-</P>
-<PRE>&lt;Directory /srv/www/htdocs/local&gt;
-  AuthType Basic
-  AuthName company
-  AuthUserFile /etc/httpd/passwd
-  Require valid-user
-  Spocp protect /tmp/spocp
-  Satisfy all
-&lt;/Directory&gt;</PRE><P>
-A request came for http://127.0.0.1/local/images.html would be
-translated into this SPOCP query 
-</P>
-<PRE>(5:spocp
-  (8:resource7:protect5:local11:images.html1:-)
-  (6:action1:01:0)
-  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost))
-)</PRE><P>
-Which would be denied imeediately (given the simple ruleset above) 
-</P>
-<P>So we would have to change our rules to: 
-</P>
-<PRE>(5:spocp(8:resource4:docs)(6:action1:0)(7:subject))
-(5:spocp(8:resource7:protect)(6:action1:0)(7:subject(2:ip9:127.0.0.1)(4:host9:localhost)))</PRE><P>
-if we wanted to give the right people access to the resouce<BR>With
-this ruleset in place the request would be granted since both the
-access and the authorization queries would be matched by the same
-rule (the second one).<BR>The queries would look like this: 
-</P>
-<PRE>(5:spocp
-  (8:resource7:protect5:local11:images.html1:-)
-  (6:action1:01:0)
-  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost))
-)
-
-(5:spocp
-  (8:resource7:protect5:local11:images.html1:-)
-  (6:action1:01:1)
-  (7:subject
-    (2:ip9:127.0.0.1)
-    (4:host9:localhost)
-    (4:user6:roland)
-    (8:authname7:company)
-    (8:authtype5:Basic)
-  )
-)</PRE><P>
-Changing your rules again to: 
-</P>
-<PRE>(5:spocp(8:resource4:docs)(6:action1:0)(7:subject))
-(5:spocp(8:resource7:protect)(6:action1:01:0)
-  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost)))
-(5:spocp(8:resource7:protect)(6:action1:01:1)
-  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost)(4:user6:roland)))</PRE><P>
-To separated the access control queries from the authorization
-control queries, but also to explicitly specify who should be granted
-access.<BR>'roland' with these rules in place would still be ganted
-access to the page but 'eva' who has a valid user at the HTTP server
-( and therefore would pass the first two checks, the access and
-identity check) would not ( since she would fail on the authorization
-check). 
-</P>
 </BODY>
 </HTML>
