@@ -165,8 +165,7 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa)
 	bcdef_t        *bcd = 0;
 	octet_t        *o;
 	db_t           *db;
-
-	LOG(SPOCP_INFO) traceLog("spocp_add_rule");
+	char		*tmp;
 
 	if (!oa || oa->n == 0)
 		return SPOCP_MISSING_ARG;
@@ -181,15 +180,29 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa)
 
 	if (oa->n > 1) {
 		/*
-		 * pick out the second ( = index 1 ) octet 
-		 */
+		* pick out the second ( = index 1 ) octet, this is the 
+		* boundary condition 
+		*/
 		o = octarr_rm(oa, 1);
 
 		bcd = bcdef_get(db, p, dbc, o, &r);
+		if (bcd == NULL && r != SPOCP_SUCCESS) {
+			LOG(SPOCP_INFO) {
+				tmp = oct2strdup(o, '%');
+				traceLog("Unknown boundary condition:\"%s\"", tmp);
+				free(tmp);
+			}
+			return r;
+		}
+	}
+
+	LOG(SPOCP_INFO) {
+		tmp = oct2strdup(oa->arr[0], '%');
+		traceLog("spocp_add_rule:\"%s\"", tmp);
+		free(tmp);
 	}
 
 	if ((r = add_right(&db, dbc, oa, &ri, bcd)))
-
 		*dpp = db;
 
 	return r;
