@@ -212,6 +212,8 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			}
 			
 			if( rdef.blob ) {
+				if (!rdef.bcond)
+					oa = octarr_add(oa, str2oct("NULL", 0)) ;
 				oa = octarr_add(oa, octdup(rdef.blob->val)) ;
 			}
 			

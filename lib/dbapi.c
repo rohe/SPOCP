@@ -223,14 +223,17 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 		*/
 		bcexp = octarr_rm(oa, 1);
 
-		bcd = bcdef_get(db, p, dbc, bcexp, &r);
-		if (bcd == NULL && r != SPOCP_SUCCESS) {
-			LOG(SPOCP_INFO) {
-				tmp = oct2strdup(bcexp, '%');
-				traceLog("Unknown boundary condition:\"%s\"", tmp);
-				free(tmp);
+		if (oct2strcmp( bcexp, "NULL") != 0) {
+			bcd = bcdef_get(db, p, dbc, bcexp, &r);
+			if (bcd == NULL && r != SPOCP_SUCCESS) {
+				LOG(SPOCP_INFO) {
+					tmp = oct2strdup(bcexp, '%');
+					traceLog("Unknown boundary condition:\"%s\"",
+					    tmp);
+					free(tmp);
+				}
+				return r;
 			}
-			return r;
 		}
 	}
 
