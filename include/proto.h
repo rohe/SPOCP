@@ -10,16 +10,21 @@
 #ifndef __PROTO_H__
 #define __PROTO_H__
 
-#define ASCII_LOWER(c)   ( (c) >= 'a' && (c) <= 'z' )
-#define ASCII_UPPER(c)   ( (c) >= 'A' && (c) <= 'Z' )
-#define DIGIT(c)         ( (c) >= '0' && (c) <= '9' )
-#define ALPHA(c)         ( ASCII_LOWER(c) || ASCII_UPPER(c) )
-#define HEX_LOWER(c)     ( (c) >= 'a' && (c) <= 'f' )
-#define HEX_UPPER(c)     ( (c) >= 'A' && (c) <= 'F' )
-#define HEX(c)           ( DIGIT(c) || HEX_LOWER(c) || HEX_UPPER(c) )
-#define BASE64CHAR(c)    ( ASCII_LOWER(c) || ASCII_UPPER(c) || DIGIT(c) || (c) == '+' || (c) == '/' )
-#define WHITESPACE(c)    ( (c) == ' ' || (c) == '\n' || (c) == '\t' || (c) == '\v' || (c) == '\r' || (c) == '\f' )
+#define ASCII_LOWER(c)	( (c) >= 'a' && (c) <= 'z' )
+#define ASCII_UPPER(c)	( (c) >= 'A' && (c) <= 'Z' )
+#define DIGIT(c)	( (c) >= '0' && (c) <= '9' )
+#define ALPHA(c)	( ASCII_LOWER(c) || ASCII_UPPER(c) )
+#define HEX_LOWER(c)	( (c) >= 'a' && (c) <= 'f' )
+#define HEX_UPPER(c)	( (c) >= 'A' && (c) <= 'F' )
+#define HEX(c)		( DIGIT(c) || HEX_LOWER(c) || HEX_UPPER(c) )
+#define BASE64(c)	( ALPHA(c) || DIGIT(c) || (c) == '+' || (c) == '/' )
+#define WHITESPACE(c)	( (c) == ' ' || (c) == '\n' || (c) == '\t' || (c) == '\v' || (c) == '\r' || (c) == '\f' )
 #define TCHAR(c)         ( (c) == '-' || (c) == '.' || (c) ==  '/' || (c) ==  '_' || (c) ==  ':' || (c) ==  '*' || (c) ==  '+' || (c) ==  '=' )
+
+#define VCHAR(c)  ((c) != '"' && (c) != '#' && (c) != '%' && (c) != '(' && (c) != ')'\
+	&& (c) != '*' && (c) != '/' && (c) != '[' && (c) != '\\' && (c) != ']'\
+	&& (c) != '{' && (c) != '|' && (c) != '}')
+
 /*
  * #define TOKENCHAR(c) ( TCHAR(c) || ASCII_LOWER(c) || ASCII_UPPER(c) ||
  * DIGIT(c) ) 
