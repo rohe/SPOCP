@@ -183,15 +183,6 @@ void ss_del_db( ruleset_t *rs, int scope )
 
  ***************************************************************/
 
-__attribute__((unused)) static void *ss_get_rules( ruleset_t *rs, char *file, int *rc  )
-{
-  keyval_t *globals = 0  ;
-
-  return (void *) read_rules( rs, file, rc, &globals ) ;
-}
-
-/* ------------------------------------------------------------ */
-
 static spocp_result_t rec_del( ruleset_t *rs, char *uid, size_t *nr )
 {
   ruleset_t      *trs ;
