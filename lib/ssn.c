@@ -18,8 +18,9 @@
 #include <struct.h>
 #include <func.h>
 #include <wrappers.h>
+#include <varr.h>
 
-parr_t *get_rec_all_ssn_followers( ssn_t *ssn, parr_t *pa ) ;
+varr_t *get_rec_all_ssn_followers( ssn_t *ssn, varr_t *ja ) ;
 
 ssn_t *ssn_new( char ch )
 {
@@ -184,9 +185,9 @@ junc_t *ssn_insert( ssn_t **top, char *str, int direction )
   else                       return ssn_insert_backward( top, str ) ;
 }
 
-parr_t *ssn_match( ssn_t *pssn, char *sp, int direction )
+varr_t *ssn_match( ssn_t *pssn, char *sp, int direction )
 {
-  parr_t        *res = 0 ;
+  varr_t        *res = 0 ;
   unsigned char *ucp ;
 
   if( pssn == 0 ) return 0 ;
@@ -200,7 +201,7 @@ parr_t *ssn_match( ssn_t *pssn, char *sp, int direction )
 
       /* have to collect the 'next hops' along the way */
       /* Could do this while storing the rule */
-      if( pssn->next ) res = parr_add( res, pssn->next ) ;
+      if( pssn->next ) res = varr_junc_add( res, pssn->next ) ;
 
       if( pssn->down ) {
         pssn = pssn->down ;
@@ -222,7 +223,7 @@ parr_t *ssn_match( ssn_t *pssn, char *sp, int direction )
   return res ;
 }
 
-parr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, parr_t *res )
+varr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, varr_t *res )
 {
   unsigned char *ucp ;
   ssn_t         *ps = 0 ; 
@@ -361,26 +362,26 @@ junc_t *ssn_delete( ssn_t **top, char *sp, int direction )
   return pssn->next ;
 }
 
-parr_t *get_rec_all_ssn_followers( ssn_t *ssn, parr_t *pa )
+varr_t *get_rec_all_ssn_followers( ssn_t *ssn, varr_t *ja )
 {
-  if( ssn == 0 ) return pa ;
+  if( ssn == 0 ) return ja ;
 
-  if( ssn->next ) pa = parr_add( pa, ssn->next ) ; 
-  if( ssn->down ) pa = get_rec_all_ssn_followers( ssn->down, pa ) ;
-  if( ssn->left ) pa = get_rec_all_ssn_followers( ssn->left, pa ) ;
-  if( ssn->right ) pa = get_rec_all_ssn_followers( ssn->right, pa ) ;
+  if( ssn->next ) ja = varr_junc_add( ja, ssn->next ) ; 
+  if( ssn->down ) ja = get_rec_all_ssn_followers( ssn->down, ja ) ;
+  if( ssn->left ) ja = get_rec_all_ssn_followers( ssn->left, ja ) ;
+  if( ssn->right ) ja = get_rec_all_ssn_followers( ssn->right, ja ) ;
 
-  return pa ;
+  return ja ;
 }
 
-parr_t *get_all_ssn_followers( branch_t *bp, int type, parr_t *pa )
+varr_t *get_all_ssn_followers( branch_t *bp, int type, varr_t *ja )
 {
   ssn_t *ssn ;
 
   if( type == SPOC_PREFIX ) ssn = bp->val.prefix ;
   else ssn = bp->val.suffix ;
 
-  return get_rec_all_ssn_followers( ssn, pa ) ;
+  return get_rec_all_ssn_followers( ssn, ja ) ;
 }
 
 ssn_t *ssn_dup( ssn_t *old, ruleinfo_t *ri ) 
