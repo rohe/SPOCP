@@ -752,7 +752,12 @@ element_nth(element_t * e, int n)
 	if (e->type == SPOC_LIST) {
 		for (i = 0, e = e->e.list->head; i < n && e->next;
 			e = e->next, i++);
-		return e;
+
+		if i == n 
+			return e;
+		else
+			return 0;
+
 	} else if (e->type == SPOC_SET || e->type == SPOC_ARRAY) {
 		return (element_t *) varr_nth(e->e.set, n);
 	} else if (e->type == SPOC_ATOM && n == 0)
@@ -1341,10 +1346,11 @@ element2oct( element_t *e)
  * inserted at the substitution points. The number within the "${" "}" refers
  * to the index of the element in the elementlist. If the element provided to
  * the function is a atom element, then it goes without saying the the only
- * index allowed within a variablereference can be 0. \brief Makes a variable
- * substitution. \param val The 'string' containing substitution points is any
- * \param xp An element list or a atom element \return The string after
- * variable substitutions 
+ * index allowed within a variablereference can be 0. 
+ * \brief Makes a variable substitution. 
+ * \param val The 'string' containing substitution points is any
+ * \param xp An element list or a atom element 
+ * \return The string after variable substitutions 
  */
 
 octet_t	*
