@@ -655,3 +655,21 @@ spocp_result_t is_bcref( octet_t *o, octet_t *res )
   return SPOCP_SYNTAXERROR ;
 }
 
+bcdef_t *bcdef_get( octet_t *o, db_t *db, spocp_result_t *rc )
+{
+  bcdef_t       *bcd = 0 ;
+  spocp_result_t r ;
+  octet_t        br ;
+ 
+  if( oct2strcmp( o, "NULL" ) == 0 ) bcd = NULL ;
+  else if(( r = is_bcref( o, &br )) == SPOCP_SUCCESS ) {
+    bcd = bcdef_find( db->bcdef, &br ) ;
+    if( bcd == NULL ) *rc = SPOCP_MISSING_ARG ;
+  }
+  else {
+    bcd = bcdef_add( db->plugins, 0, o, &db->bcdef ) ;
+    if( bcd == 0 ) *rc = SPOCP_SYNTAXERROR ;
+  }
+
+  return bcd ;
+}
