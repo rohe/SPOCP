@@ -7,6 +7,4 @@ libspocpplugin_la_LIBADD = ../../lib/libspocp.la
 
 INCLUDES = -I$(srcdir)/../../include
 
-EXTRA_DIST = spocpcli.h
-
 endif BUILD_SPOCP
