@@ -1,10 +1,10 @@
 bin_PROGRAMS = spocd dbg_spocd
 
-common_SOURCES = con.c socket.c init.c \
+common_SOURCES = iobuf.c conn.c socket.c init.c \
 	saci.c ruleset.c util.c read.c ss.c 
 
-spocd_SOURCES = main.c srv.c thread.c tls.c \
-	config.c $(common_SOURCES)
+spocd_SOURCES = main.c srv.c tls.c \
+	config.c tpool.c cpool.c pool.c run.c $(common_SOURCES)
 
 spocd_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la 
 
