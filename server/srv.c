@@ -29,7 +29,6 @@ rescode_t       rescode[] = {
 	{SPOCP_MULTI, "3:201", NULL},
 	{SPOCP_DENIED, "3:202", "6:Denied"},
 	{SPOCP_CLOSE, "3:203", "3:Bye"},
-	{SPOCP_TRANS_COMP, "3:204", "20:Transaction complete"},
 	{SPOCP_SSL_START, "3:205", "18:Ready to start TLS"},
 
 	{SPOCP_AUTHDATA, ",3:301", NULL},
@@ -201,7 +200,7 @@ opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
 {
 	spocp_result_t r = SPOCP_SUCCESS;
 
-	/* Too many arguments, there might not be a max */
+	/* Too many or few arguments? There might not be a max */
 	if (max && conn->oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
 	if (conn->oparg->n < min) return SPOCP_MISSING_ARG;
 
@@ -258,6 +257,7 @@ com_capa(conn_t * conn)
 	const char     *msg = NULL;
 
 	LOG(SPOCP_INFO) traceLog("Attempt to authenticate");
+	if (conn->transaction) return SPOCP_UNWILLING;
 
 #ifdef HAVE_SASL
 	if (conn->sasl == NULL) {
@@ -309,6 +309,7 @@ com_auth(conn_t * conn)
 #endif
 
 	LOG(SPOCP_INFO) traceLog("Attempt to authenticate");
+	if (conn->transaction) return SPOCP_UNWILLING;
 
 #ifdef HAVE_SASL
 
@@ -388,7 +389,11 @@ spocp_result_t
 com_starttls(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
+#if (defined(HAVE_SSL) || defined(HAVE_SASL))
 	int             wr;
+#endif
+
+	if (conn->transaction) return SPOCP_UNWILLING;
 
 	traceLog("Attempting to start SSL/TLS");
 
@@ -453,34 +458,17 @@ spocp_result_t
 com_rollback(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
-	int             wr;
 
 	LOG(SPOCP_INFO) traceLog("ROLLBACK");
 
-	/*
-	 * remove the copy I've been working on 
-	 */
-	/*
-	 * conn->rs != conn->srv->root 
-	 */
-	ss_del_db(conn->rs, SUBTREE);
+	if( conn->transaction ){
+		opstack_free( conn->ops );
+		conn->ops = 0;
+	}
+	else 
+		r = SPOCP_UNWILLING;
 
-	/*
-	 * make a new copy of the existing database 
-	 */
-	pthread_rdwr_rlock(&conn->srv->root->rw_lock);
-	conn->rs = ss_dup(conn->srv->root, SUBTREE);
-	pthread_rdwr_runlock(&conn->srv->root->rw_lock);
-
-	add_response(conn->out, r, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -493,6 +481,9 @@ com_logout(conn_t * conn)
 	spocp_result_t  r = SPOCP_CLOSE;
 
 	LOG(SPOCP_INFO) traceLog("LOGOUT requested ");
+
+	if (conn->transaction)
+		opstack_free( conn->ops );
 
 	conn->stop = 1;
 
@@ -519,13 +510,20 @@ com_delete(conn_t * conn)
 
 	/* possible pathspecification but apart from that exactly one argument */
 	if ((r = opinitial(conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS){
-		/*
-		 * get write lock, do operation and release lock 
-		 * locking the whole tree, is that really necessary ? 
-		 */
-		pthread_rdwr_wlock(&rs->rw_lock);
-		r = ss_del_rule(rs, &conn->dbc, conn->oparg->arr[0], SUBTREE);
-		pthread_rdwr_wunlock(&rs->rw_lock);
+		if (conn->transaction) {
+			opstack_t *ops;
+			ops = opstack_new( SPOCP_DEL, rs, conn->oparg );
+			conn->ops = opstack_push( conn->ops, ops );
+		}
+		else {
+			/*
+			 * get write lock, do operation and release lock 
+			 * locking the whole tree, is that really necessary ? 
+			 */
+			pthread_rdwr_wlock(&rs->rw_lock);
+			r = dbapi_rule_rm(rs->db, &conn->dbc, conn->oparg->arr[0], NULL);
+			pthread_rdwr_wunlock(&rs->rw_lock);
+		}
 	}
 
 	return postop( conn, r, 0);
@@ -538,36 +536,80 @@ com_delete(conn_t * conn)
 spocp_result_t
 com_commit(conn_t * conn)
 {
-	spocp_result_t  r = SPOCP_SUCCESS;
-	ruleset_t      *rs;
+	spocp_result_t	r = SPOCP_SUCCESS;
+	opstack_t	*ops;
+	ruleset_t	**rspp;
+	int		i, n;
 
 	LOG(SPOCP_INFO) traceLog("COMMIT requested");
 
 	if (!conn->transaction)
-		r = SPOCP_DENIED;
+		r = SPOCP_UNWILLING;
 	else {
-		rs = conn->srv->root;
-
 		/*
-		 * wait until the coast is clear 
+		 * get write lock on all the relevant rulesets, 
+		 * do operation and release locks
 		 */
-		pthread_mutex_lock(&(conn->srv->mutex));
+		for( ops = conn->ops, n = 0; r == SPOCP_SUCCESS && ops;
+		    ops = ops->next )
+			n++; 
 
-		/*
-		 * make the switch 
-		 */
-		conn->srv->root = conn->rs;
+		rspp = ( ruleset_t **) Calloc( n+1, sizeof( ruleset_t *));
+		n = 0;
 
-		/*
-		 * release the lock, so the new copy can start being used 
-		 */
-		pthread_mutex_unlock(&(conn->srv->mutex));
+		for( ops = conn->ops; ops; ops = ops->next ) {
+			for( i = 0 ; i < n; i++) 
+				if (rspp[i] == ops->rs)
+					break;
 
-		/*
-		 * delete the old copy 
-		 */
-		ss_del_db(rs, SUBTREE);
+			if ( i == n ) {
+				rspp[n++] = ops->rs;
+				pthread_rdwr_wlock(&ops->rs->rw_lock);
+			}
+		}
 
+
+		for( ops = conn->ops; r == SPOCP_SUCCESS && ops; ops = ops->next ) {
+			switch( ops->oper){
+			case( SPOCP_ADD ):
+				r = dbapi_rule_add(&(ops->rs->db),
+				    conn->srv->plugin, &conn->dbc, ops->oparg,
+				    &ops->rule);
+				break;
+			case( SPOCP_DEL ):
+				ops->rollback = rollback_info( ops->rs->db,
+				    conn->oparg->arr[0]);
+				r = dbapi_rule_rm(ops->rs->db, &conn->dbc,
+				    ops->oparg->arr[0], NULL);
+				break;
+			}
+		}
+
+		/* roll back ? */
+		if( r != SPOCP_SUCCESS) {
+			opstack_t *last = ops;
+
+			for( ops = conn->ops; ops != last; ops = ops->next ) {
+				switch( ops->oper){
+				case( SPOCP_ADD ):
+					r = dbapi_rule_rm(ops->rs->db, &conn->dbc,
+					    NULL, ops->rule);
+					break;
+				case( SPOCP_DEL ):
+					r = dbapi_rule_add(&(ops->rs->db),
+					    conn->srv->plugin, &conn->dbc,
+					    conn->oparg, NULL);
+					break;
+				}
+			}
+		}
+
+		for( i = 0 ; i < n ; i++ ) 
+			pthread_rdwr_wunlock(&(rspp[i])->rw_lock);
+
+		free(rspp);
+		opstack_free( conn->ops );
+		conn->ops = 0;
 		conn->transaction = 0;
 	}
 
@@ -596,6 +638,8 @@ com_query(conn_t * conn)
 
 	if (0)
 		timestamp("QUERY");
+
+	if (conn->transaction) return SPOCP_UNWILLING;
 
 	LOG(SPOCP_INFO) {
 		str = oct2strdup(conn->oparg->arr[0], '%');
@@ -723,6 +767,8 @@ com_subject(conn_t * conn)
 	spocp_result_t  r = SPOCP_DENIED;
 	ruleset_t      *rs = conn->srv->root;
 
+	if (conn->transaction) return SPOCP_UNWILLING;
+
 	LOG(SPOCP_INFO) traceLog("SUBJECT definition");
 
 	if ((r = opinitial( conn, &rs, 0, 1, 1)) == SPOCP_SUCCESS) {
@@ -748,6 +794,7 @@ com_add(conn_t * conn)
 {
 	spocp_result_t	rc = SPOCP_DENIED;	/* The default */
 	ruleset_t	*rs = conn->rs;
+	srv_t		*srv = conn->srv;
 
 	LOG(SPOCP_INFO) traceLog("ADD rule");
 
@@ -761,19 +808,22 @@ com_add(conn_t * conn)
 	}
 
 	if (rc == SPOCP_SUCCESS) {
-		/*
-		 * If a transaction is in operation wait for it to complete 
-		 */
-		pthread_mutex_lock(&rs->transaction);
-		/*
-		 * get write lock, do operation and release lock 
-		 */
-		pthread_rdwr_wlock(&rs->rw_lock);
+		if (conn->transaction) {
+			opstack_t *ops;
+			ops = opstack_new( SPOCP_ADD, rs, conn->oparg );
+			conn->ops = opstack_push( conn->ops, ops );
+		}
+		else {
+			/*
+			 * get write lock, do operation and release lock 
+			 */
+			pthread_rdwr_wlock(&rs->rw_lock);
 
-		rc = spocp_add_rule((void **) &(rs->db), conn->oparg);
+			rc = dbapi_rule_add(&(rs->db), srv->plugin, &conn->dbc,
+			    conn->oparg, NULL);
 
-		pthread_rdwr_wunlock(&rs->rw_lock);
-		pthread_mutex_unlock(&rs->transaction);
+			pthread_rdwr_wunlock(&rs->rw_lock);
+		}
 	}
 
 	return postop( conn, rc, 0);
@@ -797,6 +847,7 @@ com_list(conn_t * conn)
 
 	LOG(SPOCP_INFO) traceLog("LIST requested");
 
+	if (conn->transaction) return SPOCP_UNWILLING;
 
 	if ((rc = opinitial( conn, &rs, 1, 1, 0)) == SPOCP_SUCCESS ) {
 
@@ -844,32 +895,6 @@ com_list(conn_t * conn)
 	return postop( conn, rc, 0);
 }
 
-/*
- * --------------------------------------------------------------------------------- 
- */
-
-/*
- * spocp_result_t com_bcond( conn_t *conn ) { spocp_result_t r = SPOCP_DENIED
- * ; ruleset_t *rs ; octarr_t *oa ;
- * 
- * LOG ( SPOCP_INFO ) traceLog( "BCOND requested" ) ;
- * 
- * * while within a transaction I have a local copy * if( conn->transaction )
- * rs = conn->rs ; else rs = conn->srv->root ;
- * 
- * oa = conn->oparg ;
- * 
- * if( oct2strcmp( oa->arr[0], "ADD" ) == 0 ) { if( oa->n < 3 ) r =
- * SPOCP_MISSING_ARG ; else { if( bcdef_add( rs->db, oa->arr[1], oa->arr[2] )
- * == 0 ) r = SPOCP_PROTOCOLERROR ; else r = SPOCP_SUCCESS ; } } else if(
- * oct2strcmp( oa->arr[0], "DELETE" ) == 0 ) { if( oa->n < 2 ) r =
- * SPOCP_MISSING_ARG ; else r = bcdef_del( &rs->db->bcdef, oa->arr[1] ) ; }
- * else if( oct2strcmp( oa->arr[0], "REPLACE" ) == 0 ) { if( oa->n < 3 ) r =
- * SPOCP_MISSING_ARG ; else r = bcdef_replace( rs->db->plugins, oa->arr[1],
- * oa->arr[2], &rs->db->bcdef ) ; }
- * 
- * return r ; } 
- */
 /*
  * --------------------------------------------------------------------------------- 
  */

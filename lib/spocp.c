@@ -51,7 +51,7 @@ spocp_del_rule(void *vp, octet_t * op)
 {
 	db_t           *db = (db_t *) vp;
 
-	return dbapi_rule_rm(db, NULL, op);
+	return dbapi_rule_rm(db, NULL, op, NULL);
 }
 
 spocp_result_t
@@ -67,7 +67,7 @@ spocp_add_rule(void **vp, octarr_t * oa)
 {
 	db_t          **db = (db_t **) vp;
 
-	return dbapi_rule_add(db, NULL, NULL, oa);
+	return dbapi_rule_add(db, NULL, NULL, oa, NULL);
 }
 
 void           *

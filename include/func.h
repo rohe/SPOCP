@@ -170,7 +170,7 @@ spocp_result_t
 
 octet_t        *ruleinst_print(ruleinst_t * r, char *rs);
 octet_t        *get_blob(ruleinst_t * ri);
-ruleinst_t     *get_rule(ruleinfo_t * ri, char *uid);
+ruleinst_t     *get_rule(ruleinfo_t * ri, octet_t *uid);
 spocp_result_t  get_all_rules(db_t * db, octarr_t * oa, char *rs);
 varr_t         *get_rec_all_rules(junc_t * jp, varr_t * in);
 varr_t         *get_all_bcond_followers(branch_t * bp, varr_t * in);

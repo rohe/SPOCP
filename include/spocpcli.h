@@ -34,11 +34,12 @@ enum spocpc_res
 	SPOCPC_SYNTAX_ERROR,
 	SPOCPC_PROTOCOL_ERROR,
 	SPOCPC_OTHER,
-	SPOCPC_TIMEDOUT,
+	SPOCPC_TIMEOUT,
 	SPOCPC_CON_ERR,
 	SPOCPC_PARAM_ERROR,
 	SPOCPC_STATE_VIOLATION,
-	SPOCPC_NOSUPPORT
+	SPOCPC_NOSUPPORT,
+	SPOCPC_INTERUPT
 };
 /*
 typedef struct _octnode
@@ -57,27 +58,29 @@ typedef enum
 typedef struct _spocp
 {
 	spocp_contype_t contype;
-	int fd;
-	char *srv;
-	int timeout;		/* timeout in seconds */
+	int	fd;
+	char	**srv;
+	char	**cursrv;
+	struct timeval	*com_timeout;
+	int	rc;
 
 #ifdef HAVE_SSL
 	/* A couple of cases:
 	 * don't demand server certificate
 	 * demand server certificate, fail or not depending on whether the verification fails */
-	int servercert;		/* whether server cert is demanded or not */
-	int verify_ok;		/* TRUE means fail is verify isn't OK */
-	int tls;
+	int	servercert;		/* whether server cert is demanded or not */
+	int	verify_ok;		/* TRUE means fail is verify isn't OK */
+	int	tls;
 
-	SSL_CTX *ctx;
-	SSL *ssl;
+	SSL_CTX	*ctx;
+	SSL	*ssl;
 #endif
 
-	char *sslEntropyFile;
-	char *certificate;
-	char *privatekey;
-	char *calist;
-	char *passwd;
+	char	*sslEntropyFile;
+	char	*certificate;
+	char	*privatekey;
+	char	*calist;
+	char	*passwd;
 
 } SPOCP;
 
@@ -89,7 +92,7 @@ typedef struct _queres
 } queres_t;
 
 
-SPOCP	*spocpc_init(char *srv);
+SPOCP	*spocpc_init(char *srv, long tv_sec, long tv_usec);
 SPOCP	*spocpc_open(SPOCP * spocp, char *srv, int nsec);
 int	spocpc_reopen(SPOCP * spocp, int nsec);
 ssize_t	spocpc_readn(SPOCP * spocp, char *str, ssize_t max);

@@ -172,7 +172,7 @@ ss_del_db(ruleset_t * rs, int scope)
 /****************************************************************/
 
 static spocp_result_t
-rec_del(ruleset_t * rs, dbcmd_t * dbc, char *uid, size_t * nr)
+rec_del(ruleset_t * rs, dbcmd_t * dbc, octet_t *uid, size_t * nr)
 {
 	ruleset_t      *trs;
 	db_t           *db;
@@ -185,13 +185,17 @@ rec_del(ruleset_t * rs, dbcmd_t * dbc, char *uid, size_t * nr)
 		return 0;
 
 	if ((rt = get_rule(db->ri, uid))) {
-		if (dbc)
-			dback_delete(dbc, uid);
+		char str[SHA1HASHLEN +1];
+
+		oct2strcpy( uid, str, SHA1HASHLEN +1, 0);
+
+		if (dbc) 
+			dback_delete(dbc, str);
 
 		if ((rc = rule_rm(db->jp, rt->rule, rt)) != SPOCP_SUCCESS)
 			return rc;
 
-		if (free_rule(db->ri, uid) == 0) {
+		if (free_rule(db->ri, str) == 0) {
 			traceLog
 			    ("Hmm, something fishy here, couldn't delete rule");
 		}
@@ -213,36 +217,20 @@ rec_del(ruleset_t * rs, dbcmd_t * dbc, char *uid, size_t * nr)
 spocp_result_t
 ss_del_rule(ruleset_t * rs, dbcmd_t * dbc, octet_t * op, int scope)
 {
-	size_t          n = 0;
-	char            uid[SHA1HASHLEN + 1], *sp;
+	size_t		n;
+	spocp_result_t	r;
 
 	if (rs == 0)
 		return SPOCP_SUCCESS;
 
-	if (op->len != SHA1HASHLEN)
-		return SPOCP_PROTOCOLERROR;
-
-	/*
-	 * checking the if which is supposed to be a sha1 hashvalue 
-	 */
-	for (n = 0, sp = op->val; HEX(*sp) && n < op->len; sp++, n++);
-
-	if (n != 40) {
-		traceLog("Rule identifier error, wrong length");
-		return SPOCP_MISSING_ARG;
-	}
-
-	memcpy(uid, op->val, SHA1HASHLEN);
-	uid[SHA1HASHLEN] = '\0';
-
-	traceLog("Attempt to delete rule: \"%s\"", uid);
+	if (( r = check_uid( op )) != SPOCP_SUCCESS ) return r;
 
 	/*
 	 * first check that the rule is there 
 	 */
 
 	n = 0;
-	if (rec_del(rs, dbc, uid, &n) != SPOCP_SUCCESS)
+	if (rec_del(rs, dbc, op, &n) != SPOCP_SUCCESS)
 		traceLog("Error while deleting rules");
 
 	if (n > 1)

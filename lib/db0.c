@@ -768,6 +768,8 @@ ruleinst_free(ruleinst_t * rt)
 	if (rt) {
 		if (rt->rule)
 			oct_free(rt->rule);
+		if (rt->bcexp)
+			oct_free(rt->bcexp);
 		if (rt->blob)
 			oct_free(rt->blob);
 		if (rt->alias)
@@ -948,10 +950,14 @@ rules(db_t * db)
 }
 
 ruleinst_t     *
-get_rule(ruleinfo_t * ri, char *uid)
+get_rule(ruleinfo_t * ri, octet_t *oct)
 {
-	if (ri == 0 || uid == 0)
+	char	uid[41];
+
+	if (ri == 0 || oct == 0 )
 		return 0;
+
+	oct2strcpy( oct, uid, 41, 0 );
 
 	return ruleinst_find_by_uid(ri->rules, uid);
 }

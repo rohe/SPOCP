@@ -133,8 +133,6 @@ typedef enum {
 	SPOCP_UNKNOWN_TYPE,
 	/*! A command or a subset of a command are unimplemented */
 	SPOCP_UNIMPLEMENTED,
-	/*! A transaction was succesfully completed */
-	SPOCP_TRANS_COMP,
 	/*! No such information, usually a plugin error */
 	SPOCP_INFO_UNAVAIL,
 	/*! SASL binding in progress */
@@ -244,11 +242,12 @@ int		oct_de_escape(octet_t * op);
 int		oct_find_balancing(octet_t * p, char left, char right);
 void		oct_assign(octet_t * o, char *s);
 
-spocp_result_t	oct_resize(octet_t * o, size_t min);
-spocp_result_t	octcpy(octet_t * new, octet_t * old);
-void		octln(octet_t * to, octet_t * from);
-void		octclr(octet_t * o);
-spocp_result_t	octcat(octet_t * a, char *s, size_t len);
+spocp_result_t	oct_resize(octet_t *, size_t);
+spocp_result_t	octcpy(octet_t *, octet_t *);
+void		octln(octet_t *, octet_t *);
+octet_t 	*octcln(octet_t *);
+void		octclr(octet_t *);
+spocp_result_t	octcat(octet_t *, char *, size_t);
 
 octarr_t	*octarr_new(size_t n);
 octarr_t	*octarr_add(octarr_t * oa, octet_t * o);

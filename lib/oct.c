@@ -123,6 +123,31 @@ octln(octet_t * a, octet_t * b)
 /*
  * ---------------------------------------------------------------------- 
  */
+/*! \brief Create a new octet string struct and let it point to the same
+ * information as the source 
+ * \param src The source 
+ * \return A pointer to a new octet struct, that points to the same data as
+ * src does. Since the octet size is set to NULL, deleting this struct will
+ * not influence the information stored in 'src'.
+ */
+
+octet_t *
+octcln(octet_t *src)
+{
+	octet_t *res;
+
+	res = ( octet_t *) Malloc( sizeof( octet_t ));
+
+	res->len = src->len;
+	res->val = src->val;
+	res->size = 0;
+
+	return res;
+}
+
+/*
+ * ---------------------------------------------------------------------- 
+ */
 /*! \brief Duplicates a octet string struct \param oct The octet string that
  * should be copied \return The copy 
  */

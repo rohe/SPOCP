@@ -231,6 +231,7 @@ typedef struct _ruleinstance {
 	char		uid[SHA1HASHLEN + 1];	/* place for sha1 hash */
 	octet_t		*rule;
 	octet_t		*blob;
+	octet_t		*bcexp;
 	element_t	*ep;	/* only used for bcond checks */
 	ll_t		*alias;
 	bcdef_t		*bcond;

@@ -218,7 +218,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				oa = octarr_add(oa, rdef.blob->val) ;
 			}
 			
-			r = dbapi_rule_add(&(trs->db), srv->plugin, dbc, oa);
+			r = dbapi_rule_add(&(trs->db), srv->plugin, dbc, oa, NULL);
 			if (r == SPOCP_SUCCESS)
 				n++;
 			else {

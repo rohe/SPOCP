@@ -107,52 +107,78 @@ dbapi_db_del(db_t * db, dbcmd_t * dbc)
 }
 
 spocp_result_t
-dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op)
+check_uid( octet_t *uid)
 {
-	int             n;
+	char	*sp;
+	int	n;
+
+	if (uid->len != SHA1HASHLEN)
+		return SPOCP_SYNTAXERROR;
+
+	for (n = 0, sp = uid->val; HEX(*sp) && n < SHA1HASHLEN; sp++, n++);
+
+	if (n != SHA1HASHLEN)
+		return SPOCP_SYNTAXERROR;
+
+	return SPOCP_SUCCESS;
+}
+
+spocp_result_t
+dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
+{
 	ruleinst_t     *rt;
-	char            uid[41], *sp;
 	spocp_result_t  rc;
 
-	if (op->len < 40)
-		return SPOCP_SYNTAXERROR;
+	if (rule) rt = (ruleinst_t *) rule;
+	else if ((rc = check_uid( op )) == SPOCP_SUCCESS ){
+		
+		if ((rt = get_rule(db->ri, op)) == 0) {
+			char uid[SHA1HASHLEN +1];
 
-	for (n = 0, sp = op->val; HEX(*sp); sp++, n++);
+			oct2strcpy( op, uid, SHA1HASHLEN +1, 0 );
+			traceLog
+			    ("Deleting rule \"%s\" impossible since it doesn't exist",
+			     uid);
 
-	if (n != 40)
-		return SPOCP_SYNTAXERROR;
-
-	memcpy(uid, op->val, 40);
-	uid[40] = '\0';
-
-	traceLog("Attempt to delete rule: \"%s\"", uid);
-
-	op->val += 40;
-	op->len -= 40;
-
-	/*
-	 * first check that the rule is there 
-	 */
-
-	if ((rt = get_rule(db->ri, uid)) == 0) {
-		traceLog
-		    ("Deleting rule \"%s\" impossible since it doesn't exist",
-		     uid);
-
-		return SPOCP_SYNTAXERROR;
+			return SPOCP_SYNTAXERROR;
+		}
 	}
+	else
+		return rc;
 
 	if (dbc)
-		dback_delete(dbc, uid);
+		dback_delete(dbc, rt->uid);
 
 	rc = rule_rm(db->jp, rt->rule, rt);
 
-	free_rule(db->ri, uid);
+	free_rule(db->ri, rt->uid);
 
 	if (rc == SPOCP_SUCCESS)
 		traceLog("Rule successfully deleted");
 
 	return rc;
+}
+
+octarr_t *
+rollback_info( db_t *db, octet_t *op)
+{
+	ruleinst_t	*ri;
+	octarr_t	*res = 0;
+
+	if (check_uid(op) == SPOCP_SUCCESS &&(ri = get_rule(db->ri, op))) {
+		res = octarr_add(res, octcln(ri->rule));
+		if (ri->bcexp) res = octarr_add(res, octcln(ri->bcexp));
+		if (ri->blob) {
+			if (ri->bcexp == 0)  {
+				octet_t tmp;
+				oct_assign(&tmp, "NULL");
+				res = octarr_add(res, octdup(&tmp));
+			}
+			res = octarr_add(res, octcln(ri->blob));
+		}
+	}
+	
+	return res;
 }
 
 spocp_result_t
@@ -169,12 +195,13 @@ dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
 }
 
 spocp_result_t
-dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa)
+dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa, 
+	void **rule)
 {
 	spocp_result_t  r;
 	ruleinst_t     *ri = 0;
 	bcdef_t        *bcd = 0;
-	octet_t        *o;
+	octet_t        *bcexp = 0;
 	db_t           *db;
 	char		*tmp;
 
@@ -194,12 +221,12 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa)
 		* pick out the second ( = index 1 ) octet, this is the 
 		* boundary condition 
 		*/
-		o = octarr_rm(oa, 1);
+		bcexp = octarr_rm(oa, 1);
 
-		bcd = bcdef_get(db, p, dbc, o, &r);
+		bcd = bcdef_get(db, p, dbc, bcexp, &r);
 		if (bcd == NULL && r != SPOCP_SUCCESS) {
 			LOG(SPOCP_INFO) {
-				tmp = oct2strdup(o, '%');
+				tmp = oct2strdup(bcexp, '%');
 				traceLog("Unknown boundary condition:\"%s\"", tmp);
 				free(tmp);
 			}
@@ -213,8 +240,14 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa)
 		free(tmp);
 	}
 
-	if ((r = add_right(&db, dbc, oa, &ri, bcd)))
+	if ((r = add_right(&db, dbc, oa, &ri, bcd))) {
 		*dpp = db;
+
+		if (bcd)
+			ri->bcexp = octdup( bcexp ) ;
+		if (rule)
+			*rule = (void *) ri;
+	}
 
 	return r;
 }
