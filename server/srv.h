@@ -431,6 +431,8 @@ spocp_result_t	com_capa( conn_t *conn );
 spocp_result_t	com_remove( conn_t *conn ) ;
 spocp_result_t	com_add( conn_t *conn ) ;
 spocp_result_t	com_list( conn_t *conn ) ;
+spocp_result_t	com_summary( conn_t *conn ) ;
+spocp_result_t	com_show( conn_t *conn ) ;
 
 spocp_result_t	get_operation( conn_t *conn, proto_op **oper ) ;
 

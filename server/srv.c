@@ -912,6 +912,49 @@ com_list(conn_t * conn)
  * --------------------------------------------------------------------------------- 
  */
 
+spocp_result_t
+com_summary(conn_t * conn)
+{
+	spocp_result_t	rc = SPOCP_SUCCESS;
+	ruleset_t	*rs = conn->rs;
+	octet_t		*op;
+	spocp_iobuf_t	*out = conn->out;
+	element_t	*ep;
+	char		*tmp;
+
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUMMARYrequested");
+
+	if (conn->transaction) return SPOCP_UNWILLING;
+
+	if ((rc = operation_access(conn)) == SPOCP_SUCCESS) {
+
+		pthread_rdwr_rlock(&rs->rw_lock);
+		ep = get_indexes(rs->db->jp);
+		pthread_rdwr_runlock(&rs->rw_lock);
+
+		if (ep) {
+			element_reduce(ep);
+			op = oct_new( 512, NULL );
+			if( element_print( op, ep ) == 0 )
+				rc = SPOCP_OPERATIONSERROR;
+			else {
+				tmp = oct2strdup(op, 0);
+				traceLog( LOG_INFO, "%s", tmp );
+				free(tmp);
+				rc = add_response_blob(out, SPOCP_MULTI, op);
+			}
+		}
+		else 
+			rc = SPOCP_OPERATIONSERROR;
+	}
+
+	return postop( conn, rc, 0);
+}
+
+/*
+ * --------------------------------------------------------------------------------- 
+ */
+
 /*
  * incomming data should be of the form operationlen ":" operlen ":" oper *(
  * arglen ":" arg )
@@ -1018,6 +1061,13 @@ get_operation(conn_t * conn, proto_op ** oper)
 
 		break;
 
+	case 7:
+		if (strncasecmp(op.val, "SUBJECT", 7) == 0) 
+			*oper = &com_subject;
+		else if (strncasecmp(op.val, "SUMMARY", 7) == 0) 
+			*oper = &com_summary;
+		break;
+
 	case 6:
 		if (strncasecmp(op.val, "LOGOUT", 6) == 0) {
 			*oper = &com_logout;
@@ -1042,18 +1092,6 @@ get_operation(conn_t * conn, proto_op ** oper)
 		 */
 		break;
 
-	case 7:
-		if (strncasecmp(op.val, "SUBJECT", 7) == 0) {
-			*oper = &com_subject;
-		}
-		break;
-
-	case 3:
-		if (strncasecmp(op.val, "ADD", 3) == 0) {
-			*oper = &com_add;
-		}
-		break;
-
 	case 4:
 		if (strncasecmp(op.val, "LIST", 4) == 0) {
 			*oper = &com_list;
@@ -1063,6 +1101,13 @@ get_operation(conn_t * conn, proto_op ** oper)
 			*oper = &com_capa;
 		}
 		break;
+
+	case 3:
+		if (strncasecmp(op.val, "ADD", 3) == 0) {
+			*oper = &com_add;
+		}
+		break;
+
 	default:
 		l = 0;
 

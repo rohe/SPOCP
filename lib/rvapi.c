@@ -267,6 +267,73 @@ set_dup(varr_t * va, element_t * parent)
 	return new;
 }
 
+/****************************************************************************/
+/*!
+ * \brief Create a new element struct that contains a atom 
+ * \param oct The octet value to be stored in the atom 
+ * \return A element struct
+ */
+element_t *
+element_new_atom( octet_t *oct )
+{
+	element_t *e;
+
+	e = element_new();
+	e->e.atom = atom_new( oct );
+	e->type = SPOC_ATOM;
+
+	return e;
+}
+
+/****************************************************************************/
+/*!
+ * \brief Create a new element struct that contains a list of elements
+ * \param oct The first element in the element list
+ * \return A element struct
+ */
+
+element_t *
+element_new_list( element_t *head)
+{
+	element_t *e;
+	
+	e = element_new();
+
+	e->type = SPOC_LIST;
+	e->e.list = list_new();
+	if( head ) {
+		e->e.list->head = head;
+		head->memberof = e;
+	}
+
+	return e;
+}
+
+/****************************************************************************/
+/*!
+ * \brief Create a new element struct that contains a set of elements
+ * \param oct The first element in the element set
+ * \return A element struct
+ */
+
+element_t *
+element_new_set( varr_t *varr )
+{
+	element_t *e;
+	
+	e = element_new();
+
+	e->type = SPOC_SET;
+
+	if (varr) 
+		e->e.set = varr;
+	else
+		e->e.set = varr_new(4);
+
+	return e;
+}
+
+/********************************************************************/
 
 /********************************************************************/
 /*!
@@ -336,10 +403,7 @@ element_list_add(element_t * le, element_t * e)
 		return le;
 
 	if (le == 0) {
-		le = element_new();
-		le->type = SPOC_LIST;
-		le->e.list = list_new();
-		le->e.list->head = element_dup(e, le);
+		le = element_new_list( element_dup( e, le));
 	} else {
 		if (le->type != SPOC_LIST)
 			return 0;
@@ -383,6 +447,39 @@ element_array_add(element_t * le, element_t * e)
 		le->e.set = varr_add(0, e);
 	} else {
 		if (le->type != SPOC_ARRAY)
+			return 0;
+		le->e.set = varr_add(le->e.set, e);
+	}
+
+	return le;
+}
+
+/*
+ * ====================================================================== 
+ */
+/*!
+ * \brief Adds a element to an array of elements. The difference between
+ * this and element_add_list is that the array is by definition unsorted, so
+ * the added element might end up anywhere in the array. Array differs from
+ * Set in that the special restrictions that are valid for sets are not so for 
+ * arrays. An array can for instance contain two lists with the same tag.
+ * \param le A pointer to the element array \param e A pointer to the element
+ * to be added \return A pointer to the array, which might be created by the
+ * function 
+ */
+element_t *
+element_set_add(element_t * le, element_t * e)
+{
+	varr_t *va = 0;
+
+	if (e == 0)
+		return le;
+
+	if (le == 0) {
+		va = varr_add( va, (void *) e );
+		le = element_new_set( va );
+	} else {
+		if (le->type != SPOC_SET)
 			return 0;
 		le->e.set = varr_add(le->e.set, e);
 	}

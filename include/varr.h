@@ -29,6 +29,7 @@ void           *varr_first(varr_t * va);
 void           *varr_next(varr_t * va, void *v);
 varr_t         *varr_dup(varr_t * va, dfunc * df);
 
+void 		varr_rm_dup( varr_t *va, cmpfn *cf, ffunc *ff);
 /*
  * -----
  * 

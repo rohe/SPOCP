@@ -19,10 +19,10 @@
 #include <wrappers.h>
 #include <func.h>
 
-void           *
+void	*
 Malloc(size_t size)
 {
-	void           *vp = malloc(size);
+	void	*vp = malloc(size);
 
 	if (vp == 0)
 		FatalError("Out of memory", 0, 0);
@@ -31,10 +31,10 @@ Malloc(size_t size)
 }
 
 
-void           *
+void	*
 Calloc(size_t n, size_t size)
 {
-	void           *vp = calloc(n, size);
+	void	*vp = calloc(n, size);
 
 	if (vp == 0)
 		FatalError("Out of memory", 0, 0);
@@ -138,7 +138,12 @@ strndup(const char *old, size_t sz)
 char           *
 Strndup(char *s, size_t n)
 {
-	char           *sp = strndup(s, n);
+	char	*sp;
+
+	if (s == 0) 
+		return 0;
+
+	sp = strndup(s, n);
 
 	if (sp == 0)
 		FatalError("Out of memory", 0, 0);

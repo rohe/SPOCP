@@ -108,7 +108,8 @@ list_free(list_t * lp)
 void
 element_free(element_t * ep)
 {
-	element_t      *e;
+	element_t	*e;
+	varr_t		*va;
 
 	if (ep) {
 		switch (ep->type) {
@@ -123,9 +124,12 @@ element_free(element_t * ep)
 			break;
 
 		case SPOC_SET:
-			while ((e = varr_pop(ep->e.set)))
-				element_free(e);
-			varr_free(ep->e.set);
+			va = ep->e.set;
+			if (va) {
+				while ((e = varr_pop(va)))
+					element_free(e);
+				varr_free(va);
+			}
 			break;
 
 		case SPOC_RANGE:

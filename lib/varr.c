@@ -63,6 +63,42 @@ varr_find(varr_t * va, void *v)
 	return -1;
 }
 
+void
+varr_rm_dup(varr_t * va, cmpfn *cf, ffunc *ff)
+{
+	void		*vp, *vr;
+	unsigned int	i,j, restart;
+
+	if (va == 0 || va->n <= 1)
+		return;
+	
+	while ( va->n > 1 ) {
+		restart = 0;
+		for( i = 0 ; i < va->n ; i++ ) {
+			vp = va->arr[i];
+
+			for ( j = i+1; j < va->n; j++) {
+				if ( cf(va->arr[j], vp) == 0) {
+					vr = va->arr[j];
+					va->n--;
+					for (; j < va->n ; j++)
+						va->arr[j] = va->arr[j+1];
+/*
+					traceLog(LOG_DEBUG, "Free[%d]: %p",j, vr);
+*/
+					ff( vr );
+					va->arr[j] = 0;
+					restart = 1;
+					break;
+				}
+			}
+			if (restart)
+				break;
+		}
+		if ( i == va->n ) break;
+	}
+}
+
 void           *
 varr_next(varr_t * va, void *v)
 {

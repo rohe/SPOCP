@@ -185,6 +185,12 @@ int             ruleinfo_print(ruleinfo_t * r);
 ruleinst_t     *ruleinst_find_by_uid(rbt_t * rules, char *uid);
 
 element_t      *element_dup(element_t * ep, element_t * memberof);
+element_t      *element_list_add(element_t * le, element_t * e);
+element_t      *element_set_add(element_t * le, element_t * e);
+
+element_t	*element_new_atom( octet_t *);
+element_t	*element_new_list( element_t *);
+element_t	*element_new_set( varr_t *);
 
 /*
  * raci_t *saci_new( void ) ;
@@ -425,5 +431,18 @@ node_t         *ll_next(ll_t * lp, node_t * np);
 void           *ll_first_p(ll_t * lp);
 void           *ll_next_p(ll_t * lp, void *prev);
 void            ll_rm_link(ll_t * lp, node_t * np);
+
+/*
+ * element.c
+ */
+
+int		element_print( octet_t *oct, element_t *ep);
+element_t	*element_reduce( element_t *ep ) ;
+
+/*
+ * sum.c
+ */
+
+element_t	*get_indexes( junc_t *jp );
 
 #endif
