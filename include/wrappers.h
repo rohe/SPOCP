@@ -38,11 +38,11 @@ char           *strndup(const char *old, size_t sz);
 #endif
 
 #ifndef HAVE_STRLCAT
-char           *strlcat(char *dst, const char *old, size_t sz);
+size_t	strlcat(char *dst, const char *old, size_t sz);
 #endif
 
 #ifndef HAVE_STRLCPY
-char           *strlcpy(char *dst, const char *old, size_t sz);
+size_t 	strlcpy(char *dst, const char *old, size_t sz);
 #endif
 
 /*================================================*/

@@ -121,8 +121,6 @@ strnlen(const char *s, size_t len)
 #endif
 
 #ifndef HAVE_STRLCPY
-size_t          strlcpy(char *dst, const char *s, size_t size);
-
 size_t
 strlcpy(char *dst, const char *s, size_t size)
 {
@@ -140,8 +138,6 @@ strlcpy(char *dst, const char *s, size_t size)
 #endif
 
 #ifndef HAVE_STRLCAT
-size_t          strlcat(char *dst, const char *s, size_t size);
-
 size_t
 strlcat(char *dst, const char *s, size_t size)
 {
