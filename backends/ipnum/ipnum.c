@@ -191,7 +191,14 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 				*cp++ = 0;
 
 				if (oct2strcmp(argv->arr[1], line) == 0) {
-					if (argv->n == 2) {
+					traceLog(LOG_DEBUG,"Matched key");
+					if( *cp == '\0' ) {
+						r = SPOCP_SUCCESS;
+						break;
+					}
+					else if (argv->n == 2 || 
+					    (argv->n == 3 &&
+					    *(argv->arr[2]->val) == '\0' )) {
 						r = SPOCP_SUCCESS;
 						break;
 					} else {
