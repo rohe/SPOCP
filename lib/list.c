@@ -667,7 +667,7 @@ get_matching_rules(db_t * db, octarr_t * pat, octarr_t * oa, char *rs)
 
 			arr[0] = r->rule;
 
-			oct = rulename_print(r, rs);
+			oct = ruleinst_print(r, rs);
 
 			octarr_add(oa, oct);
 		}

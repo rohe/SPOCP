@@ -446,24 +446,19 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 				    ("List access denied to the root rule set");
 		}
 	} else {
+		if (1)
+			traceLog( "Allowed to list");
+
 		if ((rc = pathname_get(rs, pathname, BUFSIZ)) != SPOCP_SUCCESS)
 			return rc;
 
 		if (rs->db) {
-			/*
-			 * get read lock, do the query and release lock 
-			 */
-			/*
-			 * pthread_rdwr_rlock( &rs->rw_lock ) ; 
-			 */
-
-			rc = spocp_list_rules(rs->db, conn->oparg, oa,
+			rc = dbapi_rules_list(rs->db, 0, conn->oparg, oa,
 					      pathname);
-
-			/*
-			 * pthread_rdwr_runlock( &rs->rw_lock ) ; 
-			 */
 		}
+
+		if (1)
+			traceLog("Done head");
 
 		if (recurs && rs->down) {
 			for (rp = rs->down; rp->left; rp = rp->left);

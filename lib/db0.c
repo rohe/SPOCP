@@ -974,8 +974,8 @@ get_rule(ruleinfo_t * ri, char *uid)
  * path ruleid rule [ blob ]
  * 
  */
-octet_t        *
-rulename_print(ruleinst_t * r, char *rs)
+octet_t	*
+ruleinst_print(ruleinst_t * r, char *rs)
 {
 	octet_t        *oct;
 	int             l, lr;
@@ -1023,8 +1023,8 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 {
 	int             i, n;
 	ruleinst_t     *r;
-	varr_t         *pa = 0, *pb = 0;
-	octet_t        *oct, *arg[2];
+	varr_t         *pa = 0;
+	octet_t        *oct;
 	spocp_result_t  rc = SPOCP_SUCCESS;
 
 	n = nrules(db->ri);
@@ -1036,32 +1036,47 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 	if ((oa && (oa->size - oa->n) < n))
 		octarr_mr(oa, n);
 
-	if (db->ri)
-		pa = rbt2varr(db->ri->rules);
-
-	if (pa && pb)
-		varr_or(pa, pb, 0);
-	else if (pb)
-		pa = pb;
-
-	arg[1] = 0;
+	pa = rbt2varr(db->ri->rules);
 
 	for (i = 0; (r = (ruleinst_t *) varr_nth(pa, i)); i++) {
 
-		if ((oct = rulename_print(r, rs)) == 0) {
+		/*
+		if (1) {
+			char	*str;
+			traceLog("...") ;
+			str = oct2strdup( r->rule, '%' );
+			traceLog("Rule[%d]: %s", i, str );
+			free(str);
+		}
+		*/
+
+		if ((oct = ruleinst_print(r, rs)) == 0) {
 			rc = SPOCP_OPERATIONSERROR;
 			octarr_free(oa);
 			break;
 		}
 
+		/*
+		if (1) {
+			char	*str;
+			str = oct2strdup( oct, '%' );
+			traceLog("Rule[%d] => %s", i, str );
+			free(str);
+		}
+		*/
+
 		oa = octarr_add(oa, oct);
+
+		/*
+		if (1)
+			traceLog("Added to octarr") ;
+		*/
 	}
 
 	/*
 	 * dont't remove the items since I've only used pointers 
 	 */
 	varr_free(pa);
-	varr_free(pb);
 
 	return rc;
 }

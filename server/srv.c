@@ -981,10 +981,17 @@ com_list(conn_t * conn)
 	} else
 		trs = rs;
 
+	if (1)
+		traceLog( "Getting the list" );
+
 	oa = octarr_new( 32 ) ;
 	pthread_rdwr_rlock(&rs->rw_lock);
 	rc = treeList(trs, conn, oa, 1);
 	pthread_rdwr_runlock(&rs->rw_lock);
+
+	
+	if (1)
+		traceLog( "Translating list to result" );
 
 	if (oa && oa->n) {
 		for (i = 0; i < oa->n; i++) {
@@ -1016,6 +1023,9 @@ com_list(conn_t * conn)
 
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
+
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
 
 	return r;
 }

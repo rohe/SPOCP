@@ -10,9 +10,10 @@ varr_new(size_t n)
 {
 	varr_t         *j;
 
-	j = (varr_t *) Calloc(1, sizeof(varr_t));
+	j = (varr_t *) Malloc(sizeof(varr_t));
 	j->size = n;
 	j->arr = (void **) Calloc(n, sizeof(void *));
+        j->n = 0;
 
 	return j;
 }
@@ -208,7 +209,7 @@ varr_rm(varr_t * va, void *v)
 void           *
 varr_nth(varr_t * va, int n)
 {
-	if (va == 0 || n < 0 || n > (int) va->n)
+	if (va == 0 || n < 0 || n >= (int) va->n)
 		return 0;
 
 	return va->arr[n];

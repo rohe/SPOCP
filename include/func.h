@@ -177,7 +177,7 @@ spocp_result_t
  add_right(db_t ** db, dbcmd_t * dbc, octarr_t * oa, ruleinst_t ** ri,
 	   bcdef_t * bcd);
 
-octet_t        *rulename_print(ruleinst_t * r, char *rs);
+octet_t        *ruleinst_print(ruleinst_t * r, char *rs);
 octet_t        *get_blob(ruleinst_t * ri);
 ruleinst_t     *get_rule(ruleinfo_t * ri, char *uid);
 spocp_result_t  get_all_rules(db_t * db, octarr_t * oa, char *rs);
