@@ -81,7 +81,7 @@ ruleset_t *ruleset_new( octet_t *name )
   }
   else rs->name = oct2strdup( name, 0 ) ;
 
-  traceLog( "New ruleset: %s", rs->name ) ;
+  LOG( SPOCP_DEBUG ) traceLog( "New ruleset: %s", rs->name ) ;
 
   return rs ;
 }
@@ -90,45 +90,45 @@ ruleset_t *ruleset_new( octet_t *name )
 
 void ruleset_free( ruleset_t *rs ) 
 {
-  if( rs ) {
-    if( rs->name ) free( rs->name ) ;
+	if( rs ) {
+		if( rs->name ) free( rs->name ) ;
 
-    if( rs->down ) ruleset_free( rs->down ) ;
-    if( rs->left ) ruleset_free( rs->left ) ;
-    if( rs->right ) ruleset_free( rs->right ) ;
+		if( rs->down ) ruleset_free( rs->down ) ;
+		if( rs->left ) ruleset_free( rs->left ) ;
+		if( rs->right ) ruleset_free( rs->right ) ;
 
-    free( rs ) ;
-  }
+		free( rs ) ;
+	}
 }
 
 /* ---------------------------------------------------------------------- */
 
 /*
-static int next_part( octet_t *a, octet_t *b )
-{
-  if( a->len == 0 ) return 0 ;
+   static int next_part( octet_t *a, octet_t *b )
+   {
+   if( a->len == 0 ) return 0 ;
 
-  octln( b, a ) ;
-  
-  for(  ; b->len && DIRCHAR(*b->val) && *b->val != '/' ; b->val++, b->len-- ) ;
-  
-  if( b->len && ( !DIRCHAR( *b->val ) && *b->val != '/' )) return 0 ;
+   octln( b, a ) ;
 
-  a->len -= b->len ;
+   for(  ; b->len && DIRCHAR(*b->val) && *b->val != '/' ; b->val++, b->len-- ) ;
 
-  return 1 ;
-}
-*/
+   if( b->len && ( !DIRCHAR( *b->val ) && *b->val != '/' )) return 0 ;
+
+   a->len -= b->len ;
+
+   return 1 ;
+   }
+ */
 /* ---------------------------------------------------------------------- */
 
 ruleset_t *one_level( octet_t *name, ruleset_t *rs ) 
 {
-  int c ;
+	int c ;
 
-  if( rs == 0 ) return 0 ;
+	if( rs == 0 ) return 0 ;
 
-  do {
-    traceLog( "one_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
+	do {
+		if(0) traceLog( "one_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
     c = oct2strcmp( name, rs->name ) ;
   
     if( c == 0 ) {
@@ -232,7 +232,7 @@ static ruleset_t *add_to_level( octet_t *name, ruleset_t *rs )
   if( rs == 0 ) return new ;
 
   do {
-    traceLog( "add_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
+    if(0) traceLog( "add_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
     c = oct2strcmp( name, rs->name ) ;
   
     if ( c < 0 ) {

@@ -101,6 +101,8 @@ void *thread_main(void *arg)
 
         /* limitations as to who can speak to this server ? */
 
+        LOG( SPOCP_DEBUG ) traceLog( "Doing server access check" ) ;
+
         if( server_access( con ) != SPOCP_SUCCESS ) {
           traceLog( "connection attempt on %d from %s(%s) DISALLOWED", con->fd, name,
                          con->sri.hostaddr ) ; 

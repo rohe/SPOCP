@@ -295,7 +295,7 @@ int spocp_conn_write( conn_t *conn )
   n = conn->writen( conn, io->r, io->w - io->r ) ;
 
   if( n >= 0 ) {
-    LOG( SPOCP_DEBUG ) traceLog( "spocp_io_write wrote %d bytes", n ) ;
+    DEBUG( SPOCP_DSRV ) traceLog( "spocp_io_write wrote %d bytes", n ) ;
 
     io->r += n ;
     io->left -= n ;

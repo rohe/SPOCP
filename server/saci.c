@@ -251,12 +251,12 @@ static char *sexp_constr( conn_t *conn, arg_t **ap )
     if( ap[i]->var ) argv[i] = ap[i]->var ;
     else argv[i] = ap[i]->af( conn ) ;
 
-    LOG(SPOCP_DEBUG) traceLog( "SEXP argv[%d]: [%s]", i, argv[i]) ;
+    if(0) LOG(SPOCP_DEBUG) traceLog( "SEXP argv[%d]: [%s]", i, argv[i]) ;
   }
   format[i] = '\0' ;
   argv[i] = 0 ;
 
-  LOG(SPOCP_DEBUG) traceLog( "SEXP Format: [%s]", format ) ;
+  if(0) LOG(SPOCP_DEBUG) traceLog( "SEXP Format: [%s]", format ) ;
 
   if( sexp_printa( sexp, &size, format, (void **) argv ) == 0 ) res = 0 ; 
   else res = Strdup( sexp ) ;
@@ -411,6 +411,8 @@ static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
 
   /* No ruleset means everything is allowed !!! */
   if( ruleset_find( &oct, &rs ) == 0  || rs->db == 0 ) return SPOCP_SUCCESS ;
+  /* The same if there is no rules in the ruleset */
+  if( rs->db->ri->rules == 0 ) return SPOCP_SUCCESS  ;
 
   if( 0 ) traceLog( "Making the internal access query" ) ;
   sexp = sexp_constr( con, arg ) ;
@@ -437,7 +439,7 @@ static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
   comp.head = ep ;
   comp.blob = 0 ;
 
-  if( rs->db ) res = allowed( rs->db->jp, &comp ) ;
+  res = allowed( rs->db->jp, &comp ) ;
 
   free( sexp ) ;
   element_free( ep ) ;

@@ -80,12 +80,6 @@ void wake_listener(int w)
 
 void spocp_srv_run( srv_t *srv )
 {
-
-#ifdef HAVE_LIBWRAP
-  int        allow;
-  struct request_info req;
-#endif /* HAVE_LIBWRAP */
-
   int                 val, err, maxfd, client, nready, stop_loop = 0, n;
   socklen_t           len ;
   conn_t              *conn ;
@@ -199,7 +193,7 @@ void spocp_srv_run( srv_t *srv )
         continue;
       }
 
-      DEBUG( SPOCP_DSRV ) traceLog( "Accepted connection on fd=%d\n", client);
+      DEBUG( SPOCP_DSRV ) traceLog( "Got connection on fd=%d\n", client);
       if(0) timestamp( "Accepted" ) ;
    
       val = fcntl(client,F_GETFL,0);
@@ -223,30 +217,6 @@ void spocp_srv_run( srv_t *srv )
         goto fdloop;
       }
 
-      traceLog( "Accepted connection from %s on fd=%d",hostbuf,client);
-
-      /* determine if libwrap allows the connection */
-#ifdef HAVE_LIBWRAP
-      /* traceLog( "Is access allowed ?" ) ; */
-
-      allow = hosts_access(request_init(&req,
-                                      RQ_DAEMON, srv->id,
-                                      RQ_CLIENT_NAME, hostbuf,
-                                      RQ_CLIENT_SIN, &client_addr,
-                                      RQ_USER, "",
-                                      0)) ;
-
-      /* traceLog( "The answer is %d", allow ) ; */
-
-      if( allow == 0 ) {
-        close( client ) ;
-
-        traceLog( "connection attempt on %d from %s(%s) DISALLOWED", client, hostbuf) ; 
-
-        continue;
-      }
-#endif /* HAVE_LIBWRAP */
-      
       /* get a connection object */
       pi = afpool_get_empty( srv->connections ) ; 
 
@@ -263,9 +233,23 @@ void spocp_srv_run( srv_t *srv )
         DEBUG( SPOCP_DSRV )traceLog( "Initializing connection to %s", hostbuf ) ;
         conn_setup( conn, srv, client, hostbuf ) ;
 
-        afpool_push_item( srv->connections, pi ) ;
+        LOG( SPOCP_DEBUG ) traceLog( "Doing server access check" ) ;
 
-        pe++ ;
+        if( server_access( conn ) != SPOCP_SUCCESS ) {
+          traceLog( "connection attempt on %d from %s(%s) DISALLOWED", conn->fd, hostbuf,
+                           conn->sri.hostaddr ) ; 
+  
+          conn_reset( conn ) ;
+          /* unlocks the conn struct as a side effect */
+          item_return( srv->connections, pi );
+          close( client ) ;
+        }
+        else {
+          traceLog( "Accepted connection from %s on fd=%d",hostbuf,client);
+          afpool_push_item( srv->connections, pi ) ;
+
+          pe++ ;
+        }
       }
       if(1) timestamp( "Done with new connection setup" ) ;
     }

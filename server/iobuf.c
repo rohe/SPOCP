@@ -58,9 +58,10 @@ void iobuf_shift( spocp_iobuf_t *io )
 {
   int len ;
 
-   LOG( SPOCP_DEBUG )
+  /* LOG( SPOCP_DEBUG ) 
   traceLog( "Shifting buffer b:%p r:%p w:%p left:%d bsize:%d",
             io->buf, io->r, io->w, io->left, io->bsize ) ;
+  */
 
   pthread_mutex_lock( &io->lock ) ;
 
