@@ -1,0 +1,383 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Boundary conditions</title>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+</head>
+<body>
+<h1>Boundary conditions</h1>
+Document Status: Project document, last updated 2003-09-26<br>
+Authors: Roland Hedberg and Torbj&ouml;rn Wiberg
+<h2>Content</h2>
+<ul>
+  <li><a href="#flatfile">2. The flatfile boundary condition</a> </li>
+  <li><a href="#time">3. The time boundary condition</a> </li>
+  <li><a href="#gdbm">4. The gdbm boundary condition</a> </li>
+  <li><a href="#ldap">5. The ldap boundary condition</a> </li>
+  <li><a href="#ipnum">6. The ipnum boundary condition</a> </li>
+  <li><a href="#lastlogin">7. The lastlogin boundary condition</a> </li>
+  <li><a href="#addrmatch">8. The mail address boundary condition</a> </li>
+  <li><a href="#rbl">9. The RBL boundary condition</a> </li>
+  <li><a href="#strmatch">10. The strmatch boundary condition</a> </li>
+  <li><a href="#difftime">11. The difftime boundary condition</a> </li>
+</ul>
+<h2><a id="flatfile">2. The flat file boundary condition</a></h2>
+Building on the definition in 2.5, this boundary condition is described
+by:
+<p></p>
+<pre>
+  type         = "flatfile"
+  typespecific = file [":" keyword [":" value *( "," value )]]
+  file         = utf8string
+  keyword      = utf8string      ; keywords are not allowed to start with a '#' se below
+  value        = utf8string
+</pre>
+<p> Further the format of the flat file has to adher to the following
+format </p>
+<pre>
+  line     = (data / comment) CR
+  comment  = '#' whatever
+  whatever = utf8string
+  data     = keyword ":" *SP value *( *SP "," *SP value ) *SP
+  SP       = %x20 / %x09         ; SPACE or HTAB
+</pre>
+<p>
+Three cases can appear:
+</p>
+<dl>
+  <dt>Only file is specified</dt>
+  <dd>If the file exists and can be opened for reading, the reference
+will evaluate to <i>true</i>. If the file does not exist or if it can
+not be opened for reading, the reference will evaluate to <i>false</i>.</dd>
+</dl>
+<dl>
+  <dt>File and keyword are specified</dt>
+  <dd>If the file contains the specified keyword, the reference will
+evaluate to <i>true</i>, if not it will evaluate to <i>false</i></dd>
+</dl>
+<dl>
+  <dt>File, keyword and one or more values are specified</dt>
+  <dd>If the file contains the keyword and if every value specified in
+the reference also appears as values for that keyword in the file then
+the reference will evaluate to <i>true</i> otherwise it will evaluate
+to <i>false</i>. </dd>
+</dl>
+<h2><a id="time">3 The time boundary condition</a></h2>
+This boundary condition can be used when a rule only shall be valid for
+a limited time, or at recurring intervals.
+<p>The ABNF of the reference:
+</p>
+<pre>
+  type         = "time"
+  typespecific = [start] [";" [end] [";" days [";" starttime [";" endtime]]]]
+  start        = full-date                   ; as specified in <a
+ href="into.html#2_2">Intro to S-expressions</a>
+  end          = date
+  days         = ["0"]["1"]["2"]["3"]["4"]["5"]["6"]   ; Sun = 0, Mon = 1, ...
+  starttime    = partial-time                ; as specified in <a
+ href="into.html#2_2">Intro to S-expressions</a>
+  endtime      = partial-time
+</pre>
+<p>
+Example:
+</p>
+<pre>  time:2002-08-01_00:00:00;;12345;08:00:00;17:00:00
+</pre>
+<p> Which means; starting at 00:00:00 on the 1th of August 2002, every
+monday, tuesday, wednesday, thursday and friday between 08:00:00 and
+17:00:00 inclusive this expression will evaluate to <i>true</i>. </p>
+<h2><a id="gdbm">4 The GDBM boundary condition</a></h2>
+The workings of the GDBM boundary condition is very similar to flat
+file, the ABNF is exactly the same except for 'type'.
+<p></p>
+<pre>
+  type         = "gdbm"
+  typespecific = file [":" keyword [":" value *( "," value )]]
+  file         = utf8string
+  keyword      = utf8string      ; keywords are not allowed to start with a '#' se below
+  value        = utf8string
+</pre>
+<p>
+The format of the datum in the GDBM file is supposed to be 'value *(","
+value)'.
+</p>
+<p> And the semantics are also very similar to flat file, three cases
+can appear: </p>
+<dl>
+  <dt>Only the file is specified</dt>
+  <dd>If the gdbm file exists and is can be opened for reading, the
+reference will evaluate to <i>true</i>. If the file does not exist or
+if it can not be opened for reading, the reference will evaluate to <i>false</i>.</dd>
+</dl>
+<dl>
+  <dt>File and keyword are specified</dt>
+  <dd>If the gdbm file contains the specified keyword, the reference
+will evaluate to <i>true</i>. If not, it will evaluate to <i>false</i></dd>
+</dl>
+<dl>
+  <dt>File, keyword and one or more values are specified</dt>
+  <dd>If the gdbm file contains the keyword and if every value
+specified in the reference also appear as a value for that keyword in
+the gdbm file, the reference will evaluate to <i> true</i>. Otherwise
+it will evaluate to <i>false</i>. </dd>
+</dl>
+<h2><a id="ldap">5 The LDAPset boundary condition</a></h2>
+If you have lots of information about objects in an LDAP directory this
+should be a very useful tool for you.
+<p>ABNF for the LDAPset boundary condition:
+</p>
+<pre>
+  type         = "ldapset"
+  typespecific =  ldapserver *10[";" DN ] ";" vset
+  ldapserver   =  &lt; login from Section 5 of RFC1738 [RFC1738] &gt;
+  thisDN       =  dn
+  userDN       =  dn
+  dn           =  &lt; distinguishedName from Section 3 of RFC2253 [RFC2253] &gt;
+  vset         =  dnvset / valvset
+  dnvset       =  base
+                  / "(" dnvset ")"
+                  / "{" dnvset ext attribute "}"
+                  / dnvset SP conj SP dnvset
+                  / dnvset ext dnattribute-list
+                  / "&lt;" dn "&gt;"
+                  / "\" d                           ; the number refers back to the DNs in
+                                                    ; the DN list, 0 is the first
+   valvset      =  '"' string '"'
+                  / "(" valvset ")"
+                  / dnvset ext attribute-list
+                  / valvset SP conj SP valvset
+   conj        =  "&amp;" / "|"
+   ext         =  "/" / "%" / "$"                    ; base, onelevel resp. subtree search
+   a           =  %x41-5A / %x61-7A                  ; lower and upper case ASCII
+   d           =  %x30-39
+   k           =  a / d / "-" / ";"
+   anhstring   =  1*k
+   attribute-list = attribute *[ "," attribute ]
+   dnattribute-list = dnattribute *[ "," dnattribute ]
+   attribute   =  a [ anhstring]                     ; as defined by [RFC2252]
+   dnattribute =  &lt; any attribute name which have attributetype
+                  distinguishedName (1.3.6.1.4.1.1466.115.121.1.12)
+                  like member, owner, roleOccupant, seeAlso, modifiersName, creatorsName,...&gt;
+   SP          =  %x20
+</pre>
+<p>Example:
+</p>
+<dl>
+  <dt>
+    <pre>&lt;cn=Group,dc=minorg,dc=se&gt;/member</pre>
+  </dt>
+  <dd>The set of DNs that appear as attribute values of the member
+attribute in the entry with the
+DN "cn=Group,dc=minorg,dc=se". This is then really a check whether the
+attribute member in "cn=Group, dc=minorg,dc=se" has any values </dd>
+</dl>
+<dl>
+  <dt>
+    <pre>{\0$mail &amp; "sven.svensson@minorg.se"}/title &amp; "mib"
+</pre>
+  </dt>
+  <dd> Can be thought of as being evaluated in two steps: 
+<ol>
+<li> Find all the objects in the subtree starting at whatever is given as
+the first searchbase DN in the LDAP boundary condition and that has
+"sven.svensson@minorg.se" as an attribute value for the attribute
+"mail". 
+<li> Among that set of objects, find the object that has "mib" as an
+attribute value for the attribute "title".
+</ol>
+If this was put into a LDAP filter it would probably be
+"(&amp;(mail=sven.svensson@minorg.se)(title=mib))" </dd>
+</dl>
+<dl>
+  <dt>
+    <pre>{\0$mail &amp; "sven.svensson@minorg.se"}/title,personalTitle &amp; "mib"</pre>
+  </dt>
+  <dd> Can be thought of as being evaluated in two steps: 
+<ol>
+<li> Find all the objects in the subtree starting at whatever is given as
+the first searchbase DN in the LDAP boundary condition and that has
+"sven.svensson@minorg.se" as an attribute value for the attribute
+"mail". 
+<li> Among that set of objects, find the object that has "mib" as an
+attribute value for either the attributes "title" or "personalTitle".
+</ol>
+If this was put into a LDAP filter it would probably be
+"(&amp;(mail=sven.svensson@minorg.se)(|(title=mib)(personalTitle=mib)))"
+  </dd>
+</dl>
+<dl>
+  <dt>
+    <pre>&lt;cn=Group,dc=minorg,dc=se&gt;/member &amp; {\0%mail &amp; "tvw@minorg.se"}</pre>
+  </dt>
+  <dd> Find any object which has the attribute value "tvw@minorg.se"
+for the "mail" attribute, using a onelevel search below the DN provided
+as the first searchbase DN in the LDAP boundary condition. And then
+check whether any of
+the DNs of these objects appear as attribute values for the attribute
+member in the object "cn=Group,dc=minorg,dc=se". </dd>
+</dl>
+<p>
+</p>
+<h2><a id="ipnum">6. The ipnum boundary condition</a></h2>
+A special case of the flatfile boundary condition. In this case the
+values connected to a key
+in the flatfile is supposed to be single ipaddresses or groups of
+ipaddresses. Presently only ipv4<br>
+<p>The fileformat must be:
+</p>
+<pre>   line    = comment / spec
+   comment = '#' whatever
+   spec    = keyword ':' value *( ',' value )
+   value   = ipnum "/" netpart
+   keyword = utf8string
+   netpart = 1*2dig ; min 1 max 32
+   ipnum   = oct "." oct "." oct "." oct
+   oct     = 1*3dig ; min 0 max 255
+   dig     = %x30-39
+
+   for instance
+
+   umu:130.239.0.0/16,193.193.7.0/24
+</pre>
+<p>
+Format of ipnum boundary condition is:
+</p>
+<pre>
+  type         = "ipnum"
+  typespecific = file ":" keyword ":" ipnum
+  file         = utf8string
+</pre>
+<p>
+This boundary condition will return TRUE if and only if the file
+exists, the keyword is present
+in the file and the ip address in the query matches at least one of the
+net specifications given
+as values to the keyword.
+</p>
+<h2><a id="lastlogin">7. The lastlogin boundary condition</a></h2>
+In order to allow users to user mailrelays when travelling or from
+there homes, some organizations
+have used the method that if a user first authenticates using POP or
+IMAP then within a certain
+timelimit ( 20-30 minutes ) that user can use the mailrelay. This is a
+simple backend that knows
+what the logfile for one popular POP server looks like. It can linearly
+search this file for the
+last entry for a specicic user and match that timestamp agains the
+present to see if it's within
+the stipulated time window.
+<p>The fileformat is:
+</p>
+<pre>
+Jul 25 21:53:25 bassett pop3d: Connection, ip=[::ffff:213.67.231.206]
+Jul 25 21:53:25 bassett pop3d: LOGIN, user=sour, ip=[::ffff:213.67.231.206]
+Jul 25 21:53:27 bassett pop3d: LOGOUT, user=sour, ip=[::ffff:213.67.231.206], top=0, retr=6188
+</pre>
+<p>
+And the boundary condition format is:
+</p>
+<pre
+  type     = "lastlogin"
+  typespec = file ";" since ";" userid ";" ipnum
+             ; I give no formal definition of userid, if your system accepts it the backend will
+  since    = partial-time ; how long ago you accept as safe 30:00 for 30 minutes 
+</pre>
+Will return TRUE if it can find a login in the logs that appeared less
+than 'since' ago for the
+specified user.
+<h2><a id="addrmatch">8. The mail address boundary condition</a></h2>
+Used when you want to match a email address against a number of mail
+address or mail domain
+specifications.
+<p>File format is :
+</p>
+<pre>   comment = '#' whatever CR
+   line    = addr-spec / xdomain CR
+   xdomain = ( "." / "@" ) domain
+..
+   addr-spec and domain as defined by RFC 822
+</pre>
+<p>
+Boundary condition format:
+</p>
+<pre>
+  type     = "addrmatch"
+  typespec = file ":" addr-spec
+</pre>
+Will do a trailing substring match of the specifications found in the
+file against the address specified in the boundary condition. Will
+return TRUE if anyone matched.
+<h2><a id="rbl">9. The RBL boundary condition</a></h2>
+The Realtime Blackhole List system works by having the ipaddress of the
+blocked machines stored as A records in DNS using a specific syntax.
+The names stored in DNS is constructed by
+reverting the order of the parts in ip address ( 130.239.16.3 becomes
+3.16.239.130 ) and then
+adding a top domain part ( blackholes.mail-abuse.org ). So if
+130.239.16.3 where to be RBL blacklisted
+there would be a A record in the DNS with the name
+3.16.239.130.blackholes.mail-abuse.org .
+<p>If you want to blacklist machines from using services and you are
+able to add A records to
+a DNS server you can use the same mechanism but with your defined top
+domain part.
+</p>
+<p>The format of the boundary condition:
+</p>
+<pre>
+  type     = "rbl"
+  typespec = domain ":" ipnum
+  ipnum   = oct "." oct "." oct "." oct
+  oct     = 1*3dig ; min 0 max 255
+  dig     = %x30-39
+</pre>
+Will return TRUE if there is a A record in DNS with a name constructed
+from 'domain' and
+'ipnum' as described above.
+<h2><a id="strmatch">10. The strmatch boundary condition</a></h2>
+Compares two strings
+The format of the boundary conditions:
+<pre>
+  type     = "strmatch"
+  typespec = string:string[:offset[:num]]
+  string   = UTF-8 string
+  offset   = number
+  num      = number
+  number   = 1*dig
+  dig      = %x30-39
+If the strings are divided by horizontal tabs 0x09 then parts can be compared,
+offset says which part to start with and num is the number of parts that is to be 
+compared.
+</pre>
+
+As an example if one string is "dc=se\tdc=umu\tou=person\tuid=tvw" and the other is
+"dc=se\tdc=umu\tou=person\tcn=admin" then "strmatch:dc=se\tdc=umu\tou=person\tuid=tvw:dc=se\tdc=umu\tou=person\tcn=admin:0:3" would return TRUE.
+<h2><a id="difftime">10. The difftime boundary condition</a></h2>
+Checks the present time agains some given time. There are four different conditions
+that can be checked:
+<ul>
+<li>If the present time is after a specifed time and if the different exceeds a certain value.
+<li>If the present time is after a specifed time and if the different is less than a certain value.
+<li>If the present time is before a specifed time and if the different exceeds a certain value.
+<li>If the present time is before a specifed time and if the different is less than a certain value.
+</ul>
+The format of the boundary condition is:
+<pre>
+diffspec = diff ";" date ";" when how_much 
+date     = YYMMDDTHH:MM:SS
+diff     = YYMMDD_HH:MM:SS
+when     = before / after
+before   = "-"
+after    = "+"
+how_much = less / more
+less     = "-"
+more     = "+"
+</pre>
+For instance, <br>
+000007_00:00:00;2003-10-09T08:00:00;-+<br>
+is TRUE if now is before 08:00:00 the 2003-09-09 and if now is more then 7 days
+before 08:00:00 the 2003-09-09.
+
+</body>
+</html>

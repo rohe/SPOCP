@@ -1,0 +1,920 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>The SPOCP protocol</title>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+</head>
+<body>
+<h1>The SPOCP protocol</h1>
+Document Status: Project document, last updated 2003-09-22<br>
+Author: Roland Hedberg
+<h2>Content</h2>
+<ul>
+  <li>0. Introduction</li>
+  <li>1. <a href="#basic">Basic operation</a></li>
+  <ul>
+    <li>1.1 <a href="#input">Input grammar</a></li>
+    <li>1.2 <a href="#output">Output grammar</a></li>
+    <li>1.3 <a href="#1.3_Response_codes">Response codes</a><br>
+    </li>
+  </ul>
+  <li>2. <a href="#clientcom">Client Commands</a></li>
+  <ul>
+    <li>2.1 <a href="#starttls">STARTTLS</a></li>
+    <li>2.2 <a href="#query">QUERY</a></li>
+    <li>2.3 <a href="#add">ADD</a></li>
+    <li>2.4 <a href="#aci">ACI</a></li>
+    <li>2.5 <a href="#delete">DELETE</a></li>
+    <li>2.6 <a href="#list">LIST</a></li>
+    <li>2.7 <a href="#logout">LOGOUT</a></li>
+    <li>2.8 <a href="#begin">BEGIN</a></li>
+    <li>2.9 <a href="#commit">COMMIT</a></li>
+    <li>2.10<a href="#rollback">ROLLBACK</a></li>
+    <li>2.11<a href="#subject">SUBJECT</a></li>
+  </ul>
+  <li>3. <a href="#EXAMPLE">Example</a><br>
+  </li>
+</ul>
+<h2>0. Introduction</h2>
+The native spocp protocol is a simple s-expression based protocol, whos
+grammar
+follows the definition below.<br>
+This memo does not specify how a client constructs a query or how it
+uses the answer.
+<h2><a name="basic">1. Basic operation</a></h2>
+The SPOCP protocol assumes a reliable data stream such as provided by
+TCP.
+<p> An SPOCP connection consists of the establishment of a
+client/server
+network connection, and subsequent client/server interactions. These
+client/server
+interactions consist of a client command and a server result response. </p>
+<p> All interactions transmitted by client and server are in the form
+of sequences of bytes in a format descibed below.<br>
+</p>
+<p> Commands in SPOCP consists of a keyword, possibly
+followed by one or more argument. Keywords consists of printable ASCII
+characters. </p>
+<p>Server data are only sent as a result of a client command. </p>
+<p> The server completion result response indicates the success or
+failure of the operation. </p>
+<p>Every Spocp reply consists of a three digit number possibly followed
+by some text. More about that <a href="#output">below</a>.
+</p>
+<p> The traffic between a client and a server can be protected by the
+use of TLS/SSL. <em>STARTTLS</em> is used to upgrad the connection
+from unprotected to protected state. </p>
+<p> The Spocp protocol are almost correct S-expression, the thing
+making them not
+correct is the usage of a leading length definition and the abandonment
+of the outer parenteses. The leading length definition is there to let
+the server and the client know
+how much data to expect.</p>
+<h2><a name="input">1.1 Input grammar</a></h2>
+<h3><u><em>!!! The Spocp server is working in case exact mode !!!</em></u></h3>
+<pre>
+  spocp-command = length ":" command 
+                  ; the length value represents the length of the command in number of bytes
+  command       = starttls / query / add / delete / list / aci
+  logout / begin / commit / rollback / subjectcom
+  starttls     = "8:STARTTLS"
+  query        = "5:QUERY" [l-path] l-s-expr
+  add          = "3:ADD" [l-path] l-s-expr [ return-info ]
+  delete       = "6:DELETE" [l-path] length ":" ruleid
+  list         = "4:LIST" [l-path] *( length ":" "+"/"-" s-expr ) 
+  aci          = "3:ACI" [l-path] length ":" aci-expr
+  logout       = "6:LOGOUT"
+  begin        = "5:BEGIN"
+  commit       = "6:COMMIT"
+  rollback     = "8:ROLLBACK"
+  subjectcom   = "7:SUBJECT" [ l-s-exp ]
+  aci-expr     = "(3:aci(8:resource" [s-expr] ")(6:action" [aci-ops-or] ")(7:subject" [s-expr] "))"
+  aci-ops      = ( "3:ADD" / "6:DELETE" / "4:LIST" ) 
+  aci-ops-or   =  aci-ops / "(2:or" 2*3aci-ops ")" 
+                 ; the or construct only with reasonable combinations of aci-ops
+                 ; (2:or3:ADD3:ADD) is for instance not reasonable
+ 
+  l-s-expr     = length ":" s-expr
+  s-expr       = "(" bytestring *s-part ")"
+  s-part       = bytestring / s-expr / starforms
+  return-info  = bytestring 
+  bytestring   = length ":" 1*bytes
+                 ; The number of bytes in the bytestring must be equal to the
+				 ; length specification
+  length       = nzdigit *digit
+  nzdigit      = %x31-39
+  digit        = "0" / nzdigit
+  byte         = %x00-FF
+  starforms    = "(1:*" ( range / prefix / suffix / or / bcond ) ")"
+  or           = "2:or" 1*s-expr
+  range        = "5:range" rangespec
+  prefix       = "6:prefix" bytestring
+  suffix       = "6:suffix" bytestring
+  bcond        = "5:bcond" 1*extref
+  rangespec    = alpha / numeric / date / time / ipv4 / ipv6
+  alpha        = "5:alpha" [ lole utf8string [ goge utf8string ]]
+                 /  [ goge utf8string [ lole utf8string ]]
+  numeric      = "7:numeric" [ lole number [ goge number ]]
+                 / [ goge number [ lole number ]]
+  date         = "4:date" [ goge dat [ lole dat ]] / [ lole dat [ goge dat ]]
+  time         = "4:time" [ lole hms [ goge hms ]] / [ goge hms [ lole hms ]]
+  ipv4         = "4:ipv4" [ lole ip4num [ goge ip4num ]] / [ goge ip4num [lole ip4num]]
+  ipv6         = "4:ipv6" [ lole ip6num [ goge ip6num ]] / [ goge ip6num [lole ip6num]]
+  lole         = "1:l" / "2:le"
+  goge         = "1:g" / "2:ge"
+
+  number       = length ":" 1*digit
+  dat          = length ":" date
+  hms          = length ":" timeofday
+  ip4num       = length ":" IPv4addr
+  ip6num       = length ":" IPv6addr
+  utf8string   = length ":" 1*UTF8
+  bytestring   = length ":" 1*byte
+  ruleid       = length ":" 1*( lc / digit )
+
+  date         = nzdigit 3digit "-" month "-" day "_" timeofday
+  timeofday    = hour ":" sixty ":" sixty
+  month        = ( "0" nzdigit ) / "1" ( "0" / "1" / "2" )
+  day          = (( "0" / "1" / "2" ) digit ) / "3" ( "0" / "1" )
+  hour         = (( "0" / "1" ) digit ) / "2" %x30-34
+  sixty        = %x30-35 %x30-39
+  UTF8         = %x01-09 / %x0B-0C / %x0E-7F / UTF8-2 / UTF8-3 / UTF8-4 / UTF8-5 / UTF8-6
+  UTF8-1       = %x80-BF
+  UTF8-2       = %xC0-DF UTF8-1
+  UTF8-3       = %xE0-EF 2UTF8-1
+  UTF8-4       = %xF0-F7 3UTF8-1
+  UTF8-5       = %xF8-FB 4UTF8-1
+  UTF8-6       = %xFC-FD 5UTF8-1
+  extref       = length ":" type ":" typespecific
+  type         = 1*lc
+  lc           = %x61-7A
+  typespecific = *UTF8
+  l-path       = length ":" path
+  path         = '/' [ 1*pathpart ]
+  pathpart     = 1*dirchar '/'
+  dirchar      = %x30-39 / %x41-5A / %x61-7A / '-' / '_'
+
+  ; ipv6 ABNF from RFC 2373
+
+  IPv6addr     = hexpart [ ":" IPv4addr ]
+  IPv4addr     = 1*3DIGIT "." 1*3DIGIT "." 1*3DIGIT "." 1*3DIGIT
+
+  IPv6prefix  = hexpart "/" 1*2DIGIT
+
+  hexpart     = hexseq | hexseq "::" [ hexseq ] | "::" [ hexseq ]
+  hexseq      = hex4 *( ":" hex4)
+  hex4        = 1*4HEXDIG
+
+
+</pre>
+<h2><a name="output">1.2 Output grammar</a></h2>
+Every SPOCP reply consists of a three digit number (transmitted as
+three alphanumeric characters) possibly followed by some text.
+<p>
+The number is intended for use by automata to determine what state to
+enter next; the text, except in the case of multiline responses,
+is meant for the human user. The intention is that
+the three digits should contain enough encoded information that the
+SPOCP-client need not examine the text to find out what has happend.
+</p>
+<pre>
+  spocp-response = *(multiline) singleline
+  multiline      = length ":" multi-response 
+  multi-response = "3:201" m-info
+  singleline     = length ":" response
+  response       = "3:" replycode [ bytestring ]  
+                   ; replycode 201 can not appear in singleline responses
+  replycode      = ( "2" / "3" / "4" / "5" ) digit digit [ bytestring ]
+</pre>
+<p>
+In some cases a shorthand for the rule can be used, a ID. This ID
+is presently the SHA1 hash of the rule itself. Possible return-info connected to the
+rule is not included when the hash is calculated.
+<p>
+There are only two cases where multiline responses can appear, one is if 
+the client poses a query and the server wants to pass back som return-info 
+together with the positive answer. Then that return-info will appear in a
+separate line before the line containing the 200 code.
+The other case is when the clients
+performs a list operation and there are rules matching the list criteria. 
+each rule will then be returned on a separate line.
+<p>
+The ABNF for the two cases are
+<pre>
+  m-info         = return-info / list-info
+  list-info      = l-path ruleid l-s-expr [ return-info ]
+</pre>
+</p>
+<h2><a name="1.3_Response_codes"></a><a id="resultcode">1.3
+Response
+codes</a></h2>
+The theory of reply codes is described in Appendix E in STD
+10,&nbsp;
+RFC821.
+
+<p>
+<table cellpadding="2" cellspacing="2" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <th>Response code</th>
+      <td style="vertical-align: top;"><b>Response
+text (might be present)</b><br>
+      </td>
+      <th>Description</th>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">200 </td>
+      <td style="vertical-align: top;"> Ok</td>
+      <td style="vertical-align: top;">Command accepted and executed </td>
+    </tr>
+    <tr>
+      <td style="">201</td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+      <td style="vertical-align: top;">Multilline response </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">202</td>
+      <td style="vertical-align: top;">Denied<br>
+      </td>
+      <td style="vertical-align: top;">Query did not match any stored
+policy </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">203</td>
+      <td style="vertical-align: top;"> Bye </td>
+      <td style="vertical-align: top;">Server is closing connection </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">204 </td>
+      <td style="vertical-align: top;"> Transaction complete</td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">401 </td>
+      <td style="vertical-align: top;"> Service not available</td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">402</td>
+      <td style="vertical-align: top;"> Information unavailable </td>
+      <td style="vertical-align: top;">When a remote service is not
+available, this is when a boundary condition can not be checked. </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">500 </td>
+      <td style="vertical-align: top;"> Syntax error</td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">501</td>
+      <td style="vertical-align: top;"> Operations error </td>
+      <td style="vertical-align: top;">Permanent operations error </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">502 </td>
+      <td style="vertical-align: top;"> Not supported</td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">503</td>
+      <td style="vertical-align: top;"> Already in operation </td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">504</td>
+      <td style="vertical-align: top;"> Line to long </td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">505 </td>
+      <td style="vertical-align: top;"> Unkown ID</td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">506</td>
+      <td style="vertical-align: top;"> Already exits</td>
+      <td style="vertical-align: top;">Rules or client specifications
+can not be overwritten </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">507</td>
+      <td style="vertical-align: top;"> Line to long </td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">508<br>
+      </td>
+      <td style="vertical-align: top;"> Unknown command</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">509</td>
+      <td style="vertical-align: top;"> Access denied </td>
+      <td style="vertical-align: top;"> <br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">510<br>
+      </td>
+      <td style="vertical-align: top;"> Argument error</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">511</td>
+      <td style="vertical-align: top;"> Already active</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">512<br>
+      </td>
+      <td style="vertical-align: top;"> Internal errror</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">513<br>
+      </td>
+      <td style="vertical-align: top;"> Input error</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">514<br>
+      </td>
+      <td style="vertical-align: top;"> Timelimit exceeded</td>
+      <td style="vertical-align: top;"><br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">515<br>
+      </td>
+      <td style="vertical-align: top;"> Sizelimit exceeded</td>
+      <td style="vertical-align: top;">The total number of bytes in the
+command exceeded the limit set by the server<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">516<br>
+      </td>
+      <td style="vertical-align: top;"> Other</td>
+      <td style="vertical-align: top;">For example error encountered
+while using backends<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</p>
+<h2><a name="clientcom">2. Client commands</a></h2>
+<h3><a name="starttls">2.1 STARTTLS command</a></h3>
+<dl>
+  <dt><b>Usage:</b> </dt>
+  <dd>Starttls is used when the connection between the client and
+the server must be protected by SSL or TLS. The client must identify
+itself using a certificate, it is not only the server that has to have
+its certificate verified </dd>
+</dl>
+<dl>
+  <dt> <b>Arguments:</b> </dt>
+  <dd>As of now, none </dd>
+</dl>
+<dl>
+  <dt> <b>Result:</b> </dt>
+  <dd>9:3:<b>200</b>2:<b>Ok</b> - starttls recognized and TLS/SSL
+negotiation will start<br>
+20:3:<b>501</b>13:<b>Not supported</b> - Starttls not
+implemented in this server<br>
+20:3:<b>503</b>20<b>Already in operation</b> - TLS/SSL
+already in operation 
+    <p> The client is also expected to authenticate. If the
+authentication fails the connection is imediately closed. Downgrading
+to
+not use TLS/SSL is not possible,</p>
+     
+    <p> Any commands sent by the client after the server has
+received
+this command and before the TLS/SSL negotiation is completed will be
+silently ignored.</p>
+     
+    <p> The client as well as the server MUST check its
+understanding
+of
+the opponent's hostname against the its identity as presented in the
+opponent's Certificate message, in order to prevent man-in-the-middle
+attacks. </p>
+     
+    <p> Matching from the clients point of view is performed
+according
+to these rules: </p>
+     
+    <ul>
+       <li>The client MUST use the server hostname it used to
+open the
+SPOCP connection as the value to compare against the server name as
+expressed in the server's certificate. The client MUST NOT use the
+server's canonical DNS name or any other derived form of name. </li>
+      <li> If a subjectAltName extension of type dNSName is present in
+the certificate, it SHOULD be used as the source of the server's
+identity.<br>
+If more than one identity of a given type is present in the certificate
+(e.g. more than one dNSName name), a match in any one of the set is
+considered acceptable. </li>
+      <li> Matching is case-insensitive. </li>
+      
+    </ul>
+    If the hostname does not match the dNSName-based identity in
+the
+certificate per the above check, user-oriented clients SHOULD either
+notify the user (clients MAY give the user the opportunity to continue
+with the connection in any case) or terminate the connection and
+indicate that the server's identity is suspect. Automated clients
+SHOULD
+close the connection, returning and/or logging an error indicating that
+the server's identity is suspect. 
+    <p> Beyond the server identity checks described in this
+section,
+clients SHOULD be prepared to do further checking to ensure that the
+server is authorized to provide the service it is observed to provide.
+The client MAY need to make use of local policy information. </p>
+     </dd>
+</dl>
+<dl>
+  <dt> <b>Example:</b> </dt>
+  <dd> 
+    <pre>C: 10:8:STARTTLS<br>S: 9:3:2002:OK<br></pre>
+     </dd>
+</dl>
+<hr>
+<h3><a name="query">2.2 QUERY command</a></h3>
+<dl>
+  <dt> <b>Arguments:</b> </dt>
+  <dd>One S-expression representing a authorisation query </dd>
+</dl>
+<dl>
+  <dt> <b>Possible Results:</b> </dt>
+  <dd>9:3:<b>200</b>2:<b>Ok</b> - The given S-expression matches
+some rule stored in
+the SPOCP server </dd>
+  <dd> 13:3:<b>202</b>6:<b>Denied</b> - No rule matched </dd>
+  <dd> 22:3:<b>500</b>12:<b>Syntax error</b> - If the
+S-expression
+is not a wellformed
+S-expression 
+    <p> If a rule in the server matched the given S-expression
+and
+there
+is return information coupled to that rule, the return information will
+be returned together with the positive response. If there are more than
+one rule that matches only one of them will be used to construct the
+response. Under these conditions sending serveral queries with the same
+S-expression in a sequence might not necessarily result in the return
+of
+the same answer to each one of them. That is you can not assume that
+there exists any well defined and consistent order between the rules.</p>
+     
+    <p> Overlapping rules should therefore if possible be
+avoided,
+especially if there are return information coupled to them. </p>
+     </dd>
+</dl>
+<dl>
+  <dt> <b>Example:</b> </dt>
+  <dd>C:
+91:5:<b>QUERY</b>81:<b>(5:spocp(8:resource(4:file3:etc6:passwd))(6:action4:read)(7:subject(3:uid3:100)))</b>
+    </dd>
+  <dd>S: 37:3:<b>201</b>29:<b>ftp://ftp.spocp.org/cert0.pem</b> </dd>
+  <dd>S: 9:3:<b>200</b>2:<b>Ok</b><br>
+    </dd>
+</dl>
+<hr>
+<h3><a name="add">2.3 ADD command</a></h3>
+<dl>
+  <dt> <b>Arguments:</b> </dt>
+  <dd>S-expression representing a rule to be stored, possibly
+ackompanied by some return information. See the ABNF
+grammar defined in <a href="#input"> input</a> section. </dd>
+</dl>
+<dl>
+  <dt> <b>Possible Result:</b> </dt>
+  <dd>9:3:<b>200</b>2:<b>OK</b> - The rule was succefully stored
+in the rule database </dd>
+  <dd>11:3:<b>202</b>:6:<b>Denied</b> - Adding was not permitted </dd>
+  <dd>20:3:<b>500</b>12:<b>Syntax error</b> - Error in the
+S-expression syntax </dd>
+</dl>
+<dl>
+  <dt><b>Example:</b> </dt>
+  <dd>C: 88:3:<b>ADD</b>80:<b>(5:spocp(8:resource(4:file3:etc6:groups))(6:action4:read)(7:subject(3:uid3:100))</b>
+    </dd>
+  <dd>S: 9:3:<b>200</b>2:<b>Ok</b> </dd>
+</dl>
+<hr>
+<h3><a name="aci"></a>2.4 ACI command</h3>
+<dl>
+  <dt>Usage:</dt>
+  <dd>Controling the access to the ruledatabase.
+Format: 
+    <pre>
+aci      = "3:aci" length ":" ras-desc
+ras-desc = "(3:aci(8:resource" s-expr *args ")(6:action" action ")(7:subject" subject "))"
+action   = length ":" ( "ADD" / "DELETE" / "LIST" / "ACI" )
+args     = bytestring
+subject  = s-expr
+</pre>
+  </dd>
+</dl>
+<dl>
+  <dt><b>Arguments:</b> </dt>
+  <dd>Only one argument and it is a Access control rule for some
+set of rules in the database </dd>
+</dl>
+<dl>
+  <dt><b>Results:</b> </dt>
+</dl>
+<dl>
+  <dt><b>Example:</b> </dt>
+  <dd>C: 107:3:<b>ACI</b>99:<b>(3:aci(8:resource(5:spocp(8:resource3:etc)(6:action4:read)(7:subject)))(6:action4:LIST)(7:subject))<b>
+    </dd>
+  <dd>3:<b>200</b>2:<b>Ok</b> - The rule/rules was
+successfully added </dd>
+</dl>
+<hr style="width: 100%; height: 2px;"><br>
+
+<h3><a name="delete">2.5 DELETE command</a></h3>
+<dl>
+  <dt> <b>Arguments:</b> </dt>
+  <dd>Index of the rule/rules to be deleted from the rule
+database </dd>
+</dl>
+<dl>
+  <dt> <b>Result:</b> </dt>
+  <dd>3:<b>200</b>2:<b>Ok</b> - The rule/rules was
+successfully deleted </dd>
+  <dd>3:<b>500</b>12:<b>Syntax error</b> </dd>
+  <dd>3:<b>504</b>18:<b>Too many arguments</b> </dd>
+  <dd>3:<b>505</b>10:<b>Unknown ID</b> - The rule to be
+deleted was not in the rule database. </dd>
+</dl>
+<dl>
+  <dt> <b>Example:</b> </dt>
+  <dd>C: 94:6:<b>DELETE</b>40:<b>a51b9a500c15d773e7e504f7344d89790bb9dd1b</b>
+40:<b>a51b9a500c15d773e7e504f7344d89790bb9dd1c</b> </dd>
+  <dd>S: 26:3:<b>504</b>18:<b>Too many arguments</b> </dd>
+  <p>
+  <dd>
+  <dd>C: 94:6:<b>DELETE</b>45:/bar/<b>a51b9a500c15d773e7e504f7344d89790bb9dd1b</b></dd>
+  <dd>3:<b>200</b>2:<b>Ok</b></dd> 
+</dl>
+<hr>
+<h3><a name="list">2.6 LIST command</a></h3>
+<dl>
+  <dt> <b>Arguments:</b> </dt>
+  <dd>List of subelements </dd>
+</dl>
+<dl>
+  <dt> <b>Result:</b> </dt>
+  <dd>3:<b>200</b>2:<b>Ok</b> - zero or more rules matched
+the
+subelement specification </dd>
+  <dd>3:<b>500</b>12:<b>Syntax Error</b> - syntax error in
+subelement specification </dd>
+  <dd> 
+    <p> The less permissive comparision, as specified in <a
+ href="intro.html">Introduction to S-expressions as used by SPOCP</a>,
+is used here as well as when evaluating the query command. The
+difference is that you are able to define different directions for the
+comparision with this command. If you use '+' as order specifier the
+order is the same as used in the query command, that is you search for
+a
+rule that are more premissive than the S-expression specified in the
+query. If on the other hand you specify the '-' as order specified, you
+will look for rules that are less permissive than the specification.
+The
+syntax for this command allows you to specify different directions for
+each subelement, hence you can specify: </p>
+     
+    <pre>LIST +spocp -(8:resource) +(6:action4:read) -(7:subject(3:uid)) <br>    </pre>
+     
+    <p> Which then will match rules like: </p>
+     
+    <pre>
+ (5:spocp(8:resource(4:file3:etc6:groups))(6:action4:read)(7:subject(3:uid3:100)))
+ (5:spocp(8:resource(4:file3:etc6:passwd))(6:action4:read)(7:subject(3:uid3:100)))
+   </pre>
+     
+    <p>Since every rule in the SPOCP server MUST be a list
+S-expression, the subelements that we are talking about here are the
+first level elements of that list.</p>
+     
+    <p> <b>Note</b> that since the less permissive
+comparision is
+used,
+you can not easily list all rules that are valid for ranges of values.
+If you for instance have subelements in rules that look like this: </p>
+     
+    <pre> (age (* range numeric le 6))<br> (age (* range numeric ge 7 le 18))<br> (age (* range numeric gt 18 le 40))<br> (age (* range numeric ge 41 lt 65))<br> (age (* range numeric ge 65))<br> </pre>
+     
+    <p> Then "LIST +3:age -(1:*5:range2:le2:10)" will match
+rule 1 but
+not rule 2. One of two partly overlapping ranges can never be regarded
+as less permissive than the other. If you really want to know every
+rule
+that concerns entities whos age are less than or equal to 10, then you
+have to combine the result of two queries: the one specified above and
+"LIST +3:age +2:10". </p>
+     
+    <p> <b>Note</b> when searching for and listing rules
+that contain
+boundary conditions. One might want the SPOCP server to diregard some
+types of such conditions. For instance time constrains can lead to
+akward constraints as to when testing can be done. Therefore one would
+like to have the possibily to specify a number of boundary conditions
+that are disregarded while searching/listing. How this is done is not
+decided on yet. </p>
+     </dd>
+</dl>
+<dl>
+  <dt><b>Example:</b>(The "201" lines wrapped to make them
+more readable.) </dt>
+  <dd>C: 45:4:<b>LIST</b>8:<b>+5:spocp</b>26:<b>-(8:resource(4:file3:etc))</b>
+    </dd>
+  <dd>S: 132:3:<b>201</b>1:/40:<b>a51b9a500c15d773e7e504f7344d89790bb9dd1b</b><br>
+   81:<b>(5:spocp(8:resource(4:file3:etc6:groups))(6:action4:read)(7:subject(3:uid3:100)))</b>
+    </dd>
+  <dd>S: 132:3:<b>201</b>1:/40:<b>d361bd84e7e0deaa56bffa229c61813c59161eef</b><br>
+81:<b>(5:spocp(8:resource(4:file3:etc6:passwd))(6:action4:read)(7:subject(3:uid3:100)))</b>
+    </dd>
+  <dd>S: 9:3:<b>200</b>2:<b>Ok</b> </dd>
+</dl>
+<hr>
+<h3><a name="logout">2.7 LOGOUT command</a></h3>
+<dl>
+  <dt> <b>Arguments:</b> </dt>
+  <dd>none </dd>
+</dl>
+<dl>
+  <dt> <b>Result:</b> </dt>
+  <dd>10:3:<b>203</b>3:<b>Bye</b> -No other response should
+be
+expected </dd>
+</dl>
+<dl>
+  <dt> <b>Example:</b> </dt>
+  <dd> C: 8:6:<b>LOGOUT</b> </dd>
+  <dd> S: 10:3:<b>203</b>3:<b>Bye</b> </dd>
+</dl>
+<hr>
+<h3><a name="begin">2.8 BEGIN command</a></h3>
+<dl>
+  <dt><b>Arguments:</b> </dt>
+  <dd>None </dd>
+</dl>
+<dl>
+  <dt><b>Results:</b> </dt>
+</dl>
+<dl>
+  <dt><b>Example:</b> </dt>
+</dl>
+<hr>
+<h3><a name="commit">2.9 COMMIT command</a></h3>
+<dl>
+  <dt><b>Arguments:</b> </dt>
+  <dd>None </dd>
+</dl>
+<dl>
+  <dt><b>Results:</b> </dt>
+</dl>
+<dl>
+  <dt><b>Example:</b> </dt>
+</dl>
+<hr>
+<h3><a name="rollback">2.10 ROLLBACK command</a></h3>
+<dl>
+  <dt><b>Arguments:</b> </dt>
+  <dd>None </dd>
+</dl>
+<dl>
+  <dt><b>Results:</b> </dt>
+</dl>
+<dl>
+  <dt><b>Example:</b> </dt>
+</dl>
+<hr>
+<h3><a name="subject">2.11 SUBJECT command</a></h3>
+<dl>
+  <dt><b>Arguments:</b> </dt>
+  <dd>S-expression representing the subject on which behalf
+the Spocp client works </dd>
+</dl>
+<dl>
+  <dt><b>Results:</b> </dt>
+</dl>
+<dl>
+  <dt><b>Example:</b> </dt>
+</dl>
+<hr><br>
+<h3><a name="EXAMPLE"></a>3. EXAMPLE</h3>
+This is just a short example showing a fictious conversation between a
+client and the server.&nbsp; The application that the Spocp server is
+used to protect is a picture gallery. 4 persons are involved, the two
+'owners' of the gallery Eva and Roland, and their old friends Jeanne
+and Hanne. Commands comming from the client is denoted by&nbsp; "C:" in
+front of the command. The response from the server is marked by "S:".<br>
+<br>
+<dl>
+<dt>Adding a rule that allows Eva and Roland to 'read' any resource within
+the picture gallery</dt>
+<dd>
+C: 64:3:ADD56:(2:pg(3:res)(3:act4:read)(4:subj(1:*2:or3:eva6:roland)))<br>
+S: 9:3:2002:Ok
+</dd>
+</dl>
+<p></p>
+<dl>
+<dt>Adding a rule that allows Jeanne to 'read' any picture within the 'turkiet' part of the '2003' part of the picture gallery</dt>
+<dd>C: 65:3:ADD57:(2:pg(3:res4:20037:turkiet)(3:act4:read)(4:subj6:jeanne))<br>
+S: 9:3:2002:Ok</dd>
+</dl>
+<p></p>
+<dl>
+<dt>Adding a rule that allows Hanne to also view any picture within the 'turkiet' part of the '2003' part of the gallery</dt>
+<dd>C: 65:3:ADD57:(2:pg(3:res4:20037:turkiet)(3:act4:read)(4:subj5:hanne))<br>
+S: 9:3:2002:Ok</dd>
+</dl>
+<p></p>
+<dl>
+<dt>Jeanne tries to view one of the pictures in the 'turkiet' part of the '2003' part of the gallery.
+And she is give the permission to do so</dt>
+<dd>C: 82:5:QUERY72:(2:pg(3:res4:20037:turkiet12:dscf0404.jpg)(3:act4:read)(4:subj6:jeanne))<br>
+S: 9:3:2002:Ok</dd>
+</dl>
+<p></p>
+<dl>
+<dt>Someone, unspecified who, tries to list all the rules. Since no access control on the rules is in place, every rule is
+listed</dt>
+<dd>C: 6:4:LIST<br>
+S:
+113:3:201104:40:06caa09539aa0aa59652c9c9e3df3eb46153310b58:/(2:pg(3:res4:20037:turkiet)(3:act4:read)(4:subj6:jeanne))<br>
+S:
+112:3:201103:40:694b21327916616ca5a4c08350499472289beb8057:/(2:pg(3:res4:20037:turkiet)(3:act4:read)(4:subj5:hanne))<br>
+S:
+112:3:201103:40:fabc37dfe994e15e2f4f7381c0bb4dfd0834bb0b57:/(2:pg(3:res)(3:act4:read)(4:subj(1:*2:or3:eva6:roland)))<br>
+S: 9:3:2002:Ok</dd>
+</dl>
+<p></p>
+<dl>
+<dt>Someone, unspecified who, wants to delete a rule. Since the rule exists and no access control on the rules are in place
+the request is granted </dt>
+<dd>
+C: 53:6:DELETE40:06caa09539aa0aa59652c9c9e3df3eb46153310b57<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Someone lists the rules</dt>
+<dd>C: 6:4:LIST<br>
+S:
+112:3:201103:40:694b21327916616ca5a4c08350499472289beb8057:/(2:pg(3:res4:20037:turkiet)(3:act4:read)(4:subj5:hanne))<br>
+S:
+112:3:201103:40:fabc37dfe994e15e2f4f7381c0bb4dfd0834bb0b57:/(2:pg(3:res)(3:act4:read)(4:subj(1:*2:or3:eva6:roland)))<br>
+S: 9:3:2002:Ok</dd>
+</dl>
+<p></p>
+<dl>
+<dt>Jeanne tries to look at the picture again, but now as the rule allowing her to watch it has been removed she is denied</dt>
+<dd>
+C:
+82:5:QUERY72:(2:pg(3:res4:20037:turkiet12:dscf0404.jpg)(3:act4:read)(4:subj6:jeanne))<br>
+S: 13:3:2026:Denied
+</dd></dl>
+<p></p>
+<dl>
+<dt>Eva wants to look at a picture, and since she can do just about anything on the gallery she's allowed</dt>
+<dd>
+C:
+78:5:QUERY68:(2:pg(3:res4:20036:sommar12:dscf0668.jpg)(3:act4:read)(4:subj3:eva))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Access control on the rules are put into place, starting of by given Roland the right to add any type of access control</dt>
+<dd>
+C:
+70:3:ACI62:(3:aci(8:resource(3:aci))(6:action)(7:subject(3:uid6:roland)))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>The following operations on Spocp are to be performed in the name of Roland</dt>
+<dd>C: 27:7:SUBJECT15:(3:uid6:roland)<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Roland gives everyone the right to read the rules governing access to the picture gallery</dt>
+<dd>
+C: 60:3:ACI52:(3:aci(8:resource(2:pg))(6:action4:LIST)(7:subject))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>He gives Eva the right to add any type of access control rules</dt>
+<dd>
+C: 67:3:ACI59:(3:aci(8:resource(3:aci))(6:action)(7:subject(3:uid3:eva)))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>He gives Eva the right to add new access rules to the picture gallery</dt>
+<dd>
+C: 66:3:ACI58:(3:aci(8:resource(2:pg))(6:action)(7:subject(3:uid3:eva)))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>He gives himself the right to add new access rules to the picture gallery</dt>
+<dd>
+C:
+69:3:ACI61:(3:aci(8:resource(2:pg))(6:action)(7:subject(3:uid6:roland)))<br>
+S: 9:3:2002:Ok
+</dd>
+</dl>
+<p></p>
+<dl>
+<dt>And finally he lists all the rules to make certain it is as he wanted it to be</dt>
+<dd>
+C: 6:4:LIST<br>
+S:
+112:3:201103:40:694b21327916616ca5a4c08350499472289beb8057:/(2:pg(3:res4:20037:turkiet)(3:act4:read)(4:subj5:hanne))<br>
+S:
+112:3:201103:40:fabc37dfe994e15e2f4f7381c0bb4dfd0834bb0b57:/(2:pg(3:res)(3:act4:read)(4:subj(1:*2:or3:eva6:roland)))<br>
+S:
+114:3:201105:40:280fe84080388f90a9fb59e529a683805fe2db0359:/(3:aci(8:resource(2:pg))(6:action)(7:subject(3:uid3:eva)))
+<br>
+S:
+117:3:201108:40:2bab848e4bbbd23acf5c22b0c21c824128921aa462:/(3:aci(8:resource(2:pg))(6:action)(7:subject(3:uid6:roland)))<br>
+S:
+118:3:201109:40:869cf055685e0ecec42d93e8f1ca36ef9fec1c5f63:/(3:aci(8:resource(3:aci))(6:action)(7:subject(3:uid6:roland)))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Roland 'logs out'</dt>
+<dd>
+C: 9:7:SUBJECT<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Someone, lists the rules. This person only sees what is explicitly allowed which is the picture gallery rules</dt>
+<dd>
+C: 6:4:LIST<br>
+S:
+112:3:201103:40:694b21327916616ca5a4c08350499472289beb8057:/(2:pg(3:res4:20037:turkiet)(3:act4:read)(4:subj5:hanne))<br>
+S:
+112:3:201103:40:fabc37dfe994e15e2f4f7381c0bb4dfd0834bb0b57:/(2:pg(3:res)(3:act4:read)(4:subj(1:*2:or3:eva6:roland)))<br>
+S. 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Eva 'logs in'</dt>
+<dd>
+C: 24:7:SUBJECT12:(3:uid3:eva)<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Eva adds a rule giving Jeanne the permission to see the pictures within the 'sommer' of the '2003' part of the gallery</dt>
+<dd>
+C: 64:3:ADD56:(2:pg(3:res4:20036:sommar)(3:act4:read)(4:subj6:jeanne))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<p></p>
+<dl>
+<dt>Eva 'logs out'</dt>
+<dd>
+C: 9:7:SUBJECT<br>
+S: 9:3:2002:Ok
+</dd></dl>
+<dl>
+<p></p>
+<dt>Jeanne checks to see if she can view a specific 'sommer' '2003' picture and she can</dt>
+<dd>
+C: 81:5:QUERY71:(2:pg(3:res4:20036:sommar12:dscf0668.jpg)(3:act4:read)(4:subj6:jeanne))<br>
+S: 9:3:2002:Ok
+</dd></dl>
+</body>
+</html>

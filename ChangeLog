@@ -1,0 +1,87 @@
+2003-10-14
+Modified the client library to deal with the changes in the protocolsyntax.
+Changed spocpget/-put/-patch/-test as well as authz_spocp (apache 1 and 2) plus
+the pam module
+
+The change in the syntax concerned the ruleset specification which wasn't present
+in all instances where it should have been.
+
+Updated the documentation.
+
+2003-10-13
+Added path (= ruleset) specification to 'DELETE' command
+
+2003-10-10
+
+Fixed a couple of bugs, namely in
+- spocpengine ( an error that could appear when the set of rules where dynamically updated )
+- pam module ( wasn't updated to follow the new client API )
+- config.h.in ( missing HAVE_LIBODBC directive )
+- one configuration directive ( clients ), more on that further down
+
+cert backend rewritten to use the initialization
+- but there seems to be some problem with different odbc libraries so
+  I have left it out for the moment.
+
+Two new backends
+- system ( the backend runs a command on the machine )
+- regexp ( regular expression matching )
+
+Changed spocpget and spocppatch to really work. Now what you can do with these guys are as follows. Assume you have two spocp servers ( A & B ) of which one is the master (A) and the other (B) the slave. Then you can every X minutes/seconds/hours do:
+
+# spocpget -s A -f rules.A -w
+# spocpget -s B -f rules.B -w
+# diff -u rules.B rules.A | spocppatch -s B
+
+And, voila, you will have the same set of rules in B as in A.
+
+Sort of works as a synchronization system, until the Spocp server can tell a client when something has changed in the ruleset.
+
+And finally, the Spocp server has to guard itself from rogues so there are a number of walls you can use:
+1) tcpwrapper on the machine itself
+2) libwrap in the spocpserver ( sort of the same as 1 )
+3) through the configuration ( the CLIENTS field ) tell the Spocp server
+   which host can do what with it. Such that certain hosts can only send
+   queries while others can be used to manage the rules.
+4) Through the Spocp servers own access control rules decide who can do
+   what.
+
+There was a problem in the client aci handling which I believe is fixed now.
+
+2003-10-09
+
+Apache access control module
+----------------------------
+Modified the apache2 backend to allow it to use a pool of connections to Spocp servers. !! Not fully tested !!
+
+Spocp client C API
+------------------
+The changes to the Apache2 backend demanded some small changes to the client API. Chiefly to allow a application to have a'la the LDAP SDK one or more pointers to Spocp sessions.
+
+Configuration callback function and initiation of backends
+----------------------------------------------------------
+Some backends needs to be configured. It seemed appropriate to allow that information to reside in the server configuration file. which then lead to the logical conclussion that backends needs to be able to get at configuration information. It also seemed reasonable that backends might need to be initiated at server starup time so that is also added.
+
+2003-10-07
+
+Lots of changes, so please reread the documentation,
+
+In short:
+
+S-expression syntax:
+  The starforms 'set' and 'any' are out, 'or' is in
+  The boundary condition format, changed to be a starform
+  
+
+Spocp protocol:
+  The syntax has changed.
+
+
+Major overhaul and restructuring of the code
+
+
+Spocp client library in C:
+  Tools ( spocpput, spocpget and spocptest ) for loading,listing and testing rules against
+  a Spocp server.
+  Rewriting PAM, Apache clients to use the client library
+

@@ -1,0 +1,513 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Spocp</title>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+</head>
+<body>
+<p><b>Document Status</b>: Project document 2003-05-01<br>
+<strong>Authors</strong>: Roland Hedberg and Torbj&ouml;rn Wiberg</p>
+<h2><b>Content</b></h2>
+<p> </p>
+<ol>
+  <li><a href="#summary">Executive Summary</a></li>
+  <li><a href="#background">Background</a></li>
+  <li><a href="#terminology">Terminology and framework<br>
+    </a></li>
+  <li><a href="#policies">Spocp policy language<br>
+    </a></li>
+  <li><a href="#service">Implementation issues<br>
+    </a></li>
+  <li><a href="#sexp">Creating policies<br>
+    </a></li>
+  <li><a href="#appdel">The Need for Access to External Information
+Sources</a></li>
+  <li><a href="#software">Appointment and Delegation</a></li>
+  <li><a href="#software">The SPOCP Server Software</a></li>
+  <li><a href="#avail">Availability</a></li>
+</ol>
+<b>
+<h2><a id="summary" name="summary">1. Executive Summary</a></h2>
+</b>
+<p>Spocp is built using a welldefined syntax (S-expression) to
+represent the authorization policy for a resource. I can be used ether
+as library linked directly into the application or&nbsp; as a local or
+Internet based service in either case the connection can be guarded by
+using the SSL/TLS connection protocol. When a autorization decision
+needs to be made, Spocp uses the information provided in the request as
+well as external information, needed to evaluate constraints in the
+policy rules, in order to determine whether the requst is to be granted
+or not.<br>
+</p>
+The Spocp&nbsp; usage model followes the so called push sequence model,
+that is the user connects to the resource and the resources checks with
+Spocp to find out if the user is allowed to use the resource in the way
+she wants to.<br>
+<br>
+Spocp can act as a standalone server whithout any dependencies on other
+resources.<br>
+<b>
+<h2> <a id="background" name="background">2. Background</a> </h2>
+</b>
+<p>With the continued development of Internet based application
+services, it is no longer   only the experts in an application field or
+on an information system that are   users of the systems.<!--In order to take advantage of the self-service features,
+  and to exploit the possibility to support the steps in our work processes, a
+  large fraction of the personnel and persons that in other ways are affiliated
+  with our organisation has to become users of our systems.-->
+Instead more and more of the functions of a organisation is dependent on
+the self-service features of   these applications. They are to a large
+extent supporting the everyday work process.   We are therefore quickly
+approaching a situation where every member of every community affiliated
+with our organisation   need to be a user of our major information
+systems. Up until now this has ursually meant maintaining really large,
+separate, Authorisation Systems (Access Control Systems) one for each of
+our Application Systems. </p>
+<p>Our, and many other's, analysis of this problem is that we   need to
+start a development process aiming at a situation where, at least the
+"amateur", user automatically are given authorities in our systems
+through means based on attributes, characterising or describing the
+individual, rather than on the identity of the particular individual.</p>
+<p>To reach that goal, we need</p>
+<ul>
+  <li>a good record of who belongs to our community</li>
+  <li>knowledge of what attributes and other information that
+characterise the members of our community</li>
+  <li>a policy for how these attributes are assigned</li>
+  <li>an Information System where these attributes can be safely managed</li>
+  <li>an attribute or role based Authorisation System, that can     be
+served these attributes from a database or a directory.</li>
+</ul>
+<p>SPOCP is an Authorisation Server designed to solve the last one of
+these bullets. It is designed as a Network Based Infrastructural Service
+(a Middleware service) and we believe that SPOCP will prove quite
+useful, in different   deployment models, for a variety of applications
+and application environments.<br>
+It is worth noting that SPOCP is designed to be able to use external
+information resources,   like a enterprise directory, when evaluating
+policies. So in most cases there should not be any   need for
+duplicating information into SPOCP that is already present in some
+accessible information resource. </p>
+<b>
+<h2> <a id="approach" name="terminology"></a>3. Terminology and
+framework<br>
+</h2>
+</b>
+<p>While describing SPOCP we will use terminology and framework as
+defined in RFC 2904. <br>
+</p>
+<p>The Spocp server is designed to work in what in RFC 2904 is termed
+the 'Pull Sequence', that is</p>
+<ol>
+  <li>The user sends a request to the Service Equipment,</li>
+  <li>which forwards it to the Service Provider's AAA server (Spocp in
+this case),</li>
+  <li>which evaluates the request and returns a appropriate response to
+the Service Equipment,</li>
+  <li>which sets up the service and tells the User it is ready
+(assuming of course that the response from the AAA server was positive )</li>
+</ol>
+<pre>      <br>                          +-------------------------+<br>            +------+      | Service Provider        |<br>            |      |      |  +-------------------+  |<br>            |      |      |  |    AAA Server     |  |<br>            |      |      |  |                   |  |<br>            |      |      |  +-------------------+  |<br>            | User |      |         /|\  |          |<br>            |      |      |          |2  |3         |<br>            |      |      |          |  \|/         |<br>            |      |   1  |  +-------------------+  |<br>            |      |------+-&gt;|      Service      |  |<br>            |      |&lt;-----+--|     Equipment     |  |<br>            |      |   4  |  +-------------------+  |<br>            +------+      |                         |<br>                          +-------------------------+<br><br></pre>
+Also as specified in RFC 2904 <br>
+<pre>  In general, it is assumed that the parties who are participating in<br>  the authorization process have already gone through an authentication<br>  phase.&nbsp; The authentication method used by those parties is outside<br>  the scope of this document except to the extent that it influences&nbsp;&nbsp; <br>  the requirements found in a subsequent authorization process.<br>
+</pre>
+<h2><a name="4._Design_background"></a>4.Spocp policy language<br>
+</h2>
+Very basic to the design of the SPOCP Authorisation Server was the
+choice of S-expressions as the syntax for how to express rules as well
+as requests. This approach was first conceived in work done by a group
+within the <a href="http://www.sics.se/">Swedish Institute of Computer
+Science</a>. S-expressions was to our knowledge first described by <a
+ href="http://theory.lcs.mit.edu/%7Erivest/sexp.html">Lampson and Rivest</a>
+in 1996, but its origin can be traced back further to that of LISP.
+S-expressions was brought to our attention through the work of the SPKI
+working group within the IETF.<br>
+<br>
+It has been shown by&nbsp; <a
+ href="http://www.cs.dartmouth.edu/%7Epki02/Bandmann/">Bandmann and Dam</a>
+that a authorisation system based on restricted S-expression will always
+return a correct answer.&nbsp; Work by the SICS <a
+ href="http://www.sics.se/isl/pbr/papers/ConstraintDelegation.ps">group</a>
+is also behind our approach to delegation.<br>
+<br>
+In a internet draft from 1997 <a
+ href="http://theory.lcs.mit.edu/%7Erivest/sexp.txt">Rivest</a> he
+describs three different representations of S-expression: canonical,
+basic transport and advanced transport. The Spocp client protocol uses
+the canonical representation while we in this document will use the
+advanced transport representation, because it is much more user
+friendly. We have also choosen to leave out "display hints" since we
+really think that 'normal' users should never have to see S-expressions.<br>
+<br>
+An example of a S-expression policy rule is&nbsp; :<br>
+<pre>(spocp (resource etc passwd)(action write)(subject (uid 0)))<br></pre>
+Which would mean that the subject with uid 0 has write access to
+/etc/passwd.<br>
+<br>
+S-expressions has a well defined syntax but no defined semantics, that
+together with the fact that one can build a engine that can compare two
+S-expressions and answer the question whether one is equal or more
+specific than the other&nbsp; is the basis of the SPOCP policy engine. <br>
+<br>
+To understand how this work one has to understand that a S-expression
+is made more specific by adding a item <br>
+to the end of a list.<br>
+<br>
+<span style="font-style: italic;">(resource etc password )</span> is for
+instance more specific than <span style="font-style: italic;">(resource
+etc) </span> <br>
+<br>
+Adding a item at some other place in a list creates a different
+S-expression which is neither equal or more specific:<br>
+<br>
+<span style="font-style: italic;">(resource usr etc)</span> is neither
+equal of more specific than <span style="font-style: italic;">(resource
+etc)</span>. It is just different.<br>
+<h2><a name="5_Implementation_issues_"></a>5. Implementation issues </h2>
+In order to make SPOCP really usefull, we have refrained from
+specifying exactly one way of implementing the service. Instead SPOCP
+comes in   a number of different shapes. Differing in the closeness to
+the application and   also in the access protocol. In closeness order:
+<ul>
+  <li>As a <em>library</em> which can be linked together with your
+application. A simple   C API consisting of a small set of function
+calls are provided.</li>
+  <li>A <em>standalone server</em> that can listen to a unix domain
+socket or a internet   IPv4/v6 port. Using TCP as transport protocol.
+The access protocol   is the SPOCP client access protocol.</li>
+  <li> As an <em>Apache module</em> - mod_spocp - with the Policy Engine
+being a   separate library module with   a specified API. The
+Client/Server protocol for this combination is SAML/SOAP over HTTP. </li>
+</ul>
+Why you would choose one setup instead of another are factors like:
+<ul>
+  <li><b>speed</b>
+    <ul>
+      <li>having to connect another server always takes more time than
+doing things locally, </li>
+    </ul>
+  </li>
+  <li><b>manageability</b>
+    <ul>
+      <li>having SPOCP processes running on central systems managed by
+professionals, will probably   give you better uptime. It will also make
+it easier to get new applications covered by the authorisation system
+since the environment already is there.</li>
+    </ul>
+  </li>
+  <li><span style="font-weight: bold;">Security</span>
+    <ul>
+      <li>In some cases revealing the traffic pattern between a
+application and a policy server is sensitive information <br>
+      </li>
+    </ul>
+  </li>
+</ul>
+<p> We have choosen to maintain and store rules in a policy repository
+that is tightly coupled to the policy engine. So in our world the
+authorisation server&nbsp; always has all the policies in local storage.<br>
+<br>
+Some of the information needed to set up a complete Policy may not be
+available when the modelling is done, or there may be other reasons that
+some information may be best provided through an external information
+source   at the time of testing whether a Query complies. This often
+occurs when a Constraint   is involved in the compliance test. SPOCP
+offers the possibility of using what we term boundary conditions.
+Examples of such conditions are:<br>
+</p>
+<ul>
+  <li>date and time<br>
+  </li>
+  <li>information in a enterprise directory</li>
+  <li>information in databases and/or files <br>
+  </li>
+  <li>information in DNS ( for example Realtime Blackhole Lists )<br>
+  </li>
+</ul>
+<b>
+<h2> <a id="policies" name="policies">6. Creating Policies</a></h2>
+</b>
+<p>As stated above the SPOCP policy engine does not care about the
+semantics of the policy or request expressions. The policy engine only
+cares about whether the rules and requests follow the S-expression
+syntax . Even so, as a convention we have sofar used a structure where
+the S-expressions consists of three parts: Subject, Action and Resource,
+the following presentation is therefore tinted by that choice. <br>
+</p>
+<p>Semantics are up to the application experts to define.<br>
+</p>
+<p>In the process of modelling the Policy structure for a particular
+application, the key to success is to be able to identify hierarchies
+among the Subjects, Actions and Resources and to use these hierarchies
+to express the Policy as comprehensive, small set of rights. The
+ambition shall   be that every Right in a Policy Rule shall be as
+permissive as possible. Given   a Query, the Policy Engine determines if
+there is a Rule in the Policy that   has the same structure as the Query
+and that is more permissive than the Query - that is a Rule that permits
+the request implied in the Query.<br>
+<br>
+Examples of policies that Spocp can handle:</p>
+<ul>
+  <li>Only staff working at a specific department within a specified
+organization can access this webpage</li>
+  <li>Students only have access to these rooms during normal working
+hours.</li>
+  <li>This mailserver will only relay mail to and from email addresses
+that are registered in a specific enterprise directory.</li>
+</ul>
+Below one&nbsp; example on how one might structure rules for particular
+applications is given.<br>
+<h3>6.1 WWW policy structure</h3>
+In this example we are using&nbsp; the resource, action and subject
+split as the basis for defining the S-expression structure.<br>
+<h4><big>6.1.1 www subject</big></h4>
+Connections between a web client and a web server can be of 5 different
+types:<br>
+<ol>
+  <li>http</li>
+  <li>https</li>
+  <li>http + username,password auth</li>
+  <li>https + username,password auth</li>
+  <li>https + auth through client certificate usage<br>
+  </li>
+</ol>
+Depending on which type the connection are the webserver has different
+information on the client available :<br>
+<br>
+<table cellpadding="2" cellspacing="2" border="1"
+ style="text-align: left; width: 100%;">
+  <tbody>
+    <tr>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">http<br>
+      </td>
+      <td style="vertical-align: top;">https<br>
+      </td>
+      <td style="vertical-align: top;">http+auth<br>
+      </td>
+      <td style="vertical-align: top;">https+auth<br>
+      </td>
+      <td style="vertical-align: top;">https + client certificate<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">ip number<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">host name<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">ssl version<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">user id <br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">(X)<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">authname<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">authtype<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">subjectDN<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">issuerDN<br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;"><br>
+      </td>
+      <td style="vertical-align: top;">X<br>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<br>
+Given this matrix the general S-expression definition of the subject
+could be:<br>
+<br>
+<span style="font-style: italic;">(subject (ip &lt;ipnumber&gt;)(host
+&lt;hostname&gt;)(ssl &lt;version&gt;)(uid &lt;userid&gt;)(authname
+&lt;authname&gt;)(authtype &lt;authtype&gt;)(subjectdn
+&lt;subjectdn&gt;)(issuerdn &lt;issuerdn&gt;))</span> <br>
+<br>
+In case of a http connection the subject part of the request would then
+become something like this:<br>
+(subject (ip 213.79.154.116)(host hypatia.catalogix.se))<br>
+<h4><big>6.1.2 www action</big></h4>
+The methods recognized by a web server might differ from server to
+server. In this context we might limit ourself to stating that each
+method is represented by a number, GET = 0, PUT = 1, POST = 2&nbsp; and
+so on. The action definition would then become:<br>
+<br>
+<span style="font-style: italic;">(action &lt;num&gt;)<br>
+<br>
+(action 0) </span>would the represent the method GET.<br>
+<h4><big>6.1.3 www resource</big><br>
+</h4>
+Here there is a choice, one can either use the filenames as they are
+"/staff/index.html" or one can split the name into its parts "staff" and
+"index.html". In our mod_spocp implementation we have choice the later.
+So the resource definition is:<br>
+<br>
+<span style="font-style: italic;">(resource &lt;filename part1&gt;
+&lt;filename part2&gt; ...)<br>
+<br>
+(resource public pictures rose.gif) </span>would then represent the
+file &lt;DocumentRoot&gt;/public/picture/rose.gif&nbsp; .<br>
+<br>
+All put together a GET request for the rose.gif file from a webclient
+at the host&nbsp; hypatia.catalogix.se would then lead to the following
+S-expression being sent to the Spocp server for evaluation:<br>
+<br>
+<span style="font-style: italic;">(spocp (resource public pictures
+rose.gif)(action 0)(subject (ip 213.79.154.116)(host
+hypatia.catalogix.se)))</span> <br>
+<br>
+If the Spocpserver had the following rule in it's policy database:<br>
+<br>
+<span style="font-style: italic;">(spocp (resource staff)(action
+0)(subject (ip)(host)))<br>
+<br>
+</span>Then the request would be granted.<span
+ style="font-style: italic;"><br>
+</span>
+<h2><span style="font-style: italic;"> </span><span
+ style="font-style: italic;"></span><b><a id="externinfo"
+ name="externinfo">7. The need to access external information<br>
+</a></b></h2>
+In lots of cases information, that is needed when a policy is to be
+inforced, is not present at the time when the rules as defined.
+Therefore a way of 'referencing' this external information is needed.
+We have choosen to implement it as constrains that can be included in
+the rules and which are evaluated/computed at the time when a request
+is evaluated.<br>
+<br>
+Equally common is the case that information is already managed
+somewhere else. The organization might have a enterprise directory
+where it keeps information about users, groups, roles, organization
+structure and copying this information into rules might cause more
+problems then it solves.<br>
+<br>
+Also, if you want to make rules active only at certain times, it might
+be more effective to defined the time constrains in the rules and then
+have them checked on evaluating the requests instead of adding and
+removing them as the time goes.<br>
+<h2> <a id="appdel" name="appdel">8. Appointment and Delegation</a></h2>
+To illustrate the approach let R<sub>0</sub> be some authorisation such
+as the right to read document D. <br>
+The unspecific right to read document D can be expressed in a
+S-expression as:<br>
+<pre>(spocp (resource D)(action read)(subject))<span
+ style="font-style: italic;"></span></pre>
+<span style="font-style: italic;"></span>Then the rule that allows A to
+delegate the right can be expressed as <span
+ style="font-style: italic;"><br>
+</span>
+<pre>(spocp (resource R<sub>0</sub>)(action delegate)(subject A))<br></pre>
+Now, if we who have supreme power wants to give A the right to delegate
+to B to delegate to someone within the group G the right to read the
+document B, then this will be done through the chain:<br>
+<pre>R0: (spocp (resource D)(action read)(subject (group G)))</pre>
+<pre>R1: (spocp (resource R0)(action delegate)( subject B))</pre>
+<pre>R2: (spocp (resource R1)(action delegate)( subject A))<br></pre>
+Obvious from this example is that the right to delegate a right never
+implicitly gives the right to use a right. B or for that matter A, is
+according to the chain above no allowed to read the file D unless they
+belong to the group G.<br>
+<b>
+<h2> <a id="software" name="software">9. The SPOCP Server Software</a></h2>
+</b>Written in C, develop on a Linux system.<br>
+Has been ported to FreeBSD and Solaris 8.0 .<br>
+<b>
+<h2><a id="avail" name="avail">10. Availability</a></h2>
+</b>
+<p> Open source. ftp://ftp,catalogix.se/dist/spocp.tgz<br>
+</p>
+<p>&nbsp;</p>
+</body>
+</html>

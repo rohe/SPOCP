@@ -1,0 +1,56 @@
+.TH SPOCPPATCH 1 "October 2003"
+.\"
+.SH NAME
+spocppatch \- Tool that allows you to add and delete policy rules from a SPOCP server
+.SH SYNOPSIS
+.TP 8
+\fBspocppatch\fR \fB-s\fR \fIspocp_server\fR \fB-f\fR \fIpatch_file\fR
+.br
+ [\fB-d\fR] [\fB-a\fR \fIsubject_definition\fR]
+.br
+.TP 8
+\fBspocppatch\fR \fB-t\fR \fB-s\fR \fIspocp_server\fR \fB-f\fR \fIrule_file\fR
+.br
+[\fB-d\fR] [\fB-a\fR \fIsubject_definition\fR]
+.br
+\fB-c\fR \fIcertificate_file\fR \fB-p\fR \fIprivate_key\fR \fB-l\fR \fIca_list\fR
+.SH DESCRIPTION
+.SS Adding/deleting policy rules
+.B spocppatch
+is a small utility that allows you to efficiently update the
+rules in a SPOCP server.
+.PP
+.SH OPTIONS
+.TP 12
+.IP "\fB-d \fR" 
+Turn debugging on.
+.IP "\fB-s \fIspocp_server\fR"
+Specifies which server you want to talk to. This is either of the form
+"server:port" or a unix domain socket name.
+.IP "\fB-f \fIpatch_file\fR"
+Where from the rules to be loaded/deleted should be taken. 
+The patch file must be produced using "diff -Naur rulefile.old rulefile.new".
+.IP "\fB-a \fIsubject_definition\fR"
+In some cases only certain subjects are allowed to add certain types
+of rules. This allows you to specify who you act as.
+.IP "\fB-c \fIcertificate_file\fR"
+Where this hosts certificate is situated. This option is only valid in conjunction
+with the \fB-t\fR option.
+.IP "\fB-p \fIprivate_key\fR"
+Where this hosts private key is situated. This option is only valid in conjunction
+with the \fB-t\fR option.
+.IP "\fB-l \fICA_list\fR"
+The list of trusted CAs. This option is only valid in conjunction
+with the \fB-t\fR option.
+.PP
+.SH EXAMPLES
+.PP
+.SH SEE ALSO
+.BR spocpget (1),
+.BR spocpput (1),
+.BR spocptest (1),
+.BR spocp (8)
+.SH AUTHOR
+Roland Hedberg ( roland@catalogix.se )
+.RE
+.PP

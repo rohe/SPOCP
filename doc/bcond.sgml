@@ -1,0 +1,121 @@
+<!DOCTYPE BOOK PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<book>
+<bookinfo>
+<title>Boundary conditions</title>
+<author>
+<firstname>Roland</firstname>
+<surname>Hedberg</surname>
+</author>
+<address><email>roland@catalogix.se</email></address>
+<copyright>
+<year>2003</year>
+<holder>Stockholms Universitet</holder>
+</copyright>
+<revhistory>
+<revision>
+<revnumber>0.1</revnumber>
+<date>2003-11-14</date>
+<authorinitials>rh</authorinitials>
+<revremark>first docbook version</revremark>
+</revision>
+</revhistory>
+</bookinfo>
+
+<index>
+<itemizedlist>
+<listitem> <para> The flatfile boundary condition </para> </listitem>
+<listitem>
+<para> The time boundary condition </para>
+</listitem>
+<listitem>
+<para> The gdbm boundary condition </para>
+</listitem>
+<listitem>
+<para> The ldap boundary condition </para>
+</listitem>
+<listitem>
+<para> The ipnum boundary condition </para>
+</listitem>
+<listitem>
+<para> The lastlogin boundary condition </para>
+</listitem>
+<listitem>
+<para> The mail address boundary condition </para>
+</listitem>
+<listitem>
+<para> The RBL boundary condition </para>
+</listitem>
+<listitem>
+<para> The strmatch boundary condition </para>
+</listitem>
+<listitem>
+<para> The difftime boundary condition </para>
+</listitem>
+</itemizedlist>
+</index>
+
+<chapter id="boundarycond">
+<title>The flat file boundary condition</title>
+<para>
+</para>
+<section id="decription">
+<title>The format</title>
+<para>
+Building on the definition in 2.5, this boundary condition is described
+by:
+<simplelist type='vert' columns='1'>
+<member>type         = "flatfile"</member>
+<member>typespecific = file [":" keyword [":" value *( "," value )]]</member>
+<member>file         = utf8string</member>
+<member>keyword      = utf8string      ; keywords are not allowed to start with a '#' se below</member>
+<member>value        = utf8string</member>
+</simplelist>
+Further the format of the flat file has to adher to the following format
+<simplelist type='vert' columns='1'>
+<member>line     = (data / comment) CR</member>
+<member>comment  = '#' whatever</member>
+<member>whatever = utf8string</member>
+<member>data     = keyword ":" *SP value *( *SP "," *SP value ) *SP</member>
+<member>SP       = %x20 / %x09         ; SPACE or HTAB</member>
+</simplelist>
+</para>
+</section>
+<section id="info">
+<title>operation</title>
+<para>
+<variablelist><title>Three cases can appear:</title>
+<varlistentry><term><wordasword>
+Only file is specified</wordasword></term>
+<listitem>
+<para>
+If the file exists and can be opened for reading, the reference
+will evaluate to <emphasis>true</emphasis>. If the file does not exist or if it can
+not be opened for reading, the reference will evaluate to <emphasis>false</emphasis>.
+</para>
+</listitem>
+</varlistentry>
+<varlistentry><term><wordasword>
+File and keyword are specified</wordasword></term>
+<listitem>
+<para>
+If the file contains the specified keyword, the reference will
+evaluate to <emphasis>true</emphasis>, if not it will evaluate to <emphasis>false</emphasis>
+</para>
+</listitem>
+</varlistentry>
+<varlistentry><term><wordasword>
+File, keyword and one or more values are specified</wordasword></term>
+<listitem>
+<para>
+If the file contains the keyword and if every value specified in
+the reference also appears as values for that keyword in the file then
+the reference will evaluate to <emphasis>true</emphasis> otherwise it will evaluate
+to <emphasis>false</emphasis>.
+</para>
+</listitem>
+</varlistentry>
+</variablelist>
+</para>
+</section>
+</chapter>
+</book>

@@ -1,0 +1,69 @@
+Welcome to SPOCP
+----------------
+
+Spocp stands for Simple POlicy Control Protocol, but it is actually
+more than that it is a whole Policy Control System.
+
+It is supposed to be used as a general authorisation server that
+application can query if it wants to know if a certain entity is
+allowed to perform a certain operation.
+
+Spocp does not handle authentication, it is assumes that authentication
+is done by some other means.
+
+The distribution provides "spocd", a stand alone policy engine that
+uses the native Spocp client protocol a spocp library which you
+can link into your application if you for some reason wants to integrate
+the policy server very close to the application. It also provides a Apache 
+module that can turn your Apache server into a policy server that
+replies to SAML/SOAP authorization queries and as an example of a
+Spocp client a PAM module that can handle PAM 'account' queries.
+ 
+To build the main package, which consists of a library and the
+the 'native' spocp server implementation you should only have
+to run "./configure' and then make.
+
+Spocp lives at http://www.spocp.org/ and is distributed under GPL.
+
+Installing Spocp
+----------------
+
+With default configuration, 'make install' will install the
+pieces in '/usr/local/spocp'. If you use the default configuration
+adding '/usr/local/spocp/lib' to /etc/ld.so.conf and rerunning
+'lconfig' will make the next couple of steps easier.
+
+There are two more programs that you might want to compile
+depending on what you want SPOCP to do for you:
+
+1) making the Apache module, which will allow you to use a Apache
+server as a frontend to the policy server.
+You can make this module by changing directory to 
+<spocp_sourcedir>/apache and in that directory run "sh make.sh".
+
+You probably have to be root to do this. This command not only
+creates the module but also copies it to the apache module directory
+as well as modifies the apache configuration file 'http.conf' such that
+the SPOCP module will be automagically loaded the next time you start Apache.
+
+There are some more things you have to do to get the module to work
+properly. What that is can be read in the admin documentation (doc/adminguide.html).
+
+2) making the PAM module, which will allow you to use SPOCP as
+a PAM module answering "account"-queries. 
+
+You can make this module by changing directory to 
+<spocp_sourcedir>/client/pam_spocp and in that directory run "sh make.sh".
+When you have done so, you will have a file by the name 'pam_spocp.so'.
+This file you have to move/copy to the directory where the PAM modules are.
+On my system thats /lib/security.
+
+Again, some cofiguration has to be done to get this module to run, so
+please read the admin documentation (doc/adminguide.html)
+
+Help With Spocp
+----------------
+
+There is a mailing list for support or discussion of Spocp. It lives as
+<discuss@spocp.org>. See http://www.spocp.org for sign-up address and
+a link to the archives of past messages.

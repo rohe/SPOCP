@@ -1,0 +1,472 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Creating rules</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body>
+
+<h1>Creating rules</h1>
+
+Document Status: Project document, last updated 2003-10-02<br>
+Authors: Roland Hedberg and Torbj&ouml;rn Wiberg
+
+<h2>Content</h2>
+
+<ul>
+  <li>0. Introduction</li>
+  <li>1. <a href="#syntax">The rule syntax</a></li>
+  <li>2. <a href="#meaning">The meaning of a S-expression</a></li>
+  <li>3. <a href="#apprule">How to define the rule syntax for a application</a></li>
+</ul>
+
+<h2><a id="intro" name="intro">0. Introduction</a></h2>
+
+A cornerstone of this project, is that anything that is not <em>explicitly</em>
+permitted is prohibited.
+<p>
+Also, there is no such thing as a negative rules. If you by negative rules means rules
+that would allow you to limit the scope of one rule by another. Rules can only be positive; that is grant someone something.
+<p>
+When a query about a permission is posed to the system, the system will
+search for a rule that permits the action. If <em>one</em> such rule is found the system 
+will stop there. It will <em>not</em> collect all the rules that permits a certain
+action, one is enough. Therefore if you have overlapping rules you can not be certain
+about which rule the system will use to grant the request.
+<p>
+It is possible to couple information to a rule, súch that if a query is
+granted based on a rule and there is information coupled to that rule, that
+information will be returned to the client together with the positive response.
+If you use this feature having overlapping rules might be a really bad thing.
+<p>
+When constructing a new rulesyntax there are basically three things you have to answer:
+<ul>
+<li>What do you want to express with the rules ?
+<li>Which information does the application have or can get access to ?
+<li>Which information resources can the policy engine use to evaluate boundary conditions ?
+</ul>
+<u><em>Note</em></u> throughout this document the advanced form of 
+<a href="#s-exp">S-expressions</a> will be
+used since they are much easier to read for a human. Be aware though that rules that is for 
+server consumption <b>must</b> be in the canonical form. There exist a tool in
+the distribution that can convert from advanced to canonical form.
+<p>
+<u><em>Note also</em></u> if you have not read
+<a href="intro.html">Introduction to  S-expressions</a>
+yet you should definitely do so before continuing with this document. 
+
+<h2><a id="syntax" name="syntax">1. The rule syntax</a></h2>
+
+The Spocp project has choosen a basic rule syntax. This doesn't mean that it is
+set in stone, you might tamper with it if you feel that your application would
+benefit from another structure. 
+The policy engine as implemented
+will work with any type of rule syntax as long as it adhers to the 
+syntax of a restricted S-expression as specified in the 
+<a href="intro.html">introduction to S-expressions</a> document.
+Still every example provided in this document or
+the companion documents will use our structure. 
+<p>
+The syntax choosen by the project divides the rules into three parts:
+<dt>
+<dl><b>Resource</b></dl>
+<dd>A description of the resource this rules governs access to</dd>
+<dl><b>Action</b></dl>
+<dd>The action someone/something wants to perform on the resource</dd>
+<dl><b>Subject</b></dl>
+<dd>The agent that wants to perform the action on the resource and
+the environment the agent appears in</dd>
+</dt>
+<p>
+It might be important at this point to stress the fact that the policy engine as
+implemented only cares about the syntax of the rules, it has no and should not have
+any idea about the semantics of the rules and queries. It just compares S-expressions.
+<p>
+So if you are having problems deciding where in the rule syntax a certain information
+piece should fit. Whether it should be part of the resource desciption or action
+description for instance. Be cerrtain that it's only your feeling for esthetics that 
+might be disturbed, the policy engine could not care less.
+<p>
+With that out of the way, an example what a rule/query can look like:
+<pre>
+(spocp (resource "/etc/passwd")(action write)(subject (uid 0)))
+</pre>
+<p>
+Which as a rule would mean that a user with uid 0 on a system has the right
+to write to a a file by the name "/etc/passwd". And if this where the
+only rule that deals with write access to "/etc/passwd" the user
+with uid 0 is supposed to be the only one that can write to this file. Whatever
+'write' might mean to the application that handles this resource.
+<p>
+
+<h2><a id="meaning" name="meaning">2. The meaning of a S-expression</a></h2>
+
+As specified in <a href="intro.html">introduction to S-expressions</a>
+a list that contains more elements than another is considered more specific
+or less permissive.
+<p>
+This feature make it very easy to construct rules for things that are hierarchically
+organized.
+<p>
+A file system for instance is hierarchical, therefore a file with the name "/etc/passwd" is 
+supposed to reside in a directory by the name "/etc".<br>
+As a S-expression "/etc/passwd" could be express as "(file etc passwd)" and with the
+ordering of S-expressions "(file etc passwd)" is more specific than "(file etc)".
+If one generalizes this, "(file etc)" is in fact, a shorter way of saying every file
+and directory below and including "etc". 
+<p>
+This is an important point; <b>rules are always inclusive</b>.
+<p>
+An example:
+<pre>
+(spocp (resource etc)(action read)(subject))
+</pre>
+<p>
+As a rule would mean that any subject has read access to everything below
+and including the "/etc" directory.
+<p>
+A query of the form :
+<pre>
+(spocp (resource etc pam.d useradd)(action read)(subject (uid 501) (gid 100)))
+</pre>
+<p>
+Would therefore get the answer that that subject was permitted to perform 
+the action.
+<p>
+If the rule instead was defined as:
+<pre>
+(spocp (resource "/etc")(action read)(subject))
+</pre>
+<p>
+Then the query:
+<pre>
+(spocp (resource "/etc/pam.d/useradd")(action read)(subject (uid 501) (gid 100)))
+</pre>
+<p>
+Would get a negative response. The resources as specified, according
+to the way S-expressions are compared, are unequal and "/etc/pam.d/useradd" is not
+considered to be more specific than "/etc" . It is just different.
+
+<h2>
+<a id="apprule" name="apprule">3. How to define the rule syntax for a application</a>
+</h2>
+
+In order to choose a rule syntax you have to know certain things about a application.
+Very basically you have to know:
+<ul>
+<li>What policies do you want to be able to express ?
+<li>What kind of information does the application have access to ?
+<li>What kind of information might the policy engine have access to ?
+</ul>
+Exactly how you then construct the syntax depends on the answers to these questions.
+Of course you might also find out that the information that are present today
+is not enough to allow you to express the policies you want. In this case you have to
+decide where and how the extra information should be stored, accessed and maintained.
+<p>
+It is very hard to give guidance for rule construction without grounding these in
+real examples. So I will provide you with some guidance by given two examples on
+how to construct a rulesyntax for a application. The syntax construction examples
+given below can apart from describing the constructions as such also be seen as
+examples of a methodology.
+
+<h3><a id="mailserver" name="mailserver">3.1 The rule syntax for a mailserver</a></h3>
+
+<h4><a id="mailexp" name="mailexp">3.1.1 What should be expressed</a></h4>
+As discussed in <a href="#rfc2476">RFC 2476</a> :
+<p>
+"Message Submission Agents (MSAs) and Message Transfer Agents (MTAs) MAY implement
+message rejection rules that rely in part
+on whether the message is a submission or a relay."
+<p>
+For example, some sites might configure their MTA to reject all RCPT
+TOs for messages that do not reference local users, and configure
+their MSA to reject all message submissions that do not come from
+authorized users, based on IP address, or authenticated identity.
+<p>
+Starting with these thoughts there are a couple of things you would like to express:
+<ol>
+<li>Only allow mails from 'local users'
+<li>Only allow mails to 'local users'
+<li>Restricted senders should only be allowed to send to certain addresses
+<li>Restricted receivers should only be allowed to receive from certain addresses
+<li>Certain senders should never be allowed
+</ol>
+I am not saying that this is the exact order that you should do the policy evaluation,
+or for that matter that this is a exhaustive list. Depending on the MTA implementation
+and the rule syntax choosen you might have to
+choose another order. The ordering is only there so I can reference them later in the
+text.
+<h4><a id="mailinfo" name="mailinfo">3.1.2 Information the mailserver has</a></h4>
+Through the interaction with the sending client, the mailserver has the ipaddress of
+the sending machine and possibly the hostname of it too. If 
+<a href="#rfc2554">SMTP AUTH</a> has been used
+it will also have authentication information, like which mechanism that was used and
+of course if the sending MTA is among the allowed senders.
+<br>
+Through the SMTP negotiation it will have information about the sender emailaddress
+as well as the receiver/receivers.
+<p>
+In case the Spocp is not used to decide which MTAs this MTA should
+talk to then the MTA will probably also have a list of MTAs it is allowed to talk to.
+Or no such list if it is free to talk to anyone.
+<h4>
+<a id="mailserver" name="mailserver">3.1.3 Information the policy sever could access</a>
+</h4>
+Depending on your setup the policy server and/or the mailserver can have access to
+any number of information resources like the Enterprise directory, Realtime Blackhole Lists
+(RBLs) and so on.
+
+<h4><a id="mailsyntax" name="mailsyntax">3.1.4 The syntax</a></h4>
+
+A attempt at a syntax could then be:
+<p>
+<pre>
+  syntax = "(spocp (resource " resource ")(action " action ")(subject " subject "))"
+
+  resource = "mailrelay"
+  action   = "rcpt (domain " domain ")(local " localpart ")"
+  subject  = "(from " sender ")(mta" ipaddr ")(auth" meth ")"
+</pre>
+<p>
+Query example:
+<pre>
+(spocp
+  (resource mailrelay)
+  (action rcpt (domain catalogix.se)(local roland))
+  (subject (from leifj@it.su.se)(mta 130.237.35.23)(auth cram-md5))
+)
+</pre>
+<p>
+Now it is quite unpractical to construct mailrelay rules for every allowed
+combination of senders och receivers. It might be possible if your MTA 
+is supposed to handle a very small set of users. But we are dealing with even a
+medium sized organization it would definitely be a bad idea.
+<p>
+So what you probably would want to do is to use "boundary conditions"; external tests
+that will tell you if a certain email address belongs to a 'local user' or not.
+<br>
+If your organization has a Enterprise
+Directory such a test could be: if there is a entry in the Enterprise Directory
+who has the email address, I am interested in, as the value of the mail attribute,
+then that email address is regarded as belonging to a local user.
+<p> 
+Using the ldapset boundary condition this could be expressed as:
+<pre>
+(* bcond ldapset:&lt;ldaphost&gt;;&lt;userDN&gt;;\0$mail &amp; ${local}@${domain})
+</pre>
+<p>
+Where &lt;ldaphost&gt; is the name of the ldap host that has your enterprise directory,
+and &lt;userDN&gt; is the starting point of the subtree that holds your user entries.
+<p>
+For my company the boundary condition would be:
+<pre>
+(* bcond ldapset:ldap.catalogix.se;cn=person,dc=catalogix,dc=se;\0$mail &amp; ${local}@${domain})
+</pre>
+<p>
+So now I have a way of expressing the first two rules in 3.1.1 namely as:
+"Only allow mails from local user"
+<pre>
+(spocp
+  (resource mailrelay)
+  (action 
+    (* bcond ldapset:ldap.catalogix.se;cn=person,dc=catalogix,dc=se;\0$mail &amp; ${local}@${domain})
+  )   
+)
+</pre>
+<p>
+and "only allow mail to local users"
+<pre>
+(spocp
+  (resource mailrelay)
+  (action )
+  (subject
+    (* bcond ldapset:ldap.catalogix.se;cn=person,dc=catalogix,dc=se;\0$mail &amp; ${from})
+  )   
+)
+</pre>
+<p>
+One of the benefits of using "boundary conditions" like this is that you can get away with a
+very small set of rules, who are very stable, and that you can manage access to any
+number of applications by normal administration of the enterprise directory.
+<p>
+The last test of 3.1.1 is probably two tests, one against something like the
+<a href="http://mail-abuse.org/rbl/">Realtime Blackhole List</a>
+and another based on the sender email address. The list of email address that should be
+block could be gotten from a spamfilters and/or lists that is maintained by your organization.
+How you got your hands on it is something I am not going to bother about, the only
+interesting thing is that you have by some means put such a list together.
+<p>
+So if you want to use RBL the distribution contains a RBL backend which allows you to
+write tests like:
+<pre>
+(* bcond rbl:blackholes.mail-abuse.org:${mta})
+</pre>
+<p>
+If you want to use the publically available RBL DNS service. There is nothing though
+that prohibits you from choosing another similar DNS service run by your own organization
+or some other organization by defining another domain name.
+<p>
+When it comes to matching mailaddress the ldapset boundary condition is not very
+suited for handling that. The ldapset boundary condition can only use exact matches,
+and for matching email addresses you most certainly would like to use substring matches.
+<p>
+For the same reason GDBM is probably not a god choice, since key matching in GDBM is also
+based on exact matching.
+<p>
+So you need a type of backend that allows matching on the whole address, only
+the domain part, only the top domain, the top domain plus the subdomain below that or
+something similar. 
+<p>
+Luckily the distribution has such a backend, the addrmatch backend:
+<pre>
+(* bcond addrmatch:&lt;filename&gt;:&lt;mail address&gt;)
+</pre>
+<p>
+This backend allows you to match email address against a file which contains 
+definitions of whole or parts of mailaddress you do not want to allow relaying from.
+The backend does what is called trailing substring matches.
+<p>
+This backend can also be used when you want to handle the restricted sender/receiver
+cases. My guess is that the set of restricted users are very limited or that you
+can group them in groups which can be delt with as a whole. 
+<p>
+Typical examples of restricted senders could be students at a university who has
+misbehaived and therefore is not allowed full access to the Internet, but they
+should still be able to fullfill there assignments as students which means that they
+must be able to send emails to their teachers.
+<p>
+A restricted receiver could instead be a emailaddress which in fact is a gateway
+to another transport system like a email to fax-/sms-/.. gateway, which since it
+possibly involves costly usage should be limited to a restricted set of users.
+<p>
+Restrictions on a email to fax gateway could then be expressed as:
+<pre>
+(spocp
+  (resource mailrelay)
+  (action rcpt (* bcond addrmatch:local_tcpint:${domain}))
+  (subject (* bcond addrmatch:faxsenders:${from}))
+)
+</pre>
+Where "local_tcpint" would contain a list of the telephone numbers, in tcp.int format,
+that the gateway are allowed to contact given that the sender mail address 
+matches any of the mail address specifications that exists in "faxsenders".
+
+<h3><a id="mailserver" name="mailserver">3.2 The rule syntax for a PAM module</a></h3>
+Pluggable Authentication Module (PAM) is a system of libraries that handles the
+authentication task of applications on a system. The library provides a
+a stable general interface that privilege granting programs might defer to to
+perform standard authentication tasks.
+
+<h4><a id="mailexp" name="mailexp">3.2.1 What should be expressed</a></h4>
+
+The PAM module as implemented is supposed to handle the account aspect of a
+restricted service. It must therefore know who the user is, if it's a local
+or a network based request. And of course it has to know which service on which host
+the verification should be required for.
+
+<h4><a id="mailinfo" name="mailinfo">3.2.2 Information the a process has</a></h4>
+
+According to the PAM documentation, the PAM module will have access to the following 
+variables:
+<p>
+<dl>
+<dt>service</dt>
+<dd>The name of the application (service) the user wants to access</dd>
+<dt>host</dt>
+<dd>host address of the host where the request originated</dd>
+<dt>uid</dt>
+<dd>The user id of the user who wants access</dd>
+<dt>gid</dt>
+<dd>Group Id of the user</dd>
+<dt>port</dt>
+<dd>Which tty the user is connected to</dd>
+</dl>
+<h4>
+<a id="mailserver" name="mailserver">3.2.3 Information the policy sever could access</a>
+</h4>
+If the policy server is running on the same machine it might have access to "/etc/passwd"
+and "/etc/groups". If NIS is used it could probably get access through that interface.
+
+<h4><a id="mailinfo" name="mailinfo">3.2.4 The PAM rule syntax</a></h4>
+
+A proposal could be:
+<pre>
+  syntax = "(spocp (resource " resource ")(action " action ")(subject " subject "))"
+
+  resource = host
+  action   = service
+  subject  = "(uid " uid ")(gid" gid ")(port" port ")"
+</pre>
+<p>
+Query example:
+<pre>
+(spocp
+  (resource theano.catalogix.se)
+  (action useradd)
+  (subject (uid 501)(gid 100)(port pts/2))
+)
+</pre>
+
+<p>
+What more could be done ? Well, you could add time constraint, say that the useradd
+command could only be run during normal working hours ( whatever that might be ).
+If normal working hours was between 08.00 an 17.00 monday to fridays, one would express
+this with the time backend:
+<pre>
+(* bcond time:;;12345;08:00:00;17:00:00)
+</pre>
+<p>
+Where you would add such a test is a matter of tast, I see two possibilities either 
+dircectly following 'action' or in "subject" after the user sublist.
+<p>
+Now some holidays does not fall on saturday and sundays, so supposing you have a list of
+those you could have a backend ( there is none of that kind in the distribution ) that
+compares the present date with dates listed as holidays. Adding that boundary condition
+would ascertain that the working day definition is more correct.
+<p>
+If you wanted to couple the usage of a service to a certain role within the organisation 
+then you, supposing that the uid of a user on the system was stored in
+the enterprise directory, could add a ldapset boundary condition along these lines:
+<pre>
+(* bcond ldapset:&lt;ldaphost&gt;;&lt;roleEntry&gt;;&lt;personSubtree&gt;;\0/roleoccupant &amp; [\1%uid &amp; ${uid}])
+</pre>
+<p>
+Where "roleEntry" would be the specific entry of objectclass role that represents the role
+who should be able to run use the service.
+<p>
+Now, in big organizations the uid is probably not unique over machines for a specific 
+user. In which case you either have to use the username, which has a greater probability
+of being unique, or a combination of hostname and uid.
+
+<h3><a id="ref">4. Summary</a></h3>
+
+I have only scratched on the surface here of what is possible to do when it comes to
+deciding on a rule syntax. What I hope has come through though is that you have to decided
+on what you want to express and what kind of information about the user and the 
+her environment that is to be used to distinguish between different users under
+the prevaling curcumstances.
+<p>
+I would also like to stress the point that using boundary conditions will allow you
+to manage access to resources by managing for instance the enterprise directory. To a
+cost to be sure, using boundary conditions always inflicks a performance penalty. But
+the ease of management might tip the scale.
+<p>
+Using boundary condition will also allow you to write rules that you probably never 
+will have to change.
+
+<h3><a id="ref">5. References</a></h3>
+
+<dl>
+<dt><a id="rfc2476">[RFC2476]</a></dt>	
+<dd>R. Gellens and J. Klensin, Message Submission, RFC 2476, December 1998</dd>
+<dt><a id="rfc2554">[RFC2554]</a></dt>	
+<dd>J. Myers, SMTP Service Extension for Authentication, RFC 2554, March 1999</dd>
+<dt><a id="s-exp">[S-expressions]</a></dt>
+<dd>Ron Rivest, &quot;S-Expressions&quot;, draft-rivest-sexp-00.txt, May 1997,
+&lt;http://theory.lcs.mit.edu/~rivest/sexp.txt&gt;.</dd>
+<dt>[S-expressions code and description]</dt>
+<dd>Ron Rivest, code and description of S-expressions, 
+&lt;http://theory.lcs.mit.edu/~rivest/sexp.html&gt;.</dd>
+</dl>
+</body>

@@ -1,0 +1,691 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>SPOCP Administrators manual</title>
+  <meta http-equiv="Content-Type"
+ content="text/html; charset=iso-8859-1">
+</head>
+<body>
+<h1>SPOCP Administrators manual</h1>
+Document Status: Project document, last updated 2003-09-27<br>
+Authors: Roland Hedberg and Torbj&ouml;rn Wiberg
+<h2>Content</h2>
+<ul>
+</ul>
+<ol>
+  <li><a href="#intro">Introduction</a></li>
+  <li><a href="#native">Using the native SPOCP server</a></li>
+  <li><a href="#pam">Using Spocp as a PAM module</a></li>
+  <li><a href="#apache_mod">Spocp as access control for a Apache server</a></li>
+  <li><a href="#openldap">Spocp as access control server for OpenLDAP</a></li>
+</ol>
+<ul>
+</ul>
+<h2><a id="intro" name="intro">0. Introduction</a></h2>
+This document assumes some basic knowledge on how S-expressions are
+used to manage authorization. If you know very little about this you
+would do well to read <a href="./intro.html">Introduction to
+S-expressions</a>
+before you dwell deeper into this document.<br>
+The next thing is that you will probably not be interested in all of
+this document since someone already have decided which authorization
+setup
+you should use. If that is not the case, please read <a
+ href="implement.html">The implementers guide</a> to get more
+information on pro and cons of choosing one setup before another.<br>
+If you are still with me at this point you are definitely interested in
+how to set up a authorization system for you application. So after
+reading
+through <a href="rules.html">creating rules</a> you can skip to the
+section that
+deals with your specific setup.<br>
+<p>
+Through out this document I will use the canonical S-expression format
+when describing
+exactly what is produced. In duscussions on transformations in some
+case
+I have choosen to use the advanced format since that is easier to read.
+</p>
+<p>All of the different implementations sofar loads the rules they are
+going to
+work with from a textfile when they start. This means that if you have
+a
+server that reads the textfile everytime it gets a query like the
+Exim/Spocp
+combination, updating takes care of itself. You just have to modify the
+file,
+save it and it will instantly be used. Other servertypes usually lives
+longer which means that the probability is quite high that you would
+like to
+update the rules while the server is running. Therefore all servers are
+built to discover if the rules file is changed and if so discard <em>all</em>
+the old rules and read the new ones from the file. The updating will
+not be
+made instantaneous.
+</p>
+<h2><a id="native" name="native">1. Using the native SPOCP serve</a></h2>
+<h3>1.0 Introduction</h3>
+The native server is the most versatile server in the set. With it you
+can
+use the full power of S-expression as well as choose from a varity of
+access ways. The native server can listen on Internet ports as well as
+unix domain sockets and as protocol it can presently only used TCP. In
+the future UDP might also be supported.
+<h3>1.1 Configuration file</h3>
+The server has to know a couple of things when it starts and these
+things are
+supposed to be learnt from the configuration file.<br>
+The format of the configuration file is as follows:
+<pre>
+  line    = "[" keyword "]" CRLF
+             / UTF8 CRLF
+ 
+  keyword = "calist" / "certificate" / "clients" / "dhfile" / "entropyfile" /
+            "logfile" / "passwd" / "port" / "privatekey" / "rulefile" /
+            "threads" / "timeout" / "unixdomainsocket" / "sslverifydepth" /
+             "pidfile" / "cachetime"
+
+  CRLF    = %x0D %x0A
+
+  UTF8    = %x01-09 / %x0B-0C / %x0E-7F / UTF8-2 / UTF8-3 / UTF8-4 / UTF8-5 / UTF8-6
+  UTF8-1  = %x80-BF
+  UTF8-2  = %xC0-DF UTF8-1
+  UTF8-3  = %xE0-EF 2UTF8-1
+  UTF8-4  = %xF0-F7 3UTF8-1
+  UTF8-5  = %xF8-FB 4UTF8-1
+  UTF8-6  = %xFC-FD 5UTF8-1
+  
+  quotechar = "\" ( "\" / hexpair )
+  hexpair   = hexchar hexchar
+  hexchar   = DIGIT / "A" / "B" / "C" / "D" / "E" / "F" /
+              "a" / "b" / "c" / "d" / "e" / "f" 
+  DIGIT     = &amp;x30-39&nbsp;
+</pre>
+<span style="font-weight: bold; font-style: italic;">Note: </span>If
+you quote characters in the configuration file then be advised that the
+server will read the file and dequote the strings before loading the
+S-expressions. This means that the length of "\44" is not 3 but 1.<br>
+<br>
+The meaning of the keywords are as follows:
+<dl>
+  <dt><b>calist</b></dt>
+  <dd>File of PEM-encoded Server CA Certificates that can be used to
+verifiy client certificates</dd>
+</dl>
+<dl>
+  <dt><b>certificate</b></dt>
+  <dd>The file that contains the signed certificate that belongs to the
+SPOCP server</dd>
+</dl>
+<dl>
+  <dt><b>clients</b></dt>
+  <dd>Specifying who can do what with this SPOCP server.<br>
+      The format is: 
+<pre>
+  client_aci = [ rulesetname *SP ] ":" *SP qlarb [ *SP ":" *SP host [ *SP ":" *SP cert ]]
+  qlarb      = [ "q" ][ "l" ][ "a" ][ "r" ][ "b" ]
+  host       = ipnum [ "/" mask ]
+  ipnum      = 1*3DIG "." 1*3DIG "." 1*3DIG "." 1*3DIG
+  DIG        = %x30-39
+  mask       = ( [ %x31-32 ] %x30-39 ) / ( %x33 %x30-32 )
+  cert         ; certificate DN
+</pre>
+       <dl><dt>q</dt><dd>QUERY</dd></dl>
+       <dl><dt>l</dt><dd>LIST</dd></dl>
+       <dl><dt>a</dt><dd>ADD</dd></dl>
+       <dl><dt>r</dt><dd>DELETE</dd></dl>
+       <dl><dt>b</dt><dd>BEGIN ( to use transactions )</dd></dl>
+</dd>
+<p>
+<dd>
+If clients is not define, any application anywhere can run any operation
+on this server, provided that the rule ACI does not prohibit the
+operation.
+</dd>
+<p>
+<dd>
+Some examples
+<dl>
+<dt>Allow queries from the homenetwork</dt>
+<dd>:q:130.239.0.0/16</dd>
+<dt>Allow application with the right certificate subjectDN, and
+from within the homenetwork, to update the rules</dt>
+<dd>:lad:130.239.0.0/16:C=SE, O=UmU, CN=.*
+</dl>
+</dd>
+</dl>
+<dl>
+  <dt><b>dhfile</b></dt>
+  <dd>A Diffie-Hellman parameter file</dd>
+</dl>
+<dl>
+  <dt><b>entropyfile</b></dt>
+  <dd>A file which can be used to feed the randomness function. On a
+Linux system that has been running for a while this is almost never
+needed.</dd>
+</dl>
+<dl>
+  <dt><b>logfile</b></dt>
+  <dd>Where SPOCP should write the logfile entries</dd>
+</dl>
+<dl>
+  <dt><b>passwd</b></dt>
+  <dd>The password necessary to unlock the private key of the SPOCP
+server. If this not provided and the private key is protected by a
+password then the server will ask for the password on startup.
+Something which might be feasible/necessary/correct in some
+circumstances. In others it is completely unworkable</dd>
+</dl>
+<dl>
+  <dt><b>port</b></dt>
+  <dd>Which Internet port SPOCP should listen on. If this keyword is
+defined the keyword "unixdomainsocket" must not be defined and vice
+versa.</dd>
+</dl>
+<dl>
+  <dt><b>privatekey</b></dt>
+  <dd>The file that contains the privatekey that should be used by this
+SPOCP server, this file can be the same as the one specified for the
+certificate. But we strongly discourage this practice. Instead we
+recommend you to separate the Certificate and the Private Key</dd>
+</dl>
+<dl>
+  <dt><b>rulefile</b></dt>
+  <dd>Where the file containing the SPOCP rules are placed.</dd>
+</dl>
+<dl>
+  <dt><b>sslverifydepth</b></dt>
+  <dd>From the OpenSSL documentation: This directive sets how deeply
+mod_ssl
+should verify before deciding that the
+clients don't have a valid certificate.
+    <p>The depth actually is the maximum number of intermediate
+certificate issuers,
+i.e. the number of CA certificates which are max allowed to be followed
+while
+verifying the client certificate. A depth of 0 means that self-signed
+client
+certificates are accepted only, the default depth of 1 means the client
+certificate can be self-signed or has to be signed by a CA which is
+directly
+known to the server (i.e. the CA's certificate is under). </p>
+  </dd>
+</dl>
+<dl>
+  <dt><b>threads</b></dt>
+  <dd>The number of threads the server will use to service requests.
+This number is static, that is it will not change over time depending
+on load.</dd>
+</dl>
+<dl>
+  <dt><b>timeout</b></dt>
+  <dd>The inactivity timeout. If a client has been silent for this long
+(seconds) on a connection the server will unilaterly close down the
+connection.</dd>
+</dl>
+<dl>
+  <dt><b>unixdomainsocket</b></dt>
+  <dd>Which unix domain socket spocp should listen on.</dd>
+</dl>
+<dl>
+  <dt style="font-weight: bold;">Pidfile</dt>
+  <dd>Where the server should write the process Id of the server</dd>
+</dl>
+<dl>
+  <dt style="font-weight: bold;">cachetime</dt>
+  <dd>Definitions of the cachetime to use for different backends. The
+first argument is the
+number of seconds, the second a string which will be matched agains the
+string defining the
+backend and its arguments after the variable substitution</dd>
+</dl>
+<p>The following is an example of a config file:
+</p>
+<hr>
+<pre>
+[certificate]
+/usr/local/spocp/certs/spocpserver.pem
+
+[privatekey]
+/usr/local/spocp/certs/spocpserver.pem
+
+[passwd]
+NewKey
+
+[calist]
+/usr/local/spocp/certs/cacert.pem
+
+[dhfile]
+/usr/local/spocp/certs/dh.pem
+
+[entropyfile]
+/var/log/messages
+
+[logfile]
+/var/log/spocp
+
+[port]
+3456
+
+[rulefile]
+/usr/local/spocp/test/pam/pam
+
+[clients]
+/pam : q : : C=SE, O=Catalogix, OU=Pam Client,.*
+: qlarb : 213.79.154.114
+/ftp : q : 213.79.154.117
+/www : q : 130.239.17.0/255.255.255.0
+
+[threads]
+5
+
+[timeout]
+30
+
+[cachetime]
+3600  flatfile
+10    flatfile:/home/roland/
+180   flatfile:/etc
+60    flatfile:/etc/passwd
+300   lastlogin
+0     time
+3600  ldapset
+30    ldapset:ldap.ki.se
+180   ldapset:tonwig1
+3600  ipnum
+60    mail
+60    rbl
+86400 strmatch
+86400 strcasematch
+0     difftime
+
+</pre>
+<h3>1.2 Commandline options</h3>
+<pre> spocp [-d num][-f file][-h]<br><br> num   = 1*digit<br> digit = %30-39<br> file  = 1*UTF8 ; filename<br></pre>
+<h3><a id="rulefile" name="rulefile">1.3 Rulefile format</a></h3>
+A formal definition:
+<pre>  rulefile   = ( ruledef / comment / "" / definition / include ) CR<br>  ruledef    = [path] rule<br>  rule       = list / atom / variable<br>  list       = "(" atom *rule ")"<br>  atom       = len ":" val<br>  variable   = "$$(" key ")"<br>  key        = 1*(%x2A-7E)<br>  comment    = "#" *UTF8  <br>  definition = key *SP "=" *SP 1*( atom / rule )<br>  SP         = %x20 / %x09                      ; space or tab<br>  len        = %x31-39 *( %x30-39 )<br>  val        = 1*UTF8<br>  include    = ";include" filename              ; reference to another rule file<br>  path       = '/' *( pathpart )<br>  pathpart   = 1*dirchar '/'<br>  dirchar    = %x30-39 / %x41-5A / %x61-7A / '-' / '_' <br></pre>
+A unformal definition: <br>
+A rule file consists of zero or more variable definitions, comments and
+rules. Variable definitions binds a value to a key, these keys can then
+later on appear in other variable definitions or rule definitions. Like
+this:
+<pre>docroot = 3:usr5:local3:apache6:htdocs<br>friends = (1:*3:set5:diego3:ton4:javi4:sara)<br>mydocs  = $$(docroot)6:roland<br>#<br>(5:spocp(8:resource$$(docroot))(6:action1:0)(subject))<br>(5:spocp(8:resource$$(mydocs))(6:action1:0)(subject(4:user$$(friends)))<br></pre>
+<p>
+It is important to remember that the variables are replaced <em>when</em>
+they appear
+in a rule or a definition. So variable definitions has to appear before
+they
+are used.
+</p>
+<p> Furthermore, variables can be redifined, a new variable definition
+with a key
+that is already bound will have the effect that the value bound to that
+key
+will be replaced with the new value.
+</p>
+<p>Inclusion of other files are done where the reference to them appear
+in the
+text.
+</p>
+<p>Rules can be divided into rulesets, they way to ackomplish this is
+to prepend the ruledefinition itself with a path name.
+</p>
+<hr>
+<h3><a id="pam" name="pam">2. Spocp as a Pluggable Authentication
+Module (PAM) for Linux</a></h3>
+
+<h4>2.1 Account queries to S-expression conversion</h4>
+The information presented to the PAM module are service requested, on
+what host,by who ( uid and gid ) and finally from where the request
+came. It might come
+from a tty or a completely other host.
+    <p>From this information, S-expression of this form is constructed
+(it is
+are wrapped into several lines to make it more readable) : </p>
+    <pre>(5:spocp<br>  (8:resource&lt;host&gt;)<br>  (6:action&lt;service&gt;)<br>  (7:subject(3:uid&lt;uid&gt;)(3:gid&lt;gid&gt;)(4:host&lt;wherefrom&gt;)))<br></pre>
+    <br>
+So a 'realworld' example of a query would then be (also wrapped): <br>
+    <pre>(5:spocp<br>  (8:resource6:theano)<br>  (6:action7:useradd)<br>  (7:subject(3:uid3:501)(3:gid3:100)(4:host5:pts/2)))<br></pre>
+    <br>
+And one could imaging having a matching rule that could be : <br>
+    <pre>(5:spocp<br>  (8:resource6:theano)<br>  (6:action7:useradd)<br>  (7:subject(3:uid(1:*5:range2:ge3:5002:le:600))(3:gid)(4:host(1:*6:prefix4:pts/))))<br></pre>
+    <br>
+The interpretation of this rule is that anyone with a user id between
+500 and 600
+connected to the machine through a tty with a name starting with "pty/"
+is allowed
+to run the command 'useradd'. If this was the only rule defined and
+used then root
+would not be able to run 'useradd' !
+    <h3>2.2 PAM configuration file format</h3>
+PAM separates the tasks of authentication into four independent
+management groups:
+    <ul>
+      <li>account management; </li>
+      <li>authentication management; </li>
+      <li>password management; </li>
+      <li>and session management. </li>
+    </ul>
+SPOCP is used for the <em>account</em>management, which is basically
+for answering
+queries like
+    <ul>
+      <li>has the user's password expired? </li>
+      <li>is this user permitted access to the requested service? </li>
+    </ul>
+The second question to me looks more like authorisation than
+authentication but then
+what is in a word ? <br>
+Anyway this type of questions are the rationale for using a
+authorization system
+like spocp in the PAM context.
+    <p>There are two places where information about when and how a
+module should be used. Either in /etc/pam.conf or in files in the
+directory /etc/pam.d .If the directory exists then the file is ignored.
+    </p>
+    <p>The format of each rule is a space separated collection of
+tokens, the
+first three being case-insensitive: </p>
+    <pre>  service  type  control  module-path  module-arguments<br><br></pre>
+The syntax of files contained in the /etc/pam.d/ directory, are
+identical
+except for the absence of any service field. In this case, the service
+is
+the name of the file in the /etc/pam.d/ directory. This filename must
+be
+in lower case.
+    <p>More information on PAM can be gotten on any Linux system by
+running "<b>man pam</b>" </p>
+    <p>Below is a example on how to configure PAM to use the spocp
+module when authenticating
+the use of the command <em>useradd</em>. This is the content of the
+file /etc/pam.d/useradd : </p>
+<pre>
+#%PAM-1.0
+auth     sufficient     pam_rootok.so
+auth     required       pam_permit.so
+account  required       pam_spocp.so   \
+        spocpserver=theano.catalogix.se:3456 \
+        ssl \
+	privatekey=/usr/local/spocp/certs/pam.pem \
+        calist=/usr/local/spocp/certs/cacert.pem passwd=pampem \
+	certificate=/usr/local/spocp/certs/pam.pem
+account  required       pam_permit.so
+password required       pam_permit.so
+session  required       pam_deny.so
+</pre>
+
+Notice that if the PAM module should use TLS to protect the
+communication with the
+SPOCP server then all relevant information, like where the certificate
+and private key of the client are place, has to be provided in the
+configuration file.
+If <em>ssl</em> is not defined as an argument then TLS is not used.<br>
+So, as another example, if the PAM module is suppost to talk to the
+server over a
+unix domain socket on the same machine ( in which case TLS seems quite
+unnecessary )
+the spocp line in the configuration file would become:
+    <pre>account  required       pam_spocp.so    spocpserver=/tmp/spocp <br><br><br></pre>
+
+<h2><a id="apache_mod" name="apache_mod">3. Spocp as
+accesscontrol system for a Apache server</a></h2>
+
+<h3>3.1 Apache configuration: (httpd.conf)</h3>
+This directive is suppost to be used inside &lt;Directory&gt; or &lt;Location&gt;
+within *.conf files. It can not be used in .htaccess.
+&lt;/Location&gt;&lt;/Directory&gt;
+<p>
+Spocp domain serverlocation
+<dl>
+  <dt>domain</dt>
+  <dd>a tag to be used to group several directories, and to let them all be governed
+by the same set of rules.
+  </dd>
+</dl>
+<dl>
+  <dt>serverlocation</dt>
+<dd>
+serverlocation is where the spocp server can be found, this is either
+host:port ( remember there is no default spocp port ) or a unix domain
+socket specification.
+</dd>
+</dl>
+<h3>3.2 Defining the Spocp rules</h3>
+There are 5 different cases when it comes to http requests:
+    <ol>
+      <li> http without authentication
+      </li>
+      <li> http with authentication
+      </li>
+      <li> https without authentication
+      </li>
+      <li> https with user authentication
+      </li>
+      <li> https with client certificate authentication
+      </li>
+    </ol>
+Depending on which one is in use, the webserver has access to different 
+types of information. This means that the webserver will build different
+Spocp queries depending on which case is in use. The name
+of the resource that is requested is always present together with the
+spocp domain name. Apart from that the following information is present
+in the different cases:
+<p>
+<dl>
+<dt><b>http without authentication</b></dt>
+  <dd> client ip address and</dd>
+  <dd> possibly client domain name</dd>
+</dl>
+<dl>
+<dt><b>http with authentication</b></dt>
+  <dd> client ip address, </dd>
+  <dd> possibly client domain name, </dd>
+  <dd> user name, </dd>
+  <dd> authentication domain name and</dd>
+  <dd> authentication type</dd>
+</dl>
+<dl>
+<dt><b>https without authentication</b></dt>
+  <dd> client ip address,</dd>
+  <dd>possibly client domain name and</dd>
+  <dd>whether SSLv2, SSLv3 or TLSv1 is used.</dd>
+</dl>
+<dl>
+<dt><b>https with user authentication</b></dt>
+  <dd> client ip address,</dd>
+  <dd>possibly client domain name,</dd>
+  <dd>user name, </dd>
+  <dd>authentication domain name, </dd>
+  <dd>authentication type and </dd>
+  <dd>whether SSLv2, SSLv3 or TLSv1 is used.</dd>
+</dl>
+<dl>
+<dt><b>https with client certificate authentication</b></dt>
+  <dd> client ip address,</dd>
+  <dd> possibly client domain name,</dd>
+  <dd> subjectname from the client certificate,</dd>
+  <dd> issuername from the client certificate,</dd>
+  <dd> and whether SSLv2, SSLv3 or TLSv1 is used.</dd>
+  <dd> If SSLOption +fakeBasicAuth is specified the client certificate subjectname also appears as user name.</dd>
+</dl>
+<p>
+Whether domain name will be available or not depends on what DNS
+contains. The module will do a DNS lookup and then do a double reverse
+lookup. The result is the (double reverse checked) hostname, or NULL if
+any of the lookups fail. The construction of the Spocp query follows the
+default 3-tuple contruct with separate parts for resource, action and subject.<br>
+The different part are constructed as follows :
+<p>
+    <dl>
+      <dt><b>resource:</b></dt>
+      <dd>spocpdomain and resourcename</dd>
+    </dl>
+    <dl>
+      <dt><b>action:</b></dt>
+      <dd>action as number, 0 (GET), 1(PUT), 2(POST), and so on</dd>
+      <dd>and access control (1) or authorization check</dd>
+    </dl>
+    <dl>
+      <dt><b>source:</b></dt>
+      <dd>ipnumber hostname [sslversion [issuerDN subjectDN]] [user
+authname authtype]</dd>
+    </dl>
+<p>
+A typical Spocp query (split into several lines to make it more
+readable)
+<p>
+<pre>
+  (5:spocp
+    (8:resource
+     3:www                              ; spocp domain
+     10:index.html1:-                   ; resource name (index.html)
+    )
+    (6:action1:01:0)                    ; 0 = GET, 0 = access check
+    (7:subject
+      (2:ip14:213.79.154.114)           ; client ip
+      (4:host2:se9:catalogix6:theano)   ; client hostname
+    )
+  )
+</pre>
+<p>
+And after a https request, after
+authentication has completed. No client certificate demanded.
+<p>
+<pre>
+  (5:spocp
+    (8:resource
+     9:internal                         ; spocp domain
+     9:internal10:index.html1:-         ; resource name (internal/index.html)
+    )
+    (6:action1:01:1)                    ; 0 = GET, 1 = authorization check
+    (7:subject
+      (2:ip14:213.79.154.114)           ; client ip
+      (4:host2:se9:catalogix6:theano)   ; client hostname
+      (7:sslvers3:300)                  ; SSLv3
+      (4:user6:roland)
+      (8:authname6:secret)
+      (8:authtype5:Basic)
+    )
+  )
+</pre>
+<p>
+<b><em>Beware!</em></b> that in Apache access control really consists of tree
+parts; access control, identity control and authorization control. This
+means that if you have a protected part of you webserver where you demand authentication
+and authorization.  Then you will get two Spocp queries. The first a
+access check ( without any user, authtype and authname specifications )
+and the second one a authorization check with user, authtype and authname.
+The mod_spocp implementation allows you to
+distinguish between these by adding a '0' element to the action list if it
+is a access check and a '1' if it is a authorisation check.
+
+<h3>3.2 A simple example </h3>
+
+Given a httpd.conf with the following parts:
+
+<pre>
+DocumentRoot "/srv/www/htdocs"
+
+&lt;Directory "/srv/www/htdocs"&gt;
+    Options Indexes FollowSymLinks MultiViews
+    AllowOverride None
+
+    Spocp docs /tmp/spocp
+&lt;/Directory&gt;
+</pre>
+
+Having the simple ruleset: <br>
+(5:spocp(8:resource4:docs)(6:action1:0)(7:subject)) <br>
+in the Spocp server would allow anyone access to the top directory.
+<p>
+So a request for http://127.0.0.1/index.html, which would generate the query:
+
+<pre>
+(5:spocp
+  (8:resource4:docs10:index.html1:-)
+  (6:action1:0)
+  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost))
+)
+</pre>
+would be permitted.
+<p>
+Let us add another directory to the HTTP server,
+<pre>
+&lt;Directory /srv/www/htdocs/local&gt;
+  AuthType Basic
+  AuthName company
+  AuthUserFile /etc/httpd/passwd
+  Require valid-user
+  Spocp protect /tmp/spocp
+  Satisfy all
+&lt;/Directory&gt;
+</pre>
+
+A request came for http://127.0.0.1/local/images.html would be translated into this
+SPOCP query 
+
+<pre>
+(5:spocp
+  (8:resource7:protect5:local11:images.html1:-)
+  (6:action1:01:0)
+  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost))
+)
+</pre>
+
+Which would be denied imeediately (given the simple ruleset above)
+<p>
+So we would have to change our rules to:
+<p>
+<pre>
+(5:spocp(8:resource4:docs)(6:action1:0)(7:subject))
+(5:spocp(8:resource7:protect)(6:action1:0)(7:subject(2:ip9:127.0.0.1)(4:host9:localhost)))
+</pre>
+
+if we wanted to give the right people access to the resouce<br>
+With this ruleset in place the request would be granted since both the access and the
+authorization queries would be matched by the same rule (the second one).<br>
+The queries would look like this:
+<pre>
+(5:spocp
+  (8:resource7:protect5:local11:images.html1:-)
+  (6:action1:01:0)
+  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost))
+)
+
+(5:spocp
+  (8:resource7:protect5:local11:images.html1:-)
+  (6:action1:01:1)
+  (7:subject
+    (2:ip9:127.0.0.1)
+    (4:host9:localhost)
+    (4:user6:roland)
+    (8:authname7:company)
+    (8:authtype5:Basic)
+  )
+)
+</pre>
+
+Changing your rules again to:
+
+<pre>
+(5:spocp(8:resource4:docs)(6:action1:0)(7:subject))
+(5:spocp(8:resource7:protect)(6:action1:01:0)
+  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost)))
+(5:spocp(8:resource7:protect)(6:action1:01:1)
+  (7:subject(2:ip9:127.0.0.1)(4:host9:localhost)(4:user6:roland)))
+</pre>
+
+To separated the access control queries from the authorization control queries, but 
+also to explicitly specify who should be granted access.<br>
+'roland' with these rules in place would still be ganted access to the page but
+'eva' who has a valid user at the HTTP server ( and therefore would pass the
+first two checks, the access and identity check) would not ( since she would
+fail on the authorization check).
+
+<h2><a id="intro" name="intro">4. Spocp as access control for
+OpenLDAP</a></h2>
+---Placeholder---
+</body>
+</html>

@@ -1,0 +1,328 @@
+# Process this file with autoconf to produce a configure script.
+AC_INIT(spocp, 1.51, roland@catalogix.se)
+AM_INIT_AUTOMAKE( spocp, 1.51 )
+AC_CONFIG_SRCDIR([include/wrappers.h])
+AM_CONFIG_HEADER([include/config.h])
+AM_MAINTAINER_MODE
+dnl AC_CONFIG_HEADER([include/config.h])
+
+AC_PREFIX_DEFAULT(/usr/local/spocp)
+
+# Checks for programs.
+AC_PROG_CXX
+AC_PROG_CC
+AC_PROG_CPP
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_AWK
+
+AC_PROG_LIBTOOL
+AC_PROG_RANLIB
+
+dnl *************************************************
+
+spocp_cv_warnings=yes
+AC_ARG_ENABLE(warnings, [  --disable-warnings         Turn off compiler warnings
+ (not recommended)],
+[if test $enableval = no; then
+        spocp_cv_warnings=no
+fi])
+
+if test x$GCC = xyes -a $spocp_cv_warnings = yes; then
+        CFLAGS="-Wall -pedantic $CFLAGS"
+fi
+
+dnl *************************************************
+
+AC_ARG_ENABLE(cert,	--enable-cert	Enable cert backend, [cert=yes])
+AC_ARG_ENABLE(difftime,	--enable-difftime	Enable difftime backend, [difftime=yes])
+AC_ARG_ENABLE(flatfile,	--enable-flatfile	Enable flatfile backend, [flatfile=yes])
+AC_ARG_ENABLE(gdbm,	--enable-gdbm	Enable gdbm backend, [gdbm=yes])
+AC_ARG_ENABLE(ipnum,	--enable-ipnum	Enable ipnum backend, [ipnum=yes] )
+AC_ARG_ENABLE(lastlogin,	--enable-lastlogin	Enable lastlogin backend, [lastlogin=yes])
+AC_ARG_ENABLE(ldapset,	--enable-ldapset	Enable ldapset backend, [ldapset=yes])
+AC_ARG_ENABLE(localgroup,	--enable-localgroup	Enable localgroup backend, [localgroup=yes])
+AC_ARG_ENABLE(mailmatch,	--enable-mailmatch	Enable mailmatch backend, [mailmatch=yes])
+AC_ARG_ENABLE(motd,	--enable-motd	Enable motd backend,[motd=yes] )
+AC_ARG_ENABLE(rbl,	--enable-rbl	Enable rbl backend, [rbl=yes] )
+AC_ARG_ENABLE(regexp,	--enable-regexp	Enable regexp backend, [regexp=yes])
+AC_ARG_ENABLE(spocp,	--enable-spocp	Enable spocp backend, [spocp=yes])
+AC_ARG_ENABLE(sql,	--enable-sql	Enable sql backend, [sql=yes])
+AC_ARG_ENABLE(strmatch,	--enable-strmatch	Enable strmatch backend, [strmatch=yes])
+AC_ARG_ENABLE(system,	--enable-system	Enable system backend, [system=yes])
+AC_ARG_ENABLE(time,	--enable-time	Enable time backend, [time=yes])
+AC_ARG_ENABLE(all,	--enable-all	Enable all backends )
+
+dnl *************************************************
+
+# Checks for libraries.
+AC_CHECK_LIB([resolv], [res_query])
+AC_CHECK_LIB([pthread], [pthread_mutex_lock])
+
+dnl * dynamic modules?
+have_modules=no
+MODULE_LIBS=""
+
+AC_CHECK_LIB([dl], [dlopen], [have_modules=yes MODULE_LIBS="-export-dynamic -ldl"  ])
+
+if test $have_modules = yes ; then
+  AC_DEFINE(HAVE_LIBDL,1)
+  if test -n "$enable-all" ; then
+    cert=yes
+    difftime=yes
+    flatfile=yes
+    gdbm=yes
+    ipnum=yes
+    lastlogin=yes
+    ldapset=yes
+    localgroup=yes
+    mailmatch=yes
+    motd=yes
+    rbl=yes
+    regexp=yes
+    spocp=yes
+    sql=yes
+    strmatch=yes
+    system=yes
+    time=yes
+  fi
+else
+  if test "$cert" = "yes" ; then
+    AC_MSG_WARN([cert backend disabled, ignoring --enable-cert])
+  fi
+  if test "$difftime" = "yes" ; then
+    AC_MSG_WARN([difftime backend disabled, ignoring --enable-difftime])
+  fi
+  if test "$flatfile" = "yes" ; then
+    AC_MSG_WARN([flatfile backend disabled, ignoring --enable-flatfile])
+  fi
+  if test "$gdbm" = "yes" ; then
+    AC_MSG_WARN([gdbm backend disabled, ignoring --enable-gdbm])
+  fi
+  if test "$ipnum" = "yes" ; then
+    AC_MSG_WARN([ipnum backend disabled, ignoring --enable-ipnum])
+  fi
+  if test "$lastlogin" = "yes" ; then
+    AC_MSG_WARN([lastlogin backend disabled, ignoring --enable-lastlogin])
+  fi
+  if test "$ldapset" = "yes" ; then
+    AC_MSG_WARN([ldapset backend disabled, ignoring --enable-ldapset])
+  fi
+  if test "$localgroup" = "yes" ; then
+    AC_MSG_WARN([localgroup backend disabled, ignoring --enable-localgroup])
+  fi
+  if test "$mailmatch" = "yes" ; then
+    AC_MSG_WARN([mailmatch backend disabled, ignoring --enable-mailmatch])
+  fi
+  if test "$motd" = "yes" ; then
+    AC_MSG_WARN([motd backend disabled, ignoring --enable-motd])
+  fi
+  if test "$rbl" = "yes" ; then
+    AC_MSG_WARN([rbl backend disabled, ignoring --enable-rbl])
+  fi
+  if test "$regexp" = "yes" ; then
+    AC_MSG_WARN([regexp backend disabled, ignoring --enable-regexp])
+  fi
+  if test "$spocp" = "yes" ; then
+    AC_MSG_WARN([spocp backend disabled, ignoring --enable-spocp])
+  fi
+  if test "$sql" = "yes" ; then
+    AC_MSG_WARN([sql backend disabled, ignoring --enable-sql])
+  fi
+  if test "$strmatch" = "yes" ; then
+    AC_MSG_WARN([strmatch backend disabled, ignoring --enable-strmatch])
+  fi
+  if test "$system" = "yes" ; then
+    AC_MSG_WARN([system backend disabled, ignoring --enable-system])
+  fi
+  if test "$time" = "yes" ; then
+    AC_MSG_WARN([time backend disabled, ignoring --enable-time])
+  fi
+
+  cert=no
+  difftime=no
+  flatfile=no
+  gdbm=no
+  ipnum=no
+  lastlogin=no
+  ldapset=no
+  localgroup=no
+  mailmatch=no
+  motd=no
+  rbl=no
+  regexp=no
+  spocp=no
+  sql=no
+  strmatch=no
+  system=no
+  time=no
+
+fi
+
+have_lber=no
+have_ldap=no
+
+AH_TEMPLATE( [HAVE_LIBDL], [Define to 1 if you have the 'dl' library] )
+AH_TEMPLATE( [HAVE_LIBLBER], [Define to 1 if you have the 'lber' library] )
+AH_TEMPLATE( [HAVE_LIBLDAP], [Define to 1 if you have the 'ldap' library] ) 
+AH_TEMPLATE( [HAVE_LIBGDBM], [Define to 1 if you have the 'gdbm' library] ) 
+AH_TEMPLATE( [HAVE_LIBODBC], [Define to 1 if you have the 'odbc' library] ) 
+AH_TEMPLATE([HAVE_LIBSPOCPCLIENT],[Define to 1 if you have the 'spocpclient' library]) 
+
+if test "$ldapset" = "yes" ; then
+  AC_CHECK_LIB([lber], [ber_read], AC_DEFINE(HAVE_LIBLBER), [ldapset=no])
+  AC_CHECK_LIB([ldap], [ldap_init], AC_DEFINE(HAVE_LIBLDAP), [ldapset=no] )
+fi
+
+if test "$gdbm" = "yes" ; then
+  AC_CHECK_LIB([gdbm], [gdbm_open], [AC_DEFINE(HAVE_LIBGDBM)], [gdbm=no] )
+fi
+
+if test "$sql" = "yes" ; then
+  AC_CHECK_LIB([odbc], [SQLConnect], [AC_DEFINE(HAVE_LIBODBC)], [sql=no] )
+fi
+
+if test "$spocp" = "yes" ; then
+  AC_CHECK_LIB([spocpclient], [spocp_send_query], AC_DEFINE(HAVE_LIBSPOCPCLIENT), [sql=no] )
+fi
+
+AM_CONDITIONAL( BUILD_CERT, test x$cert = xyes ) 
+AM_CONDITIONAL( BUILD_DTIME, test x$difftime = xyes ) 
+AM_CONDITIONAL( BUILD_FFILE, test x$flatfile = xyes ) 
+AM_CONDITIONAL( BUILD_GDBM, test x$gdbm = xyes ) 
+AM_CONDITIONAL( BUILD_IPNUM, test x$ipnum = xyes ) 
+AM_CONDITIONAL( BUILD_LASTLOGIN, test x$lastlogin = xyes ) 
+AM_CONDITIONAL( BUILD_LDAPSET, test x$ldapset = xyes ) 
+AM_CONDITIONAL( BUILD_LOCALGROUP, test x$localgroup = xyes ) 
+AM_CONDITIONAL( BUILD_MAILMATCH, test x$mailmatch = xyes ) 
+AM_CONDITIONAL( BUILD_MOTD, test x$motd = xyes ) 
+AM_CONDITIONAL( BUILD_RBL, test x$rbl = xyes ) 
+AM_CONDITIONAL( BUILD_REGEXP, test x$regexp = xyes ) 
+AM_CONDITIONAL( BUILD_SPOCP, test x$spocp = xyes ) 
+AM_CONDITIONAL( BUILD_SQL, test x$sql = xyes ) 
+AM_CONDITIONAL( BUILD_STRMATCH, test x$strmatch = xyes ) 
+AM_CONDITIONAL( BUILD_SYSTEM, test x$system = xyes ) 
+AM_CONDITIONAL( BUILD_TIME, test x$time = xyes ) 
+
+
+dnl *************************************************
+
+AC_CHECK_HEADERS(tcpd.h,[
+        AC_MSG_CHECKING([for TCP wrappers library])
+        save_LIBS="$LIBS"
+        LIBS="$LIBS -lwrap"
+        AC_TRY_LINK([
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+        ],[
+hosts_access(req)
+        ],[AC_MSG_RESULT([-lwrap])
+        have_wrappers=yes
+        LIBS="$save_LIBS"],[
+        dnl try with -lnsl
+        LIBS="$LIBS -lnsl"
+        AC_TRY_LINK([
+#include <tcpd.h>
+int allow_severity = 0;
+int deny_severity  = 0;
+
+struct request_info *req;
+        ],[
+hosts_access(req)
+        ],[AC_MSG_RESULT([-lwrap -lnsl])
+        have_wrappers=yes
+        LIBS="$save_LIBS -lnsl"],[
+        AC_MSG_RESULT(no)
+        have_wrappers=no
+        LIBS=$save_LIBS])],[
+        have_wrappers=no])],[have_wrappers=no])
+
+if test $have_wrappers = yes ; then
+        AC_DEFINE(HAVE_LIBWRAP,1, [define if you have -lwrap])
+        WRAP_LIBS="-lwrap"
+elif test $ol_enable_wrappers = yes ; then
+        AC_MSG_ERROR([could not find TCP wrappers, select apppropriate options ore disable])
+else
+        AC_MSG_WARN([could not find TCP wrappers, support disabled])
+        WRAP_LIBS=""
+fi
+
+dnl *************************************************
+# Checks for header files.
+AC_HEADER_DIRENT
+AC_HEADER_STDC
+
+AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h limits.h \
+   netdb.h netinet/in.h stdlib.h string.h strings.h \
+   sys/socket.h sys/time.h syslog.h unistd.h \
+   openssl/ssl.h])
+
+# Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_SIGNAL
+AC_TYPE_MODE_T
+AC_HEADER_TIME
+AC_HEADER_SYS_WAIT
+AC_STRUCT_TM
+
+# Checks for library functions.
+AC_FUNC_FORK
+AC_FUNC_MALLOC
+AC_FUNC_MKTIME
+AC_FUNC_STAT
+AC_FUNC_STRFTIME
+AC_FUNC_MEMCMP
+AC_FUNC_STRNLEN
+
+dnl *************************************************
+
+AC_CHECK_FUNCS([bzero fdatasync getcwd gethostbyaddr gethostbyname \
+	gethostname gettimeofday inet_ntoa localtime_r memmove memset \
+	select socket strcasecmp strdup strerror strncasecmp strndup strnlen strstr strtol uname])
+
+AC_CHECK_FUNCS([memchr])
+AC_CHECK_FUNCS([regcomp])
+AC_CHECK_FUNCS([strchr])
+AC_CHECK_FUNCS([strcspn])
+AC_CHECK_FUNCS([strpbrk])
+
+dnl *************************************************
+
+AC_SUBST(WRAP_LIBS)
+AC_SUBST(MODULE_LIBS)
+
+dnl                clients/openldap/Makefile
+dnl                clients/exim/Makefile
+
+AC_CONFIG_FILES([Makefile
+                 include/Makefile
+                 lib/Makefile
+		 doc/Makefile
+		 util/Makefile
+                 backends/Makefile
+                 backends/cert/Makefile
+                 backends/difftime/Makefile
+                 backends/flatfile/Makefile
+                 backends/gdbm/Makefile
+                 backends/ipnum/Makefile
+                 backends/lastlogin/Makefile
+                 backends/ldapset/Makefile
+                 backends/localgroup/Makefile
+                 backends/mailmatch/Makefile
+                 backends/motd/Makefile
+                 backends/rbl/Makefile
+                 backends/regexp/Makefile
+                 backends/spocp/Makefile
+                 backends/sql/Makefile
+                 backends/strmatch/Makefile
+                 backends/system/Makefile
+                 backends/time/Makefile
+                 server/Makefile])
+AC_OUTPUT
+

@@ -1,0 +1,50 @@
+.TH spocp 8 "February 2003"
+.\"
+.SH NAME
+spocp \- General policy server
+.SH SYNOPSIS
+.B spocp 
+[
+.BI \-d " loglevel"
+] [
+.BI \-f " configuration file"
+] [
+
+.SH DESCRIPTION
+.B spocp
+is the Simple POlicy Control Protocol (SPOCP) server program. It is
+designed to be run as a standalone daemon process. 
+.PP
+This manual page only lists the command line arguments. For details
+of the protocol itself or the syntax of a policy or a request see
+the 
+.B spocp
+material which is part of the Spocp distribution or can be found at
+http://www.spocp.org/. 
+.SH OPTIONS
+.TP 12
+.BI \-d " loglevel"
+Set the level of logging that is to be used. \fBloglevel\fR can vary 
+between 1 and 7, where 7 will give you a ridiculously large amount
+of information. 
+.PP
+The levels are EMERGENCY (0), ALERT (1), CRIT (2), ERR (3),
+WARNING (4), NOTICE (5), INFO (6), DEBUG (7).
+.TP
+.BI \-f " configuration file"
+A file containing the rules that this server should enforce. This
+file is read once at startup. If no configuration file is specified
+this way the server will look for a file called "config" in the 
+current directory. If that does not exist the server will not start.
+.PP
+.SH EXAMPLES
+.br
+To start 
+.B spocp
+with the configuration file 
+.I conf
+.nf
+spocp -f conf
+.fi
+.RE
+.PP

@@ -1,0 +1,855 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Introduction to S-expressions</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body>
+<h1>Introduction to S-expressions as used by SPOCP</h1>
+
+Document Status: Project document, last updated 2001-11-14<br>
+Authors: Roland Hedberg and Torbj&ouml;rn Wiberg
+
+<h2>Abstract</h2>
+
+This memo decribes S-expression as they are used within the SPOCP project.
+
+<h2>Content</h2>
+
+<ul>
+<li><a href="#intro">1. Introduction</a>
+<ul>
+<li><a href="#why">1.1 Why S-expressions ?</a>
+<li><a href="#history">1.2 History of S-expressions</a>
+</ul>
+<li><a href="#restricted">2. Restricted S-expressions</a>
+<ul>
+<li><a href="#or">2.1 Or</a>
+<li><a href="#range">2.2 Range</a>
+<li><a href="#prefix">2.3 Prefix</a>
+<li><a href="#suffix">2.4 Suffixes</a>
+<li><a href="#bcond">2.5 Boundary conditions</a>
+</ul>
+<li><a href="#ordering">3. Ordering S-expressions</a>
+<ul>
+<li><a href="#bcondord">3.1 Ordering and boundary conditions</a>
+</ul>
+<li><a href="#format">4. Common format for S-expressions used in SPOCP</a>
+<li><a href="#onbcond">5. On boundary conditions</a>
+<ul>
+<li><a href="#varsub">5.1 Variable substitution</a>
+</ul>
+<li><a href="#hierarchy">6. Notes on hierarchical names</a>
+<li><a href="#example">7. Example</a>
+<ul>
+<li><a href="#mailrelay">7.1 Mailrelay</a>
+<ul>
+<li><a href="#mailrelayProblem">7.1.1 problem statement</a>
+<li><a href="#spocpsol">7.1.2 SPOCP solution</a>
+<ul>
+<li><a href="#ldap">7.1.2.1 Using LDAP enterprise directory</a>
+</ul>
+</ul>
+</ul>
+<li><a href="#ack">8. Acknowledgement</a>
+<li><a href="#ref">9. References</a>
+</ul>
+
+<h2><a id=intro>1. Introduction</a></h2>
+
+<h3><a id="why">1.1 Why S-expressions ?</a></h3>
+
+The SPOCP project has developed software for an authorisation server. At the heart 
+of the SPOCP server is a policy engine that tests if an authorisation request 
+from a client ought to be allowed or not, given a set of policies. When dealing 
+with policies in computer systems one has to have a clear way of describing the 
+policies so that programs can test whether an entry has a specific right or not. 
+By choosing a syntax for the policies and queries that is independent of the application 
+area one can build a policy evaluator which can work well for many applications. 
+We believe that S-expressions is such a language and have therefore chosen it 
+as the basis for our work with a general authorization server. In addition we, as a convention, assume that both the policy rules and the queries have the form of a Subject doing an Action on a Resource.
+
+<h3><a id="history">1.2 History of S-expressions</a></h3>
+
+The use of S-expressions for authentication/authorisation purposes can be traced 
+back to 1997, when Ron Rivest published an Internet draft [SEXP2] descibing their 
+basic data structure and encoding. And, as mentioned in that paper, further back 
+to work done on &quot;A Simple Distributed Security Infrastructure&quot; (SDSI) 
+in 1996 and possibly also back to the LISP programming language. Later, &quot;The 
+Simple Public Key Infrastructure&quot; (SPKI) working group within the IETF, based 
+its work on Rivest's work, but made restrictions on the syntax of the S-expressions 
+to be used in that context. 
+<p> In SPOCP, we are building on both of these works and are in our turn further 
+  restricting the syntax. In this document, we describe restricted S-expressions 
+  as we are using them. 
+<p> A restricted S-expression is a nested list enclosed in matching "(" and ")". 
+  The first element in the list is always a "tag" or "name" of the object represented 
+  by the list and must be a byte-string. With that exception, every element in 
+  the list may in turn be an S-expression. In comparison with the S-expression 
+  technology of [SEXP], we impose the further restriction that no empty lists 
+  are allowed and that all lists that appears in <a href"#or"><b>or</b></a>
+  constructions must have different tags.
+  An S-expression can also be interpreted as an ordered tree: The 
+  tag is the root and its first subtree is the second element in the list, and 
+  so on. As in SPKI, we have chosen Rivest's compact &quot;canonical form&quot;, 
+  see [SEXP], as our internal representation of an S-expression. In most of the 
+  examples we use the &quot;advanced form&quot; which is easier to read. 
+<p>
+SPOCP objects are defined below using ABNF [RFC 2234].
+<p> S-expressions are used at the core in the authorization server, and may be 
+  sent between computers. If they are, the canonical form is to be used [SEXP]. 
+  A canonical S-expression is formed from binary byte strings (that is every byte
+  can assume any bytevalue between and including 0x00 and 0xFF), each prefixed by
+  its length, and enclosed in parenthesis. The length of a byte string is a
+  non-negative ASCII decimal number, with no unnecessary leading "0" digits,
+  terminated by
+  ":". The canonical form is a unique representation of an S-expression and is 
+  used as the input to all hash and signature functions.
+<pre>
+  s-expr      = "(" tag *s-part ")"
+  tag         = octetstring
+  s-part      = octetstring / s-expr / starform
+  octetstring = decimal ":" 1*octet
+                ; The number of octets should be equal to the decimal specification
+  decimal     = nzdigit *digit
+  nzdigit     = "1" / "2" / "3" / "4" / "5" / "6" / "7" / "8" / "9"
+  digit       = "0" / nzdigit
+  octets      = %x00-FF
+  starform    = "(1:*" ( or / range / prefix / suffix / bcond ) ")"
+</pre>
+<br>
+The specification of starforms are done further down in the document.
+
+<p><em>Even though the canonical form is the one described by the ABNF definitions,
+  the so called advanced form will be used in the examples since it is easier
+  for humans to read. In the advanced form, the elements are separated by spaces
+  and there is no length prefix.</em>
+<p> Example:
+<pre>
+  (5:spocp(8:Resource6:mailer)) -- canonical form
+  (spocp (Resource mailer))     -- advanced form
+</pre>
+<p> These are two representations of the same S-expression, consisting of a octetstring 
+  (the tag) "spocp" and another S-expression, that consists of two octetstrings 
+  "Resource" and "mailer". 
+
+<h2><a id="restricted">2. Restricted S-expressions</a></h2>
+
+Apart from simple lists and octetstring, we use so called starforms,
+these are:<p>
+<ul>
+  <li>or
+  <li>range
+  <li>prefix
+  <li>suffix
+  <li>bcond
+</ul>
+Even though the so called starforms ( or, range, prefix, suffix and bcond)
+look like lists they are not.
+Or, range, prefix and suffix are just a succinct way of representing every element that 
+fits into a specific set. So what they are, are really sets of S-expressions. The 
+bcond starform is a bit special since it is a link to external information. A way
+to use external functions to evaluate specific constraints that can not be expressed
+in simple restricted S-expressions.
+
+<h3><a id="or">2.1 Or</a></h3>
+
+Described by the ABNF
+<p>
+<pre>
+  or = "2:or" 1*s-expr
+</pre>
+<p> They are a way of specifying a limited set of elements, a choice.
+<p> Example:
+<pre>
+  (* or apple orange lemon)
+</pre>
+
+<h3><a id="range">2.2 Range</a></h3>
+
+Since one needs to know the type when one deals with ranges, there are a couple
+of types predefined.
+<p>
+<ul>
+  <li>"alpha" which is normal text
+  <li>"numeric", non-negative numbers between 0 and 4294967295 (UINT32_MAX)
+  <li>"date", date specification of the form YYYY-MM-DD_HH:MM:SS or using
+       the notation used by strftime %G:%m:%d_%H:%M:%S
+  <li>"time", time of day specification HH:MM:SS
+  <li>"ipv4", the IPv4 address in the normal dot notation format (10.0.0.1)
+</ul>
+ In the specification of a range you may use constants in 
+these types in combination with relational operators in a straght forward way. 
+The ABNF specification for range is: 
+<p>
+<pre>
+  range          = "5:range" rangespec
+  rangespec      = alpha / numeric / date / time / ipv4
+  alpha          = "5:alpha" [lole utf8string [goge utf8string]] / [goge utf8string [lole utf8string]]
+  numeric        = "7:numeric" [ lole number [ goge number ]] / [ goge number [ lole number ]]
+  date           = "4:date" [ goge dat [ lole dat ]] / [ lole dat [ goge dat ]]
+  time           = "4:time" [ lole hms [ goge hms ]] / [ goge hms [ lole hms ]]
+  ipv4           = "4:ipv4" [ lole ipnum [ goge ipnum ]] / [ goge ipnum [lole ipnum ]]
+  lole           = "2:lt" / "2:le"
+  goge           = "2:gt" / "2:ge"
+  number         = decimal ":" 1*digit
+  dat            = decimal ":" date-time
+  ; date format as specified by RFC3339
+  date-fullyear  = 4DIGIT
+  date-month     = 2DIGIT  ; 01-12
+  date-mday      = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
+                             ; month/year
+  time-hour      = 2DIGIT  ; 00-23
+  time-minute    = 2DIGIT  ; 00-59
+  time-second    = 2DIGIT  ; 00-58, 00-59, 00-60 based on leap second
+                             ; rules
+  time-secfrac   = "." 1*DIGIT
+  time-numoffset = ("+" / "-") time-hour ":" time-minute
+  time-offset    = "Z" / time-numoffset
+
+  partial-time   = time-hour ":" time-minute ":" time-second
+  full-date      = date-fullyear "-" date-month "-" date-mday
+  full-time      = partial-time time-offset
+
+  date-time      = full-date "T" full-time
+
+  hms            = decimal ":" partial-time
+
+  ipnum          = decimal ":" 1*3digit "." 1*3digit "." 1*3digit "." 1*3digit
+  utf8string     = decimal ":" 1*UTF8
+  UTF8           = %x01-09 / %x0B-0C / %x0E-7F / UTF8-2 /
+                   UTF8-3 / UTF8-4 / UTF8-5 / UTF8-6
+  UTF8-1         = %x80-BF
+  UTF8-2         = %xC0-DF UTF8-1
+  UTF8-3         = %xE0-EF 2UTF8-1
+  UTF8-4         = %xF0-F7 3UTF8-1
+  UTF8-5         = %xF8-FB 4UTF8-1
+  UTF8-6         = %xFC-FD 5UTF8-1
+</pre>
+<p>Example
+<pre>
+  (worktime (* range time ge 08:00:00 le 17:00:00))
+</pre>
+or
+<pre>
+  (* range numeric l 15 ge 10)
+</pre>
+which is the same as
+<pre>
+  (* or 10 11 12 13 14)
+</pre>
+If in a datespecification time-offset is not 'Z' but a time-numoffset the
+equivalent date without time-numoffset is calculated before the value is stored.<br>
+"2002-12-31T23:59:59+01" will for instance become "2003-01-01T00:59:59".
+
+<h3><a id="prefix">2.3 Prefix</a></h3>
+
+Used to represent sets of strings that all have the same prefix<p>
+ABNF
+<pre>
+  prefix = "6:prefix" utf8string
+</pre>
+<p>Example
+<pre>
+  (file (* prefix conf))
+</pre>
+<p> This expression will match any expression with the tag &quot;file&quot;,
+ whose second element is a octetstring that starts with the string "conf". 
+
+<h3><a id="suffix">2.4 Suffixes</a></h3>
+
+Used to represent sets of strings that all have the same suffix
+<p>
+ABNF
+<pre>
+  suffix = "6:suffix" utf8string
+</pre>
+<p>Example
+<pre>
+  (file (* suffix pdf))
+</pre>
+<p> This expression will match any expression with the tag &quot;file&quot;,
+ whose second element is a octetstring that ends with the string "pdf". 
+
+<h3><a id="bcond">2.5 Boundary conditions</a></h3>
+
+Boundary conditions in policy rules are specific to SPOCP. Through them we can allow
+evaluation of constraints outside the process of comparing S-expressions.
+<p>
+ABNF
+<pre>
+  bcond        = "5:bcond" 1*( ["!"] type ":" typespecific )
+  type         = 1*lc
+  lc           = %x61-7A
+  typespecific = *UTF8
+</pre>
+<p>Example
+<pre>
+  (* bcond gdbm:groups:eva:member)
+</pre>
+<p>Which is a link to a GDBM file and will evaluate to true if the gdbm file
+  'groups'
+  has a key 'eva' that points to a data item that is equal to 'member'. We will
+  expand on boundary conditions in <a href="#bcond">EXTREF</a> section.
+<p>
+More on boundary conditions can be found in the special document on
+<a href="bcond.html">boundary conditions</a>
+<p>
+
+<h2><a id="ordering">3. Ordering S-expressions</a></h2>
+
+<p>
+In order to be able to model any kind of rights as a set of rules in the form 
+of S-expressions, we need to define a binary relation, &lt;=, that can be used 
+to order S-expressions. We want a relation where A&lt;=B belongs to the relation 
+if rule A is less permissive than rule B. For many S-expressions, neither A&lt;=B 
+nor B&lt;=A belongs to the relation.. Once the relation is defined, we also 
+need an efficient way to decide (compute) if A&lt;=B. In SPKI [SPKI], an algorithm 
+to compute "Intersection of tag sets" is specified. Applied to two rules, A 
+and B, it evaluates to the less permissive rule, if A&lt;=B or B&lt;=A. If there 
+is no &lt;=-relation between A and B, it evaluates to the empty S-expression. 
+This type of relation is called a "preorder", and is characterised by being 
+reflexive and transitive, that is by satisfying the two conditions:
+</p>
+<ol>
+  <li>If A is an S-expression then A &lt;= A is always true (reflexive)
+  <li>If A, B and C are S-expressions that satisfies A &lt;= B and B &lt;= C,
+    then it is also true that A &lt;= C (transitive)
+</ol>
+
+<I>Note</I> that if A and B are any S-expressions then there exists three possible 
+states for the comparision relation: A &lt;= B, B &lt;= A or neither. The most 
+typical case is that neither A &lt;= B or B &lt;= A is true. 
+<p>
+<i>Note</i> also that we will leave boundary conditions out of the picture
+  for a while.
+<p>
+Trying to define the comparision relation we will start with S-expressions 
+without starforms. First some basic definitions:
+<p>
+<ol>
+  <li>For two octetstrings A and B, A &lt;= B only if A == B 
+  <li>For a octetstring A and an S-expression B, it is neither the case that A&lt;= 
+    B nor B&lt;=A.
+</ol>
+
+Given these cases one can define the comparison between two starform-free S-expressions 
+as:
+<p>
+<b>If S and T are *-free S-expressions, then S &lt;= T if S has at least
+as many elements as T and every element in S is &lt;= the corresponding element 
+in T. </b> 
+<p>
+Example:
+<ul>
+  <li>(fruit apple large red) &lt;= (fruit apple)
+  <li>(fruit apple (size large) red) &lt;= (fruit apple (size) red)
+</ul>
+and these are neither &lt;= nor &gt;=
+<ul>
+  <li>(fruit apple large red) compared to (fruit apple (large) red)
+  <li>(fruit apple large red) compared to (fruit apple red large)
+</ul>
+
+<i>Note</i> that order is absolutely vital
+<p>
+(apple (weight 100)(colour red)) is not &lt;= (apple (colour red)(weight 100)) 
+<p>
+The relationship can also more formally be defined as:<p>
+<pre>
+  (X<sub>1</sub> X<sub>2</sub> ... X<sub>m</sub>) &lt;= (Y<sub>1</sub> Y<sub>2</sub> ... Y<sub>n</sub>)
+  if and only if
+  n &lt;= m and X<sub>i</sub> &lt;= Y<sub>i</sub> for i = 1,...,n
+</pre>
+<p>To do the more general comparison you have to go through a number of steps 
+  and if anyone of them is true then the comparison is true. If none is true then 
+  the comparison is false. 
+<p>
+S &lt;= T, when S and T are elements of S-expressions, if:
+<ol>
+  <li>S and T are strings and S == T
+  <li>S is a string and T is a <b>range</b>,<b>suffix</b> or
+      <b>prefix</b>-form that contains S
+  <li>S and T are <b>range</b>-forms where T contains S
+  <li>S and T are <b>prefix</b>-forms where T contains S
+  <li>S and T are <b>suffix</b>-forms where T contains S
+  <li>S and T are lists that fullfills the relationship defined above
+  <li>S = (* or X<sub>1</sub> ... X<sub>m</sub>) and X<sub>i</sub> &lt;= T for any i=1,..,m
+  <li>T = (* or Y<sub>1</sub> ... Y<sub>n</sub>) and S &lt;= Y<sub>i</sub> for any i=1,..,n
+</ol>
+
+<h3><a id=bcondord>3.1 Ordering and boundary conditions</a></h3>
+
+Boundary conditions are a completely different kind of beast and if they are used
+they add another dimension to S-expressions.
+<p>
+In order to make the influence of boundary contditions on ordering understandable,
+I have to introduce three fictitious s-expressions: &epsilon; which is by definition
+&lt;= any s-expression, &Omega; which any S-expression is &lt;= and &#934; for which
+the following is valid &epsilon; &lt;= &#934; &lt;= &Omega; . Needless to say 
+&epsilon; &lt;= &Omega;
+<p>
+Also, it is so that given two boundary conditions A and B, A &lt;= B if and only if 
+A == B when compared as two octet strings.
+<p>
+When evaluating a boundary condition, if it evaluates to TRUE it is replaced in
+the S-expression with a &Omega; S-expression. If on the other hand it evaluates to
+FALSE it will be replaced by a &epsilon; S-expression.
+<p> 
+Further if when comparing two lists of S-expressions there is a sequence of one or more
+boundary conditions between two other elements in one position in one of them and none in
+the same position in the other, then it is assumed that a &#934; S-expression is situated
+in that position in the s-expression which lacked boundary conditions. 
+<p>
+Building on the descriptions above;
+<p>
+Given two lists X = (X<sub>1</sub> A<sub>1</sub> X<sub>2</sub> X<sub>3</sub> ) and
+Y = (Y<sub>1</sub> B<sub>1</sub> Y<sub>2</sub> B<sub>2</sub> Y<sub>3</sub> ). Where
+A<sub>i</sub> and B<sub>i</sub> are boundary conditions and X<sub>i</sub> and Y<sub>i</sub>
+are S-expressions.
+<p>
+Then the following lists are 'constructed' before comparision:<br>
+<pre>
+X' = (X<sub>1</sub> A<sub>1</sub> X<sub>2</sub>  &#934;  X<sub>3</sub> ) and
+Y' = (Y<sub>1</sub> B<sub>1</sub> Y<sub>2</sub> B<sub>2</sub> Y<sub>3</sub> ) 
+</pre>
+<p>
+And the comparision process becomes: X' &lt;= Y' if and only if
+<ol>
+<li>X<sub>1</sub> &lt;= Y<sub>1</sub>
+<li>The two octet strings A<sub>1</sub> and B<sub>1</sub> are equal
+<li>X<sub>2</sub> &lt;= Y<sub>2</sub>
+<li>The boundary condition B<sub>2</sub> evaluates to TRUE which means it is replaced by 
+&Omega;. ( &#934; &lt;= &Omega; by definition )
+<li>X<sub>3</sub> &lt;= Y<sub>3</sub>
+</ol>
+<p>
+<em>Note</em> that if a boundary condition appears at the end of a list, whether it is
+evaluated or not depends on the length of the other list<br>
+
+If two lists are X = (X<sub>1</sub> X<sub>2</sub> ) and
+Y = (Y<sub>1</sub> B<sub>1</sub> Y<sub>2</sub> B<sub>2</sub> ). Then
+the 'constructed' lists becomes:
+<pre>
+X' = (X<sub>1</sub> &#934; X<sub>2</sub> ) and
+Y' = (Y<sub>1</sub> B<sub>1</sub> Y<sub>2</sub> B<sub>1</sub> ) 
+</pre>
+And Y' can never be &lt;= X' since Y' contains more elements than X'.
+<p> 
+Boundary conditions are not allowed in <b>range</b>, <b>prefix</b> or <b>suffix</b>
+forms.
+<p>
+If a <b>bcond</b> starform contains more than one boundary condition then all have to evaluate to
+TRUE for the whole condition to become true (replaced by &Omega;) . The order in which
+the boundary conditions within
+one <b>bcond</b> starform is evaluated is not specified.
+Placing two or more <b>bcond</b> starforms
+after one another forces an order in the evaluation of the boundary conditions but are otherwise
+no different from placing all the boundary conditions in one <b>bcond</b> starform and are
+therefor not dealt with in the section above.
+<p>
+
+<h2><a id="format">4. Common format for S-expressions used in SPOCP</a></h2>
+
+When describing rules and thereby queries we have chosen to structure the rules 
+into sub-expressions tagged with resource, action and subject. This is form of 
+expressing authorisation rules that is frequent in many applications. 
+<p>
+
+<dl>
+<dt>Resource</dt>
+<dd>The item someone/something wants to do something on</dd>
+</dl>
+<dl>
+<dt>Action</dt>
+  <dd>The action to be applied to the resource</dd>
+</dl>
+<dl>
+  <dt>Subject</dt>
+  <dd>Who/what and under what circumstance this object wants to apply the specified 
+    action to the specified resource</dd>
+</dl>
+<p>
+
+Example:
+<pre>
+  (spocp (resource mailer)(action send)(subject (email eva@minorg.se)))
+</pre>
+<p>
+Which as a rule could be taken to mean that the user that has the emailaddress
+'eva@minorg.se' is allowed to use a speified mailserver to send emails to
+anyone.<p>
+A query, on the same topic, could then be:<p>
+<pre>
+  (spocp (resource mailer)(action send (to roland@dinorg.se))(subject (email eva@minorg.se)))
+</pre>
+
+<h2><a id="onbcond">5. On boundary conditions</a></h2>
+
+Boundary conditions are used to extend policies expressed as pure S-expressions, 
+to include information from other information resources. The syntax and semantics 
+of boundary conditions are built-in features of the SPOCP Policy Engine which 
+both interprets and acts upon these references. This in contrast to expression 
+describing a particular resource, which is only meaningful to the 
+authorisation client. 
+
+<h3><a id="varsub">5.1 Variable substitution</a></h3>
+
+A simple variable substitution is allowed in boundary conditions. The place where 
+such a substitution is supposed to appear in the boundary condition is marked 
+by the appearance of "${" and "}" separated by a word (the variable), for example 
+"${user}". During evaluation of the boundary condition, the query S-expression 
+is scanned for lists with the tag "user" and the remaining elements in that list 
+is replacing "${user}" in the boundary condition. 
+<p>
+Example:
+<p>
+If the boundary condition is:
+<pre>
+  (* bcond bcond:uid=${uid},domain="${domain}")
+</pre>
+<p>
+and the query S-expression is
+<p>
+<pre>
+  (spocp (resource res)(action some)(subject (uid roland)(domain se catalogix)))
+</pre>
+<p>
+After substitution the boundary condition will be:
+<p>
+<pre>
+  (* bcond bcond:uid=roland,domain="se catalogix")
+</pre>
+<p>
+<i>Note</i> that recursive references, like "${foo${bar}}", are not allowed.
+
+<h2><a id="hierarchy">6. Notes on hierarchical names</a></h2>
+
+In many situations your application has organised and named both Sources, Actions 
+and Resources as hierarchies. If you want to take full advantage of the hierarchical 
+names in rules and queries you have to study carefully how S-expressions are evaluated 
+by the policy engine. Assume that a name is (name P<sub>1</sub> P<sub>2</sub> ...
+P<sub>n</sub> ) where P<sub>1</sub> 
+is the part of the name that is closest to the root of the hierarchy. Then you 
+can represent the whole space of names below P<sub>1</sub>, by just specifying the top part 
+of the namespace: (name P<sub>1</sub>). Correspondingly you can represent a specific part of 
+the namespace by defining a larger part of the hierarchy (name P<sub>1</sub> P<sub>2</sub> 
+... P<sub>m</sub>), m &lt; n. 
+<p> But what if you'd like to represent everyone that has the same last part P<sub>n</sub>. 
+  An example of when this would be is if you defined role names within a organization 
+  as a concatenation of the organization name, the name of all the organizational 
+  units from the top with the roletype. Like this: (role O OU<sub>1</sub> ...
+  OU<sub>n</sub> R) 
+<p>
+  "(role UmU Umdac boss)" would then be the rolename for the boss of the
+  organizational unit Umdac within the organization UmU.
+<p> Using this structure you could say (role UmU Umdac) and mean every role within
+  that organizational unit and all the organizational units below. But if you
+  said (role UmU boss ) you would refer to the boss of UmU and not all the bosses within
+  UmU. This since (role UmU umdac boss) is not &lt;= (role UmU boss). So adding a
+  role type to a list of O and OU's would mean exactly that role at that level in
+  the organization.
+<p> If you instead would define the rolename to be (role R O OU<sub>1</sub> ...
+  OU<sub>n</sub> ), 
+  you could address every specific roletype within the organization by writing 
+  things like (role boss UmU), which would then mean every 'boss' within the organization 
+  UmU. Which follows since (role boss UmU OU) is &lt;= (role boss UmU). But you 
+  could not specifically target the boss at UmU. 
+<p> One can add complexity to this by using role types that are hierarchical such 
+  that the name would be (role O OU<sub>1</sub> .. OU<sub>n</sub> R<sub>1</sub> ..
+  R<sub>m</sub>) or (role R<sub>1</sub> .. R<sub>m</sub> 
+  OU<sub>1</sub> ... OU<sub>n</sub>). By using the first form you could address every
+  role within 
+  a role hierarchy at a specific place in the organization hierarchy but not in 
+  the whole organization tree. Using the later role you could address one whole 
+  subtree of the role hierarchy anywhere within a subtree of the organizational 
+  hierarchy. 
+<p>
+<pre>
+  (role UmU admin finance) &lt;= (role UmU admin)
+  (role UmU umdac admin) is not &lt;= (role UmU admin)
+  and
+  (role admin UmU umdac) &lt;= (role admin UmU)
+  (role admin finance UmU) is not &lt;= (role admin UmU)
+</pre>
+<p> Remember that the decision of the meaning of a particular rule is taken when 
+  modelling the authorisation policy for a particular application. The Policy 
+  Engine does not know anything about the application. It only compares queries 
+  to rules according to builtin evaluation rules for restricted S-expressions, 
+  as described in this document. What we are discussing in this section are the 
+  consequences of choosing certain meanings of a particular S-expression, given 
+  how the Policy Engine tests for the &lt;=-relation. These properties of the 
+  Policy Engine must be fully understood by those deciding the structures of rules 
+  and queries. 
+<p>When you have two hierarchies that are linked to each other it might be best 
+  to decouple them and make two lists of them. (role (org O OU<sub>1</sub> .. 
+  OU<sub>n</sub>)(type R<sub>1</sub> .. R<sub>m</sub>)) which gives you freedome to
+  express the relationship "any role 
+  whithin a role hierarchy anywhere within a organization hierarchy". 
+<pre>
+  (role (org UmU) (type admin finance)) &lt;= (role (org UmU) (type admin))
+  (role (org UmU umdac) (type admin)) &lt;= (role (org UmU) (type admin))
+</pre>
+<p> There is of course nothing that prevents you from using one nameform in one 
+  set of rules and another form in another as long as the queries you pose to
+  the policy engine use the appropriate one. What you should make certain though 
+  is that the form you choose gives you the possibility to express exactly what 
+  you are aiming for. 
+<p>
+
+<h2><a id="example">7. Example</a></h2>
+
+<h3><a id="mailrelay">7.1 Mailrelay</a></h3>
+
+<h4><a id="mailrelayProblem">7.1.1 problem statement</a></h4>
+
+Due to the maluses of mailservers on the Internet, many organizations have decided 
+to limit what kind of mails that can be routed through their mailserver. Normally 
+this amounts to ascertain that a mail either has as originator someone within 
+the organization or that the claimed recipient belongs to the organization. 
+<p>
+The problem then becomes: who belongs to the organization ?
+<p> One often used solution when it is the sender that is checked is to make certain 
+  that the ip address of the host used by the client belongs to the set of ip 
+  addresses that the organization owns/uses. <br>
+  One drawback of such a check is that anyone that is able to send a mail from 
+  a machine within the organization is regarded as a member of the organization. 
+  By some this might be regarded as a feature by other as a bug. We might also 
+  have the situation that the organization may want to restrict the rights of 
+  certain persons within the organization so that they can only send to certain 
+  recipients or receive from specified senders. And of course anyone knows about 
+  the much wanted possibility to restrict for instance spam from reaching users 
+  mailboxes. But that problem is however not dealt with in this example. 
+<p> So summing up we have three tests that should be performed before a mail is 
+  allowed to be forwarded by the organization's mailserver 
+<ul>
+  <li>Does the sender or the receiver belong to the organization ?
+  <li>Is the Sender allowed to send mail to this recipient ?
+  <li>Is the receiver allowed to receive mail from this sender ?
+</ul>
+If anyone of these questions are answered with <b>no</b> then the mail should be rejected.
+
+<h4><a id="spocpsol">7.1.2 SPOCP solution</a></h4>
+
+Normal SMTP communication gives access to the following information:
+<ul>
+<li>sender host address
+<li>sender mail address
+<li>receiver mail address
+</ul>
+If SMTP AUTH is used, authentication information is also present.
+<br>
+On a high level one could then specify the following SPOCP rules to match the tests specified above
+<ol>
+<li><pre>(spocp (resource mailrelay)(action mail)(subject knownUnrestrictedSender))</pre>
+<li><pre>(spocp (resource mailrelay)(action mail)(subject knownUnrestrictedReceiver))</pre>
+<li>
+    <pre>(spocp (resource mailrelay)(action mail allowedReceiver)(subject knownRestrictedSender))</pre>
+<li>
+    <pre>(spocp (resource mailrelay)(action mail allowedSender)(subject knownRestrictedReceiver))</pre>
+</ol>
+The problem then becomes defining knownUnrestrictedSender, knownUnrestrictedReceiver, 
+knownRestrictedSender, knownRestrictedReceiver as well as allowedReceivers and 
+allowedSenders. 
+
+<h5><a id="ldap">7.1.2.1 Using LDAP enterprise directory</a></h5>
+
+If one can assume that every entity that belongs to an organization is represented 
+in the enterprise directory, then the knownUnrestrictedSender/Receiver, knownRestrictedSender/Receiver 
+tests can be expressed as searches for entries within the directory. But in order 
+for that to work, it is necessary that some special information is present in 
+the directory. If &quot;inetOrgPerson&quot; is used as the objectclass for persons 
+within the organization, then the attribute &quot;mail&quot; is present and should 
+be used. But that isn't enough, we have to be able to store information about 
+who are restricted and who are not, as well as who they are allowed to send or 
+receive mail from. In order for the rest of the example to work: Assume that every 
+person is also described by the objectclass &quot;xMailUser&quot; which contains 
+the following three attributes: 
+<p>
+<dl>
+<dt>restricted</dt>
+  <dd>Can have four values: "send", "receive", "noSend" (which means &quot;no 
+    send restrictions&quot;) and "noReceive"</dd>
+<dt>relayTo</dt>
+<dd>A list of allowed receivers</dd>
+<dt>realyFrom</dt>
+<dd>A list of allowed senders</dd>
+</dl>
+
+<p>Using the <b>ldapset</b> boundary condition, the test of &quot;knownUnrestrictedSender&quot; 
+  can be expressed as: 
+<pre>
+(* bcond ldapset:ldap.org.com;dc=org,dc=com;{\0$mail &amp; ${sender}}/restricted &amp; noSend)
+</pre>
+<p> A corresponding query could then include:
+<pre>(spocp ... (subject (sender torbjorn.wiberg@adm.umu.se) ... )))</pre>
+<p><i>Note</i> ldap.org.com is assumed to be the name of the organization's ldapserver, 
+  and "dc=org,dc=com" is the root of the organization's subtree in that ldapserver. 
+<p> The meaning of this rule is that if there is an entry in the enterprise directory 
+  with the sender's mail address as one of the values for the &quot;mail&quot; 
+  attribute and that entry also has the value &quot;noSend&quot; (remenber that 
+  this means &quot;no send restriction&quot;) on the &quot;restricted&quot; attribute, 
+  that entry is regarded as representing a "known unrestricted sender". Given 
+  how easy it is to fake sender addresses in mails, one might want to add an extra 
+  test for sender host ipaddress. Thereby the subject part of the rule is expanded 
+  to be: 
+<pre>(subject
+  (* bcond ldapset:ldap.org.com;dc=org,dc=com;{\0$mail &amp; ${sender}}/restricted &amp; noSend)
+  (ipnum (* range ipv4 &lt;organizations ip number series&gt;)) 
+)</pre> 
+<p> That is, not only must the sender be regarded as a knownUnstrictedSender, 
+  the mail must also originate from a machine within the organization. 
+<p> To satisfy this rule, the corresponding query should include:
+<pre>... (subject (sender torbjorn.wiberg@adm.umu.se)
+
+             (ipnum 193.195.52.1))</pre>
+<p>To cover the situation when users belonging to the organization use SMTP AUTH 
+  when not on premises, one could add an extra possibility (necessitates a slight 
+  rewrite of the above rule):
+<pre>
+(subject
+  (* set
+    (smptauth)
+    (internal
+      (* bcond ldapset:ldap.org.com;dc=org,dc=com;{\0$mail &amp; ${sender}}/restricted &amp; noSend)
+      (ipnum (* range ipv4 &lt;organizations ip number series&gt;))
+    )
+  )
+)
+</pre>
+<p>
+What the mailrelay would send to the policy engine would be queries similar to these ones:
+<ul>
+<li>
+<pre>
+(spocp
+  (resource mailrelay)
+  (action mail)
+  (subject (internal (sender roland@catalogix.se)(ipnum 193.195.52.1)))
+)
+</pre>
+<li>
+<pre>(spocp (resource mailrelay)(action mail)(subject (smtpauth roland)))</pre>
+</ul>
+The first version is used whenever SMTP AUTH is not used, the second when it is.
+Being able to authenticate to the mailserver using SMTP AUTH is regarded as enough to decide
+whether the entity is part of the organization or not.
+<p> If the sender is not an unrestricted sender, another rule will be checked. 
+  Building that rule, again we assume that the restrictions are stored in the 
+  enterprise directory. Two checks need to be done in order to decide whether 
+  the sender is allowed to send to the specified recipient or not, if she is a 
+  restricted sender. 
+<dl>
+<dt>knownRestrictedSender</dt>
+<dd>
+<pre>
+(* bcond ldapset:ldap.org.com;dc=org,dc=com;{\0$mail &amp; ${sender}}/restricted &amp; send)
+</pre>
+</dd>
+</dl>
+<dl>
+<dt>allowedReceiver</dt>
+<dd>
+<pre>
+(* bcond ldapset:ldap.org.com;dc=org,dc=com;{\0$mail &amp; ${sender}}/relayTo &amp; ${receiver})
+</pre>
+</dd>
+</dl>
+<p> Combining the two tests we would get the following SPOCP rule: 
+<pre>
+(spocp
+  (resource mailrelay)
+  (action mail
+  (* bcond ldapset:ldap.org.com;dc=org,dc=com;{\0$mail &amp; ${sender}}/relayTo &amp; ${receiver})
+))
+  (subject
+    (* set
+      (smptauth )
+      (internal
+        (* bcond ldapset:ldap.org.com;dc=org,dc=com;{\0$mail &amp; ${sender}}/restricted &amp; send)
+        (ipnum (* range ipv4 &lt;organizations ip number series&gt;))
+      )
+    )
+  )
+)
+</pre>
+<p>
+And the corresponding query would be something like this:
+<pre>
+(spocp
+  (resource mailrelay)
+  (action mail (receiver leif@it.su.se))
+  (subject (internal (sender roland@catalogix.se)(ipnum 193.195.52.1)))
+)
+</pre>
+<p> Two tests are also needed to handle the receiver cases (knownUnrestrictedReceiver 
+  and knownRestrictedReceiver) but those are left as an excercise to the reader.
+<p> Perhaps there also ought to be a test that checked whether the uid that was 
+  received from the authentication is connected to the sender mail address, but 
+  that would be rather easy to add. 
+<p> <i>Note</i> that there are limitations to this solution which probably makes 
+  it impractical to use in real life, so regard it only as an example. There is 
+  for instance a limitation in the ldapset boundary condition presently, that 
+  only allows you to define exact match tests, hence you can not specify a mail 
+  domain as one value for &quot;relayTo&quot; or &quot;relayFrom&quot; since the 
+  tests are always with the complete mail address. This will probably change in 
+  the future. 
+
+<h2><a id="ack">8. Acknowledgement</a></h2>
+
+The work on using S-expression for rights management was brought to my attention by
+some collegues at the Swedish Institute of Computer Science (SICS). Babak Sadighi
+had the orgininal thoughts on right management, Olav Bandmann brought S-expressions
+into the process and together with Mads Dam he did the mathematical evaluation 
+of the less permissive relationship between S-expression that Spocp depends on.
+<p>
+Interested parties should read 
+<a href="http://www.sics.se/isl/pbr/papers/ConstraintDelegation.ps">Constraint Delegation</a> and 
+<a href="http://www.sics.se/isl/pbr/papers/FMVReport.ps"> Decentralized management of access control</a>. 
+<p>
+Or just look at the <a href="http://www.sics.se/isl/pbr/">Policy based reasoning at SICSs web site</a>. 
+
+<h2><a id="ref">9. References</a></h2>
+
+<dl> 
+  <dt>RFC1738</dt>
+  <dd> Berners-Lee, T., Masinter, L. and M. McCahill, "Uniform Resource Locators 
+    (URL)", RFC 1738, December 1994. <br>
+    &nbsp; </dd>
+  <dt>RFC2252</dt>
+  <dd> Wahl, M., Coulbeck, A., Howes, T. and S. Kille, "Lightweight Directory 
+    Access Protocol (v3): Attribute Syntax Definitions", RFC 2252, December 1997. 
+    <br>
+    &nbsp; </dd>
+  <dt>RFC2253</dt>
+  <dd> Wahl, M., Kille, S., and T. Howes, "Lightweight Directory Access Protocol 
+    (v3): UTF-8 String Representation of Distinguished Names", RFC 2253, December 
+    1997. <br>
+    &nbsp; </dd>
+  <dt>RFC2255</dt>
+  <dd> Wahl, M. and T. Howes, "LDAP URL Format", RFC 2253, December 1997. <br>
+    &nbsp; </dd>
+  <dt>RFC2693</dt>
+  <dd> Ellison, C. et al. , "SPKI Certificate Theory", RFC 2693, September 1999. 
+    <br>
+    &nbsp; </dd>
+  <dt>RFC3339</dt>
+  <dd> Klyne, O. and Newman, C. , "Date and Time on the Internet: Timestamps", 
+    RFC3339, July 2002. <br>
+    &nbsp; </dd>
+  <dt>SDSI</dt>
+  <dd> Ron Rivest and Butler Lampson, "SDSI - A Simple Distributed Security Infrastructure 
+    [SDSI]", &lt;http://theory.lcs.mit.edu/~cis/sdsi.html&gt;.<br>
+    &nbsp; </dd>
+  <dt>SEXP</dt>
+  <dd>Ron Rivest, code and description of S-expressions, &lt;http://theory.lcs.mit.edu/~rivest/sexp.html&gt;. 
+    <br>
+    &nbsp; </dd>
+  <dt>SEXP2</dt>
+  <dd>Ron Rivest, &quot;S-Expressions&quot;, draft-rivest-sexp-00.txt, May 1997, 
+    &lt;http://theory.lcs.mit.edu/~rivest/sexp.txt&gt;.</dd>
+  <dt>&nbsp;</dt>
+</dl>
+</body>
+</html>
