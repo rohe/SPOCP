@@ -1224,6 +1224,8 @@ spocpc_protocol_op(octarr_t *oa, octet_t *prot)
 	size_t n;
 
 	for (i = 0, l = 0; i < oa->n ; i++) {
+		if (oa->arr[i]->len == 0)
+			continue;
 		la = oa->arr[i]->len ;
 		l += la + DIGITS(la) + 1;
 	}
@@ -1322,6 +1324,52 @@ spocpc_send_X(SPOCP * spocp, octarr_t *argv, queres_t * qr)
 }
 
 /*--------------------------------------------------------------------------------*/
+
+
+static octarr_t *
+argv_make( char *arg1, char *arg2, char *arg3, char *arg4, char *arg5 )
+{
+	octarr_t	*oa;
+	octet_t		*op;
+	
+	oa = octarr_new(6);
+
+	op = str2oct(arg1, 0);
+
+	octarr_add(oa, op);
+
+	if (arg2 && *arg2)
+		op = str2oct(arg2, 0);
+	else
+		op = oct_new(0, 0);
+
+	octarr_add(oa, op);
+
+	if (arg3 && *arg3)
+		op = str2oct(arg3, 0);
+	else
+		op = oct_new(0, 0);
+
+	octarr_add(oa, op);
+
+	if (arg4 && *arg4)
+		op = str2oct(arg4, 0);
+	else
+		op = oct_new(0, 0);
+
+	octarr_add(oa, op);
+
+	if (arg5 && *arg5)
+		op = str2oct(arg5, 0);
+	else
+		op = oct_new(0, 0);
+
+	octarr_add(oa, op);
+
+	return oa;
+}
+ 
+/*--------------------------------------------------------------------------------*/
 /*!
  * Send a Spocp query to a spocp server
  * \param spocp The Spocp session
@@ -1334,23 +1382,19 @@ spocpc_send_X(SPOCP * spocp, octarr_t *argv, queres_t * qr)
 int
 spocpc_str_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		arr[3], *ap = arr;
+	octarr_t	*argv;
+	int		ret;
 
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 3;
+	if( query == 0 || *query == 0 )
+		return SPOCP_MISSING_ARG;
 
-	oct_assign(&arr[0], "QUERY");
+	argv = argv_make( "QUERY", path, query, 0, 0 );
 
-	if (path && *path)
-		oct_assign(&arr[1],path);
-	else
-		arr[1].len = 0;
+	ret = spocpc_send_X(spocp, argv, qr);
 
-	oct_assign(&arr[2], query);
-
-	return spocpc_send_X(spocp, &argv, qr);
+	octarr_free( argv );
+	
+	return ret;
 }
 
 /*!
@@ -1399,23 +1443,19 @@ spocpc_send_query(SPOCP * spocp, octet_t *path, octet_t *query, queres_t * qr)
 int
 spocpc_str_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		arr[3], *ap = arr;
+	octarr_t	*argv;
+	int		ret;
 
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 3;
+	if( rule == 0 || *rule == 0 )
+		return SPOCP_MISSING_ARG;
 
-	oct_assign(&arr[0], "DELETE");
+	argv = argv_make( "DELETE", path, rule, 0, 0 );
 
-	if (path && *path)
-		oct_assign(&arr[1],path);
-	else
-		arr[1].len = 0;
+	ret = spocpc_send_X(spocp, argv, qr);
 
-	oct_assign(&arr[2], rule);
-
-	return spocpc_send_X(spocp, &argv, qr);
+	octarr_free( argv );
+	
+	return ret;
 }
 
 /*!
@@ -1464,21 +1504,16 @@ spocpc_send_delete(SPOCP * spocp, octet_t *path, octet_t *rule, queres_t * qr)
 int
 spocpc_str_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		arr[2], *ap = arr;
+	octarr_t	*argv;
+	int		ret;
 
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 1;
+	argv = argv_make( "SUBJECT", subject, 0, 0, 0 );
 
-	oct_assign(&arr[0], "SUBJECT");
+	ret = spocpc_send_X(spocp, argv, qr);
 
-	if (subject && *subject) {
-		oct_assign(&arr[1],subject);
-		argv.n = 2;
-	}
-
-	return spocpc_send_X(spocp, &argv, qr);
+	octarr_free( argv );
+	
+	return ret;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1530,39 +1565,19 @@ int
 spocpc_str_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
 	char *info, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		arr[5], *ap = arr;
+	octarr_t	*argv;
+	int		ret;
 
-	if (rule == 0 || *rule == '\0')
-		return SPOCPC_PARAM_ERROR;
+	if( rule == 0 || *rule == 0 )
+		return SPOCP_MISSING_ARG;
 
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 3;
+	argv = argv_make( "ADD", path, rule, bcond, info );
 
-	oct_assign(&arr[0], "ADD");
+	ret = spocpc_send_X(spocp, argv, qr);
 
-	if (path && *path)
-		oct_assign(&arr[1],path);
-	else
-		arr[1].len = 0;
-
-	oct_assign(&arr[2], rule);
-
-	if (bcond && *bcond) {
-		oct_assign(&arr[3], bcond);
-		argv.n = 4;
-	}
-
-	if (info && *info) {
-		if (bcond == 0 || *bcond == 0)
-			oct_assign(&arr[3], "NULL");
-
-		oct_assign(&arr[4], info);
-		argv.n = 5;
-	}
-
-	return spocpc_send_X(spocp, &argv, qr);
+	octarr_free( argv );
+	
+	return ret;
 }
 
 /*--------------------------------------------------------------------------------*/
