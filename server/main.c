@@ -49,28 +49,6 @@
 
 /* srv_t    srv ; */
 
-void thread_make(srv_t *srv, int i) ;
-
-/*
-int  timeout = 0 ;
-int  threads = 0 ;
-char *certificateFile = 0 ;
-char *privateKey = 0 ;
-char *caList = 0 ;
-char *dhFile = 0 ;
-char *SslEntropyFile = 0 ;
-char *passwd = 0 ;
-
-char *logfile = 0 ;
-char *pidfile = 0 ;
-int  port = 0 ;
-char *uds = 0 ;
-char *rulefile = 0 ;
-int  sslverifydepth = 0 ;
-char *server_id = 0 ;
-int  srvtype = NATIVE ;
-*/
-
 typedef void Sigfunc(int) ;
 void sig_pipe( int signo ) ;
 void sig_chld(int signo) ;
@@ -140,7 +118,6 @@ int main( int  argc, char **argv )
   /*spocp_err = 0 ;*/
 
   memset( &srv, 0, sizeof( srv_t )) ;
-  srv.protocol = NATIVE ;
 
   pthread_mutex_init( &(srv.mutex), NULL ) ;
   pthread_mutex_init( &(srv.mlock), NULL ) ;
@@ -170,12 +147,6 @@ int main( int  argc, char **argv )
 	if( debug < 0 ) debug = 0 ;
         break ;
 
-/*
-      case 's':
-        srv.protocol = SOAP ;
-        break ;
-*/
-
       case 'h' :
       default:
         fprintf(stderr,"Usage: %s [-f configfile] [-d debuglevel]\n", argv[0]) ;
@@ -196,7 +167,7 @@ int main( int  argc, char **argv )
   oct.len = strlen(path) ;
   ruleset_create( &oct, &srv.root ) ;
 
-  if( read_config( cnfg, &srv ) == 0 ) exit( 1 ) ;
+  if( init_server( &srv, cnfg ) < 0 ) exit(1) ;
 
   if( srv.port && srv.uds ) {
     fprintf(stderr,
@@ -261,7 +232,14 @@ int main( int  argc, char **argv )
 #endif
 
     saci_init() ;
+#ifdef HAVE_DAEMON
+    if( daemon( 1, 1 ) < 0 ) {
+      fprintf( stderr, "couldn't go daemon\n" ) ;
+      exit( 1 ) ;
+    }
+#else
     daemon_init( "spocp", 0) ;
+#endif
 
     if ( srv.pidfile ) {
       /* Write the PID file. */
@@ -303,19 +281,10 @@ int main( int  argc, char **argv )
     clilen = sizeof(cliaddr) ;
 
     DEBUG( SPOCP_DSRV ) traceLog("Creating threads") ;
+    /* returns the pool the threads are picking work from */
+    srv.work = tpool_init( srv.threads, srv.threads, 1 ) ;
 
-    srv.worker = (thread_t *) Calloc( srv.threads, sizeof( thread_t )) ;
-
-    /* let 'em lose */
-    for( i = 0 ; i < srv.threads ; i++ ) {
-      thread_make( &srv, i ) ;
-    }
-
-   /*signal( SIGINT, sig_int ) ;*/
-
-    LOG( SPOCP_INFO ) traceLog( "server started") ;
-
-    for ( ; ; ) pause() ; /* get out of the way */
+    spocp_server_run( &srv )  ;
     
   }
   else {
@@ -324,15 +293,22 @@ int main( int  argc, char **argv )
     DEBUG( SPOCP_DSRV ) traceLog("---->") ;
 
     LOG( SPOCP_INFO ) traceLog( "Reading STDIN" ) ;
+
+    /* If I want to use this I have to do init_server() first 
+    conn = spocp_open_connection( STDIN_FILENO, &srv ) ;
+    */
+    /* this is much simpler */
     conn = ( conn_t *) Calloc( 1, sizeof( conn_t )) ;
     conn->fd = STDIN_FILENO ;
     conn->srv = &srv ;
     init_connection( conn ) ;
 
     LOG( SPOCP_INFO ) traceLog( "Running server" ) ;
+
     spocp_server( (void *) conn ) ;
  
     gettimeofday(&end,NULL) ;
+
     print_elapsed( "query time:", start, end ) ;
   }
 

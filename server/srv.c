@@ -164,6 +164,8 @@ spocp_result_t get_oparg( octet_t *arg, octarr_t **oa )
   octet_t        op ;
   octarr_t       *oarr = *oa ;
 
+  if( oarr ) traceLog( "Non empty oarr ?? (n = %d)", oarr->n ) ;
+
   for( i = 0 ; arg->len ; i++  ) {
     if(( r = get_str( arg, &op )) != SPOCP_SUCCESS ) break ;
     oarr = octarr_add( oarr, octdup( &op )) ;
@@ -172,6 +174,15 @@ spocp_result_t get_oparg( octet_t *arg, octarr_t **oa )
   *oa = oarr ;
 
   return r ;
+}
+
+void oparg_clear( conn_t *con ) 
+{
+  /* reset operation arguments */
+  octarr_free( con->oparg ) ;
+  con->oparg = 0 ;
+  oct_free( con->oppath ) ;
+  con->oppath = 0 ;
 }
 
 /* --------------------------------------------------------------------------------- */
@@ -398,6 +409,8 @@ spocp_result_t com_query( conn_t *conn )
   if( conn->transaction ) rs = conn->rs ;
   else                    rs = conn->srv->root ;
 
+  /* traceLog( "OP argc: %d", conn->oparg->n) ; */
+
   switch( conn->oparg->n ) {
     case 1:
       conn->oppath = 0 ;
@@ -458,6 +471,7 @@ spocp_result_t com_query( conn_t *conn )
   add_response( out, r ) ;
     
   shift_buffer( conn->in ) ;
+  oparg_clear( conn ) ;
 
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
   if(0) timestamp( "Wrote result" ) ; 
@@ -979,13 +993,9 @@ AGAIN:
         r = (*oper)( con ) ;
 
         LOG( SPOCP_DEBUG ) traceLog( "command returned %d", r ) ;
-        LOG( SPOCP_DEBUG ) traceLog( "%d chars left in the input buffer", in->w - in->r ) ;
+        LOG( SPOCP_DEBUG ) traceLog( "%d chars left in the input buffer", in->w - in->r) ;
 
-       /* reset operation arguments */
-        octarr_free( con->oparg ) ;
-        con->oparg = 0 ;
-        oct_free( con->oppath ) ;
-        con->oppath = 0 ;
+        oparg_clear( con ) ;
 
         if( r == SPOCP_CLOSE ) goto clearout;
         else if( r == SPOCP_MISSING_CHAR ) {
@@ -1014,12 +1024,14 @@ AGAIN:
           if(( r = iobuf_resize( in, l - attr.len )) != SPOCP_SUCCESS ) {
             add_response( out, r ) ;
             wr = send_results( con ) ;
+            oparg_clear( con ) ;
             clear_buffers( con ) ;
           }
         }
         goto AGAIN ;
       }
       else {
+        oparg_clear( con ) ;
         clear_buffers( con ) ;
       }
     }
