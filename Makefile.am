@@ -1,6 +1,6 @@
 # $Id$
 
-SUBDIRS = include lib server util client backends doc
+SUBDIRS = include lib server util client backends doc cf
 
 EXTRA_DIST = \
 	COPYRIGHT \
@@ -15,6 +15,5 @@ EXTRA_DIST = \
 	missing \
 	mkinstalldirs \
 	Setup.mk \
-	spocp.doxy \
-	cf/check_sasl2.my cf/check_ssl.m4
+	spocp.doxy
 

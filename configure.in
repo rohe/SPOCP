@@ -447,6 +447,7 @@ AC_OUTPUT([./Makefile \
 		client/src/Makefile \
 		client/tools/Makefile \
 		doc/Makefile \
+		cf/Makefile \
 		include/Makefile \
 		lib/Makefile \
 		util/Makefile \
