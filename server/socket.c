@@ -10,9 +10,7 @@
 
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -25,11 +23,13 @@
 #include <signal.h>
 #include <string.h>
 #include <stdlib.h>
+#include <netinet/tcp.h>
 
 #include <spocp.h>
 #include <struct.h>
 #include <macros.h>
 #include <func.h>
+#include <srv.h>
 
 int  spocp_stream_socket( int lport ) ;
 int  spocp_unix_domain_socket( char *uds ) ;
@@ -38,6 +38,10 @@ void daemon_init( char *procname, int facility ) ;
 typedef struct sockaddr SA ;
 
 #define LISTENQ 256
+
+int lutil_pair( int sds[2] ) ;
+
+/* ---------------------------------------------------------------------- */
 
 int spocp_stream_socket( int lport )
 {
@@ -78,7 +82,7 @@ int spocp_stream_socket( int lport )
     }
   }
 #endif
-#ifdef TCP_NODELAY
+/* #ifdef TCP_NODELAY */
   {
     int one = 1;
 
@@ -87,7 +91,7 @@ int spocp_stream_socket( int lport )
       return -1;
     }
   }
-#endif
+/* #endif */
 #ifdef SO_KEEPALIVE
   {
     int one = 1;
@@ -168,5 +172,10 @@ void daemon_init( char *procname, int facility )
   for( i = 0 ; i < MAXFD ; i++ ) close(i) ;
   */
   if(0) fprintf(stderr,"Done daemoning\n" ) ;
+
+  if( lutil_pair( wake_sds ) != 0 ) {
+    fprintf( stderr, "Problem in creating wakeup pair" ) ;
+    exit( 0 ) ;
+  }
 }
 
