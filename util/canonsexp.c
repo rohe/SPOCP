@@ -23,7 +23,7 @@
 
 #define DIGITS(n) ( (n) >= 1000 ? 4 : (n) >= 100 ? 3 : ( (n) >= 10 ? 2 : 1 ) )
 
-char *print_len_spec( char *s, int n )
+static char *print_len_spec( char *s, int n )
 {
   int  sz = DIGITS( n ), i ;
 
@@ -48,7 +48,7 @@ char *print_len_spec( char *s, int n )
   return s ;
 }
 
-char *find_balancing(char *p, char left, char right)
+static char *find_balancing(char *p, char left, char right)
 {
   int seen = 0;
   char *q = p;
@@ -70,7 +70,7 @@ char *find_balancing(char *p, char left, char right)
 
    and converts it to the canonical form
  */
-char *sexp_to_canonical( char *canon, char *sexp )
+static char *sexp_to_canonical( char *canon, char *sexp )
 {
   char *sp, *cp, *lp, *ep, c ;
   int  n, len ;

@@ -284,7 +284,7 @@ static spocp_result_t get_set( octet_t *oct, element_t *ep )
 
 /* -------------------------------------------------------------------------- */
 
-spocp_result_t do_set( octet_t *oct, element_t *ep )
+static spocp_result_t do_set( octet_t *oct, element_t *ep )
 {
   DEBUG(SPOCP_DPARSE) traceLog( "Parsing 'set' expression" ) ;
 
