@@ -69,7 +69,7 @@ AC_CHECK_FUNC([dlopen],
        [have_modules=yes MODULE_LIBS="-export-dynamic -ldl"])])
 
 if test $have_modules = yes ; then
-  AC_DEFINE(HAVE_LIBDL,1)
+  AC_DEFINE(HAVE_LIBDL,1,[Defined if libidl exists])
   if test -n "$enable-all" ; then
     cert=yes
     difftime=yes
