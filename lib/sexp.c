@@ -47,7 +47,9 @@ get_len(octet_t * op, spocp_result_t *rc)
 	}
 
 	for ( n = 0, l = 0, sp = op->val ; l < op->len && DIGIT(*sp) ; l++,sp++) {
-		if (n) n *= 10;
+		if (n)
+			n *= 10;
+
 		n += *sp -'0' ;
 	}
 
@@ -374,7 +376,7 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 
 			for (i = 0; oa[i]; i++) {
 				o = oa[i];
-				if (o->len == 0)
+				if (o == NULL || o->len == 0)
 					continue;
 				if (o->len > bsize)
 					return 0;
@@ -562,12 +564,12 @@ sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 			}
 			break;
 
-		case 'X':	/* ocarr */
+		case 'X':	/* octarr */
 			oarr = va_arg(ap, octarr_t *);
 			if (oarr) {
 				for (i = 0; i < oarr->n; i++) {
 					o = oarr->arr[i];
-					if (o->len == 0)
+					if ( o == NULL || o->len == 0)
 						continue;
 					n = snprintf(sp, bsize, "%d:", o->len);
 					if (n < 0 || (unsigned int) n > bsize)

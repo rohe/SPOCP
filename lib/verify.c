@@ -24,68 +24,46 @@
 
 #include <struct.h>
 #include <func.h>
+#include <proto.h>
 
 spocp_result_t
-is_numeric(octet_t * op, long *l)
+is_numeric(octet_t *op, long *num)
 {
-	char           *endptr;
-	char            c;
+	char	*sp;
+	size_t	l;
+	long    n;
 
 	if (op->val == 0 || *(op->val) == 0)
 		return SPOCP_SYNTAXERROR;
 
-	/*
-	 * No length constraints to strtol so I have to make certain it
-	 * doesn't go to far 
-	 */
+	for ( n = 0L, l = 0, sp = op->val ; l < op->len && DIGIT(*sp) ; l++,sp++) {
+		if (n)
+			n *= 10;
 
-	c = op->val[op->len];
-	op->val[op->len] = '\0';
+		n += *sp -'0' ;
+	}
 
-	*l = strtol(op->val, &endptr, 0);
-
-	if (*l == LONG_MIN || *l == LONG_MAX)
+	if (n == LONG_MIN || n == LONG_MAX)
 		return SPOCP_SYNTAXERROR;
 
-	/*
-	 * And reset for further transformation 
-	 */
-
-	op->val[op->len] = c;
-
-	/*
-	 * if *nptr is not `\0' but *endptr is `\0' on return, the entire
-	 * string is valid. 
-	 */
-
-	if (endptr == (op->val + op->len))
+	if (l == op->len) {
+		*num = n;
 		return SPOCP_SUCCESS;
-	else
+	} else
 		return SPOCP_SYNTAXERROR;
 }
 
 spocp_result_t
 numstr(char *str, long *l)
 {
-	char           *endptr;
+	octet_t tmp;
 
 	if (str == 0 || *str == 0)
 		return SPOCP_SYNTAXERROR;
 
-	*l = strtol(str, &endptr, 0);
+	oct_assign( &tmp, str);
 
-	if (*l == LONG_MIN || *l == LONG_MAX)
-		return SPOCP_SYNTAXERROR;
-
-	/*
-	 * if *str is not `\0' but *endptr is `\0' on return, the entire
-	 * string is valid. Excerpt from man page for strtol 
-	 */
-
-	if (*endptr == '\0')
-		return SPOCP_SUCCESS;
-	else
-		return SPOCP_SYNTAXERROR;
+	return is_numeric( &tmp, l);
 }
 
 spocp_result_t
