@@ -16,20 +16,71 @@
 #include <config.h>
 
 #include <struct.h>
+#include <basefn.h>
 #include <plugin.h>
+#include <rbtree.h>
 
 #define SHA1HASHLEN 40
 
 struct _branch ;
 struct _ruleinstance ;
+struct _varr ;
+struct _plugin ;
+
+/* ------------------------------------------ */
+
+#define FORWARD        1
+#define BACKWARD       2
+
+/* ------------------------------------------ */
+
+typedef struct _subelem {
+  int              direction ;
+  int              list ;       /* yes = 1, no = 0 */
+  element_t       *ep ;
+  struct _subelem *next ; 
+} subelem_t ;
+
+typedef struct _parr {
+  int    n ;
+  int    size ;
+  int   *refc ;
+  void  **vect ;
+  cmpfn *cf ;      /* compare function */
+  ffunc *ff ;      /* free function */
+  dfunc *df ;      /* duplicate function */
+  pfunc *pf ;      /* print function */
+} parr_t ;
+
+typedef struct _node {
+  void         *payload ;
+  struct _node *next ;
+  struct _node *prev ;
+} node_t ;
+
+typedef struct _ll {
+  node_t  *head ;
+  node_t  *tail ;
+  cmpfn   *cf ;
+  ffunc   *ff ;
+  dfunc   *df ;
+  pfunc   *pf ;
+  int      n ;
+} ll_t ;
+
+typedef struct _strarr {
+  char **argv ;
+  int    argc ;
+  int    size ;
+} strarr_t ;
 
 /*********** where all the barnches starts *************/
 
-typedef struct {
+typedef struct _junc {
   struct _branch *item[NTYPES] ;
 } junc_t ;
 
-#define ARRFIND(a,c) ( (a)->item[(c)] )
+#define ARRFIND(a,c) ( (a) ? (a)->item[(c)] : NULL )
 
 /***********************************************/
 
@@ -50,34 +101,6 @@ typedef struct _ssn {
   unsigned int   refc ; /* reference counter */
 } ssn_t ;
 
-/*********** for ranges ******************/
-
-typedef struct _rnode {
-  int            ss ;
-  unsigned int   refc ;
-
-  boundary_t    *item ;
-
-  struct _rnode *left ;
-  struct _rnode *right ;
-  struct _rnode *up ;
-
-  parr_t        *gt ;
-  parr_t        *lt ;
-  parr_t        *eq ;
-  parr_t        *tot ;
-} rnode_t ;
-
-typedef struct _link
-{
-  rnode_t  *other ;
-  junc_t   *next ;
-} link_t ;
-
-typedef struct _limit {
-  rnode_t   *limit ;
-} limit_t ;
-
 /****** for ranges *********************/
 
 typedef struct _slnode {
@@ -85,9 +108,8 @@ typedef struct _slnode {
   unsigned int     refc ;
   struct _slnode **next ;
   int              sz ;
-  parr_t          *junc ;
+  struct _varr    *junc ;
 } slnode_t ;
-
 
 typedef struct _slist {
   slnode_t *head ;
@@ -116,49 +138,12 @@ typedef struct _phash {
   buck_t      **arr ;
 } phash_t ;
 
-/****** caching **********************/
+/******************************************/
 
-typedef struct {
-  unsigned int  hash ;
-  octet_t      *arg ;
-  octet_t       blob ;
-  unsigned int  timeout ;
-  int           res ;
-} cacheval_t ;
-
-/****** for boundary conditions **********************/
-
-typedef struct _ref {
-  plugin_t        *plugin ;
-  octet_t          bc ;
-  octet_t          arg ;
-  ll_t            *cachedval ;
-  unsigned int    ctime ;
-  unsigned int    refc ;
-  int             inv ;
-  junc_t          *next ;
-
-#ifdef HAVE_LIBPTHREAD
-  pthread_mutex_t mutex ;
-#endif
-
-  struct _ref     *nextref ;
-} ref_t ;
-
-typedef struct _backend {
-  char        *name ;
-  befunc      *func ;
-  beinitfn    *init ;
-  cachetime_t *ct ;
-} backend_t ;
-
-typedef struct _erset {
-  size_t        n ;
-  size_t        size ;
-  ref_t         **ref ;
-  junc_t        *next ;
-  struct _erset *other ;
-} erset_t ;
+typedef struct _dset {
+  struct _varr *va ;
+  struct _dset *next ;
+} dset_t ;
 
 /****** branches **********************/
 
@@ -168,9 +153,10 @@ typedef struct _branch {
   junc_t  *parent ;
 
   union {
-    erset_t  *set ;
+    dset_t   *set ;
     phash_t  *atom ;
     junc_t   *list ;
+    junc_t   *next ;
     ssn_t    *prefix ;
     ssn_t    *suffix ; 
     slist_t  *range[DATATYPES] ;
@@ -179,23 +165,46 @@ typedef struct _branch {
 
 } branch_t ;
 
-/*********** ACL info  ****************/
+/* -------------------------------------------------- */
 
-#define ACL_COMP   0  /* always on */
-#define ACL_READ   1
-#define ACL_ADD    2
-#define ACL_DELETE 4
-#define ACL_CHECK  8
+#define AND  1
+#define OR   2
+#define NOT  3
+#define REF  4
+#define SPEC 5
 
-/*------------------------------------*/
-/* who can do what with which rule    */
+struct _bconddef ;
 
-typedef struct _rule_aci {
-  subelem_t            *resource ;
-  unsigned int         action ;   /* bitmap with permissions */
-  element_t            *subject ;
-  struct _ruleinstance *ri ;      /* links back and forth */
-} raci_t ;
+typedef struct _bcondspec {
+  char           *name ;
+  struct _plugin *plugin ;
+  octarr_t       *args ;
+  octet_t        *spec ;
+} bcspec_t ;
+
+struct _bconddef ;
+
+typedef struct _bcondexpr {
+  int                  type ;
+  struct _bconddef    *parent ;
+
+  union {
+    struct _varr      *arr ;   /* AND or OR  array of bcondexp_t structs */
+    struct _bcondexpr *single ; /* NOT */
+    bcspec_t          *spec ;   /* SPEC */
+    struct _bconddef  *ref ;    /* REF */
+  } val ;
+
+} bcexp_t ;
+
+typedef struct _bconddef {
+  char    *name ;
+  bcexp_t *exp ;
+  struct _varr     *users ;
+  struct _varr     *rules ;
+  struct _bconddef *next ;
+  struct _bconddef *prev ;
+} bcdef_t ;
 
 /*********** rule info ****************/
 
@@ -203,10 +212,9 @@ typedef struct _ruleinstance {
   char       uid[SHA1HASHLEN+1] ; /* place for sha1 hash */
   octet_t    *rule ;
   octet_t    *blob ;
-  element_t  *ep ;     /* only used for acis */
-  raci_t     *raci ;   /* only used if this rule is ACI */
+  element_t  *ep ;                /* only used for bcond checks */
   ll_t       *alias ;
-  ll_t       *aci ;    /* pointers to access control information */
+  bcdef_t    *bcond ;
 } ruleinst_t ;
 
 typedef struct _ruleinfo {
@@ -216,12 +224,11 @@ typedef struct _ruleinfo {
 /*********** The database *************/
 
 typedef struct _db {
-  junc_t      *jp ;
-  ruleinfo_t  *ri ;
-  junc_t      *acit ;
-  ruleinfo_t  *raci ;
-  becpool_t   *bcp ;
-  plugin_t    *plugins ;
+  junc_t         *jp ;
+  ruleinfo_t     *ri ;
+  junc_t         *acit ;
+  struct _plugin *plugins ;
+  bcdef_t        *bcdef ;
 } db_t ;
 
 #endif

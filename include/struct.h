@@ -26,22 +26,25 @@
 
 #define SPOC_ATOM      0
 #define SPOC_LIST      1
-/* #define SPOC_AND       2 */
+#define SPOC_SET       2 
 #define SPOC_PREFIX    3
 #define SPOC_SUFFIX    4
 #define SPOC_RANGE     5
 #define SPOC_ENDOFLIST 6
 #define SPOC_ENDOFRULE 7
-#define SPOC_BCOND     8
-#define SPOC_OR        9 /* not really a type of it's own */
+#define SPOC_ANY       8 
+/* --- */
+#define SPOC_ARRAY     9 /* only used in and around backends */
+#define SPOC_NULL     10 /* NULL element, necessary placeholder */
+/*
+#define SPOC_OR        9 
 #define SPOC_REPEAT   10
-/* 
-*/
 #define SPOC_EXTREF   11
+*/
 
-#define NTYPES        11
+#define NTYPES         9
 
-#define START          0
+/* ---------------------------------------------------------------------- */
 
 #define SPOC_DATE      0
 #define SPOC_TIME      1
@@ -52,68 +55,38 @@
 
 #define DATATYPES      6 /* make sure this is correct */
 
-#define TTIME          1
+#define LT          0x10
+#define GLE         0x20
+#define GT          0x40
 
-#define LT            0x10
-#define GLE           0x20
-#define GT            0x40
+#define EXPIRED     1
+#define CACHED      2 
+
+/*
+#define LINK        0x10
+
+#define START          0
 
 #define DEF_LINK       4
-
-#define CACHED         2
-#define EXPIRED        4
+#define TTIME          1
 
 #define FORWARD        1
 #define BACKWARD       2
 
-#define QUERY    0x01
-#define LIST     0x02
-#define ADD      0x04
-#define REMOVE   0x08
-#define BEGIN    0x10
-#define ALIAS    0x20
-#define COPY     0x40
+#define QUERY       0x01
+#define LIST        0x02
+#define ADD         0x04
+#define REMOVE      0x08
+#define BEGIN       0x10
+#define ALIAS       0x20
+#define COPY        0x40
 
-#define SUBTREE  0x04
-#define ONELEVEL 0x02
-#define BASE     0x01
-
-/* ------------------------------------- *
-
-typedef struct _octet {
-  size_t      len ;
-  size_t      size ;
-  char        *val ;
-} octet_t ;
-
- * ------------------------------------- */
-
-struct _be_cpool ;
-
-typedef void * item_t ;
-typedef char * Key ;
-
-/* free function */
-typedef void (ffunc)( item_t vp ) ;
-
-/* duplicate function */
-typedef item_t (dfunc)( item_t a, item_t b ) ;
-
-/* copy function */
-typedef int (cfunc)( item_t dest, item_t src ) ;
-
-/* compare function */
-typedef int (cmpfn)( item_t a, item_t b ) ;
-
-/* print function */
-typedef char *(pfunc)( item_t vp ) ;
-
-/* key function, normally a hashfunction */
-typedef char *(kfunc)( item_t ) ;
-
-
-/*
+#define SUBTREE     0x04
+#define ONELEVEL    0x02
+#define BASE        0x01
 */
+
+/* ---------------------------------------------------------------------- */
 
 typedef struct _atom {
   unsigned int  hash ;
@@ -122,22 +95,18 @@ typedef struct _atom {
 
 struct _list ;
 struct _range ;
-struct _set ;
 
 typedef struct _element {
   int   not ;
   int   type ;
 
   struct _element *next ;
-/*  struct _element *set ; */
-  struct _element *memberof ;
+  struct _element *memberof ; /* points to the set or list root */
 
   union {
-    atom_t           *atom ;
+    atom_t           *atom ; /* suffix and prefix is also placed here */
     struct _list     *list ;
-    struct _set      *set ;
-    atom_t           *prefix ;
-    atom_t           *suffix ;
+    struct _varr     *set ;
     struct _range    *range ;
     int               id ;
   } e ;
@@ -146,52 +115,10 @@ typedef struct _element {
 
 /****** and structure **********************/
 
-typedef struct _set {
-  /* couple of terminated branches */
-  int       n ;
-  int       size ;
-  element_t **element ;
-} set_t ;
-
-
 typedef struct _list {
   unsigned int hstrlist ; /* hash of the list string, of limit usage */
   element_t   *head ;
 } list_t ;
-
-typedef struct _subelem {
-  int              direction ;
-  int              list ;       /* yes = 1, no = 0 */
-  element_t       *ep ;
-  struct _subelem *next ; 
-} subelem_t ;
-
-typedef struct _parr {
-  int    n ;
-  int    size ;
-  int   *refc ;
-  void  **vect ;
-  cmpfn *cf ;      /* compare function */
-  ffunc *ff ;      /* free function */
-  dfunc *df ;      /* duplicate function */
-  pfunc *pf ;      /* print function */
-} parr_t ;
-
-typedef struct _node {
-  void         *payload ;
-  struct _node *next ;
-  struct _node *prev ;
-} node_t ;
-
-typedef struct _ll {
-  node_t  *head ;
-  node_t  *tail ;
-  cmpfn   *cf ;
-  ffunc   *ff ;
-  dfunc   *df ;
-  pfunc   *pf ;
-  int      n ;
-} ll_t ;
 
 typedef struct _boundary {
   int                 type ;
@@ -210,44 +137,6 @@ typedef struct _range
   boundary_t     lower ;
   boundary_t     upper ;
 } range_t ;
-
-/* ------------------------------------------ */
-
-typedef struct _strarr {
-  char **argv ;
-  int    argc ;
-  int    size ;
-} strarr_t ;
-
-/* ------------------------------------------ */
-
-/*
-typedef struct _keyval {
-  octet_t  *key ;
-  octet_t  *val ;
-  struct _keyval *next ;
-} keyval_t ;
-*/
-/* ------------------------------------------ */
-
-typedef struct _rbnode {
-  item_t item ;
-  Key    v ;
-  int    n ; 
-  char   red ;
-  struct _rbnode *l ;
-  struct _rbnode *r ;
-  struct _rbnode *p ;
-} rbnode_t ;
-
-typedef struct _rbt {
-  cmpfn    *cf ;
-  ffunc    *ff ;
-  kfunc    *kf ;
-  pfunc    *pf ;
-  dfunc    *df ;
-  rbnode_t *head ;
-} rbt_t ;
 
 /* ------------------------------------------ */
 

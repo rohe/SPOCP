@@ -15,6 +15,7 @@
 #include <struct.h>
 #include <db0.h>
 #include <spocp.h>
+#include <varr.h>
 
 /* server.c */
 
@@ -23,24 +24,24 @@ int server( FILE *fp, junc_t *cdb, int can ) ;
 /* match.c */
 
 junc_t *atom2atom_match( atom_t *ap, phash_t *pp ) ;
-parr_t *atom2prefix_match( atom_t *ap, ssn_t *pp ) ;
-parr_t *atom2suffix_match( atom_t *ap, ssn_t *pp ) ;
-parr_t *atom2range_match( atom_t *ap, slist_t *slp, int vtype, spocp_result_t *rc ) ;
-parr_t *prefix2prefix_match( atom_t *prefa, ssn_t *prefix ) ;
-parr_t *suffix2suffix_match( atom_t *prefa, ssn_t *suffix ) ;
-parr_t *range2range_match( range_t *ra, slist_t *slp ) ;
+varr_t *atom2prefix_match( atom_t *ap, ssn_t *pp ) ;
+varr_t *atom2suffix_match( atom_t *ap, ssn_t *pp ) ;
+varr_t *atom2range_match( atom_t *ap, slist_t *slp, int vtype, spocp_result_t *rc ) ;
+varr_t *prefix2prefix_match( atom_t *prefa, ssn_t *prefix ) ;
+varr_t *suffix2suffix_match( atom_t *prefa, ssn_t *suffix ) ;
+varr_t *range2range_match( range_t *ra, slist_t *slp ) ;
 
 /*
-parr_t *atom_match( junc_t *db, element_t *ep, parr_t *pap, becpool_t *, spocp_result_t *rc ) ;
+parr_t *atom_match( junc_t *db, element_t *ep, spocp_result_t *rc ) ;
 
 element_t *skip_list_tails( element_t *ep ) ;
-junc_t    *ending( junc_t *ap, element_t *ep, parr_t *pap, becpool_t *bcp ) ;
-void      *do_extref( erset_t *erp, element_t *ep, parr_t *pap, becpool_t * ) ;
-junc_t    *do_branches( parr_t *avp, element_t *ep, parr_t *pap, becpool_t *bcp ) ;
+junc_t    *ending( junc_t *ap, element_t *ep ) ;
+void      *do_extref( erset_t *erp, element_t *ep ) ;
+junc_t    *do_branches( parr_t *avp, element_t *ep ) ;
 */
 
-junc_t *element_match_r(
-  junc_t *, element_t *, parr_t *, becpool_t *, spocp_result_t *, octnode_t ** ) ;
+junc_t *
+  element_match_r( junc_t *, element_t *, spocp_result_t *, element_t *h, octarr_t ** ) ;
 
 /* input.c */
 
@@ -53,11 +54,9 @@ spocp_result_t  element_get( octet_t *oct, element_t **epp ) ;
 element_t      *element_new( void ) ;
 
 atom_t         *atom_new( octet_t *op ) ;
-set_t          *set_new( int size ) ;
 
 void            hms2int( octet_t *op, long int *li ) ;
 void            to_gmt( octet_t *s, octet_t *t ) ;
-
 
 /* io.c */
 
@@ -90,7 +89,10 @@ void      strarr_free( strarr_t *sa ) ;
 
 int      str_expand( char *src, keyval_t *kvp, char *dest, size_t size ) ;
 
-char *sexp_print( char *sexp, unsigned int *bsize, char *fmt, ... ) ;
+char     *sexp_printa( char *sexp, unsigned int *bsize, char *fmt, void **argv ) ;
+char     *sexp_printv( char *sexp, unsigned int *bsize, char *fmt, ... ) ;
+void      oct_assign( octet_t *oct, char *s ) ;
+void      octln( octet_t *a, octet_t *b ) ;
 
 /* free.c */
 
@@ -99,31 +101,19 @@ void list_free( list_t *lp ) ;
 void range_free( range_t *rp ) ;
 void branch_free( branch_t *bp ) ;
 void boundary_free( boundary_t *bp ) ;
-void set_free( set_t *, int ) ;
 void element_free( element_t *ep ) ;
 void junc_free( junc_t *dbv ) ;
-void ref_free( ref_t *ref )  ;
+/* void ref_free( ref_t *ref )  ; */
 
 /* element.c */
 
-int        element_cmp( element_t *ea, element_t *eb ) ;
-
-/*
-element_t *first_in_tree( element_t *ep ) ;
-element_t *next_in_tree( element_t *ep ) ;
-element_t *get_first( element_t *ep, element_t **pep ) ;
-element_t *get_next( element_t *ep, element_t **pep ) ;
-*/
-
 element_t *find_list( element_t *ep, char *tag ) ;
-parr_t    *get_simple_lists( element_t *ep, parr_t *ap ) ;
+varr_t    *get_simple_lists( element_t *ep, varr_t *ap ) ;
 
 /* hash.c */
 
 phash_t *phash_new( unsigned int pnr, unsigned int density ) ;
 buck_t  *phash_insert( phash_t *ht, atom_t *ep, unsigned int key ) ;
-buck_t  *phash_insert_bucket( phash_t *ht, buck_t *bp ) ;
-void     phash_resize( phash_t *ht ) ;
 buck_t  *phash_search( phash_t *ht, atom_t *ap, unsigned int key ) ;
 void     phash_free( phash_t *hp )  ;
 void     phash_rm_bucket( phash_t *hp, buck_t *bp ) ;
@@ -132,10 +122,10 @@ void     phash_print( phash_t *ht ) ;
 
 phash_t  *phash_dup( phash_t *php, ruleinfo_t *ri ) ;
 
-parr_t  *get_all_atom_followers( branch_t *bp, parr_t *in ) ;
-parr_t *prefix2atoms_match( char *prefix, phash_t *ht, parr_t *pa ) ;
-parr_t *suffix2atoms_match( char *suffix, phash_t *ht, parr_t *pa ) ;
-parr_t *range2atoms_match( range_t *rp, phash_t *ht, parr_t *pa ) ;
+varr_t  *get_all_atom_followers( branch_t *bp, varr_t *in ) ;
+varr_t *prefix2atoms_match( char *prefix, phash_t *ht, varr_t *pa ) ;
+varr_t *suffix2atoms_match( char *suffix, phash_t *ht, varr_t *pa ) ;
+varr_t *range2atoms_match( range_t *rp, phash_t *ht, varr_t *pa ) ;
 
 void    bucket_rm( phash_t *ht, buck_t *bp ) ;
 
@@ -152,14 +142,14 @@ int        free_rule( ruleinfo_t *ri, char *uid ) ;
 void       free_all_rules( ruleinfo_t *ri ) ;
 
 
-spocp_result_t  add_right( db_t **db, octet_t **arg, spocp_req_info_t *sri, ruleinst_t **ri ) ;
+spocp_result_t  add_right( db_t **db, octarr_t *oa, ruleinst_t **ri ) ;
 
 octet_t        *rulename_print(  ruleinst_t *r, char *rs ) ;
 octet_t        *get_blob( ruleinst_t *ri ) ;
 ruleinst_t     *get_rule( ruleinfo_t  *ri, char *uid ) ;
-spocp_result_t  get_all_rules( db_t *db, octarr_t *oa, spocp_req_info_t *sri, char *rs ) ;
-parr_t         *get_rec_all_rules( junc_t *jp, parr_t *in ) ;
-parr_t         *get_all_bcond_followers( branch_t *bp, parr_t *in ) ;
+spocp_result_t  get_all_rules( db_t *db, octarr_t *oa, char *rs ) ;
+varr_t         *get_rec_all_rules( junc_t *jp, varr_t *in ) ;
+varr_t         *get_all_bcond_followers( branch_t *bp, varr_t *in ) ;
 int            nrules( ruleinfo_t *ri ) ;
 int            rules( db_t *db ) ;
 
@@ -174,9 +164,9 @@ int        ruleinfo_print( ruleinfo_t *r ) ;
 
 void       *read_rules( void *vp, char *file, int *rc, keyval_t **globals ) ;
 
-element_t  *element_dup( element_t *ep, element_t *set, element_t *memberof ) ;
-junc_t     *element_add( plugin_t *pl, junc_t *dvp, element_t *ep, ruleinst_t *rt ) ;
+element_t  *element_dup( element_t *ep, element_t *memberof ) ;
 
+/*
 raci_t     *saci_new( void ) ;
 
 
@@ -184,6 +174,7 @@ raci_t     *raci_new( void ) ;
 int        P_raci_print( void *vp ) ;
 void       *P_raci_dup( void *vp ) ;
 void       P_raci_free( void *vp ) ;
+*/
 
 /* index.c */
 
@@ -214,25 +205,11 @@ subelem_t *octarr2subelem( octarr_t *oa, int dir ) ;
 /* ssn.c */
 
 junc_t *ssn_insert( ssn_t **top, char *str, int direction ) ;
-parr_t *ssn_match( ssn_t *pssn, char *sp, int direction ) ;
+varr_t *ssn_match( ssn_t *pssn, char *sp, int direction ) ;
 junc_t *ssn_delete( ssn_t **top, char *sp, int direction ) ;
 ssn_t  *ssn_dup( ssn_t *, ruleinfo_t *ri ) ;
-parr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, parr_t *res ) ;
-parr_t *get_all_ssn_followers( branch_t *bp, int type, parr_t *pa ) ;
-
-/* backend.c */
-
-octet_t  *var_sub( octet_t *def, parr_t *lap ) ;
-erset_t  *ref_add( erset_t *erp, ref_t *rp ) ;
-int        ref_eq( ref_t *r1, ref_t *r2 ) ;
-erset_t  *erset_new( size_t size ) ;
-erset_t  *erset_dup( erset_t *old, ruleinfo_t *ri ) ;
-
-int       backend_display( void ) ;
-backend_t *backend_get( octet_t *type ) ;
-
-int      do_ref( ref_t *rp, parr_t *pap, becpool_t *bcp, octet_t *blob ) ;
-erset_t *er_cmp( erset_t *es, element_t *ep ) ;
+varr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, varr_t *res ) ;
+varr_t *get_all_ssn_followers( branch_t *bp, int type, varr_t *pa ) ;
 
 /* parr.c */
 
@@ -243,15 +220,15 @@ parr_t *parr_add_nondup( parr_t *ap, item_t vp ) ;
 
 parr_t *parr_dup( parr_t *ap, item_t ref ) ;
 
-parr_t *parr_join( parr_t *to, parr_t *from ) ;
+parr_t *parr_join( parr_t *to, parr_t *from, int dup ) ;
 item_t  parr_common( parr_t *avp1, parr_t *avp2 ) ;
 parr_t *parr_or( parr_t *a1, parr_t *a2 ) ;
-parr_t *parr_xor( parr_t *a1, parr_t *a2 ) ;
+parr_t *parr_xor( parr_t *a1, parr_t *a2, int dup ) ;
 parr_t *parr_and( parr_t *a1, parr_t *a2 ) ;
 
 void    parr_free( parr_t *ap ) ;
 
-item_t  parr_get_item_by_index( parr_t *gp, int i ) ;
+item_t  parr_nth( parr_t *gp, int i ) ;
 int     parr_get_index( parr_t *gp, item_t vp ) ;
 
 int     parr_items( parr_t *gp ) ;
@@ -279,15 +256,7 @@ item_t P_pcpy( item_t i, item_t j );
 void   P_free( item_t vp ) ;
 
 
-/* cache.c */
-
-int     cache_replace_value( ll_t *gp, octet_t *arg, unsigned int ct, int r, octet_t *blob ) ;
-int     cached( ll_t *gp, octet_t *arg, octet_t *blob ) ;
-int     cache_value( ll_t **harr, octet_t *arg, unsigned int cachetime, int r, octet_t *blob ) ;
-void    cacheval_free( void * vp ) ;
-void   *cacheval_dup( void *vp) ;
-
-/* print.c */
+/* -- */
 
 void    spocp_print( junc_t *dv, int level, int indent ) ;
 
@@ -300,15 +269,15 @@ spocp_result_t rm_rule( junc_t *ap, octet_t *rule, ruleinst_t *rt ) ;
 
 slist_t   *sl_init( int max ) ;
 slnode_t  *sl_find( slist_t *slp, boundary_t *item ) ;
-parr_t    *sl_match( slist_t *slp, boundary_t *item ) ;
-parr_t    *sl_range_match( slist_t *slp, range_t *rp ) ;
+varr_t    *sl_match( slist_t *slp, boundary_t *item ) ;
+varr_t    *sl_range_match( slist_t *slp, range_t *rp ) ;
 junc_t    *sl_range_add( slist_t *slp, range_t *rp ) ;
 junc_t    *sl_range_rm( slist_t *slp, range_t *rp, int *rc ) ;
-parr_t    *sl_range_lte_match( slist_t *slp, range_t *rp, parr_t *pa ) ;
+varr_t    *sl_range_lte_match( slist_t *slp, range_t *rp, varr_t *pa ) ;
 void       sl_free_slist( slist_t *slp ) ;
 slist_t   *sl_dup( slist_t *old, ruleinfo_t *ri ) ; 
 
-parr_t    *get_all_range_followers( branch_t *bp, parr_t *pa ) ;
+varr_t    *get_all_range_followers( branch_t *bp, varr_t *pa ) ;
 
 subelem_t *subelem_new( void ) ;
 void       subelem_free( subelem_t *sep ) ;
@@ -321,14 +290,7 @@ void       junc_print( int lev, junc_t *jp ) ;
 
 /* list.c */
 
-spocp_result_t get_matching_rules( db_t *, octet_t *, octarr_t *, spocp_req_info_t *, char * ) ;
-
-/* erset.c */
-
-parr_t  *erset_match( erset_t *erp, element_t *ep, parr_t *pap, becpool_t *b ) ;
-erset_t *erset_dup( erset_t *old, ruleinfo_t *ri ) ;
-erset_t *erset_new( size_t size ) ;
-void     erset_free( erset_t *es ) ;
+spocp_result_t get_matching_rules( db_t *, octarr_t *, octarr_t *, char * ) ;
 
 /* ll.c */
 
@@ -349,30 +311,33 @@ ll_t  *parr2ll( parr_t *pp ) ;
 /* aci.c */
 
 ruleinst_t *allowing_rule( junc_t *ap ) ;
+spocp_result_t allowed( junc_t *ap, element_t *ep, octarr_t **on ) ;
 
-spocp_result_t allowed(
-  junc_t *ap, element_t *ep, parr_t *gap, becpool_t *b, octnode_t **on ) ;
+/* -- varr.c --- */
 
-spocp_result_t aci_add( db_t **db, octet_t *arg, spocp_req_info_t *sri ) ;
-spocp_result_t allowed_by_aci( db_t *db, octet_t **arg, spocp_req_info_t *sri, char *act ) ;
+varr_t *varr_junc_add( varr_t *va, junc_t *ju ) ;
+junc_t *varr_junc_pop( varr_t *va ) ;
+junc_t *varr_junc_nth( varr_t *va, int n ) ;
+junc_t *varr_junc_common( varr_t *va, varr_t *b ) ;
+junc_t *varr_junc_rm( varr_t *va, junc_t *v ) ;
 
-/* rbtree.c */
+/* ----- */
 
-rbt_t  *rbt_init( cmpfn *cf, ffunc *ff, kfunc *kf, dfunc *df, pfunc *pf ) ;
-int    rbt_insert( rbt_t *bst, item_t item ) ;
-int    rbt_remove( rbt_t *rh, Key k ) ;
-item_t rbt_search( rbt_t *bst, Key k ) ;
-rbt_t  *rbt_dup( rbt_t *org, int dyn ) ;
-void   rbt_free( rbt_t *rbt ) ;
-int    rbt_items( rbt_t *rbt ) ;
-void   rbt_print( rbt_t *rbt ) ;
+varr_t *varr_ruleinst_add( varr_t *va, ruleinst_t *ju ) ;
+ruleinst_t *varr_ruleinst_pop( varr_t *va ) ;
+ruleinst_t *varr_ruleinst_nth( varr_t *va, int n ) ;
 
-parr_t *rbt2parr( rbt_t *rh ) ;
+/* ----- */
 
-/* octnode.c */
-octnode_t *octnode_add( octnode_t *on, octet_t *oct, int link ) ;
-void       octnode_free( octnode_t *on ) ;
-octnode_t *octnode_join( octnode_t *a, octnode_t *b) ;
-int        octnode_cmp( octnode_t *a, octnode_t *b ) ;
+spocp_result_t bcexp_eval( element_t *qp, element_t *rp, bcexp_t *bce, octarr_t **on ) ;
+spocp_result_t bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
+
+bcdef_t        *bcdef_add( plugin_t *plt, octet_t *n, octet_t *d, bcdef_t **list ) ;
+spocp_result_t  bcdef_del( bcdef_t **root, octet_t *name ) ;
+spocp_result_t  bcdef_replace( plugin_t *pl, octet_t *n, octet_t *d, bcdef_t **r ) ;
+spocp_result_t  is_bcref( octet_t *o, octet_t *res ) ;
+bcdef_t        *bcdef_find( bcdef_t *bcd, octet_t *pattern ) ;
+
+/* ----- */
 
 #endif
