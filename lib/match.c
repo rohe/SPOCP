@@ -411,9 +411,9 @@ static parr_t * do_er(
     on = 0 ;
     if(( jp = do_erset( es, ep, pap, bcp, rc, &on )) != 0 ) {
       if( parr == 0 ) parr = parr_new( 4, &P_pcmp, 0, &P_pcpy, 0 ) ;
-
       jo = joct_new( jp, on ) ;
       parr_add( parr, (void *) jo ) ;
+      break ;
     }
   }
 
