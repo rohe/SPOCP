@@ -19,7 +19,7 @@ pconf_t *pconf_new( char *key, octet_t *val )
 
   new = ( pconf_t * ) Malloc ( sizeof( pconf_t )) ;
   new->key = Strdup( key ) ;
-  new->val = octnode_add( 0, octdup(val) ) ;
+  new->val = octnode_add( 0, octdup(val), 0 ) ;
   new->next = 0 ;
 
   return new ;
@@ -64,10 +64,34 @@ plugin_t *pconf_set_keyval( plugin_t *top, char *pname, char *key, char *val )
     }
   } 
   else {
-    octnode_add( pc->val, octdup( &oct ) ) ;
+    octnode_add( pc->val, octdup( &oct ), 0 ) ;
   }
   
   return top ;
+}
+
+octnode_t *pconf_get_keys_by_plugin( plugin_t *top, char *pname )
+{
+  pconf_t   *pc ;
+  octnode_t *res = 0 ;
+  plugin_t  *pl ;
+  octet_t   oct ;
+
+  if( pname == 0 || *pname == '\0' ) return 0 ;
+
+  oct.val = pname ;
+  oct.len = strlen( pname ) ;
+  oct.size = 0 ;
+
+  if(( pl = plugin_match( top, &oct )) == 0 ) return 0 ;
+
+  for( pc = pl->conf ; pc ; pc = pc->next ) {
+    oct.val = pc->key ;
+    oct.len = strlen( pc->key ) ;
+    res = octnode_add( res, &oct, 1 ) ;
+  }
+
+  return res ;
 }
 
 octnode_t *pconf_get_keyval( plugin_t *pl, char *key )
@@ -86,8 +110,11 @@ octnode_t *pconf_get_keyval_by_plugin( plugin_t *top, char *pname, char *key )
   plugin_t  *pl ;
   octet_t   oct ;
 
-  oct.val = key ;
-  oct.len = strlen( key ) ;
+  if( pname == 0 || *pname == '\0' ) return 0 ;
+
+  oct.val = pname ;
+  oct.len = strlen( pname ) ;
+  oct.size = 0 ;
 
   if(( pl = plugin_match( top, &oct )) == 0 ) return 0 ;
 
@@ -251,6 +278,7 @@ plugin_t *init_plugin( plugin_t *top )
         continue ;
       }
     }
+    else pl->test = 0 ;
 
     on = pconf_get_keyval( pl, "init" ) ;
     if( on ) { /* */
@@ -267,6 +295,7 @@ plugin_t *init_plugin( plugin_t *top )
         continue ;
       }
     }
+    else pl->init = 0 ;
 
     pl = pl->next ;
   }
