@@ -323,10 +323,14 @@ lsln_to_arr(lsln_t * sl)
 static void
 lsln_print( lsln_t *ll )
 {
-	int i;
+	int	i;
+	char	*tmp;
 
-	for( i=0 ;ll ; i++, ll = ll->next)
-		traceLog( LOG_INFO, "(%d) \"%s\"", i, ll->str);
+	for( i=0 ;ll ; i++, ll = ll->next) {
+		tmp = str_esc(ll->str, strlen(ll->str));
+		traceLog( LOG_INFO, "(%d) \"%s\"", i, tmp);
+		free(tmp);
+	}
 }
 
 static char *
