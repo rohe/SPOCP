@@ -64,10 +64,6 @@ void *thread_main(void *arg)
   srv_t                   *srv ;
   char                    name[NI_MAXHOST], numname[NI_MAXHOST] ;
   int                     ret ;
-#ifdef HAVE_LIBWRAP
-  int                    allow ;
-  struct request_info    request ;
-#endif
 
   local = ( thread_t *) arg ;
 
@@ -75,6 +71,9 @@ void *thread_main(void *arg)
   srv = con->srv ;
 
   init_connection( con ) ;
+
+  con->rs = srv->root ;
+  con->tls = 0 ;
 
   /*LOG(SPOCP_DEBUG)*/ traceLog("thread %d starting", local->id);
 
@@ -124,28 +123,14 @@ void *thread_main(void *arg)
         con->sri.hostaddr = Strdup(numname);
 
         /* limitations as to who can speak to this server ? */
-#ifdef HAVE_LIBWRAP
-          allow = hosts_access(request_init(&request,
-                                      RQ_DAEMON, srv->id,
-                                      RQ_CLIENT_NAME, name,
-                                      RQ_CLIENT_ADDR, con->sri.hostaddr,
-                                      RQ_USER, "",
-                                      0)) ;
-          if( allow == 0 ) {
-            if( con->sri.hostname ) free( con->sri.hostname ) ;
-            con->sri.hostname = NULL ;
-            if( con->sri.hostaddr ) free( con->sri.hostaddr ) ;
-            con->sri.hostaddr = NULL ;
 
-            con->close( con ) ;
-
-            traceLog( "connection attempt on %d from %s(%s) DISALLOWED", con->fd, name,
+        if( server_access( con ) != SPOCP_SUCCESS ) {
+          traceLog( "connection attempt on %d from %s(%s) DISALLOWED", con->fd, name,
                          con->sri.hostaddr ) ; 
 
-            pthread_mutex_unlock(&srv->mlock);
-            continue;
-          }
-#endif
+          pthread_mutex_unlock(&srv->mlock);
+          continue;
+        }
       
         traceLog( "connection on %d from %s(%s)", con->fd, name, con->sri.hostaddr ) ; 
         break ;
@@ -183,8 +168,9 @@ void *thread_main(void *arg)
 
     LOG( SPOCP_DEBUG ) traceLog( "con->close") ;
 
-    con->close(con);
+    con->close( con );
     clear_buffers( con ) ;
+    con_reset( con ) ;
     /*
     print_io_buffer( "IN", con->in ) ;
     print_io_buffer( "OUT", con->out ) ;
