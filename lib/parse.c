@@ -694,9 +694,23 @@ octet_t *
 chunk2sexp( spocp_chunk_t *c )
 {
 	int		p = 0, len = 0 ;
-	spocp_chunk_t	*ck = c ;
+	spocp_chunk_t	*ck ;
 	char		*sp, lf[16] ;
 	octet_t		*res;
+
+	if (c == 0) 
+		return 0;
+
+	/* The first chunk should be a "(" and the last a ")" */
+	if( oct2strcmp( c->val, "(" ) != 0 ) 
+		return 0;
+
+	/* find the last */
+	for( ck = c; c->next ; c = c->next);
+	if( oct2strcmp( ck->val, ")" ) != 0 ) 
+		return 0;
+
+	ck = c;
 
 	/* calculate the length of the resulting S-expression */
 	do {
@@ -732,3 +746,27 @@ chunk2sexp( spocp_chunk_t *c )
  
 	return res;
 }
+
+spocp_chunk_t *
+get_sexp_from_str( char *s )
+{
+        spocp_charbuf_t scb;
+        spocp_chunk_t root;
+
+        scb.fp = 0;
+        scb.str = s;
+        scb.size = strlen(s);
+        scb.start = s;
+
+        memset( &root, 0, sizeof( spocp_chunk_t ));
+        get_sexp( &scb, &root);
+
+        return root.next;
+}
+
+octet_t *
+sexp_normalize( char *s )
+{
+	return chunk2sexp( get_sexp_from_str( s ) );
+}
+
