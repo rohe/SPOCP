@@ -183,7 +183,7 @@ void ss_del_db( ruleset_t *rs, int scope )
 
  ***************************************************************/
 
-void *ss_get_rules( ruleset_t *rs, char *file, int *rc  )
+__attribute__((unused)) static void *ss_get_rules( ruleset_t *rs, char *file, int *rc  )
 {
   keyval_t *globals = 0  ;
 
@@ -373,7 +373,7 @@ int ss_rules( ruleset_t *rs, int scope )
 /* --------------------------------------------------------------------------*/
 /* almost the same as spocp_dup, so I shold only have one of them */
 
-db_t *db_dup( db_t *db ) 
+static db_t *db_dup( db_t *db ) 
 {
   db_t *new ;
 
@@ -418,7 +418,7 @@ aci_t *aci_dup( aci_t *ap )
 }
 */
 
-ruleset_t *ruleset_dup( ruleset_t *rs )
+static ruleset_t *ruleset_dup( ruleset_t *rs )
 {
   ruleset_t *new ;
   octet_t   loc ;
@@ -491,7 +491,7 @@ void *ss_dup( ruleset_t *rs, int scope )
 
 /* --------------------------------------------------------- */
 
-int print_db( db_t *db ) 
+static int print_db( db_t *db ) 
 {
   if( db == 0 ) return 0 ;
 
@@ -501,7 +501,7 @@ int print_db( db_t *db )
   return 0 ;
 }
 
-int ruleset_print_r( ruleset_t *rs ) 
+static int ruleset_print_r( ruleset_t *rs ) 
 {
   for( ; rs->left ; rs = rs->left ) ;
 

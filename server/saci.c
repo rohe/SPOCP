@@ -236,7 +236,7 @@ static char * get_ssl_issuer( conn_t *c )
 
 /* ---------------------------------------------------------------------- */
 
-char *sexp_constr( conn_t *conn, arg_t **ap )
+static char *sexp_constr( conn_t *conn, arg_t **ap )
 {
   int          i ;
   unsigned int size = 2048 ;
@@ -386,7 +386,7 @@ void saci_init( void )
 
 /* ---------------------------------------------------------------------- */
 
-spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
+static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
 {
   spocp_result_t res = SPOCP_DENIED ; /* the default */
   ruleset_t *rs ;
