@@ -1,7 +1,7 @@
-/*
- *!
+/*!
  * \file lib/sexp.c
  * \author Roland Hedberg <roland@catalogix.se>
+ * \brief Basic S-expression functions
  */
 /***************************************************************************
                           sexp.c  -  description
@@ -28,10 +28,9 @@
 #include <spocp.h>
 #include <macros.h>
 
-/*
- *!
+/*!
  * \brief Grabs the length field from a S-expression
- * \param o A octet struct containing the remaining part of the S-expression
+ * \param op A octet struct containing the remaining part of the S-expression
  * \return The length of the following atom or -1 if something went wrong.
  */
 int
@@ -70,10 +69,9 @@ get_len(octet_t * op)
 	return (int) l;
 }
 
-/*
- *!
- * \breif Removes a atom from the S-expression that is parsed. The format
- *  of the arom is <len>":"<atom>
+/*!
+ * \brief Removes a atom from the S-expression that is parsed. The format
+ *  of the arom is &lt;len&gt;":"&lt;atom&gt;
  * \param so A octet struct containing the S-expression from which
  *   the atom should be removed.
  * \param ro Pointer to a octet struct where the octet is placed
@@ -133,7 +131,7 @@ get_str(octet_t * so, octet_t * ro)
 }
 
 
-/*
+/*!
  * \brief Finds the length of a S-expression
  * \param sexp A pointer to a octet struct containing the S-expression.
  * \return -1 if no proper s-exp 0 if missing chars otherwise the number of
@@ -193,8 +191,7 @@ sexp_len(octet_t * sexp)
 
 /*--------------------------------------------------------------------------------*/
 
-/*
- *!
+/*!
  * \brief Constructs a octet string given a format specification and a
  *    array of void pointers to arguments.
  * \param sexp A memory area where the result will be placed
@@ -396,15 +393,14 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 
 /*--------------------------------------------------------------------------------*/
 
-/*
- *!
+/*!
  * \brief Constructs a octet string given a format specification and a
  *    varianble amount of arguments.
  * \param sexp A memory area where the result will be placed
  * \param size A poiinter to a integer containing the size of the memory area.
  *   this integer will be updated to reflect the size of the memory area that
  *   was not used.
- * \param format The format specification, the allowed characters are '(',
+ * \param fmt The format specification, the allowed characters are '(',
  *   ')', 'o' (octet struct), 'O' (null terminated array of octet structs),
  *   'x' (octarr struct), 'a' (null terminated string), 'A' ( null terminated
  *   array of null terminated strings), 'l' (a null teminated string that

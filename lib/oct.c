@@ -1,5 +1,7 @@
-/*
- * ! \file lib/oct.c \author Roland Hedberg <roland@catalogix.se> 
+/*!
+ * \file lib/oct.c
+ * \author Roland Hedberg <roland@catalogix.se> 
+ * \brief A set of functions working on octet_t structs
  */
 
 /***************************************************************************
@@ -32,8 +34,7 @@
  * ====================================================================== 
  */
 
-/*
- * ! \brief Looking for a specific bytevalue, under the assumption that it
+/*! \brief Looking for a specific bytevalue, under the assumption that it
  * appears in pairs and that if a 'left' byte has been found a balancing
  * 'right' byte has to be found before the search for another 'right' byte can 
  * be done. \param o The 'string' to be searched \param left The byte
@@ -66,8 +67,7 @@ oct_find_balancing(octet_t * o, char left, char right)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Increases the size of the menory that is connected to this struct. 
+/*! \brief Increases the size of the menory that is connected to this struct. 
  * This routine will always increase, if needed, by doubling the size. \param
  * o The octet string representation \param new The minimum size required
  * \return The result code 
@@ -97,8 +97,7 @@ oct_resize(octet_t * o, size_t new)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Assigns a string to a octet string structure \param oct The octet
+/*! \brief Assigns a string to a octet string structure \param oct The octet
  * string struct that should hold the string \param str The string 
  */
 
@@ -113,8 +112,7 @@ oct_assign(octet_t * oct, char *str)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Let one octet string struct point to the same information as
+/*! \brief Let one octet string struct point to the same information as
  * another one \param a The target \param b The source 
  */
 
@@ -129,8 +127,7 @@ octln(octet_t * a, octet_t * b)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Duplicates a octet string struct \param oct The octet string that
+/*! \brief Duplicates a octet string struct \param oct The octet string that
  * should be copied \return The copy 
  */
 
@@ -157,8 +154,7 @@ octdup(octet_t * oct)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Copies the information from one octet string struct to another
+/*! \brief Copies the information from one octet string struct to another
  * \param cpy The destination \param oct The source \return The result code 
  */
 
@@ -181,8 +177,7 @@ octcpy(octet_t * cpy, octet_t * oct)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Resets a octet string struct, that is the memory that is used to
+/*! \brief Resets a octet string struct, that is the memory that is used to
  * hold the value bytes are returned and size and len is set to 0. \param oct
  * The octet string struct to be cleared 
  */
@@ -201,8 +196,7 @@ octclr(octet_t * oct)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Concatenates a string of bytes of a specific length to the end of
+/*! \brief Concatenates a string of bytes of a specific length to the end of
  * the string held by the octet string struct \param oct The octet string
  * struct to which the string should be added \param s The beginning of the
  * string \param l The length of the string \return A Spocp result code 
@@ -230,8 +224,7 @@ octcat(octet_t * oct, char *s, size_t l)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Compares bitwise a string to the string held by a octet string
+/*! \brief Compares bitwise a string to the string held by a octet string
  * struct \param o The octet string struct \param s The char string which is
  * supposed to be NULL terminated \return 0 is they are equal, otherwise not 0 
  */
@@ -267,8 +260,7 @@ oct2strcmp(octet_t * o, char *s)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Compares bitwise a specific number of bytes bwteen a string and
+/*! \brief Compares bitwise a specific number of bytes bwteen a string and
  * the string held by a octet string struct \param o The octet string struct
  * \param s The char string which has to be nullterminated \param l The number 
  * of bytes that should be comapred \return 0 is they are equal, otherwise not 
@@ -291,8 +283,7 @@ oct2strncmp(octet_t * o, char *s, size_t l)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Compares two octet string structs \param a, b The two octet
+/*! \brief Compares two octet string structs \param a, b The two octet
  * strings \return 0 if they are equal, not 0 if they are unequal 
  */
 
@@ -315,8 +306,7 @@ octcmp(octet_t * a, octet_t * b)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Compares at the most n bytes of two octet strings to find out if
+/*! \brief Compares at the most n bytes of two octet strings to find out if
  * they are equal or not. \param a, b The two octet strings \param cn The
  * number of bytes that should be check \return 0 if equal, non 0 otherwise 
  */
@@ -335,8 +325,7 @@ octncmp(octet_t * a, octet_t * b, size_t cn)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Moves the octet string from one octet string struct to another. The
+/*! Moves the octet string from one octet string struct to another. The
  * source octet string struct is cleared as a side effect. \param a,b
  * destination resp. source octet string struct 
  */
@@ -356,8 +345,7 @@ octmove(octet_t * a, octet_t * b)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief finds a string of bytes in a octet string. The strin has to be
+/*! \brief finds a string of bytes in a octet string. The strin has to be
  * NULL terminated \param o The octet string \param needle the pattern that is 
  * searched for \return The index of the first byte in a sequence of bytes in
  * the octetstring that matched the pattern 
@@ -394,8 +382,7 @@ octstr(octet_t * o, char *needle)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief The function returns the index of the first occurrence of the
+/*! \brief The function returns the index of the first occurrence of the
  * character ch in the octet string op. \param op The octet string which is to 
  * be search for the byte. \param ch The byte value. \return The index of the
  * first occurence of a byte in the octet string that was similar to the byte 
@@ -419,8 +406,7 @@ octchr(octet_t * op, char ch)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief The octpbrk() function locates the first occurrence in the octet
+/*! \brief The octpbrk() function locates the first occurrence in the octet
  * string s of any of the characters in the octet string acc. \param op The
  * octet string \param acc The set of bytes that is looked for. \return The
  * index of the first coccurence of a byte from the octet string acc 
@@ -443,8 +429,7 @@ octpbrk(octet_t * op, octet_t * acc)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Create a new octet string struct and initialize it with the given
+/*! \brief Create a new octet string struct and initialize it with the given
  * values \param size The size of the memory are that are set aside for
  * storing the string \param val A bytestring to bestored. \return The created 
  * and initialized octet string struct 
@@ -482,8 +467,7 @@ oct_new(size_t size, char *val)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Frees the memory space held by the octet string struct \param o
+/*! \brief Frees the memory space held by the octet string struct \param o
  * The octet string struct 
  */
 void
@@ -499,8 +483,7 @@ oct_free(octet_t * o)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Frees an array of octet string structs, the array has to be NULL
+/*! \brief Frees an array of octet string structs, the array has to be NULL
  * terminated \param oa The array of octet string structs 
  */
 void
@@ -518,8 +501,7 @@ oct_freearr(octet_t ** oa)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief copies the content of a octet string struct into a new character
+/*! \brief copies the content of a octet string struct into a new character
  * string. If asked for this function escapes non printing characters (
  * characters outside the range 0x20-0x7E and the value 0x25 ) on the fly .
  * \param op The octet string struct \param ec The escape character. If this
@@ -582,8 +564,7 @@ oct2strdup(octet_t * op, char ec)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Copies no more than len characters from the octet string op into a string 
+/*! Copies no more than len characters from the octet string op into a string 
  * str. If an escape character and the escape flag do_escape is not NULL then
  * escaping will be done on the fly. \param op The source octet string \param
  * str The start of the memory area to which the string is copied \param len
@@ -646,8 +627,7 @@ oct2strcpy(octet_t * op, char *str, size_t len, char ec)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! \brief Replaces part of a octet with another octet string \param oct The 
+/*! \brief Replaces part of a octet with another octet string \param oct The 
  * original octet string \param insert The octetstring to insert \param where
  * Where the insert should be placed \param replen The number of bytes in the
  * original that should be replaced \param noresize A flag that is set
@@ -702,8 +682,7 @@ oct_replace(octet_t * oct, octet_t * insert, int where, int replen,
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Replaces occurences of the form "$$(key)" with the value connected 
+/*! \brief Replaces occurences of the form "$$(key)" with the value connected 
  * to the key 'key' in a keyval struct. \param src The original octet string
  * \param kvp A linked list of keyval_t structs \param noresize A flag that
  * denotes whether this function can resize the original octet string if
@@ -759,8 +738,7 @@ oct_expand(octet_t * src, keyval_t * kvp, int noresize)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Deescapes a octetstring. The escape is expected to be done as '\'
+/*! \brief Deescapes a octetstring. The escape is expected to be done as '\'
  * hex hex \param op The original octetstring. \return The number of bytes in
  * the octetstring after deescaping is done. 
  */
@@ -822,8 +800,7 @@ oct_de_escape(octet_t * op)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Convert a octetstring representation of a number to a integer.
+/*! \brief Convert a octetstring representation of a number to a integer.
  * INT_MAX 2147483647 \param o The original octet string \return A integer
  * bigger or equal to 0 if the conversion was OK, otherwise -1 
  */

@@ -1,5 +1,6 @@
-/*! \file lib/src/lib.c 
+/*! \file src/clilib.c 
  * \author Roland Hedberg <roland@catalogix.se>
+ * \brief The Spocp client library
  */
 /***************************************************************************
                          common.c  -  common stuff to all spocp clients
@@ -48,7 +49,7 @@
 #define MAXHOSTNAMELEN 256
 #endif
 
-char           *strndup(const char *old, size_t sz);
+char	*strndup(const char *old, size_t sz);
 
 typedef struct sockaddr SA;
 
@@ -60,6 +61,10 @@ char prbuf[BUFSIZ];
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Translation from result codes as written on-the-wire and 
+ *   resultcodes used in the program
+ */
 spocp_rescode_t spocp_rescode[] = {
 	{SPOCP_WORKING, "100"},
 
@@ -572,7 +577,7 @@ sexp_get_len(char **str, int *rc)
 }
 /*--------------------------------------------------------------------------------*/
 
-int
+static int
 skip_length(char **sexp, int n, int *rc)
 {
 	char *sp = *sexp;
@@ -614,7 +619,7 @@ sexp_get_next_element(char *sexp, int n, int *rc)
 
 /*--------------------------------------------------------------------------------*/
 
-int
+static int
 spocpc_sexp_elements(char *resp, int n, octet_t line[], int size, int *rc)
 {
 	char *next, *sp;
@@ -662,7 +667,7 @@ spocpc_sexp_elements(char *resp, int n, octet_t line[], int size, int *rc)
 
 /*--------------------------------------------------------------------------------*/
 
-int
+static int
 sexp_get_response(octet_t * buf, octet_t * code, octet_t * info)
 {
 	size_t l, d, n;
@@ -852,6 +857,12 @@ spocpc_connect(char *srv, int nsec)
 
 /* ============================================================================== */
 
+/*!
+ * \brief Initializes a Spocp session, that is creates a Spocp struct but does not
+ *   connect to any server.
+ * \param host Where the server is to be found
+ * \return A Spocp connection struct
+ */
 SPOCP *
 spocpc_init(char *host)
 {
@@ -866,8 +877,10 @@ spocpc_init(char *host)
 /*!
  * Opens a new Spocp session. Inlcudes not just creating the session structure but
  * also opening a non-SSL connection to the Spocp server of choice
+ * \param spocp A spocp session struct gotten from spocpc_init() or NULL
  * \param srv The spocp server definition, either a host:port specification or a 
  *            filename representing a unix domain socket .
+ * \param nsec The number of seconds that should pass before giving up on a server
  * \return A Spocp session pointer or NULL on failure
  */
 
@@ -903,6 +916,14 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Tries to reconnect to a Spocp server after the previous connection
+ *   for some reason has disappeared
+ * \param spocp The connection struct
+ * \param nsec The amount of time this routine should wait for the server to answer
+ *   befor giving up
+ * \return TRUE if the reconnection was successful otherwise FALSE
+ */
 int
 spocpc_reopen(SPOCP * spocp, int nsec)
 {
@@ -919,8 +940,8 @@ spocpc_reopen(SPOCP * spocp, int nsec)
 /*!
  * Writes size bytes to a spocp server, Uses SSL/TLS if active.
  * \param spocp The Spocp session
- * \param buf A pointer to the buffer containing the bytes to be written
- * \param size The number of bytes to write
+ * \param str A pointer to the buffer containing the bytes to be written
+ * \param n The number of bytes to write
  * \return The number of bytes written or -1 if no bytes could be written
  */
 ssize_t
@@ -1220,14 +1241,7 @@ spocpc_get_result(SPOCP * spocp, queres_t * qr)
 }
 
 /* ============================================================================== */
-/*!
- * Sends a operation and its arguments. Returns the resultcode plus possible blob
- * if the result code was SPOCPC_OK.
- * \param spocp The handle to the SPOCP connection
- * \param argv The operation and its arguments
- * \param blob Where the blob should be placed
- * \return Appropriate result code
- */
+
 static int
 spocpc_send_X(SPOCP * spocp, char **argv, queres_t * qr)
 {
@@ -1245,7 +1259,9 @@ spocpc_send_X(SPOCP * spocp, char **argv, queres_t * qr)
  * \param spocp The Spocp session
  * \param path The name of the ruleset
  * \param query The string buffer holding the query in the form of a s-expression
- * \return A enum representing the answer from the Spocp server
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
  */
 int
 spocpc_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
@@ -1271,7 +1287,9 @@ spocpc_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
  * \param spocp The Spocp session
  * \param path The name of the ruleset
  * \param rule The ruleID that one wants to remove
- * \return A enum representing the answer from the Spocp server
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
  */
 int
 spocpc_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
@@ -1295,8 +1313,11 @@ spocpc_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 /*!
  * Send a subject definition to a spocp server
  * \param spocp The Spocp session
- * \param query The string buffer holding the query
- * \return A enum representing the answer from the Spocp server
+ * \param subject The string in someway representing information about the subject
+ *   that is controlling this session
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
  */
 int
 spocpc_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
@@ -1319,7 +1340,9 @@ spocpc_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
  * \param rule The string buffer holding the query
  * \param bcond The boundary condition expression
  * \param info The static blob 
- * \return A enum representing the answer from the Spocp server
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
  */
 int
 spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
@@ -1355,19 +1378,33 @@ spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Sends a LOGOUT request to a Spocp server
+ * \param spocp The Spocp session
+ * \return A spocpc result code
+ */
 int
-spocpc_send_logout(SPOCP * spocp, queres_t * qr)
+spocpc_send_logout(SPOCP * spocp)
 {
 	char *argv[3];
+	queres_t qres;
 
+	memset( &qres, 0, sizeof( queres_t));
 	argv[0] = "LOGOUT";
 	argv[1] = 0;
 
-	return spocpc_send_X(spocp, argv, qr);
+	return spocpc_send_X(spocp, argv, &qres);
 }
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Sends a BEGIN (transaction start) request to a Spocp server
+ * \param spocp The Spocp session
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A spocpc result code
+ */
 int
 spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 {
@@ -1381,6 +1418,13 @@ spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Sends a COMMIT (transaction end) request to a Spocp server
+ * \param spocp The Spocp session
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A spocpc result code
+ */
 int
 spocpc_commit(SPOCP * spocp, queres_t * qr)
 {
@@ -1394,6 +1438,13 @@ spocpc_commit(SPOCP * spocp, queres_t * qr)
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Sends a STARTTLS request to a Spocp server
+ * \param spocp The Spocp session
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A spocpc result code
+ */
 int
 spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
 {
@@ -1416,33 +1467,15 @@ spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
 }
 
 /* ============================================================================== */
-/*
-int
-sexp_memcpy(octet_t * oct, char *str, int n)
-{
-	int l, sl = (int) oct->len;
-	char *sp = oct->val;
-	int rc = SPOCPC_OK;
 
-	if ((l = sexp_get_len(&sp, &rc)) < 0)
-		return rc;
-
-	sl -= (sp - oct->val);
-
-	if (l > sl)
-		return SPOCPC_MISSING_CHAR;
-
-	memmove(str, sp, l);
-	str[l] = '\0';
-
-	return rc;
-}
-*/
-/*--------------------------------------------------------------------------------*/
-
-/* each 201 line contains
-  l-path l-uid l-rule [l-blob]
-
+/*! 
+ * \brief Takes a multiline response and works its way through the information
+ *  returned, printing the relevant information to a filedescriptor
+ * \param resp Memory area holding the multiline response
+ * \param n  The size of the memory area
+ * \param fp A file descriptor which is to be used for the output of this routine
+ * \param wid If not zero print the rule ID together with the other information
+ * \return A spocpc result code
  */
 int
 spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)

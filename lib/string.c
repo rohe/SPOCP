@@ -1,6 +1,6 @@
-/*
- *! \file lib/string.c
+/*! \file lib/string.c
  * \author Roland Hedberg <roland@catalogix.se>
+ * \brief Basic functions working on null terminated strings
  */
 /***************************************************************************
                           string.c  -  description
@@ -29,8 +29,7 @@
 
 /*--------------------------------------------------------------------------------*/
 
-/*
- *!
+/*!
  * \brief Removes CR (0x0D) and LR (0x0A) from the end of a string
  * \param s The string on wich the work should be done
  */
@@ -48,8 +47,7 @@ rmcrlf(char *s)
 	}
 }
 
-/*
- *!
+/*!
  * \brief Removes leading and trailing spaces (0x20 or 0x09) from the end of a string
  * \param s The string on wich the work should be done
  * \return A pointer to the resulting string
@@ -72,8 +70,7 @@ rmlt(char *s)
 	return cp;
 }
 
-/*
- *!
+/*!
  * \brief Splits a string into pieces, placing the pieces in a array of strings
  * \param s The string that is to be split
  * \param c THe character at which the split should occur
@@ -151,8 +148,7 @@ line_split(char *s, char c, char ec, int flag, int max, int *parts)
  * --------------------------------------------------------------------- 
  */
 
-/*
- *!
+/*!
  * \brief Find the matching right hand character.
  * \param p The string to search
  * \param left The left hand side character

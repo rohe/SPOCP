@@ -1,5 +1,7 @@
-/*
- * ! \file lib/octarr.c \author Roland Hedberg <roland@catalogix.se> 
+/*!
+ * \file lib/octarr.c
+ * \author Roland Hedberg <roland@catalogix.se> 
+ * \brief A set of functions working on or with octarr_t structs
  */
 
 /***************************************************************************
@@ -22,8 +24,7 @@
 #include <spocp.h>
 #include <wrappers.h>
 
-/*
- *!
+/*!
  * \brief Creates a new octarr struct
  * \param n The size of the array
  * \return A octarr struct
@@ -41,8 +42,7 @@ octarr_new(size_t n)
 	return oa;
 }
 
-/*
- *!
+/*!
  * \brief Creates a copy of a octarr struct
  * \param old The octarr struct to be copied
  * \return A pointer to the copy
@@ -62,11 +62,11 @@ octarr_dup(octarr_t * old)
 	return new;
 }
 
-/*
- *!
+/*!
  * \brief Add a octet struct to the octarr struct. If the octarr struct pointer is
  *   NULL a new will be created. If the storage array is to small it will be increased.
  * \param oa A pointer to the octarr struct in which the octet struct should be placed
+ * \param op The octet struct that shgould be added
  * \return A pointer to the octarr strict
  */
 octarr_t       *
@@ -95,8 +95,7 @@ octarr_add(octarr_t * oa, octet_t * op)
 	return oa;
 }
 
-/*
- *!
+/*!
  * \brief Will increase the size of the storage array in a octarr struct
  * \param oa The octarr which arr struct should be increased
  * \param n The size that the array should be, if it is smaller than the
@@ -122,8 +121,7 @@ octarr_mr(octarr_t * oa, size_t n)
 		}
 	}
 }
-/*
- *! 
+/*! 
  * \brief Will free a octarr struct, but will not attempt to free the octet structs
  *     that are stored within the octarr struct.
  * \param oa A pointer to the octarr to be freed.
@@ -144,8 +142,7 @@ octarr_half_free(octarr_t * oa)
 	}
 }
 
-/*
- *!
+/*!
  * \brief Will free not just the octarr struct but also the octet structs stored
  *   within it.
  * \param oa A pointer to the octarr struct to be freed
@@ -166,8 +163,7 @@ octarr_free(octarr_t * oa)
 	}
 }
 
-/*
- *!
+/*!
  * \brief Will remove the first octet stored in the octarr struct
  * \param oa A pointer to the octarr struct
  * \return A pointer to the octet struct removed from the octarr struct
@@ -197,8 +193,7 @@ octarr_pop(octarr_t * oa)
 /*
  * not the fastest way you could do this 
  */
-/*
- *!
+/*!
  * \brief Adds all the octets stored in one octarr struct to another, removing them
  *   at the same time from the first. If the target is non existent the source is
  *   returned. If both target and source is not NULL, then the source octarr will
@@ -250,8 +245,7 @@ safe_strcat(char *dest, char *src, int *size)
 }
 */
 
-/* 
- *!
+/*!
  * \brief Removes a specific octet struct from a octarr struct, the octarr
  *   array will be collapsed after the octet is removed.
  * \param oa The octarr struct
@@ -281,8 +275,7 @@ octarr_rm(octarr_t * oa, int n)
  * ====================================================================== 
  */
 
-/*
- *!
+/*!
  * \brief splits a octetstrin into pieces at the places where a specific
  *   octet occurs.
  * \param o The octet to be split
@@ -290,7 +283,7 @@ octarr_rm(octarr_t * oa, int n)
  * \param ec An escape octet that if it occurs before a split octet, it 
  *   will prevent the string from being split at that position.
  * \param flag If 1 consecutive occurences of the split octet counts as one.
- * \param mac The maximum size of the resulting array. 
+ * \param max The maximum size of the resulting array. 
  * \return A octarr struct with newly created octet string copies of the 
   *  substrings
  */

@@ -1,7 +1,7 @@
-i/*
- *!
+/*!
  * \file lib/sexptool.c
  * \author Roland Hedberg <roland@catalogix.se>
+ * \brief Functions that can be used to create Spocp queries (S-expressions)
  */
 /***************************************************************************
                           sexptool.c  -  description
@@ -21,8 +21,7 @@ i/*
 #include <func.h>
 #include <wrappers.h>
 
-/*
- *!
+/*!
  * \brief Farses a string that contains a description of the format of Spocp
  *   queries.  format is typically (3:foo%{var}) which is then split into three parts
  *   "(3:foo", %{var} and ")" var is looked up in the table of known variables
@@ -122,8 +121,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 	return arg;
 }
 
-/*
- *!
+/*!
  * \brief Constructs a Spocp query given a format specification and a pointer
  *   to input data.
  * \param comarg A pointer to input information.
@@ -176,8 +174,7 @@ sexp_constr( void *comarg, sexparg_t ** ap )
 	return res;
 }
 
-/*
- *!
+/*!
  * \brief Frees a sexparg struct array
  * \param sa A pointer to the array
  */
