@@ -142,7 +142,7 @@ int        free_rule( ruleinfo_t *ri, char *uid ) ;
 void       free_all_rules( ruleinfo_t *ri ) ;
 
 
-spocp_result_t  add_right( db_t **db, octarr_t *oa, ruleinst_t **ri ) ;
+spocp_result_t  add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd ) ;
 
 octet_t        *rulename_print(  ruleinst_t *r, char *rs ) ;
 octet_t        *get_blob( ruleinst_t *ri ) ;
@@ -153,7 +153,7 @@ varr_t         *get_all_bcond_followers( branch_t *bp, varr_t *in ) ;
 int            nrules( ruleinfo_t *ri ) ;
 int            rules( db_t *db ) ;
 
-ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob ) ;
+ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcondname ) ;
 ruleinst_t *aci_save( db_t *db, octet_t *aci ) ;
 
 ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob ) ;
@@ -164,7 +164,7 @@ int        ruleinfo_print( ruleinfo_t *r ) ;
 
 void       *read_rules( void *vp, char *file, int *rc, keyval_t **globals ) ;
 
-element_t  *element_dup( element_t *ep, element_t *memberof ) ;
+element_t  *element_dup( element_t *ep, element_t *memberof ) ; 
 
 /*
 raci_t     *saci_new( void ) ;
