@@ -1,3 +1,17 @@
+/***************************************************************************
+                                ruleset.c 
+                             -------------------
+
+    begin                : Sat Oct 12 2002
+    copyright            : (C) 2002 by Umeå University, Sweden
+    email                : roland@catalogix.se
+
+   COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
+   of this package for details.
+
+ ***************************************************************************/
+
+
 #include <string.h>
 
 #include <spocp.h>
@@ -12,248 +26,253 @@
 #define ASCII_UPPER(c) ( (c) >= 'A' && (c) <= 'Z' )
 #define DIGIT(c)       ( (c) >= '0' && (c) <= '9' )
 #define ASCII(c)       ( ASCII_LOWER(c) || ASCII_UPPER(c) )
-#define DIRCHAR(c)     ( ASCII(c) || DIGIT(c) || (c) == '-' || (c) == '_' || (c) == '/' )
+#define DIRCHAR(c)     ( ASCII(c) || DIGIT(c) || (c) == '-' || (c) == '_' || (c) == '.' )
 
+/* ---------------------------------------------------------------------- */
 
-ruleset_t *new_ruleset( char *name, int len )
+ruleset_t *ruleset_new( octet_t *name )
 {
   ruleset_t *rs ;
 
   rs = ( ruleset_t *) Calloc( 1, sizeof( ruleset_t )) ;
 
-  pthread_mutex_init( &(rs->transaction), NULL ) ;
-
-  pthread_rdwr_init( &(rs->rw_lock) ) ;
-
-  if( len == 0 ) {
+  if( name == 0 || name->len == 0 ) {
     rs->name = (char * ) Malloc ( 1 )  ;
     *rs->name = '\0' ;
   }
-  else rs->name = Strndup( name, len ) ;
+  else rs->name = oct2strdup( name, 0 ) ;
+
+  traceLog( "New ruleset: %s", rs->name ) ;
 
   return rs ;
 }
 
-void free_ruleset( ruleset_t *rs ) 
+/* ---------------------------------------------------------------------- */
+
+void ruleset_free( ruleset_t *rs ) 
 {
   if( rs ) {
-    pthread_mutex_destroy( &rs->transaction );
     if( rs->name ) free( rs->name ) ;
-    if( rs->aci ) free_aci_chain( rs->aci ) ;
-    if( rs->db ) free_db( rs->db ) ;
-    pthread_rdwr_destroy( &rs->rw_lock ) ;
 
-    if( rs->down ) free_ruleset( rs->down ) ;
-    if( rs->left ) free_ruleset( rs->left ) ;
-    if( rs->right ) free_ruleset( rs->right ) ;
+    if( rs->down ) ruleset_free( rs->down ) ;
+    if( rs->left ) ruleset_free( rs->left ) ;
+    if( rs->right ) ruleset_free( rs->right ) ;
 
     free( rs ) ;
   }
 }
 
+/* ---------------------------------------------------------------------- */
+
 static int next_part( octet_t *a, octet_t *b )
 {
   if( a->len == 0 ) return 0 ;
 
-  if( *a->val == '/' ) {
-    a->val++ ;
-    a->len-- ;
-  }
-
-  if( a->len == 0 ) return 0 ;
-
-  b->val = a->val ;
-  b->len = a->len ;
+  octln( b, a ) ;
   
-  for(  ; b->len && *b->val != '/' ; b->val++, b->len-- ) ;
+  for(  ; b->len && DIRCHAR(*b->val) && *b->val != '/' ; b->val++, b->len-- ) ;
   
+  if( b->len && ( !DIRCHAR( *b->val ) && *b->val != '/' )) return 0 ;
+
   a->len -= b->len ;
 
   return 1 ;
 }
 
-ruleset_t *find_ruleset( octet_t *name, ruleset_t *rs )
+/* ---------------------------------------------------------------------- */
+
+static ruleset_t *search_level( octet_t *name, ruleset_t *rs ) 
 {
-  octet_t loc, p ;
-  int     c ;
+  int c ;
 
-  if( rs == 0 ) return 0 ;
-  else if( name->len == 0 ) return rs ; 
-  else {
-    if( *name->val == '/' && name->len == 1 ) {
-      while( 1 ) {
-        if( *rs->name == '\0' ) return rs ;
-
-        if( rs->left ) rs = rs->left ;
-        else           return 0 ;
-      } 
+  do {
+    traceLog( "search_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
+    c = oct2strcmp( name, rs->name ) ;
+  
+    if( c == 0 ) {
+      rs = rs->down ;
+      break ;
     }
-    else {
-      if( *name->val == '/' && *rs->name == '\0' ) {
-        name->val++ ;
-        name->len-- ;
-        while( rs->up ) rs = rs->up ;
-        rs = rs->down ;
-        if( rs == 0 ) return 0 ;
-      }
-
-      loc.val = name->val ;
-      loc.len = name->len ;
-
-      do {
-  
-        if( next_part( &loc, &p ) == 0 ) break ;
-
-        do {
-          c = oct2strcmp( &loc, rs->name ) ;
-  
-          if( c == 0 ) {
-            if( p.len == 1 && *p.val == '/' ) return rs ;
-            rs = rs->down ;
-          }
-          else if ( c < 0 ) {
-            rs = rs->left ;
-          }
-          else { 
-            rs = rs->right ;
-          }
-        } while( c && rs ) ;
-  
-        if( rs == 0 ) break ;
-
-        loc.val = p.val ;
-        loc.len = p.len ;
-  
-      } while( loc.len ) ;
+    else if ( c < 0 ) {
+      rs = rs->left ;
     }
-  }
+    else { 
+      rs = rs->right ;
+    }
+  } while( c && rs ) ;
 
   return rs ;
 }
 
-ruleset_t *create_ruleset( octet_t *name, ruleset_t **root )
+/* ---------------------------------------------------------------------- */
+
+/* returns 1 if a ruleset is found with the given name */
+int ruleset_find( octet_t *name, ruleset_t **rs )
 {
-  ruleset_t *res = 0, *trs = 0 ;
+  octet_t   loc, p ;
+  ruleset_t *r, *nr ;
+
+  if( *rs == 0 ) return 0 ;
+
+  /* the root */
+  if( name == 0 || name->len == 0 || ( *name->val == '/' && name->len == 1 )) {
+    for( r = *rs ; r->up ; r = r->up ) ;
+    *rs = r ;
+    return 1 ;
+  }
+
+  if( *(name->val) == '/' ) {
+    if( *(name->val+1) == '/' ) {
+      for( r = *rs ; r->up ; r = r->up ) ;
+      loc.val = name->val ;
+      loc.len = 2 ;
+      if( r->down ) {
+        nr = search_level( &loc, r->down ) ;
+        if( nr == 0 ){
+          *rs = r ;
+          return 0 ;
+        }
+      }
+      else return 0 ;
+
+      name->len -= 2 ;
+      name->val += 2 ;
+    }
+    else {
+      for( r = *rs ; r->up ; r = r->up ) ;
+      name->len-- ;
+      name->val++ ;
+    }
+  }
+  else r = *rs ;
+
+  octln( &loc, name ) ;
+
+  do {
+    if( *loc.val == '/' ) {
+      loc.val++ ;
+      loc.len-- ;
+    }
+ 
+    if( next_part( &loc, &p ) == 0 ) break ;
+
+    nr = search_level( &loc, r ) ; 
+  
+    if( nr == 0 ) {
+      loc.len += p.len ;
+      break ; /* this is as far as it gets */
+    }
+
+    octln( &loc, &p ) ;
+    r = nr ;
+  } while( loc.len ) ;
+ 
+  *rs = r ;
+
+  if( loc.len == 0 ) return 1 ;
+
+  octln( name, &loc ) ;
+
+  return 0 ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+static ruleset_t *add_to_level( octet_t *name, ruleset_t *rs )
+{
+  int c ;
+  ruleset_t *new ;
+
+  new = ruleset_new( name ) ;
+
+  if( rs == 0 ) return new ;
+
+  do {
+    traceLog( "add_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
+    c = oct2strcmp( name, rs->name ) ;
+  
+    if ( c < 0 ) {
+      if( !rs->left ) {
+        rs->left = new ;
+        c = 0 ;
+      }
+      rs = rs->left ;
+    }
+    else { 
+      if( !rs->right ) {
+        rs->right = new ;
+        c = 0 ;
+      }
+      rs = rs->right ;
+    }
+  } while( c && rs ) ;
+
+  return rs ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+ruleset_t *ruleset_create( octet_t *name, ruleset_t **root )
+{
+  ruleset_t *res = 0, *r = 0, *nr ;
   octet_t   p, loc ;
-  int       c ;
 
   if( *root == 0 ) {
-
-    if( name->len == 0 || ( name->len && *name->val == '/' )) {
-      *root = trs = new_ruleset( "", 0 ) ;
-      return trs ;
-    }
-
-    loc.val = name->val ;
-    loc.len = name->len ;
-
-    do {
-      if( next_part( &loc, &p ) == 0 ) break ;
-
-      res = new_ruleset( loc.val, loc.len ) ;
-
-      if( trs ) {
-        trs->down = res ;
-        res->up = trs ;
-      }
-      trs = res ;
-
-      loc.val = p.val ;
-      loc.len = p.len ;
-
-    } while( loc.len ) ;
-  }
-  else {
-    trs = *root ;
-
-    if( name->len == 0 || ( name->len == 1 && *name->val == '/' )) {
-      if( *trs->name == '\0' ) return trs ;
-    }
-    else if( *name->val == '/' ) {  /* rooted at the top */
-      if( strcmp( trs->name, "" ) ) {
-        while( trs->up ) trs = trs->up ;
-      }
-
-      name->val++ ; 
-      name->len-- ;
-
-      if( trs->down ) {
-        trs = trs->down ; /* to get to the right level */
-      }
-      else {
-        if( name->len == 0 ) return trs ;
-
-        trs->down = create_ruleset( name, &res ) ;
-        trs->down->up = trs ;
-        while( trs->down ) trs = trs->down ;
-        return trs ;
-      }
-    }
-
-    if( trs == 0 ) return 0 ;
-
-    loc.val = name->val ;
-    loc.len = name->len ;
-
-    do {
-      if( next_part( &loc, &p ) == 0 ) break ;
-
-      do {
-        c = oct2strcmp( &loc, trs->name ) ;
-
-        if( c == 0 ) {
-          if( trs->down == 0 ) { 
-            p.val++ ; /* to get rid of the leading '/' */
-            p.len-- ; 
-
-            if( p.len == 0 ) return trs ;
-
-            trs->down = create_ruleset( &p, &res ) ;
-            trs->down->up = trs ;
-            while( trs->down ) trs = trs->down ;
-            return trs ;
-          }
-
-          trs = trs->down ;
-        }
-        else if ( c < 0 ) {
-          if( trs->left == 0 ) { 
-            loc.len += p.len ; /* the whole string */
-            trs->left = create_ruleset( &loc, &res ) ;
-            trs->left->right = trs ;
-            trs->left->up = trs->up ;
-            for( trs = trs->left ; trs->down ; trs = trs->down ) ;
-            return trs ;
-          }
-
-          trs = trs->left ;
-        }
-        else { 
-          if( trs->right == 0 ) {
-            loc.len += p.len ; /* the whole string */
-            trs->right = create_ruleset( &loc, &res ) ;
-            trs->right->left = trs ;
-            trs->right->up = trs->up ;
-            for( trs = trs->right ; trs->down ; trs = trs->down ) ;
-            return trs ;
-          }
-  
-          trs = trs->right ;
-        }
-      } while( c ) ;
-
-      loc.val = p.val ;
-      loc.len = p.len ;
-
-    } while( loc.len ) ;
+    if( name == 0 || name->len == 0 || ( name->len == 1 && *name->val == '/' )) 
+      return ruleset_new( 0 ) ;
   }
 
-  return trs ;
+  octln( &loc, name ) ;
+
+  res = *root ;
+  if( ruleset_find( &loc, &res ) == 1 ) return res ;
+
+  /* special case */
+  if( *loc.val == '/' && *(loc.val+1) == '/' ) {
+    p.val = loc.val +2 ;
+    p.len = loc.len -2 ;
+    loc.len = 2 ;
+
+    if( res == 0 ) {
+      res = ruleset_new( 0 ) ;
+      r = ruleset_new( &loc ) ;
+      res->down = r ;
+      r->up = res ; 
+      octln( &loc, &p ) ;
+    }
+    else {
+      r = add_to_level( &loc, res ) ;
+      r->up = res ;
+      octln( &loc, &p ) ;
+    }
+  }
+  else r = res ;
+
+  do {
+    if( *loc.val == '/' ) {
+      loc.val++ ;
+      loc.len-- ;
+    }
+ 
+    if( next_part( &loc, &p ) == 0 ) break ;
+
+    if( r->down ) nr = add_to_level( &loc, r->down ) ; 
+    else r->down = nr = ruleset_new( &loc ) ;
+
+    nr->up = r ;
+
+    octln( &loc, &p ) ;
+    r = nr ;
+  } while( loc.len ) ;
+ 
+  return r ;
 }
+
+/* ---------------------------------------------------------------------- */
 
 /* should be of the format 
    [ "/" *( string "/" ) ] s-exp 
-   string = 1*( %x30-39 / %x61-7A / %x41-5A )
+   string = 1*( %x30-39 / %x61-7A / %x41-5A / %x2E )
  */
 
 spocp_result_t get_rs_name( octet_t *orig, octet_t *rsn )
@@ -269,7 +288,7 @@ spocp_result_t get_rs_name( octet_t *orig, octet_t *rsn )
   }
   else {
     /* get the name space info */
-    for(  l = 0 ; DIRCHAR( *cp ) && l != orig->len ; cp++, l++ ) ;
+    for(  l = 0 ; ( DIRCHAR( *cp ) || *cp == '/' ) && l != orig->len ; cp++, l++ ) ;
 
     if( l == orig->len ) return SPOCP_SYNTAXERROR ; /* very fishy */
 
@@ -282,85 +301,6 @@ spocp_result_t get_rs_name( octet_t *orig, octet_t *rsn )
 
   return SPOCP_SUCCESS ;
 }
-
-/*
-ruleset_t *parse_rs_name( ruleset_t *rs, char **str ) 
-{
-  char      *sp, *cp ;
-  ruleset_t *res = 0 ;
-
-  if( rs == 0 || *str == 0 ) return 0 ;
-
-  sp = *str ;
-
-  if( *sp == '(' ) return rs ;  
-  
-  if( *sp == '/' )                              * start at the top *
-    for( res = rs ; res->up ; res = res->up ) ;
-  
-                                                * get the name space info *
-  for( cp = sp ; DIRCHAR( *cp ) ; cp++ ) ;
-
-  if( *cp != '(' )  return 0 ;                  * Not OK *
-
-  *cp++ = '\0' ;
-
-  res = find_ruleset( sp, res ) ;
-
-  *str = cp ;
-
-  return res ;
-}
-*/
-/*
-spocp_result_t 
-search_in_tree( ruleset_t *rs, octet_t *arg, octnode_t **blob, spocp_req_info_t *sri, int f )
-{
-  spocp_result_t  r = SPOCP_DENIED ;
-  ruleset_t      *rp ;
-  octet_t        old, new ;
-
-  *  check access to operation *
-  if(( r = rs_access_allowed( rs, sri, QUERY )) != SPOCP_SUCCESS ) {
-    LOG( SPOCP_INFO ) traceLog("Query access denied to rule set") ;
-    return r ;
-  }
-  else {
-    old.val = arg->val ;
-    old.len = arg->len ;
-
-    * get read lock, do the query and release lock *
-    * pthread_rdwr_rlock( &rs->rw_lock ) ; *
-    r = spocp_allowed( rs->db, arg, blob, sri ) ;
-    * pthread_rdwr_runlock( &rs->rw_lock ) ; *
-
-    if( r != SPOCP_SUCCESS && rs->down ) r = search_in_tree( rs->down, arg, blob, sri, 1 ) ;
-  }
-
-  if( r == SPOCP_SUCCESS && f ) {
-
-    for( rp = rs->left ;  r != SPOCP_SUCCESS && rp ; rp = rp->left ) {
-      arg->val = old.val ;
-      arg->len = old.len ;
-
-      r = search_in_tree( rp, arg, blob, sri, 1 ) ;
-    }
-
-    for( rp = rs->right ;  r != SPOCP_SUCCESS && rp ; rp = rp->right ) {
-      arg->val = old.val ;
-      arg->len = old.len ;
-
-      r = search_in_tree( rp, arg, blob, sri, 1 ) ;
-    }
-
-    new.val = arg->val ;
-    new.len = arg->len ;
-
-  }
-
-  return r ;
-}     
-*/
 
 spocp_result_t get_pathname( ruleset_t *rs, char *buf, int buflen ) 
 {
@@ -384,51 +324,36 @@ spocp_result_t get_pathname( ruleset_t *rs, char *buf, int buflen )
   return SPOCP_SUCCESS ;
 }
 
-int
-treeList( ruleset_t *rs, octet_t *arg, spocp_req_info_t *sri, octarr_t *oa, int recurs )
+spocp_result_t treeList( ruleset_t *rs, conn_t *conn, octarr_t *oa, int recurs )
 {
   spocp_result_t rc = SPOCP_SUCCESS ;
-  ruleset_t      *rp, *trs ;
-  octet_t        rsn ;
+  ruleset_t      *rp ;
   char           pathname[BUFSIZ] ;
 
-  if( arg->len && *arg->val == '/' ) {
-    if(( rc = get_rs_name( arg, &rsn )) != SPOCP_SUCCESS ) {
-      LOG( SPOCP_EMERG ) traceLog( "Strange line \"%s\"", arg->val ) ;
-      return rc ;
-    }
-
-    if(( trs = create_ruleset( &rsn, &rs )) == 0 ) return SPOCP_OPERATIONSERROR ;
-  }
-  else trs = rs ;
-
   /*  check access to operation */
-  if(( rc = rs_access_allowed( trs, sri, LIST )) != SPOCP_SUCCESS ) {
+  if(( rc = operation_access( conn )) != SPOCP_SUCCESS ) {
     LOG( SPOCP_INFO ) {
-      if(rs->name) traceLog("List access denied to rule set \"%s\"", trs->name) ;
+      if(rs->name) traceLog("List access denied to rule set \"%s\"", rs->name) ;
       else traceLog("List access denied to the root rule set") ;
     }
   }
   else {
-    if(( rc = get_pathname( trs, pathname, BUFSIZ  )) != SPOCP_SUCCESS ) return rc ;
+    if(( rc = get_pathname( rs, pathname, BUFSIZ  )) != SPOCP_SUCCESS ) return rc ;
 
-    if( trs->db ) {
+    if( rs->db ) {
       /* get read lock, do the query and release lock */
       /* pthread_rdwr_rlock( &rs->rw_lock ) ; */
 
-      if( arg->len == 0 )
-        rc = spocp_list_rules( trs->db, 0, oa, sri, pathname ) ; 
-      else 
-        rc = spocp_list_rules( trs->db, arg, oa, sri, pathname ) ; 
+      rc = spocp_list_rules( rs->db, conn->oparg, oa, pathname ) ; 
  
       /* pthread_rdwr_runlock( &rs->rw_lock ) ; */
     }
 
-    if( recurs && trs->down ) {
-      for( rp = trs->down ; rp->left ; rp = rp->left ) ;
+    if( recurs && rs->down ) {
+      for( rp = rs->down ; rp->left ; rp = rp->left ) ;
 
       for( ; rp ; rp = rp->right ) {
-        rc = treeList( rp, arg, sri, oa, recurs ) ;
+        rc = treeList( rp, conn, oa, recurs ) ;
       }
     }
   }
