@@ -22,6 +22,7 @@
 #include <spocp.h>
 #include <sha1.h>
 #include <rbtree.h>
+#include <dback.h>
 
 junc_t  *element_add( plugin_t *pl, junc_t *dvp, element_t *ep, ruleinst_t *ri, int n ) ;
 junc_t  *rm_next( junc_t *ap, branch_t *bp ) ;
