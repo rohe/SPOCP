@@ -19,7 +19,7 @@
 #define hl h->l
 #define hll h->l->l
 
-rbnode_t *rb_new( item_t item, Key v, rbnode_t *l, rbnode_t *r, rbnode_t *p, char red, int n ) 
+static rbnode_t *rb_new( item_t item, Key v, rbnode_t *l, rbnode_t *r, rbnode_t *p, char red, int n ) 
 {
   rbnode_t *new ;
 
@@ -37,7 +37,7 @@ rbnode_t *rb_new( item_t item, Key v, rbnode_t *l, rbnode_t *r, rbnode_t *p, cha
 
 /* ---------------------------------------------------------- */
 
-void rb_free( rbnode_t *rb, ffunc *ff )
+static void rb_free( rbnode_t *rb, ffunc *ff )
 {
   if( rb ) {
     if( rb->item && ff ) ff( rb->item ) ;
@@ -45,7 +45,7 @@ void rb_free( rbnode_t *rb, ffunc *ff )
   }
 }
 
-void rb_tree_free( rbnode_t *rb, ffunc *ff )
+static void rb_tree_free( rbnode_t *rb, ffunc *ff )
 {
   if( rb ) {
     rb_tree_free( rb->l, ff ) ;
@@ -64,7 +64,7 @@ void rbt_free( rbt_t *rbt )
 
 /* ---------------------------------------------------------- */
 
-rbnode_t *rb_dup( rbnode_t *old, dfunc *df )
+static rbnode_t *rb_dup( rbnode_t *old, dfunc *df )
 {
   rbnode_t *new = 0 ;
 
@@ -77,7 +77,7 @@ rbnode_t *rb_dup( rbnode_t *old, dfunc *df )
   return new ;
 }
 
-rbnode_t *rb_tree_dup( rbnode_t *old, dfunc *df )
+static rbnode_t *rb_tree_dup( rbnode_t *old, dfunc *df )
 {
   rbnode_t *new = 0 ;
 
@@ -102,7 +102,7 @@ rbnode_t *rb_tree_dup( rbnode_t *old, dfunc *df )
   Is this node the root node 
  * ---------------------------------------------------------- */
 
-int root( rbnode_t *r )
+static int root( rbnode_t *r )
 {
   if( r->p == 0 ) return 1 ;
   else            return 0 ;
@@ -120,7 +120,7 @@ int root( rbnode_t *r )
  * Returns a pointer to the resulting node x
  */
 
-rbnode_t *rotR( rbnode_t *y )
+static rbnode_t *rotR( rbnode_t *y )
 {
   rbnode_t *x = 0, *b, *p ;
   
@@ -166,7 +166,7 @@ rbnode_t *rotR( rbnode_t *y )
  * Returns a pointer to the resulting node y
  */
 
-rbnode_t *rotL( rbnode_t *x )
+static rbnode_t *rotL( rbnode_t *x )
 {
   rbnode_t *y = 0, *b, *p ;
 
@@ -202,7 +202,7 @@ rbnode_t *rotL( rbnode_t *x )
 
 /* --------------------------------------------------------------- */
 
-void rb_fix_insert( rbnode_t *h ) 
+static void rb_fix_insert( rbnode_t *h ) 
 {
   rbnode_t *p, *gp, *u ; /* parent, grandparent and uncle */
 
@@ -265,7 +265,7 @@ void rb_fix_insert( rbnode_t *h )
   h->red = BLACK ; /* root should always be black */
 }
 
-rbnode_t *rb_insert( rbnode_t *h, item_t item, Key v, int sw, cmpfn *cf )
+static rbnode_t *rb_insert( rbnode_t *h, item_t item, Key v, int sw, cmpfn *cf )
 {
   int r ;
 
@@ -415,7 +415,7 @@ static void rb_fix_remove( rbnode_t *h, rbnode_t *p )
 }
 
 /* successor is next higher or next lower stored object */
-rbnode_t *rbt_successor( rbnode_t *h )
+static rbnode_t *rbt_successor( rbnode_t *h )
 {
   rbnode_t *s ;
 
@@ -441,7 +441,7 @@ rbnode_t *rbt_successor( rbnode_t *h )
   else return 0 ;
 }
 
-void replace_content( rbt_t *rh, rbnode_t *a, rbnode_t *b )
+static void replace_content( rbt_t *rh, rbnode_t *a, rbnode_t *b )
 {
   rh->ff( a->item ) ;
   if( b ) {
@@ -511,22 +511,24 @@ int rbt_remove( rbt_t *rh, Key v )
   return 1 ;
 }
 
-int BST_cmp( Key a, Key b )
+__attribute__((unused)) static int BST_cmp( Key a, Key b )
 {
   return ( (int) a - (int) b ) ;
 }
 
-void BST_free( item_t a )
+__attribute__((unused)) static void BST_free( item_t a )
 {
   if( a ) free( a ) ;
 }
 
-Key BST_keycalc( item_t a )
+/*
+__attribute__((unused)) static Key BST_keycalc( item_t a )
 {
-  return (Key) lhash( (unsigned char *) a, strlen(( char *) a), 0 ) ;
+  return lhash( (unsigned char *) a, strlen(( char *) a), 0 ) ;
 }
+*/
 
-void rb_print( rbnode_t *h, char *path, pfunc *pf ) 
+static void rb_print( rbnode_t *h, char *path, pfunc *pf ) 
 {
   int  l = strlen( path ) ;
   char *sp, *tmp ;
