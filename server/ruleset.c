@@ -265,13 +265,14 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 	for (i = 0; oa && i < oa->n; i++) {
 		r = nr->down;
 		if (r == 0) {
-			/* traceLog(LOG_INFO,"Nothing below this level"); */
+			octarr_free(oa);
 			return NULL;
 		}
 
 		if ((nr = one_level(oa->arr[i], r)) == 0)
 			break;
 	}
+	octarr_free(oa);
 
 	if (nr == 0) 
 		return NULL;

@@ -113,6 +113,29 @@ conn_env_reset(conn_t * con)
 	}
 }
 
+static void 
+spocp_req_info_free( spocp_req_info_t *sri )
+{
+	if (sri) {
+		if (sri->hostname) {
+			free(sri->hostname);
+		}
+		if (sri->hostaddr) {
+			free(sri->hostaddr);
+		}
+		if (sri->invhost) {
+			free(sri->invhost);
+		}
+		if (sri->subject) {
+			oct_free( sri->subject );
+		}
+		if (sri->sexp_subject) {
+			free( sri->sexp_subject );
+		}
+		memset( sri, 0, sizeof( spocp_req_info_t ));
+	}
+}
+
 void
 conn_reset(conn_t * conn)
 {
@@ -123,11 +146,8 @@ conn_reset(conn_t * conn)
 		conn->status = CNST_FREE;
 		conn->fd = 0;
 		conn->operations = 0;
-		if (conn->sri.hostname)
-			free(conn->sri.hostname);
-		if (conn->sri.hostaddr)
-			free(conn->sri.hostaddr);
 		conn_env_reset(conn);
+		spocp_req_info_free( &conn->sri );
 
 		conn_iobuf_clear(conn);
 	}
@@ -157,13 +177,15 @@ conn_setup(conn_t * conn, srv_t * srv, int fd, char *hostname, char *ipaddr)
 	conn->status = CNST_SETUP;
 	conn->con_type = NATIVE;
 
-	if (ipaddr && *ipaddr)
+	if (ipaddr && *ipaddr){
 		conn->sri.hostaddr = Strdup(ipaddr);
+	}
 	else
 		conn->sri.hostaddr = 0;
 
-	if (hostname && *hostname)
+	if (hostname && *hostname) {
 		conn->sri.hostname = Strdup(hostname);
+	}
 	else
 		conn->sri.hostname = 0;
 

@@ -261,7 +261,7 @@ spocp_srv_run(srv_t * srv)
 
 		/*
 		 * Loop through connection list and prune away closed
-		 * connections, the active are added to the fd_sets Since
+		 * connections, the active are added to the fd_sets. Since
 		 * this routine is the only one that adds and delets
 		 * connections and there is only one thread that runs this
 		 * routine I don't have to lock the connection pool 
@@ -422,9 +422,8 @@ spocp_srv_run(srv_t * srv)
 				 * Get address not hostname of the connection 
 				 */
 				if ((err =
-			     	    spocp_getnameinfo((SA *) & client_addr,
-				    len, hname,
-				    NI_MAXHOST, ipaddr, 64)) != 0) {
+			     	    spocp_getnameinfo((SA *) &client_addr, len,
+				    hname, NI_MAXHOST, ipaddr, 64)) != 0) {
 					close(client);
 					goto fdloop;
 				}

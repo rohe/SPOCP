@@ -73,6 +73,8 @@ char           *operquery =
 sexparg_t         **srvq;
 sexparg_t         **operq;
 
+int xyy = 1;
+
 /*
  * ---------------------------------------------------------------------- 
  */
@@ -342,28 +344,35 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 	 * no ruleset or rules means everything is allowed 
 	 */
 	if (rs == 0 || rules(rs->db) == 0) {
-		if (0)
+		if (xyy)
 			traceLog(LOG_ERR,"No rules to tell me what to do");
 		return SPOCP_SUCCESS;
 	}
 
 	oct_assign(&oct, path);
 
-	if (0)
+	if (xyy)
 		traceLog(LOG_DEBUG,"Looking for ruleset [%s](%p)", path, rs);
 
 	/*
 	 * No ruleset means everything is allowed !!! 
 	 */
-	if ((rs = ruleset_find(&oct, rs)) == 0 || rs->db == 0)
+	if ((rs = ruleset_find(&oct, rs)) == 0 || rs->db == 0) {
+		if (xyy)
+			traceLog(LOG_DEBUG,"No ruleset");
+
 		return SPOCP_SUCCESS;
+	}
 	/*
 	 * The same if there is no rules in the ruleset 
 	 */
-	if (rs->db->ri->rules == 0)
+	if (rs->db->ri->rules == 0) {
+		if (xyy)
+			traceLog(LOG_DEBUG,"No ruleset");
 		return SPOCP_SUCCESS;
+	}
 
-	if (0)
+	if (xyy)
 		traceLog(LOG_DEBUG,"Making the internal access query");
 	sexp = sexp_constr(wi, arg);
 
