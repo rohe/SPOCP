@@ -165,18 +165,6 @@ char *find_balancing(char *p, char left, char right)
   return(NULL);
 }
 
-__attribute__((unused)) static char **arrdup( int n, char **arr )
-{
-  char **new_arr ;
-  int    i ;
-
-  new_arr = ( char ** ) Malloc ( n * sizeof( char * )) ;
-  for ( i = 0 ; i < n ; i++ )
-    new_arr[i] = Strdup( arr[i] ) ;
-
-  return new_arr ;
-}
-
 void charmatrix_free( char **arr )
 {
   int i ;
@@ -187,60 +175,6 @@ void charmatrix_free( char **arr )
     }
     free(arr) ;
   }
-}
-
-__attribute__((unused)) static int expand_string( char *src, keyval_t *kvp, char *dest, size_t size )
-{
-  char     *sp, *cp, *pp ;
-  int      l ;
-  keyval_t *vp ;
-
-  if( kvp == 0 ) {
-    if( strlen( src ) <  size ) strcpy( dest, src ) ;
-    return 1 ;
-  }
-
-  *dest = '\0' ;
-  size-- ; /* last '\0' must also have a place */
-
-  sp = src ;
-  
-  while(( cp = strstr( sp, "$$(" ))) {
-    if(( l = cp - sp) ) {
-      size -= l ;
-      if( size < 0 ) return 0 ;
-      strncat( dest, sp, l ) ;
-    } 
-
-    cp += 3 ;
-    for( pp = cp ; *pp && *pp != ')' ; pp++ ) ;
-    if( pp == 0 ) return 0 ;
-
-    l = pp-cp ;
-
-    for( vp = kvp ; vp ; vp = vp->next ) {
-      if( oct2strncmp( vp->key, cp, l ) == 0 ) { 
-        size -= vp->val->len ;
-        if( size < 0 ) return 0 ;
-        strncat( dest, vp->val->val, vp->val->len ) ;
-        break ;
-      }
-    }
-
-    if( vp == 0 ) {
-      *pp = '\0' ;
-      LOG( SPOCP_WARNING ) traceLog("Unkown global: \"%s\"", cp) ;
-      return 0 ;
-    }
-
-    sp = pp+1 ;
-  }
-
-  if( size < strlen( sp )) return 0 ;
-
-  strcat( dest, sp ) ;
-
-  return 1 ;
 }
 
 /* ---------------- */
