@@ -332,7 +332,6 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 	element_t      *ep = 0;
 	comparam_t      comp;
 
-	traceLog(LOG_INFO,"spocp_access()");
 	/* If I'm running on a unix domain socket I implicitly trust
 	 * processes on that machine
 	 */

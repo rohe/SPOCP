@@ -244,7 +244,7 @@ char		*str_esc( char *, int );
 octet_t		*str2oct( char *, int );
 int		octtoi(octet_t * o);
 
-int		oct_de_escape(octet_t * op);
+int		oct_de_escape(octet_t * op, char ec);
 int		oct_find_balancing(octet_t * p, char left, char right);
 void		oct_assign(octet_t * o, char *s);
 

@@ -468,9 +468,8 @@ octstr(octet_t * o, char *needle)
  * character ch in the octet string op.
  * \param op The octet string which is to be search for the byte.
  * \param ch The byte value.
- * \return The index of the
- * first occurence of a byte in the octet string that was similar to the byte 
- * looked for. 
+ * \return The index of the first occurence of a byte in the octet string
+ * that was similar to the byte looked for or -1 if non existent
  */
 int
 octchr(octet_t * op, char ch)
@@ -726,7 +725,7 @@ oct2strcpy(octet_t * op, char *str, size_t len, char ec)
  */
 
 int
-oct_de_escape(octet_t * op)
+oct_de_escape(octet_t * op, char e)
 {
 	register char  *tp, *fp, *ep;
 	register char   c = 0;
@@ -739,12 +738,12 @@ oct_de_escape(octet_t * op)
 	ep = op->val + len;
 
 	for (fp = tp = op->val; fp != ep; tp++, fp++) {
-		if (*fp == '\\') {
+		if (*fp == e) {
 			fp++;
 			if (fp == ep)
 				return -1;
 
-			if (*fp == '\\') {
+			if (*fp == e) {
 				*tp = *fp;
 				len--;
 			} else {

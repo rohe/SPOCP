@@ -442,7 +442,7 @@ get_hex( spocp_charbuf_t * io)
 
 /*! \brief I'm waiting for a hexadecimal character */
 #define HEXCHAR 1
-/*! \brief I'm waiting for a '\' character */
+/*! \brief I'm waiting for a escape character */
 #define SLASH   2
 /*! \brief I'm waiting for a duo of hexadecimal characters */
 #define HEXDUO  4
@@ -450,7 +450,7 @@ get_hex( spocp_charbuf_t * io)
 static octet_t *
 get_quote( spocp_charbuf_t * io)
 {
-	char           *cp, *res = 0;
+	char           *cp, *res = 0, ec = '%';
 	int             len, sofar = 0;
 	int             expect = 0, done = 0;
 	octet_t 	*oct = 0;
@@ -470,7 +470,7 @@ get_quote( spocp_charbuf_t * io)
 						return 0;
 					}
 				} else {
-					if (*cp == '\\')
+					if (*cp == ec)
 						expect = 0;
 					else if (HEX(*cp))
 						expect = HEXCHAR;
@@ -484,7 +484,7 @@ get_quote( spocp_charbuf_t * io)
 				continue;
 			}
 
-			if (*cp == '\\')
+			if (*cp == ec)
 				expect = HEXDUO | SLASH;
 			else if (*cp == '"')
 				break;
@@ -514,7 +514,7 @@ get_quote( spocp_charbuf_t * io)
 		/*
 		 * de escape 
 		 */
-		oct_de_escape(oct);
+		oct_de_escape(oct,ec);
 	}
 
 	if (res == 0 || oct->len == 0) { /* trusting the lazy evaluation here */
@@ -616,8 +616,14 @@ get_chunk(spocp_charbuf_t * io)
 		break;
 
 	default:
-		if (VCHAR(*io->start))
+		if (VCHAR(*io->start)) {
 			o = get_token(io);
+			/*
+			s = oct2strdup( o, '%');
+			traceLog(LOG_INFO, "token:%s", s );
+			free(s);
+			*/
+		}
 		else {
 			traceLog(LOG_ERR,
 			    "Non token char, where token char was expected \"%s\"",
@@ -730,6 +736,10 @@ chunk2sexp( spocp_chunk_t *c )
 		else if( oct2strcmp( ck->val, ")" ) == 0 )
 			p--, *sp++ = ')' ;
 		else {
+			/* This is where deescaping should happen */
+			if ( octchr( ck->val, '%' ) >= 0 ) 
+				oct_de_escape( ck->val, '%' );
+			
 			snprintf( lf, 16, "%d:", (unsigned int) ck->val->len ) ;
 			memcpy( sp, lf, strlen(lf)) ;
 			sp += strlen( lf ) ;
@@ -739,6 +749,8 @@ chunk2sexp( spocp_chunk_t *c )
 		ck = ck->next ;
 	} while( p ) ;
  
+	*sp = '\0';
+	res->len = sp - res->val;
 	return res;
 }
 

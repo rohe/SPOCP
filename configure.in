@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(spocd, 2.1.6.rc3, roland@catalogix.se)
+AC_INIT(spocd, 2.1.6.rc5, roland@catalogix.se)
 AM_INIT_AUTOMAKE([foreign no-dependencies 1.7])
 AC_CONFIG_SRCDIR(include/wrappers.h)
 AM_CONFIG_HEADER(include/config.h)
