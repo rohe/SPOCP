@@ -23,47 +23,60 @@ typedef struct _rescode {
 } rescode_t;
 
 rescode_t       rescode[] = {
-	{SPOCP_WORKING, "3:100", "20:Working, please wait"},
+	{SPOCP_WORKING, "100", "Working, please wait"},
 
-	{SPOCP_SUCCESS, "3:200", "2:Ok"},
-	{SPOCP_MULTI, "3:201", NULL},
-	{SPOCP_DENIED, "3:202", "6:Denied"},
-	{SPOCP_CLOSE, "3:203", "3:Bye"},
-	{SPOCP_SSL_START, "3:205", "18:Ready to start TLS"},
+	{SPOCP_SUCCESS, "200", "Ok"},
+	{SPOCP_MULTI, "201", NULL},
+	{SPOCP_DENIED, "202", "Denied"},
+	{SPOCP_CLOSE, "203", "Bye"},
+	{SPOCP_SSL_START, "205", "Ready to start TLS"},
 
-	{SPOCP_AUTHDATA, ",3:301", NULL},
-	{SPOCP_AUTHINPROGRESS, "3:300", "26:Authentication in progress"},
+	{SPOCP_AUTHDATA, "301", NULL},
+	{SPOCP_AUTHINPROGRESS, "300", "Authentication in progress"},
 
-	{SPOCP_BUSY, "3:400", "4:Busy"},
-	{SPOCP_TIMEOUT, "3:401", "7:Timeout"},
-	{SPOCP_TIMELIMITEXCEEDED, "3:402", "18:Timelimit exceeded"},
-	{SPOCP_REDIRECT, "3:403", NULL},
+	{SPOCP_BUSY, "400", "Busy"},
+	{SPOCP_TIMEOUT, "401", "Timeout"},
+	{SPOCP_TIMELIMITEXCEEDED, "402", "Timelimit exceeded"},
+	{SPOCP_REDIRECT, "403", NULL},
 
-	{SPOCP_SYNTAXERROR, "3:500", "12:Syntax error"},
-	{SPOCP_MISSING_ARG, "3:501", "16:Missing Argument"},
-	{SPOCP_MISSING_CHAR, "3:502", "11:Input error"},
-	/*{SPOCP_PROTOCOLERROR, "3:503", "14:Protocol error"},*/
-	{SPOCP_UNKNOWNCOMMAND, "3:504", "15:Unknown command"},
-	{SPOCP_PARAM_ERROR, "3:505", "14:Argument error"},
-	{SPOCP_SSL_ERR, "3:506", "16:SSL Accept error"},
-	{SPOCP_UNKNOWN_TYPE, "3:507", "17:Uknown range type"},
+	{SPOCP_SYNTAXERROR, "500", "Syntax error"},
+	{SPOCP_MISSING_ARG, "501", "Missing Argument"},
+	{SPOCP_MISSING_CHAR, "502", "Input error"},
+	/*{SPOCP_PROTOCOLERROR, "503", "Protocol error"},*/
+	{SPOCP_UNKNOWNCOMMAND, "504", "Unknown command"},
+	{SPOCP_PARAM_ERROR, "505", "Argument error"},
+	{SPOCP_SSL_ERR, "506", "SSL Accept error"},
+	{SPOCP_UNKNOWN_TYPE, "507", "Uknown range type"},
 
-	{SPOCP_SIZELIMITEXCEEDED, "3:511", "18:Sizelimit exceeded"},
-	{SPOCP_OPERATIONSERROR, "3:512", "15:Operation error"},
-	{SPOCP_UNAVAILABLE, "3:513", "21:Service not available"},
-	{SPOCP_NOT_SUPPORTED, "3:515", "21:Command not supported"},
-	{SPOCP_STATE_VIOLATION, "3:516", "18:SSL Already active"},
-	{SPOCP_OTHER, "3:517", "11:Other error"},
-	{SPOCP_CERT_ERR, "3:518", "20:Authentication error"},
-	{SPOCP_UNWILLING, "3:519", "20:Unwilling to perform"},
-	{SPOCP_EXISTS, "3:520", "14:Already exists"},
-	{SPOCP_AUTHERR, "3:521", "21:Authentication error"},
+	{SPOCP_SIZELIMITEXCEEDED, "511", "Sizelimit exceeded"},
+	{SPOCP_OPERATIONSERROR, "512", "Operation error"},
+	{SPOCP_UNAVAILABLE, "513", "Service not available"},
+	{SPOCP_NOT_SUPPORTED, "515", "Command not supported"},
+	{SPOCP_STATE_VIOLATION, "516", "SSL Already active"},
+	{SPOCP_OTHER, "517", "Other error"},
+	{SPOCP_CERT_ERR, "518", "Authentication error"},
+	{SPOCP_UNWILLING, "519", "Unwilling to perform"},
+	{SPOCP_EXISTS, "520", "Already exists"},
+	{SPOCP_AUTHERR, "521", "Authentication error"},
 
 	{0, NULL, NULL}
 };
 
 /***************************************************************************
  ***************************************************************************/
+
+static
+int lvadd( octet_t *o, char *str, int len )
+{
+	char	lf[32];
+	int	nr;
+
+	nr = snprintf(lf, 32, "%d:", len);
+	octcat(o, lf, strlen(lf));
+	octcat(o, str, len );
+
+	return 1;
+}
 
 static rescode_t *
 find_rescode(int rc)
@@ -79,62 +92,34 @@ find_rescode(int rc)
 }
 
 static spocp_result_t
-add_response_va(spocp_iobuf_t * out, int rc, const char *fmt, va_list ap)
+add_response_va(octet_t *out, int rc, const char *fmt, va_list ap)
 {
 	int             n;
 	spocp_result_t  sr = SPOCP_SUCCESS;
 	char            buf[SPOCP_MAXLINE];
 	rescode_t      *rescode = find_rescode(rc);
 
-	/*
-	traceLog(LOG_DEBUG,"add_reponse_va (%d)(%p)", rc,fmt);
-	iobuf_info( out );
-	*/
 	if (rescode == NULL)
 		rescode = find_rescode(SPOCP_OTHER);
 
-	sr = iobuf_add(out, rescode->rc);
+	lvadd(out, rescode->rc, strlen(rescode->rc));
+
 	if (fmt) {
 		/* Flawfinder: ignore */
 		n = vsnprintf(buf, SPOCP_MAXLINE, fmt, ap);
 		if (n >= SPOCP_MAXLINE)	/* OUTPUT truncated */
 			sr = SPOCP_LOCAL_ERROR;
 		else
-			sr = iobuf_add(out, buf);
+			lvadd(out, buf, strlen(buf));
 	} else {
 		if (rescode->def != NULL)
-			sr = iobuf_add(out, rescode->def);
+			lvadd(out, rescode->def, strlen(rescode->def));
 	}
 
-#if 0
-
-	for (i = 0; rescode[i].rc; i++) {
-		if (rescode[i].code == rc) {
-			sr = iobuf_add(out, rescode[i].rc);
-			if (fmt) {
-				n = vsnprintf(buf, SPOCP_MAXLINE, fmt, ap);
-				if (n >= SPOCP_MAXLINE)	/* OUTPUT truncated */
-					sr = SPOCP_LOCAL_ERROR;
-				else {
-					oct_assign(&oct, buf);
-					sr = iobuf_add_octet(out, &oct);
-				}
-			} else
-				sr = iobuf_add(out, rescode[i].def);
-			break;
-		}
-	}
-	/*
-	 * unknown response code 
-	 */
-	if (rescode[i].rc == 0)
-		sr = add_response(out, SPOCP_OTHER, NULL);
-
+#ifdef AVLUS
+	oct_print(LOG_INFO, "response_va", out );
 #endif
 
-	/*
-	iobuf_info( out );
-	*/
 	return sr;
 }
 
@@ -143,12 +128,18 @@ add_response(spocp_iobuf_t * out, int rc, const char *fmt, ...)
 {
 	va_list         ap;
 	spocp_result_t  res;
+	octet_t		*oct;
 
+	oct = oct_new(512,NULL);
 	va_start(ap, fmt);
-	res = add_response_va(out, rc, fmt, ap);
+	res = add_response_va(oct, rc, fmt, ap);
 	va_end(ap);
 
-	iobuf_add_len_tag( out );
+	iobuf_add_octet( out, oct);
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"total response: %s",out->buf);
+#endif
+	oct_free(oct);
 
 	return res;
 }
@@ -157,20 +148,31 @@ static spocp_result_t
 add_response_blob(spocp_iobuf_t * out, int rc, octet_t * data)
 {
 	spocp_result_t  sr;
+	octet_t		*oct;
 
-	sr = add_response_va(out, rc, NULL, NULL);
-
-	if (sr != SPOCP_SUCCESS)
-		return sr;
-
-	if (data)
-		sr = iobuf_add_octet( out, data) ;
-		traceLog(LOG_DEBUG,"added response: %s",out->buf);
+	oct = oct_new(512,NULL);
+	sr = add_response_va(oct, rc, NULL, NULL);
 
 	if (sr != SPOCP_SUCCESS)
 		return sr;
 
-	iobuf_add_len_tag( out );
+	if (data) {
+#ifdef AVLUS
+		oct_print(LOG_DEBUG,"add response",data);
+#endif
+		sr = lvadd( oct, data->val, data->len) ;
+	}
+
+	if (sr != SPOCP_SUCCESS) {
+		oct_free(oct);
+		return sr;
+	}
+
+	iobuf_add_octet( out, oct);
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"total response: %s",out->buf);
+#endif
+	oct_free(oct);
 
 	return sr;
 }
@@ -664,8 +666,8 @@ com_commit(work_info_t *wi)
  * --------------------------------------------------------------------------------- 
  */
 
-spocp_result_t
-com_query(work_info_t *wi)
+static spocp_result_t
+_query(work_info_t *wi, int all)
 {
 	spocp_result_t	r = SPOCP_SUCCESS;
 	conn_t		*conn = wi->conn;
@@ -716,7 +718,7 @@ com_query(work_info_t *wi)
 */
 
 		pthread_rdwr_rlock(&rs->rw_lock);
-		r = ss_allow(rs, wi->oparg->arr[0], &rset, SUBTREE);
+		r = ss_allow(rs, wi->oparg->arr[0], &rset, SUBTREE|all);
 		pthread_rdwr_runlock(&rs->rw_lock);
 
 #ifdef AVLUS
@@ -753,7 +755,7 @@ com_query(work_info_t *wi)
 				}
 
 				DEBUG(SPOCP_DSRV) 
-					oct_print(LOG_DEBUG,"returns", oct);
+					oct_print(LOG_DEBUG,"returns blob", oct);
 
 				oct_free(oct);
 			}
@@ -764,6 +766,18 @@ com_query(work_info_t *wi)
 		resset_free(rset);
 
 	return postop( wi, r, 0);
+}
+
+spocp_result_t
+com_query(work_info_t *wi)
+{
+		return _query( wi, 0);
+}
+
+static spocp_result_t
+com_bsearch(work_info_t *wi)
+{
+		return _query( wi, 0x10);
 }
 
 /*
@@ -1212,6 +1226,8 @@ get_operation(work_info_t *wi )
 			oper = &com_subject;
 		else if (strncasecmp(op.val, "SUMMARY", 7) == 0) 
 			oper = &com_summary;
+		else if (strncasecmp(op.val, "BSEARCH", 7) == 0) 
+			oper = &com_bsearch;
 		break;
 
 	case 6:
@@ -1277,8 +1293,10 @@ get_operation(work_info_t *wi )
 		return r;
 	}
 
-	if (*oper == 0)
+	if (*oper == 0) {
 		return SPOCP_UNKNOWNCOMMAND;
+		traceLog(LOG_INFO,"Unknown command");
+	}
 	else {
 		wi->routine = oper;
 		return SPOCP_SUCCESS;

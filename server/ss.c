@@ -18,6 +18,8 @@
 
 int             ruleset_print(ruleset_t * rs);
 
+#define AVLUS 1
+
 static          spocp_result_t
 rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 {
@@ -33,7 +35,6 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 
 #ifdef AVLUS
 	traceLog(LOG_INFO,"rec_allow %d", scope&0x0F);
-	ruleset_print( rs );
 #endif
 
 	switch (scope&0x0F) {
@@ -70,6 +71,9 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 				comp.blob = &oa;
 				comp.all = all;
 				comp.cr = &cr;
+
+				DEBUG(SPOCP_DMATCH)
+					ruleset_print( rs );
 
 				res = allowed(rs->db->jp, &comp, rset);
 #ifdef AVLUS
