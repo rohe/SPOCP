@@ -766,6 +766,13 @@ octtoi(octet_t * o)
 /*
  * ---------------------------------------------------------------------- 
  */
+/*!
+ * \brief Creates an octet struct around a given string
+ * \param str The string
+ * \param dynamic A flag that tells whether the string should be freed
+ *   together with the rest of the struct
+ * \return A pointer to a octet struct
+ */
 octet_t *str2oct( char *str, int dynamic )
 {
 	octet_t *op;

@@ -99,7 +99,12 @@ base64_decode(char *str)
 }
 
 /*--------------------------------------------------------------------------------*/
-
+/*!
+ * \brief Creates a new spocp_charbuf_t struct
+ * \param fp A file descriptor
+ * \param size The wanted size of the string buffer
+ * \return A spocp_charbuf_t struct
+ */
 spocp_charbuf_t *
 charbuf_new( FILE *fp, size_t size )
 {
@@ -117,6 +122,10 @@ charbuf_new( FILE *fp, size_t size )
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Deletes a spocp_charbuf_t struct
+ * \param sc Pointer to the charbuf
+ */
 void charbuf_free( spocp_charbuf_t *sc )
 {
 	if( sc ) {

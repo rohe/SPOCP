@@ -1353,6 +1353,15 @@ spocpc_str_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
 	return spocpc_send_X(spocp, &argv, qr);
 }
 
+/*!
+ * Send a Spocp query to a spocp server
+ * \param spocp The Spocp session
+ * \param path The name of the ruleset in octet representation
+ * \param query An octet struct holding the query in the form of a s-expression
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
+ */
 int
 spocpc_send_query(SPOCP * spocp, octet_t *path, octet_t *query, queres_t * qr)
 {
@@ -1409,6 +1418,15 @@ spocpc_str_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 	return spocpc_send_X(spocp, &argv, qr);
 }
 
+/*!
+ * Send a Spocp delete operation to a spocp server
+ * \param spocp The Spocp session
+ * \param path The name of the ruleset in a octet struct
+ * \param rule The ruleID that one wants to remove in a octet struct
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
+ */
 int
 spocpc_send_delete(SPOCP * spocp, octet_t *path, octet_t *rule, queres_t * qr)
 {
@@ -1465,6 +1483,15 @@ spocpc_str_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * Send a subject definition to a spocp server
+ * \param spocp The Spocp session
+ * \param subject An octet with info that in some way representing information
+ *   about the subject that is controlling this session
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
+ */
 int
 spocpc_send_subject(SPOCP * spocp, octet_t *subject, queres_t * qr)
 {
@@ -1539,6 +1566,17 @@ spocpc_str_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
 }
 
 /*--------------------------------------------------------------------------------*/
+/*!
+ * Send a rule to a Spocp server
+ * \param spocp The Spocp session
+ * \param path The name of the ruleset(octet struct)
+ * \param rule The string buffer holding the query(octet struct)
+ * \param bcond The boundary condition expression(octet struct)
+ * \param info The static blob (octet struct)
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A Spocpc result code
+ */
 int
 spocpc_send_add(SPOCP * spocp, octet_t *path, octet_t *rule, octet_t *bcond,
 	octet_t *info, queres_t * qr)

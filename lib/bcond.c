@@ -356,7 +356,15 @@ parse_bcexp(octet_t * sexp)
 /*
  * ---------------------------------------------------------------------- 
  */
-
+/*!
+ * \brief Translates a stree representation of a boundary condition expression into
+ *   a bcexp struct
+ * \param plt Pointer to the list of known plugins
+ * \param st The stree that is to be turned into a bounday condition definition
+ * \param list The list of the present boundary condition definitions
+ * \param parent
+ * \return a struct representing a boundary expression
+ */
 bcexp_t *
 transv_stree(plugin_t * plt, stree_t * st, bcdef_t * list, bcdef_t * parent)
 {
@@ -584,6 +592,14 @@ bcond_eval(element_t * qp, element_t * rp, bcspec_t * bcond, octet_t * oct)
  * ---------------------------------------------------------------------- 
  */
 
+/*!
+ * \brief Evaluates a boundary expression
+ * \param qp The element representation of the query
+ * \param rp The element representation of the matched rule 
+ * \param bce The boundary expression
+ * \param oa Place for the dynamic blobs
+ * \return A spocp result code
+ */
 spocp_result_t
 bcexp_eval(element_t * qp, element_t * rp, bcexp_t * bce, octarr_t ** oa)
 {
