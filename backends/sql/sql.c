@@ -27,8 +27,6 @@
 
 #include <sqlext.h>
 
-typedef long    SQLLEN;
-
 befunc          sql_test;
 /*
  * type = "sql" typespecific = sqlserver ";" vset sqlserver = [ uid [ ":" pwd
