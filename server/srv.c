@@ -181,7 +181,7 @@ spocp_result_t com_starttls( conn_t *conn )
 
   LOG( SPOCP_INFO ) traceLog("Attempting to start SSL/TLS") ;
 
-#ifndef HAVE_LIBSSL
+#ifndef HAVE_SSL
 
   iobuf_add( out, rc_not_supported ) ;
   LOG( SPOCP_ERR ) traceLog("SSL not supported") ;
@@ -206,12 +206,18 @@ spocp_result_t com_starttls( conn_t *conn )
     conn_iobuf_clear( conn ) ;
 
     /* If I couldn't create a TLS connection fail completely */
-    if((r = tls_start( conn, rs )) != SPOCP_SUCCESS ) {
+    if(( r = tls_start( conn, conn->rs )) != SPOCP_SUCCESS ) {
       LOG( SPOCP_ERR ) traceLog("Failed to start SSL") ;
+      add_response( conn->out, r ) ;
       r = SPOCP_CLOSE ;
+      conn->stop = 1 ;
     }
     else traceLog("SSL in operation") ;
 
+    if(( wr = send_results( conn )) == 0 ) {
+      r = SPOCP_CLOSE ;
+      conn->stop = 1 ;
+    }
     /* conn->tls is set by tls_start */
   }
 #endif

@@ -211,7 +211,7 @@ int main( int  argc, char **argv )
     fclose( stdin ) ;
     fclose( stdout ) ;
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
     /* ---------------------------------------------------------- */
     /* build our SSL context, whether it will ever be used or not */
 
@@ -219,6 +219,7 @@ int main( int  argc, char **argv )
     THREAD_setup() ;
 
     if( srv.certificateFile && srv.privateKey && srv.caList ) {
+      traceLog( "Initializing the TLS/SSL environment" ) ;
       if(!( srv.ctx = tls_init( &srv ))) {
         return FALSE ;
       }

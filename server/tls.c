@@ -12,7 +12,7 @@
 
 #include "locl.h"
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
 
 #include <openssl/lhash.h>
 #include <openssl/ssl.h>
@@ -65,7 +65,7 @@ static int ssl_xfer_error = 0;
 static int generate_eph_rsa_key( SSL_CTX *ctx, int keylength ) ;
 static int init_dh( SSL_CTX *ctx, unsigned char *dhparam ) ;
 static int add_entropy( const char *file ) ;
-static int check_cert_chain(SSL *ssl, ruleset_t *rs ) ;
+static int check_cert_chain( conn_t *conn, SSL *ssl, ruleset_t *rs) ;
 
 /* SSL_CTX *tls_init( char *certificate, char *privatekey, char *calist ) ; */
 spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )  ;
@@ -146,7 +146,6 @@ static int verify_callback(int preverify_ok, X509_STORE_CTX *x509ctx)
 /************************************************
 ************************************************/
 
-/*
 static int tls_error( int level, conn_t *conn, char *msg ) 
 {
   char     errorstr[1024] ;
@@ -161,7 +160,6 @@ static int tls_error( int level, conn_t *conn, char *msg )
 
   return FALSE ; 
 }
-*/
 
 /*****************************************************************************/
 /*****************************************************************************/
@@ -349,9 +347,9 @@ static int tls_close (conn_t *conn)
 
   /* reset the read/write pointers */
 
-  conn->readn = spocp_readn;
-  conn->writen = spocp_writen;
-  conn->close = spocp_close;
+  conn->readn = conn_readn;
+  conn->writen = conn_writen;
+  conn->close = conn_close;
 
   return rc;
 }
@@ -359,7 +357,6 @@ static int tls_close (conn_t *conn)
 /************************************************
 ************************************************/
 
-/* SSL_CTX *tls_init( char *certificate, char *privatekey, char *calist ) */
 SSL_CTX *tls_init( srv_t *srv )
 {
   char     path[_POSIX_PATH_MAX];
@@ -497,7 +494,6 @@ static int check_cert_chain( conn_t *conn, SSL *ssl, ruleset_t *rs)
   X509_NAME              *xn ;
   static char             subject[1024] ;
   int                     r = FALSE, extc ;
-  aci_t                  *aci ;
 
   if(SSL_get_verify_result(ssl)!=X509_V_OK) {
     LOG( SPOCP_ERR ) traceLog("Certificate doesn't verify");
@@ -581,17 +577,17 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
 { 
   SSL        *ssl ;
   SSL_CTX    *ctx = (SSL_CTX *) conn->srv->ctx ;
-  int        maxbits, pri ;
+  int        maxbits ;
   char       *sid_ctx = "spocp" ;
   SSL_CIPHER *cipher ;
 
   if( conn->tls > 0 )  {
-    /*tls_error( SPOCP_WARNING, conn, "STARTTLS received on already encrypted connection" ) ;*/
+    tls_error( SPOCP_WARNING, conn, "STARTTLS received on already encrypted connection" );
     return SPOCP_SSLCON_EXIST ;
   } 
 
   if(!( ssl = SSL_new( ctx ))) {
-    /* tls_error( SPOCP_ERR, conn, "Error allocation SSL") ; */
+    tls_error( SPOCP_ERR, conn, "Error creating SSL context") ; 
     return SPOCP_OPERATIONSERROR ;
   }
 
@@ -606,7 +602,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   /* waits for the client to initiate the handshake */
   if( SSL_accept( ssl ) <= 0 ) {
     SSL_free( ssl ) ;
-    /* tls_error( SPOCP_ERR, conn, "SSL accept error") ; */
+    tls_error( SPOCP_ERR, conn, "SSL accept error") ; 
     return SPOCP_SSL_ERR ;
   }
 

@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
 #include <openssl/ssl.h>
 #endif
 
@@ -70,7 +70,7 @@ typedef struct _spocp {
   int             fd ;
   char            *srv ;
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
   SSL_CTX        *ctx ;
   SSL            *ssl ;
 #endif
@@ -128,7 +128,7 @@ octnode_t       *spocpc_octnode_new( void ) ;
 void             spocpc_octnode_free( octnode_t * ) ;
 char            *spocpc_oct2strdup( octet_t *op, char ec ) ;
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
 
 void  init_tls_env( SPOCP *spocp, char *cert, char *priv, char *ca, char *pwd ) ;
 

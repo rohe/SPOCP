@@ -94,6 +94,16 @@ void spocp_srv_run( srv_t *srv )
   
   traceLog( "Running server!!" ) ;
 
+  if( srv->connections ) {
+    int f, a ;
+    f = number_of_free( srv->connections ) ;
+    a = number_of_active( srv->connections ) ;
+    traceLog( "Active: %d, Free: %d", a, f ) ;
+  }
+  else {
+    traceLog( "NO connection pool !!!" ) ;
+  }
+
   while (!stop_loop) {
 
     FD_ZERO(&rfds);
@@ -193,7 +203,7 @@ void spocp_srv_run( srv_t *srv )
         continue;
       }
 
-      DEBUG( SPOCP_DSRV ) traceLog( "Got connection on fd=%d\n", client);
+      DEBUG( SPOCP_DSRV ) traceLog( "Got connection on fd=%d", client);
       if(0) timestamp( "Accepted" ) ;
    
       val = fcntl(client,F_GETFL,0);
@@ -217,6 +227,16 @@ void spocp_srv_run( srv_t *srv )
         goto fdloop;
       }
 
+      if( srv->connections ) {
+        int f, a ;
+        f = number_of_free( srv->connections ) ;
+        a = number_of_active( srv->connections ) ;
+        traceLog( "Active: %d, Free: %d", a, f ) ;
+      }
+      else {
+        traceLog( "NO connection pool !!!" ) ;
+      }
+
       /* get a connection object */
       pi = afpool_get_empty( srv->connections ) ; 
 
@@ -224,7 +244,7 @@ void spocp_srv_run( srv_t *srv )
       else conn = 0 ;
 
       if( conn == 0 ) {
-        traceLog("Unable to get connection for fd=%d",client);
+        traceLog("Unable to get free connection for fd=%d",client);
         close(client);
       }
       else {
@@ -236,7 +256,7 @@ void spocp_srv_run( srv_t *srv )
         LOG( SPOCP_DEBUG ) traceLog( "Doing server access check" ) ;
 
         if( server_access( conn ) != SPOCP_SUCCESS ) {
-          traceLog( "connection attempt on %d from %s(%s) DISALLOWED", conn->fd, hostbuf,
+          traceLog( "connection from %s(%s) DISALLOWED", conn->fd, hostbuf,
                            conn->sri.hostaddr ) ; 
   
           conn_reset( conn ) ;
@@ -295,7 +315,7 @@ fdloop:
         if(0) timestamp( "read con" ) ; 
 
         res = get_operation( conn, &operation ) ;
-        if( 0 ) traceLog( "Getops returned %d", res ) ;
+        if( 1 ) traceLog( "Getops returned %d", res ) ;
         if(res != SPOCP_SUCCESS) continue ;
 
         if(0) timestamp( "add work item" ) ; 

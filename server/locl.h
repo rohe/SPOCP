@@ -45,7 +45,7 @@
 
 #include <pthread.h>
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
 #include <openssl/ssl.h>
 #endif
 

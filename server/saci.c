@@ -458,9 +458,14 @@ spocp_result_t server_access( conn_t *con )
 
 spocp_result_t operation_access( conn_t *con )
 {
-  char      path[NAME_MAX+1] ;
+  char           path[NAME_MAX+1] ;
+  spocp_result_t r ;
 
   sprintf( path, "%s/operation", localcontext) ;
 
-  return spocp_access( con, operq, path ) ;
+  r = spocp_access( con, operq, path ) ;
+
+  if( r != SPOCP_SUCCESS ) traceLog( "Operation disallowed" ) ;
+
+  return r;
 }

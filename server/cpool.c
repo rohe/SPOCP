@@ -11,7 +11,7 @@ static afpool_t *cpool_new( int nc )
   conn_t      *con ;
   int         i ;
 
-  if(0) traceLog( "cpool_new\n" ) ;
+  if(1) traceLog( "cpool_new\n" ) ;
 
   afpool = afpool_new() ;
 
@@ -19,7 +19,7 @@ static afpool_t *cpool_new( int nc )
 
   pool = afpool->free ;
 
-  if(0) traceLog( "nc: %d\n", nc ) ;
+  if(1) traceLog( "max simultaneous connections: %d\n", nc ) ;
 
   if( nc ) {
     for( i = 0 ; i < nc ; i++ ) {

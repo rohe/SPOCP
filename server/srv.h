@@ -155,7 +155,7 @@ typedef struct _server
   char            *server_id ;
   int             srvtype ;
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
   void            *ctx;
   void            *ssl;
                   /* security strength factor, not used presently */
@@ -202,7 +202,7 @@ typedef struct _conn {
   octet_t          *oppath ;
   octarr_t         *oparg ;
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
   void             *ssl;
   int              ssf ;      /* security strength factor, placeholder */
 #endif
@@ -308,7 +308,7 @@ int     spocp_conn_read( conn_t *conn ) ;
 int   read_rules( srv_t *, char *, dbcmd_t *, keyval_t ** ) ;
 int   dback_read_rules( dbcmd_t *dbc, srv_t *srv, spocp_result_t *rc ) ;
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
 SSL_CTX       *tls_init( srv_t *srv ) ;
 spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )  ;
 #endif
@@ -456,7 +456,7 @@ pool_item_t *afpool_first( afpool_t *afp ) ;
 
 /* -------------------------------------------*/
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
 
 int THREAD_setup( void ) ;
 int THREAD_cleanup( void ) ;

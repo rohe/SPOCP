@@ -46,7 +46,7 @@ spocp_result_t strcasematch_test( octet_t *arg, becpool_t *b, octet_t *blob  ) ;
 
 /* cert.c */
 
-#ifdef HAVE_LIBSSL
+#ifdef HAVE_SSL
 
 spocp_result_t cert_test( octet_t *arg, becpool_t *b, octet_t *blob ) ;
 spocp_result_t cert_init( confgetfn *cgf, void *conf, becpool_t *bcp );
