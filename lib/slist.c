@@ -82,7 +82,6 @@ int
 boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 {
 	int             v = 0;
-	uint32_t        a, b;
 
 	/*
 	 * NULL is a tail marker, everything is 'less' than the tail value 
@@ -121,14 +120,10 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 		break;
 
 	case SPOC_IPV4:
-		a = htonl(b1p->v.v4.s_addr);
-		b = htonl(b2p->v.v4.s_addr);
-		if (a == b)
-			v = (b1p->type & 0xF0) - (b2p->type & 0xF0);
-		else if (a < b)
-			v = -1;
-		else
-			v = 1;
+		v = ipv4cmp(&b1p->v.v4, &b2p->v.v4);
+
+		if (!v)
+			v = b1p->type - b2p->type;
 		break;
 
 	case SPOC_IPV6:	/* Can be viewed as a array of unsigned ints */
