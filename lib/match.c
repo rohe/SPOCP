@@ -457,7 +457,7 @@ varr_t *set_match( junc_t *db, varr_t *set, spocp_result_t *rc )
   varr_t     *pa[3], *tmp, *pp, *all = 0 ;
   element_t  *elem ;
   slist_t   **slp ;
-  branch_t   *bp ;
+  branch_t   *bp = 0 ;
 
   for( i = 0 ; i < 3 ; i++ ) pa[i] = 0 ;
 
