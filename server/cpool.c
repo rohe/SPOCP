@@ -37,32 +37,6 @@ static afpool_t *cpool_new( int nc )
   return afpool ;
 }
 
-__attribute__((unused)) static void cpool_free( afpool_t *afp )
-{
-  conn_t *con ;
-  pool_t *pool ;
-  pool_item_t *pi ;
-
-  if( afp ) {
-    if( afp->active ) { /* shouldn't be any actives */
-      free( afp->active ) ;
-    }
-    if( afp->free ) {
-      pool = afp->free ;
-
-      while(( pi = pool_pop( pool ))) {
-        con = ( conn_t * ) pi->info ;
-        conn_free( con ) ;
-        free( pi ) ;
-      }
-
-      free( pool ) ;
-    }
-
-    free( afp ) ;
-  }
-}
-
 int srv_init( srv_t *srv, char *cnfg )
 {
   fprintf( stderr, "init_server\n" ) ;
