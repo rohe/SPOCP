@@ -25,6 +25,8 @@
 
 #define AVLUS 1
 
+static resset_t *next(junc_t *, element_t *, comparam_t *) ;
+
 /*
  * =============================================================== 
  */
