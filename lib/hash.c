@@ -20,6 +20,8 @@
 #include <wrappers.h>
 #include <macros.h>
 
+static void phash_resize( phash_t *ht ) ;
+
 unsigned int prime[] = {
   3, 7, 13, 61, 121, 251, 509, 751, 1021, 1499, 2039, 3011, 4093,
   6151, 8191, 12241, 16381, 24709, 32749, 49139, 65521,
@@ -53,7 +55,7 @@ phash_t *phash_new( unsigned int pnr, unsigned int density )
   return newht ;
 }
 
-buck_t *buck_new( unsigned int key, octet_t *op)
+static buck_t *buck_new( unsigned int key, octet_t *op)
 {
   buck_t *bp ;
 
@@ -68,7 +70,7 @@ buck_t *buck_new( unsigned int key, octet_t *op)
   return bp ;
 }
 
-/* If I can't place an item where it 'should' be use a offset to find 
+/* If I can't place an item where it 'should' be, use an offset to find 
    a empty place 'closeby' in a deterministic way  
  */
 buck_t *phash_insert( phash_t *ht, atom_t *ap, unsigned int key )
@@ -101,7 +103,7 @@ buck_t *phash_insert( phash_t *ht, atom_t *ap, unsigned int key )
   else return ht->arr[hv1] ;
 }
 
-buck_t *phash_insert_bucket( phash_t *ht, buck_t *bp )
+static buck_t *phash_insert_bucket( phash_t *ht, buck_t *bp )
 {
   unsigned int  key = bp->hash ;
   unsigned int  hv1 = key % ht->size  ;
@@ -165,7 +167,7 @@ phash_t *phash_dup( phash_t *php, ruleinfo_t *ri )
   return new ;
 }
 
-void phash_resize( phash_t *ht )
+static void phash_resize( phash_t *ht )
 {
   buck_t       **newarr, **oldarr ;
   unsigned int   i, oldsize, newsize ;
@@ -203,7 +205,7 @@ void phash_resize( phash_t *ht )
   */
 }
 
-int phash_bucket_index( phash_t *ht, buck_t *bp, size_t *rc )
+static int phash_bucket_index( phash_t *ht, buck_t *bp, size_t *rc )
 {
   unsigned int hv1 = bp->hash % ht->size ;
   unsigned int hv2 = ( bp->hash % ( prime[ht->pnr/2] - 1 )) + 1 ; /* must not be 0 */
@@ -312,31 +314,31 @@ int phash_index( phash_t *ht )
   return ht->n ;
 }
 
-parr_t *get_all_atom_followers( branch_t *bp, parr_t *in )
+varr_t *get_all_atom_followers( branch_t *bp, varr_t *in )
 {
   phash_t     *ht = bp->val.atom ;
   buck_t     **arr = ht->arr ;
   unsigned int i ;
   
   for( i = 0 ; i < ht->size ; i++ )
-    if( arr[i] ) in = parr_add( in, arr[i]->next ) ;
+    if( arr[i] ) in = varr_junc_add( in, arr[i]->next ) ;
 
   return in ;
 }
 
-parr_t *prefix2atoms_match( char *prefix, phash_t *ht, parr_t *pa )
+varr_t *prefix2atoms_match( char *prefix, phash_t *ht, varr_t *pa )
 {
   buck_t     **arr = ht->arr ;
   unsigned int i, len = strlen( prefix ) ;
   
   for( i = 0 ; i < ht->size ; i++ )
     if( arr[i] && strncmp( arr[i]->val.val, prefix, len) == 0 ) 
-      pa = parr_add( pa, arr[i]->next ) ;
+      pa = varr_junc_add( pa, arr[i]->next ) ;
 
   return pa ;
 }
 
-parr_t *suffix2atoms_match( char *suffix, phash_t *ht, parr_t *pa )
+varr_t *suffix2atoms_match( char *suffix, phash_t *ht, varr_t *pa )
 {
   buck_t     **arr = ht->arr ;
   unsigned int i, len = strlen( suffix ), l ;
@@ -349,7 +351,7 @@ parr_t *suffix2atoms_match( char *suffix, phash_t *ht, parr_t *pa )
       l = strlen( s ) ;
       if( l >= len ) {
         if( strncmp( &s[l-len], suffix, len) == 0 ) 
-          pa = parr_add( pa, arr[i]->next ) ;
+          pa = varr_junc_add( pa, arr[i]->next ) ;
       }
     }
   }
@@ -357,7 +359,7 @@ parr_t *suffix2atoms_match( char *suffix, phash_t *ht, parr_t *pa )
   return pa ;
 }
 
-parr_t *range2atoms_match( range_t *rp, phash_t *ht, parr_t *pa )
+varr_t *range2atoms_match( range_t *rp, phash_t *ht, varr_t *pa )
 {
   buck_t   **arr = ht->arr ;
   int        r, i, dtype = rp->lower.type & 0x07 ;
@@ -456,7 +458,7 @@ parr_t *range2atoms_match( range_t *rp, phash_t *ht, parr_t *pa )
           break ;
       }
 
-      if( r ) pa = parr_add( pa, arr[i]->next ) ;
+      if( r ) pa = varr_junc_add( pa, arr[i]->next ) ;
     }
   }
 
