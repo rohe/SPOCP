@@ -23,6 +23,7 @@
 #include <func.h>
 #include <wrappers.h>
 #include <macros.h>
+#include <varr.h>
 
 
 /* An implementation of a skip-list */
@@ -37,6 +38,35 @@
  The number of nodes skipped is variable, though at each level at least
  as much as the larges on the immediate lower level
  */
+
+/************************************************************************/
+/* Could be done as macros too */
+
+varr_t *varr_junc_add( varr_t *va, junc_t *ju )
+{
+  return varr_add( va, (void *) ju ) ;
+}
+
+junc_t *varr_junc_pop( varr_t *va ) 
+{
+  return ( junc_t *) varr_pop( va ) ;
+}
+
+junc_t *varr_junc_nth( varr_t *va, int n )
+{
+  return ( junc_t *) varr_nth( va, n ) ;
+}
+
+junc_t *varr_junc_common( varr_t *a, varr_t *b )
+{
+  return ( junc_t * ) varr_common( a, b ) ;
+}
+
+junc_t *varr_junc_rm( varr_t *a, junc_t *jp )
+{
+  return ( junc_t * ) varr_rm( a, (void *) jp ) ;
+}
+
 
 /************************************************************************/
 
@@ -129,17 +159,15 @@ slnode_t *sl_new( boundary_t *item, int n, slnode_t *tail )
 
 void sl_free_node( slnode_t *slp )
 {
-  int     i ;
-  parr_t *pa ;
+  junc_t *jp ;
 
   if( slp ) {
     if( slp->item ) boundary_free( slp->item ) ;
 
     if( slp->junc ) {
-      for( pa = slp->junc, i = 0 ; i < pa->n ; i++ )
-        junc_free( (junc_t *) pa->vect[i] ) ;
+      while(( jp = varr_junc_pop( slp->junc ))) junc_free( jp ) ;
 
-      parr_free( slp->junc ) ;
+      varr_free( slp->junc ) ;
     }
 
     if( slp->next ) free( slp->next ) ;
@@ -370,11 +398,11 @@ void sl_print( slist_t *slp )
 
 /************************************************************************/
 
-parr_t *sl_match( slist_t *slp, boundary_t *item ) 
+varr_t *sl_match( slist_t *slp, boundary_t *item ) 
 {
   slnode_t *node, *nc ;
   int       flag = 0 ;
-  parr_t   *lp = 0, *up = 0, *res ;
+  varr_t   *lp = 0, *up = 0, *res ;
 
   if( slp == 0 ) {
     traceLog("Empty range ?" ) ;
@@ -387,29 +415,26 @@ parr_t *sl_match( slist_t *slp, boundary_t *item )
   /* found a exakt match */
   if( flag == 0 ) {
     for( nc = slp->head ; nc != node->next[0] ; nc = nc->next[0] ) 
-      lp = parr_join( lp, nc->junc ) ;
+      lp = varr_or( lp, nc->junc, 1 ) ;
 
     if( node->item->type & GLE ) nc = node ;
 
     for( ; ; nc = nc->next[0] ) {
-      up = parr_join( up, nc->junc ) ;
+      up = varr_or( up, nc->junc, 1 ) ;
       if( nc->item == 0 ) break ;
     }
   }
   else {
     for( nc = slp->head ; nc != node ; nc = nc->next[0] ) 
-      lp = parr_join( lp, nc->junc ) ;
+      lp = varr_or( lp, nc->junc, 1 ) ;
 
     for( ; ; nc = nc->next[0] ) {
-      up = parr_join( up, nc->junc ) ;
+      up = varr_or( up, nc->junc, 1 ) ;
       if( nc->item == 0 ) break ;
     }
   }
 
-  res = parr_or( lp, up ) ;
-
-  parr_free( lp ) ; 
-  parr_free( up ) ; 
+  res = varr_or( lp, up, 0 ) ;
 
   return res ;
 }
@@ -436,11 +461,11 @@ slnode_t *sl_insert( slist_t *slp, boundary_t *item )
 
 /************************************************************************/
 
-parr_t *sl_range_match( slist_t *slp, range_t *rp )
+varr_t *sl_range_match( slist_t *slp, range_t *rp )
 {
   slnode_t *low, *high, *nc ;
   int       lflag = 0, hflag = 0 ;
-  parr_t   *lp = 0, *up = 0, *res ;
+  varr_t   *lp = 0, *up = 0, *res ;
 
   if(( rp->lower.type & 0xF0 ) == 0 ) { /* no value */
     low = slp->head ;
@@ -463,21 +488,19 @@ parr_t *sl_range_match( slist_t *slp, range_t *rp )
 
   if( lflag == 0 ) {
     for( nc = slp->head ; nc != low->next[0] ; nc = nc->next[0] ) 
-      lp = parr_xor( lp, nc->junc ) ;
+      lp = varr_or( lp, nc->junc, 1 ) ;
   }
   else {
     for( nc = slp->head ; nc != low ; nc = nc->next[0] ) 
-      lp = parr_xor( lp, nc->junc ) ;
+      lp = varr_or( lp, nc->junc, 1 ) ;
   }
 
   for( nc = high ; ; nc = nc->next[0] ) {
-    up = parr_xor( up, nc->junc ) ;
+    up = varr_or( up, nc->junc, 1 ) ;
     if( nc->item == 0 ) break ;
   }
 
-  res = parr_or( lp, up ) ;
-  parr_free( lp ) ; 
-  parr_free( up ) ; 
+  res = varr_or( lp, up, 0 ) ;
 
   return res ;
 }
@@ -504,13 +527,11 @@ junc_t *sl_range_add( slist_t *slp, range_t *rp )
     upp = sl_insert( slp, &rp->upper ) ;
 
   /* If there is no common junction add a new one */
-  if( (jp = parr_common( low->junc, upp->junc)) == 0 ) {
+  if( (jp = varr_junc_common( low->junc, upp->junc)) == 0 ) {
     jp = junc_new() ;
-    if( low->junc == 0 ) low->junc = parr_new( 2, &P_pcmp, 0, &P_pcpy, 0 ) ;
-    low->junc = parr_add( low->junc, (void *) jp ) ;
 
-    if( upp->junc == 0 ) upp->junc = parr_new( 2, &P_pcmp, 0, &P_pcpy, 0 ) ;
-    upp->junc = parr_add( upp->junc, (void *) jp ) ;
+    low->junc = varr_junc_add( low->junc, jp ) ;
+    upp->junc = varr_junc_add( upp->junc, jp ) ;
   }
 
   return jp ;
@@ -520,9 +541,9 @@ junc_t *sl_range_add( slist_t *slp, range_t *rp )
 
 junc_t *sl_range_rm( slist_t *slp, range_t *rp, int *rc ) 
 {
-  junc_t   *jp = 0, *tmp ;
+  junc_t   *jp = 0 ;
   slnode_t *low, *upp ;
-  int       l,h,i ;
+  int       i ;
 
   if(( rp->lower.type & 0xF0 ) == 0 ) { /* no value */
     low = slp->head ;
@@ -540,20 +561,16 @@ junc_t *sl_range_rm( slist_t *slp, range_t *rp, int *rc )
     upp = sl_delete( slp, &rp->upper ) ;
 
   /* there should never be more than one in common */
-  jp = ( junc_t * ) parr_common( low->junc, upp->junc ) ;
+  jp = ( junc_t * ) varr_common( low->junc, upp->junc ) ;
+  if( jp ) {
+    jp = varr_junc_rm( low->junc, jp ) ;
+    jp = varr_junc_rm( upp->junc, jp ) ;
 
-  l = parr_get_index( low->junc, jp ) ;
-  h = parr_get_index( upp->junc, jp ) ;
+  }
 
-  tmp = parr_get_item_by_index( low->junc, l ) ;
-  parr_rm_index( &low->junc, l ) ;
+  if( low->junc->n == 0 && low != slp->head ) sl_free_node( low ) ;
 
-  if( tmp && low->junc == 0 && low != slp->head ) sl_free_node( low ) ;
-
-  tmp = parr_get_item_by_index( low->junc, h ) ;
-  parr_rm_index( &upp->junc, h ) ;
-
-  if( tmp && upp->junc == 0 && upp != slp->tail ) sl_free_node( upp ) ;
+  if( upp->junc->n == 0 && upp != slp->tail ) sl_free_node( upp ) ;
 
   /* if head is pointing to tail and both are down to 0 in ref count
      I could even remove the list, but why should I ? */
@@ -567,7 +584,7 @@ junc_t *sl_range_rm( slist_t *slp, range_t *rp, int *rc )
   return jp ;
 }
 
-parr_t *get_all_range_followers( branch_t *bp, parr_t *pa )
+varr_t *get_all_range_followers( branch_t *bp, varr_t *ja )
 {
   slnode_t  *node ;
   slist_t  **slp = bp->val.range ;
@@ -579,22 +596,22 @@ parr_t *get_all_range_followers( branch_t *bp, parr_t *pa )
     node = slp[i]->head ;
     if( node == 0 ) continue ;
 
-    if( node->junc ) pa = parr_join( pa, node->junc ) ;
+    if( node->junc ) ja = varr_or( ja, node->junc, 1 ) ;
 
     do {
       node = node->next[0] ;
-      if( node->junc ) pa = parr_join( pa, node->junc ) ;
+      if( node->junc ) ja = varr_or( ja, node->junc, 1 ) ;
     } while( node != slp[i]->tail ) ;
   }
 
-  return pa ;
+  return ja ;
 }
 
-parr_t *sl_range_lte_match( slist_t *slp, range_t *rp, parr_t *pa )
+varr_t *sl_range_lte_match( slist_t *slp, range_t *rp, varr_t *pa )
 {
   slnode_t *low, *high, *nc, *end ;
   int       lflag = 0, hflag = 0 ;
-  parr_t   *res = 0 ;
+  varr_t   *res = 0 ;
 
   if(( rp->lower.type & 0xF0 ) == 0 ) { /* no value */
     low = slp->head ;
@@ -622,17 +639,11 @@ parr_t *sl_range_lte_match( slist_t *slp, range_t *rp, parr_t *pa )
   }
 
   for( nc = low ; nc != end ; nc = nc->next[0] ) {
-    res = parr_join( res, nc->junc ) ;
+    res = varr_or( res, nc->junc, 1 ) ;
     if( nc->next == 0 ) break ; /* reached the end node */
   }
 
-  /* Remove every pointer with refcount < 2 */
-  parr_dec_refcount( &res, 1 ) ;
-
-  if( res ) {
-    pa = parr_join( pa, res ) ;
-    parr_free( res ) ;
-  }
+  if( res ) pa = varr_or( pa, res, 1 ) ;
 
   return pa ;
 }
@@ -764,27 +775,23 @@ slist_t *sl_dup( slist_t *old, ruleinfo_t *ri )
   for( oc = old->head, nc = new->head ; oc->next ; nc = nc->next[0], oc = oc->next[0] ) {
     for( bc = nc->next[0], pc = oc->next[0] ; pc->next ; pc = pc->next[0], bc = bc->next[0] ) {
       /* there should never be more than one common */
-      if((vp = parr_common( oc->junc, pc->junc)) != 0 ) {
+      if((vp = varr_common( oc->junc, pc->junc)) != 0 ) {
 
         jp = junc_dup((junc_t *) vp, ri ) ;
 
-        if( nc->junc == 0 ) nc->junc = parr_new( 2, &P_pcmp, 0, &P_pcpy, 0 ) ;
-        nc->junc = parr_add( nc->junc, (void *) jp ) ;
+        nc->junc = varr_junc_add( nc->junc, jp ) ;
 
-       if( bc->junc == 0 ) bc->junc = parr_new( 2, &P_pcmp, 0, &P_pcpy, 0 ) ;
-        bc->junc = parr_add( bc->junc, (void *) jp ) ;
+        bc->junc = varr_junc_add( bc->junc, jp ) ;
       }
     }
     /* there should never be more than one common */
-    if((vp = parr_common( oc->junc, pc->junc)) != 0 ) {
+    if((vp = varr_common( oc->junc, pc->junc)) != 0 ) {
 
       jp = junc_dup((junc_t *) vp, ri ) ;
 
-      if( nc->junc == 0 ) nc->junc = parr_new( 2, &P_pcmp, 0, &P_pcpy, 0 ) ;
-      nc->junc = parr_add( nc->junc, (void *) jp ) ;
+      nc->junc = varr_junc_add( nc->junc, jp ) ;
 
-      if( bc->junc == 0 ) bc->junc = parr_new( 2, &P_pcmp, 0, &P_pcpy, 0 ) ;
-      bc->junc = parr_add( bc->junc, (void *) jp ) ;
+      bc->junc = varr_junc_add( bc->junc, jp ) ;
     }
   }
 

@@ -7,6 +7,7 @@
 #include <struct.h>
 #include <wrappers.h>
 #include <func.h>
+#include <db0.h>
 
 #define BLACK 0
 #define RED   1
@@ -610,20 +611,20 @@ int rbt_items( rbt_t *rh )
   return rbnode_count( rh->head ) ; 
 }
 
-static parr_t *rbnode_get_item( rbnode_t *r, parr_t *dest )
+static varr_t *rbnode_get_item( rbnode_t *r, varr_t *dest )
 {
   if( r == 0 ) return dest ;
 
   if( r->l ) dest = rbnode_get_item( r->l, dest ) ;
 
-  dest = parr_add( dest, r->item ) ;
+  dest = varr_add( dest, ( void *) r->item ) ;
 
   if( r->r ) dest = rbnode_get_item( r->r, dest ) ;
 
   return dest ;
 }
 
-parr_t *rbt2parr( rbt_t *rh )
+varr_t *rbt2varr( rbt_t *rh )
 {
   return rbnode_get_item( rh->head, 0 ) ;
 }
