@@ -39,7 +39,8 @@ enum spocpc_res
 	SPOCPC_PARAM_ERROR,
 	SPOCPC_STATE_VIOLATION,
 	SPOCPC_NOSUPPORT,
-	SPOCPC_INTERUPT
+	SPOCPC_INTERUPT,
+	SPOCPC_UNKNOWN_RESCODE
 };
 /*
 typedef struct _octnode
@@ -58,29 +59,30 @@ typedef enum
 typedef struct _spocp
 {
 	spocp_contype_t contype;
-	int	fd;
-	char	**srv;
-	char	**cursrv;
+	int		fd;
+	octarr_t	*srv;
+	int		cursrv;
 	struct timeval	*com_timeout;
-	int	rc;
+	int		rc;
+
+	char		*sslEntropyFile;
+	char		*certificate;
+	char		*privatekey;
+	char		*calist;
+	char		*passwd;
+	int		copy;
 
 #ifdef HAVE_SSL
 	/* A couple of cases:
 	 * don't demand server certificate
 	 * demand server certificate, fail or not depending on whether the verification fails */
-	int	servercert;		/* whether server cert is demanded or not */
-	int	verify_ok;		/* TRUE means fail is verify isn't OK */
-	int	tls;
+	int		servercert;	/* whether server cert is demanded or not */
+	int		verify_ok;	/* TRUE means fail is verify isn't OK */
+	int		tls;
 
-	SSL_CTX	*ctx;
-	SSL	*ssl;
+	SSL_CTX		*ctx;
+	SSL		*ssl;
 #endif
-
-	char	*sslEntropyFile;
-	char	*certificate;
-	char	*privatekey;
-	char	*calist;
-	char	*passwd;
 
 } SPOCP;
 
@@ -92,8 +94,15 @@ typedef struct _queres
 } queres_t;
 
 
+SPOCP	*spocpc_dup( SPOCP *spocp);
+SPOCP	*spocpc_cpy( SPOCP *copy, SPOCP *old);
+
 SPOCP	*spocpc_init(char *srv, long tv_sec, long tv_usec);
 SPOCP	*spocpc_open(SPOCP * spocp, char *srv, int nsec);
+SPOCP	*spocpc_add_server( SPOCP *spocp, char *srv);
+
+SPOCP	*spocpc_set_timeout( SPOCP *spocp, long sec, long usec);
+
 int	spocpc_reopen(SPOCP * spocp, int nsec);
 ssize_t	spocpc_readn(SPOCP * spocp, char *str, ssize_t max);
 ssize_t	spocpc_writen(SPOCP * spocp, char *str, ssize_t max);
@@ -141,7 +150,9 @@ int	start_tls(SPOCP * spocp);
 
 #endif
 
+#ifndef SPOCP_BACKEND
 int spocpc_debug;
+#endif
 
 #define DIGITS(n) ( (n) >= 100000 ? 6 : (n) >= 10000 ? 5 : (n) >= 1000 ? 4 : (n) >= 100 ? 3 : ( (n) >= 10 ? 2 : 1 ) )
 
