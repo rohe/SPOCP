@@ -149,7 +149,7 @@ dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
 		 char *rs)
 {
 	if (pattern == 0 || pattern->n == 0) {	/* get all */
-		if(1)
+		if(0)
 			traceLog("Get ALL rules");
 
 		return get_all_rules(db, oa, rs);

@@ -1096,6 +1096,7 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 	if ((vsetp->type == SC_AND) && (val == 0))
 		return 0;
 
+        *ret = SPOCP_SUCCESS;
 	filter = (char *) malloc(size * sizeof(char));
 
 	na = lsln_values(vsetp->attset);
@@ -1167,10 +1168,9 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 		base = lsln_get_val(dn);
 		res = 0;
 
-		/*
-		 * LOG( SPOCP_DEBUG ) traceLog("Using filter: %s, base: %s,
-		 * scope: %d", filter, base, scope ) ; 
-		 */
+		LOG( SPOCP_DEBUG )
+			traceLog("Using filter: %s, base: %s, scope: %d",
+				filter, base, scope ) ; 
 
 		if ((rc =
 		     ldap_search_s(ld, base, scope, filter, attr, 0, &res))) {
@@ -1195,6 +1195,13 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 	free(attr);
 	/*
 	 */
+
+	LOG( SPOCP_DEBUG ) {
+		if (arr == 0)
+			traceLog( "LDAP return NULL (%d)", *ret );
+		else
+			traceLog( "LDAP return a set (%d)", *ret);
+	} 
 
 	return arr;
 }
@@ -1297,12 +1304,6 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 			/*
 			 * ok query 
 			 */
-			/*
-			 * LOG( SPOCP_DEBUG ) { if( arr == 0 ) traceLog( "LDAP 
-			 * return NULL" ) ; else traceLog( "LDAP return a set" 
-			 * ) ; } 
-			 */
-
 			if (arr == 0) {	/* empty LDAP resultset, clean up */
 				vset_free(sp);
 				return 0;
@@ -1465,7 +1466,7 @@ P_ldapclose(void *con)
 spocp_result_t
 ldapset_test(cmd_param_t * cpp, octet_t * blob)
 {
-	spocp_result_t  r = SPOCP_DENIED, rc;
+	spocp_result_t  r = SPOCP_DENIED, rc = SPOCP_SUCCESS ;
 	scnode_t       *scp;
 	vset_t         *vset, *res;
 	char           *ldaphost;

@@ -446,7 +446,7 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 				    ("List access denied to the root rule set");
 		}
 	} else {
-		if (1)
+		if (0)
 			traceLog( "Allowed to list");
 
 		if ((rc = pathname_get(rs, pathname, BUFSIZ)) != SPOCP_SUCCESS)
@@ -457,7 +457,7 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 					      pathname);
 		}
 
-		if (1)
+		if (0)
 			traceLog("Done head");
 
 		if (recurs && rs->down) {
@@ -471,3 +471,4 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 
 	return rc;
 }
+

@@ -981,7 +981,7 @@ com_list(conn_t * conn)
 	} else
 		trs = rs;
 
-	if (1)
+	if (0)
 		traceLog( "Getting the list" );
 
 	oa = octarr_new( 32 ) ;
@@ -990,7 +990,7 @@ com_list(conn_t * conn)
 	pthread_rdwr_runlock(&rs->rw_lock);
 
 	
-	if (1)
+	if (0)
 		traceLog( "Translating list to result" );
 
 	if (oa && oa->n) {
