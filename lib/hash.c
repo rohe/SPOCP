@@ -136,11 +136,14 @@ void phash_print( phash_t *ht )
 {
   int      i ;
   buck_t **ba ;
+  char    *tmp ;
 
   ba = ht->arr ;
   for( i = 0 ; i < (int) ht->size ; i++ ) 
     if( ba[i] ) {
-      traceLog( "Hash[%d]: %s", i, ba[i]->val.val ) ;
+      tmp = oct2strdup( &ba[i]->val, '%' ) ;
+      traceLog( "Hash[%d]: %s", i, tmp ) ;
+      free( tmp ) ;
     }
 }
 
