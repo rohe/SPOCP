@@ -73,7 +73,11 @@ is_ipv4(octet_t * op, struct in_addr * ia)
 
 	c = op->val[op->len];
 	op->val[op->len] = 0;
+#ifdef USE_IPV6
 	if (inet_pton(AF_INET, op->val, ia) <= 0) {
+#else
+	if (inet_aton( op->val, ia) == 0) {
+#endif
 		op->val[op->len] = c;
 		traceLog("Error in IP number definition: %s", strerror(errno));
 		return SPOCP_SYNTAXERROR;
@@ -87,12 +91,17 @@ is_ipv4(octet_t * op, struct in_addr * ia)
 spocp_result_t
 is_ipv4_s(char *ip, struct in_addr * ia)
 {
+#ifdef USE_IPV6
 	if (inet_pton(AF_INET, ip, ia) <= 0)
+#else
+	if (inet_aton( ip, ia) == 0) 
+#endif
 		return SPOCP_SYNTAXERROR;
 	else
 		return SPOCP_SUCCESS;
 }
 
+#ifdef USE_IPV6
 spocp_result_t
 is_ipv6(octet_t * op, struct in6_addr * ia)
 {
@@ -118,6 +127,7 @@ is_ipv6_s(char *ip, struct in6_addr * ia)
 	else
 		return SPOCP_SUCCESS;
 }
+#endif
 
 /*
  * date-fullyear = 4DIGIT date-month = 2DIGIT ; 01-12 date-mday = 2DIGIT ;
