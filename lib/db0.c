@@ -236,22 +236,24 @@ static junc_t *any_add( branch_t *bp )
 
 /************************************************************/
 
-__attribute__((unused)) static char *P_print_junc( item_t i )
+/*
+static char *P_print_junc( item_t i )
 {
   junc_print( 0, (junc_t *) i ) ;
 
   return 0 ;
 }
   
-__attribute__((unused)) static void P_free_junc( item_t i )
+static void P_free_junc( item_t i )
 {
   junc_free(( junc_t *) i ) ;
 }
 
-__attribute__((unused)) static item_t P_junc_dup( item_t i, item_t j )
+static item_t P_junc_dup( item_t i, item_t j )
 {
   return junc_dup( ( junc_t * ) i , ( ruleinfo_t *) j ) ; 
 }
+*/
 
 
 /************************************************************
@@ -743,10 +745,12 @@ static int uid_match( ruleinst_t *rt, char *uid )
 
 /* --------- ruleinst functions ----------------------------- */
 
-__attribute__((unused)) static int P_match_uid( void  *vp, void *pattern )
+/*
+static int P_match_uid( void  *vp, void *pattern )
 {
   return uid_match( (ruleinst_t *) vp, (char *) pattern ) ;
 }
+*/
 
 static void P_ruleinst_free( void *vp )
 {
@@ -869,13 +873,6 @@ int rules( db_t *db )
   if( db == 0 || db->ri == 0 || db->ri->rules == 0 ||  db->ri->rules->head == 0 )
     return 0 ;
   else return 1 ;
-}
-
-__attribute__((unused)) static varr_t *get_rule_inx( ruleinfo_t *ri ) 
-{
-  if( ri == 0 ) return 0 ;
-
-  return rbt2varr( ri->rules ) ;
 }
 
 ruleinst_t *get_rule( ruleinfo_t  *ri, char *uid ) 
@@ -1087,13 +1084,6 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd
   return rc ;
 }
 
-__attribute__((unused)) static int P_print_str( void *vp )
-{
-  traceLog( "%s", (char *) vp ) ;
- 
-  return 0 ;
-}
-
 static int ruleinst_print( ruleinst_t *ri )
 {
   char *str ;
@@ -1112,11 +1102,6 @@ static int ruleinst_print( ruleinst_t *ri )
   if( ri->alias ) ll_print( ri->alias ) ;
 
   return 0 ;
-}
-
-__attribute__((unused)) static int P_print_ruleinstance( void *vp ) 
-{
-  return ruleinst_print( (ruleinst_t *) vp ) ;
 }
 
 int ruleinfo_print( ruleinfo_t *r )

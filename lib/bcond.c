@@ -15,10 +15,7 @@
 #include <proto.h>
 #include <dback.h>
 
-/*!
- * \brief A simple tree structure built to hold a parsed S-expression
- */
-typedef struct _stree {
+static struct _stree {
   int list ;
   octet_t val ;
   struct _stree *next ;
