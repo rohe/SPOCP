@@ -34,6 +34,10 @@
 
 #include <arpa/inet.h>
 
+#ifdef HAVE_STRNDUP
+#define _GNU_SOURCE 
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>

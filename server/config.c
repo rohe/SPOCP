@@ -49,15 +49,89 @@ char           *keyword[] = {
 #define SYSTEM 20
 #define PLUGIN 21
 #define DBACK  22
+ 
+#ifdef HAVE_STRNDUP
+char *strndup(const char *s, size_t n);
+#endif
 
 /*
  * roughly 
  */
 #define YEAR  31536000
 
-extern char    *pidfile;
+extern char	*pidfile;
 
-char           *err_msg = "Error in configuration file, line %d: %s";
+static char	*err_msg = "Error in configuration file, line %d: %s";
+
+/* ------------------------------------------------------------------ */
+
+static char **strchop( char *s, int *argc)
+{
+	char *fp, *cp;
+	char **arr = 0;
+	int  i,n;
+
+	for( cp = s, i = 0, n = 0; *cp ; ){
+		if (*cp == '"' && n == 0) {
+			cp++;
+			while( *cp && *cp != '"') cp++, n++;
+			if ( *cp == '\0' )
+				return NULL;	
+			cp++;
+			if ( *cp && !(WHITESPACE(*cp)))
+				return NULL;	
+			n = 0;
+			while (WHITESPACE(*cp)) cp++;	
+		}
+		else if (WHITESPACE(*cp)) {
+			i++;
+			n = 0;
+			while (WHITESPACE(*cp)) cp++;	
+		}
+		else cp++, n++;
+	}
+
+	arr = (char **) Calloc( i+1, sizeof( char *));
+
+	for( fp = cp = s, i = 0, n = 0; *cp ; ){
+		if (*cp == '"' && n == 0) {
+			cp++;
+			fp=cp;
+			while( *cp && *cp != '"') cp++, n++;
+			if ( *cp == 0 ) {
+				charmatrix_free(arr);
+				return NULL;
+			}
+
+			cp++;
+
+			if ( *cp && !(WHITESPACE(*cp))) {
+				charmatrix_free(arr);
+				return NULL;	
+			}
+
+			arr[i++] = strndup( fp, n );
+			n = 0;
+			while (WHITESPACE(*cp)) cp++;	
+			fp = cp;
+		}
+		else if (WHITESPACE(*cp)) {
+			arr[i++] = strndup( fp, n );
+			n = 0;
+			while (WHITESPACE(*cp)) cp++;	
+			fp = cp;
+		}
+		else cp++, n++;
+	}
+
+	if (n) {
+		arr[i++] = strndup( fp, n );
+	}
+
+	*argc = i;
+
+	return arr;
+}
 
 /*------------------------------------------------------------------ */
 
@@ -461,12 +535,20 @@ read_config(char *file, srv_t * srv)
 						 "Directive where there should not be one");
 				} else {
 					for (ccp = pl->ccmds; ccp; ccp++) {
+						int np, j;
+						char **arr;
+
+						arr = strchop(cp,&np);
+
+						for (j=0; j<np; j++)
+							traceLog("%s:%s",sp, arr[j]);
+
 						if (strcmp(ccp->name, s) == 0) {
 							r = ccp->func(&pl->
 								      conf,
 								      ccp->
 								      cmd_data,
-								      1, &cp);
+								      np, arr);
 							if (r != SPOCP_SUCCESS) {
 								traceLog
 								    (err_msg,
@@ -474,6 +556,7 @@ read_config(char *file, srv_t * srv)
 								     ccp->
 								     errmsg);
 							}
+							charmatrix_free( arr );
 							break;
 						}
 					}
