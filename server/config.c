@@ -36,19 +36,6 @@ extern char *pidfile ;
 
 /*------------------------------------------------------------------ */
 
-__attribute__((unused)) static void conf_clear( srv_t *srv )
-{
-  ruleset_free( srv->root ) ;
-  
-  /* no more new connections until I'm done */
-  pthread_mutex_lock(&srv->mlock); 
-
-  
-  pthread_mutex_unlock(&srv->mlock); 
-}
-
-/*------------------------------------------------------------------ */
-
 spocp_result_t conf_get( void *vp, int arg, char *pl, char *key, void **res )
 {
   srv_t     *srv = (srv_t *) vp ;
