@@ -347,10 +347,10 @@ junc_t *erset_add( plugin_t *pl, branch_t *bp, set_t *set )
   }
 
   es->n = set->n ;
+  es->next = junc_new() ;
 
   if( bp->val.set == 0 ) {
     bp->val.set = es ;
-    es->next = junc_new() ;
   }
   else {
     /* the simple way to start with */

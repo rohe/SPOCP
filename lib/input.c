@@ -89,14 +89,20 @@ spocp_result_t get_str( octet_t *so, octet_t *ro )
 {
   ro->size = 0 ;
 
-  if( (ro->len = get_len( so )) < 0 ) {
+  ro->len = get_len( so ) ;
+
+  if( ro->len < 0 ) {
     LOG(SPOCP_ERR) traceLog( "In string \"%s\" ", so->val ) ;
     LOG(SPOCP_ERR) traceLog( "parse error: error in lengthfield" ) ;
     return SPOCP_SYNTAXERROR ;
   }
 
   if(( so->len - 1) < ro->len) {
-    LOG(SPOCP_ERR) traceLog( "length of string exceeds input length" ) ;
+    LOG(SPOCP_ERR) {
+      traceLog( "expected length of string (%d) exceeds input length (%d)",
+                 ro->len, so->len ) ;
+      traceLog( "Offending part \"%c%c%c\"", so->val[0], so->val[1], so->val[2] ) ;
+    }
     return SPOCP_MISSING_CHAR ;
   }
 

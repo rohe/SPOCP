@@ -38,15 +38,17 @@ void pconf_free( pconf_t *pc )
 plugin_t *pconf_set_keyval( plugin_t *top, char *pname, char *key, char *val )
 {
   plugin_t *pl ;
-  pconf_t  *pc ;
+  pconf_t  *pc = 0 ;
   octet_t   oct ;
 
   pl = plugin_get( top, pname ) ;
 
   if( top == 0 ) top = pl ;
 
-  for( pc = pl->conf ; pc ; pc = pc->next ) {
-    if( strcmp( key, pc->key ) == 0 ) break ;
+  if( key ) {
+    for( pc = pl->conf ; pc ; pc = pc->next ) {
+      if( strcmp( key, pc->key ) == 0 ) break ;
+    }
   }
 
   oct.val = val ;
@@ -223,13 +225,6 @@ plugin_t *init_plugin( plugin_t *top )
       continue ;
     }
    
-    on = pconf_get_keyval( pl, "test" ) ;
-    if( !on || on->next ) { /* */
-      traceLog( "Should only be one test function definition for plugin %s", pl->name ) ;
-      pl = plugin_rm( &top, pl ) ; 
-      continue ;
-    }
-
     pl->handle = dlopen( lib->oct.val, RTLD_LAZY ) ;
     if( !pl->handle ) {
       traceLog( "Unable to open %s library: [%s]", pl->name, dlerror() ) ;
@@ -237,11 +232,20 @@ plugin_t *init_plugin( plugin_t *top )
       continue ;
     }  
 
-    pl->test = ( befunc * ) dlsym( pl->handle, on->oct.val ) ;
-    if(( error = dlerror()) != NULL ) {
-      traceLog("Couldn't link the %s function in %s", on->oct.val, pl->name ) ;
-      pl = plugin_rm( &top, pl ) ; 
-      continue ;
+    on = pconf_get_keyval( pl, "test" ) ;
+    if( on ) {
+      if( on->next ) { /* */
+        traceLog( "Should only be one test function definition for plugin %s", pl->name ) ;
+        pl = plugin_rm( &top, pl ) ; 
+        continue ;
+      }
+
+      pl->test = ( befunc * ) dlsym( pl->handle, on->oct.val ) ;
+      if(( error = dlerror()) != NULL ) {
+        traceLog("Couldn't link the %s function in %s", on->oct.val, pl->name ) ;
+        pl = plugin_rm( &top, pl ) ; 
+        continue ;
+      }
     }
 
     on = pconf_get_keyval( pl, "init" ) ;
