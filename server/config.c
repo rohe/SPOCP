@@ -25,7 +25,7 @@ RCSID("$Id$");
 #define PASSWD			9
 #define NTHREADS		10
 #define TIMEOUT			11
-#define LOGFILE			12
+#define LOGGING			12
 #define SSLVERIFYDEPTH		13
 #define PIDFILE			14
 #define MAXCONN			15
@@ -34,7 +34,7 @@ RCSID("$Id$");
 char           *keyword[] = {
 	"__querty__", "rulefile", "port", "unixdomainsocket", "certificate",
 	"privatekey", "calist", "dhfile", "entropyfile",
-	"passwd", "threads", "timeout", "logfile", "sslverifydepth",
+	"passwd", "threads", "timeout", "log", "sslverifydepth",
 	"pidfile", "maxconn", "clientcert", NULL
 };
 
@@ -190,7 +190,7 @@ conf_get(void *vp, int arg, void **res)
 		*res = &srv->timeout;
 		break;
 
-	case LOGFILE:
+	case LOGGING:
 		*res = (void *) srv->logfile;
 		break;
 
@@ -370,7 +370,7 @@ read_config(char *file, srv_t * srv)
 				srv->passwd = Strdup(cp);
 				break;
 
-			case LOGFILE:
+			case LOGGING:
 				if (srv->logfile)
 					free(srv->logfile);
 				srv->logfile = Strdup(cp);

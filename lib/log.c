@@ -57,6 +57,65 @@ int	procid = 0;
 pthread_mutex_t loglock;
 #endif
 
+/* Borrowed from Heimdal */
+struct s2i {
+    const char *s;
+    int val;
+};
+
+#define L(X) { #X, LOG_ ## X }
+
+static struct s2i syslogvals[] = {
+    L(EMERG),
+    L(ALERT),
+    L(CRIT),
+    L(ERR),
+    L(WARNING),
+    L(NOTICE),
+    L(INFO),
+    L(DEBUG),
+
+    L(AUTH),
+#ifdef LOG_AUTHPRIV
+    L(AUTHPRIV),
+#endif
+#ifdef LOG_CRON
+    L(CRON),
+#endif
+    L(DAEMON),
+#ifdef LOG_FTP
+    L(FTP),
+#endif
+    L(KERN),
+    L(LPR),
+    L(MAIL),
+#ifdef LOG_NEWS
+    L(NEWS),
+#endif
+    L(SYSLOG),
+    L(USER),
+#ifdef LOG_UUCP
+    L(UUCP),
+#endif
+    L(LOCAL0),
+    L(LOCAL1),
+    L(LOCAL2),
+    L(LOCAL3),
+    L(LOCAL4),
+    L(LOCAL5),
+    L(LOCAL6),
+    L(LOCAL7),
+    { NULL, -1 }
+};
+
+static int
+find_value(const char *s, struct s2i *table)
+{
+    while(table->s && strcasecmp(table->s, s))
+        table++;
+    return table->val;
+}
+
 /*!
  * \brief Opens a file to which logging information is to be written
  * \param file The name of the file to be open 
@@ -66,43 +125,63 @@ pthread_mutex_t loglock;
 spocp_result_t
 spocp_open_log(char *file, int level)
 {
+	int	lev;
+	char	*cp;
+
+	if (file == 0 || *file == 0 )
+		return SPOCP_MISSING_ARG;
+
 	spocp_loglevel = (level & SPOCP_LEVELMASK);
 	spocp_debug = level;
 
-	if (file && strcmp(file, "syslog") == 0) {
+	cp = index( file, ':' );
+	if (cp == 0) 
+		return SPOCP_MISSING_ARG;
+
+	*cp++ = '\0' ;
+
+	if (strcmp(file, "syslog") == 0) {
 		log_syslog = 1;
-		openlog( "spocp", LOG_NDELAY|LOG_CONS, LOG_LOCAL3);
-	}
-
-	if (!procid)
-		procid = getpid();
-
-#ifdef HAVE_LIBPTHREAD
-	if (spocp_logf == 0)
-		pthread_mutex_init(&loglock, NULL);
-	pthread_mutex_lock(&loglock);
-#endif
-
-	/*
-	 * Close the present logfile if there is one 
-	 */
-	if (spocp_logf != 0 && spocp_logf != stderr)
-		fclose(spocp_logf);
-
-	if (file)
-		spocp_logf = fopen(file, "a");
-	else
-		spocp_logf = stderr;
-
-#ifdef HAVE_LIBPTHREAD
-	pthread_mutex_unlock(&loglock);
-#endif
-
-	if (spocp_logf == 0)
-		return SPOCP_OPERATIONSERROR;
-	else {
-		traceLog( LOG_INFO, "Using loglevel %d", spocp_loglevel);
+		lev = find_value( cp, syslogvals );
+		openlog( "spocp", LOG_NDELAY|LOG_CONS, lev);
 		return SPOCP_SUCCESS;
+	}
+	else if (strcmp( file, "file") == 0 ) {
+
+		if (!procid)
+			procid = getpid();
+
+#ifdef HAVE_LIBPTHREAD
+		if (spocp_logf == 0)
+			pthread_mutex_init(&loglock, NULL);
+		pthread_mutex_lock(&loglock);
+#endif
+
+		/*
+		 * Close the present logfile if there is one 
+		 */
+		if (spocp_logf != 0 && spocp_logf != stderr)
+			fclose(spocp_logf);
+
+		if (cp)
+			spocp_logf = fopen(cp, "a");
+		else
+			spocp_logf = stderr;
+
+#ifdef HAVE_LIBPTHREAD
+		pthread_mutex_unlock(&loglock);
+#endif
+
+		if (spocp_logf == 0)
+			return SPOCP_OPERATIONSERROR;
+		else {
+			traceLog( LOG_INFO, "Using loglevel %d", spocp_loglevel);
+			return SPOCP_SUCCESS;
+		}
+	}
+	else {
+		traceLog( LOG_WARNING, "Unknown log type [%s]", file);
+		return SPOCP_OPERATIONSERROR;
 	}
 }
 
@@ -210,7 +289,7 @@ print_elapsed(char *s, struct timeval start, struct timeval end)
 	}
 	end.tv_sec -= start.tv_sec;
 
-	traceLog(LOG_DEBUG, "%s: %.3ld.%.6ld\n", s, end.tv_sec, end.tv_usec);
+	traceLog(LOG_INFO, "%s: %.3ld.%.6ld\n", s, end.tv_sec, end.tv_usec);
 }
 
 /*!
