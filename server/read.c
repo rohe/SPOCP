@@ -142,9 +142,9 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	if ((fp = fopen(file, "r")) == 0) {
 		LOG(SPOCP_EMERG) traceLog(LOG_ERR,"couldn't open rule file \"%s\"",
 					  file);
-		sp = getcwd(oct.val, oct.size);
-		LOG(SPOCP_EMERG) traceLog(LOG_ERR,"I'm in \"%s\"", sp);
-		free(oct.val);
+		op = oct_new( 256, NULL);
+		sp = getcwd(op->val, op->size);
+		traceLog(LOG_ERR,"I'm in \"%s\"", sp);
 		return -1;
 	}
 
