@@ -1,3 +1,17 @@
+
+/***************************************************************************
+                          ldapproxy.c  -  description
+                             -------------------
+    begin                : Fri Jun 11 2004
+    copyright            : (C) 2003 by Stockholm University, Sweden
+    email                : roland@catalogix.se
+
+   COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
+   of this package for details.
+
+ ***************************************************************************/
+
+
 /* */
 /* format on ldapproxy
  * ldapproxy ":" orgdomain ":" uid [":" attributnamn ]
@@ -17,6 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 
 #include <netinet/in.h>
 #include <arpa/nameser.h>
@@ -32,6 +47,11 @@
 #include <func.h>
 
 befunc ldapproxy_test;
+
+#ifndef HAVE_INTXX_T
+typedef unsigned short	u_int16_t;
+typedef unsigned int	u_int32_t;
+#endif
 
 typedef union {
     HEADER          hdr;

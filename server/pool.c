@@ -1,6 +1,8 @@
 #include "locl.h"
 RCSID("$Id$");
 
+#include <basefn.h>
+
 static pool_t  *
 pool_new(void)
 {
@@ -11,6 +13,29 @@ pool_new(void)
 	pthread_mutex_init(&p->lock, NULL);
 
 	return p;
+}
+
+static void 
+pool_free( pool_t *p, ffunc *ff )
+{
+	pool_item_t *pi = 0, *next;
+
+	if (p) {
+		if (p->size) {
+			for (pi=p->head; pi != p->tail; pi = next ) {
+				next = pi->next;
+				if (ff && pi->info)
+					ff(pi->info);
+				free(pi);
+			}
+			if (pi) {
+				if (ff && pi->info)
+					ff(pi->info);
+				free(pi);
+			}
+		}
+		free(p);
+	}
 }
 
 afpool_t       *
@@ -26,6 +51,19 @@ afpool_new(void)
 	pthread_mutex_init(&afp->aflock, NULL);
 
 	return afp;
+}
+
+void
+afpool_free( afpool_t *a, ffunc *ff )
+{
+	if (a){
+		if (a->free)
+			pool_free( a->free, ff );
+		if (a->active)
+			pool_free( a->active, ff);
+
+		free(a);
+	}
 }
 
 int

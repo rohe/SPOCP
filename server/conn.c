@@ -116,6 +116,7 @@ conn_reset(conn_t * conn)
 
 		conn->status = CNST_FREE;
 		conn->fd = 0;
+		conn->operations = 0;
 		if (conn->sri.hostname)
 			free(conn->sri.hostname);
 		if (conn->sri.hostaddr)
@@ -131,8 +132,8 @@ conn_free(conn_t * con)
 {
 	if (con) {
 		conn_reset(con);
-		free(con->in);
-		free(con->out);
+		iobuf_free(con->in);
+		iobuf_free(con->out);
 		free(con);
 	}
 }
@@ -436,3 +437,4 @@ send_results(conn_t * conn)
 
 	return 1;
 }
+

@@ -86,6 +86,12 @@ typedef struct {
 	int             size;
 } pdyn_t;
 
+/*! \brief Storage for statistics */
+typedef struct {
+	int operations;
+	struct timeval op_start;
+	struct timeval op_end;
+} stat_t ;
 /*
  * ---------------------------------------------------------------------- 
  */
@@ -149,9 +155,11 @@ typedef struct plugin_t {
 	struct plugin_t *next;
 	/*! A magic number, this is here so the server can test whether the library
 	 * to be loaded really is a spocp backend */
-	unsigned long   magic;
+	unsigned long	magic;
 	/*! The runtime stuff */
-	pdyn_t         *dyn;
+	pdyn_t		*dyn;
+	/*! Runtime statistics */
+	stat_t		*stat;
 	/*! the dynamic library handle */ 
 	void           *handle;	
 	/*! where the plugin can keep its data */
@@ -180,6 +188,7 @@ typedef struct plugin_t {
 				__FILE__, \
 				NULL, \
 				MODULE_MAGIC_COOKIE, \
+                                NULL, \
                                 NULL, \
                                 NULL, \
                                 NULL, \

@@ -47,48 +47,50 @@ spocp_result_t
 motd_test(cmd_param_t * cpp, octet_t * blob)
 {
 	FILE           *fp;
-	char            buf[256], *lp, *txt = 0;
+	char            buf[256], *str, *txt = 0, *arr[3];
 	int             len, lt, tot;
 
 	fp = fopen(motd, "r");
 	if (fp == 0)
 		return SPOCP_UNAVAILABLE;
 
-	lp = fgets(buf, 256, fp);
+	;
 
-	if (lp == 0) {
+	if (fgets(buf, 256, fp) == 0) {
 		fclose(fp);
 		return SPOCP_UNAVAILABLE;
 	}
 
-	lp = &buf[strlen(buf) - 1];
-
-	while (lp != buf && (*lp == '\r' || *lp == '\n'))
-		*lp-- = '\0';
+	rmcrlf(buf);
 
 	lt = strlen(type);
 
 	if (cpp->conf){
-		char *cp = (char *) cpp->conf;
+		char	*cp = (char *) cpp->conf;
+		int	l;
 
-		len = strlen(buf);
-		txt = (char *) malloc( lt + len + strlen(cp) + 9);
+		l = lt + strlen(buf) + strlen(cp) + 16;
+		txt = (char *) malloc(l);
 
 		sprintf( txt, "%s says \"%s\"", cp, buf);
 	} 
 	else
 		txt = buf;
 
-	len = strlen(txt);
-
-	if (len == 0)
+	if (txt == 0 || *txt == 0 )
 		return SPOCP_UNAVAILABLE;
-	tot = len + DIGITS(len) + 2 + lt + DIGITS(lt);
+
 
 	if (blob) {
-		blob->len = blob->size = tot;
-		blob->val = (char *) malloc(tot * sizeof(char));
-		sprintf(blob->val, "%d:%s%d:%s", lt, type, len, txt);
+		lt += strlen(txt) + 24 ;
+		tot = lt;
+		str = (char *) calloc(lt, sizeof(char));
+		arr[0] = type;
+		arr[1] = txt;
+		arr[2] = 0;
+		sexp_printa( str, &lt, "aa", arr);
+	
+		octset(blob, str, tot-lt); 
 	}
 
 	if (txt != buf) free(txt);

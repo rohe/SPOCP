@@ -93,7 +93,7 @@ typedef struct _index {
 	int		size;
 	int		n;
 	struct _ruleinstance **arr;
-} index_t;
+} spocp_index_t;
 
 /*********** for prefixes ****************/
 
@@ -165,7 +165,7 @@ typedef struct _branch {
 		ssn_t		*prefix;
 		ssn_t		*suffix;
 		slist_t	*range[DATATYPES];
-		index_t	*id;
+		spocp_index_t	*id;
 	} val;
 
 } branch_t;

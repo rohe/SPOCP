@@ -66,15 +66,21 @@ buck_new(unsigned int key, octet_t * op)
 {
 	buck_t         *bp;
 
-	bp = (buck_t *) Malloc(sizeof(buck_t));
+	bp = (buck_t *) Calloc(1,sizeof(buck_t));
 
 	bp->hash = key;
-	bp->val.size = 0;
 	octcpy(&bp->val, op);
-	bp->refc = 0;
-	bp->next = 0;
 
 	return bp;
+}
+
+static void 
+buck_free( buck_t *b )
+{
+	if (b){
+		octclr(&b->val);
+		free(b);
+	}
 }
 
 /*
@@ -308,7 +314,7 @@ bucket_free(buck_t * bp)
 		if (bp->next)
 			junc_free(bp->next);
 
-		free(bp);
+		buck_free(bp);
 	}
 }
 

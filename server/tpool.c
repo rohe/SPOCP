@@ -292,12 +292,13 @@ tpool_destroy(tpool_t * tpool, int finish)
 void           *
 tpool_thread(void *arg)
 {
-	ptharg_t       *ptharg = (ptharg_t *) arg;
-	tpool_t        *tpool;
-	work_info_t    *my_workp;
-	int             res, id;
-	pool_item_t    *pi;
-	afpool_t       *workqueue;
+	ptharg_t	*ptharg = (ptharg_t *) arg;
+	tpool_t		*tpool;
+	work_info_t	*my_workp;
+	int		res, id;
+	pool_item_t	*pi;
+	afpool_t	*workqueue;
+	conn_t 		*conn;
 
 	tpool = ptharg->tpool;
 	id = ptharg->id;
@@ -352,6 +353,7 @@ tpool_thread(void *arg)
 		 */
 
 		my_workp = (work_info_t *) pi->info;
+		conn = my_workp->conn;
 
 		/*
 		 * Handle waiting destroyer threads * if( afpool_active_items( 
@@ -361,16 +363,22 @@ tpool_thread(void *arg)
 		/*
 		 * Do this work item 
 		 */
-		res = (*(my_workp->routine)) (my_workp->conn);
+		res = (*(my_workp->routine)) (conn);
 
-		/* DEBUG( SPOCP_DSRV ) traceLog(LOG_DEBUG, "Wake listener" ) ; */
+		gettimeofday( &conn->op_end, NULL );
+		conn->operations++;
+
+		DEBUG( SPOCP_DSRV )
+			print_elapsed("Elapsed time", conn->op_start,
+			    conn->op_end) ; 
+
 		wake_listener(1);
 
 		/*
 		 * If error get a clean sheat 
 		 */
 		if (res == -1)
-			iobuf_flush(my_workp->conn->in);
+			iobuf_flush(conn->in);
 
 		/*
 		 * if(1) timestamp( "workitem done" ) ; 

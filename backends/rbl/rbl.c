@@ -27,11 +27,12 @@ befunc          rbl_test;
 spocp_result_t
 rbl_test(cmd_param_t * cpp, octet_t * blob)
 {
-	char           *rblhost;
-	char           *hostaddr, *s, *r, *c, *d;
-	int             n, l;
-	octarr_t       *argv;
-	octet_t        *oct, *domain, *host;
+	spocp_result_t	rc;
+	char		*rblhost;
+	char		*hostaddr, *s, *r, *c, *d;
+	int		n, l;
+	octarr_t	*argv;
+	octet_t		*oct, *domain, *host;
 
 	if (cpp->arg == 0)
 		return SPOCP_MISSING_ARG;
@@ -100,9 +101,12 @@ rbl_test(cmd_param_t * cpp, octet_t * blob)
 	*++r = '\0';
 
 	if (gethostbyname(rblhost) != 0)
-		return SPOCP_SUCCESS;
+		rc = SPOCP_SUCCESS;
 	else
-		return SPOCP_DENIED;
+		rc = SPOCP_DENIED;
+
+	free( rblhost );
+	return rc;
 }
 
 plugin_t        rbl_module = {

@@ -795,3 +795,11 @@ octet_t *str2oct( char *str, int dynamic )
 	return op;
 }
 
+
+void 
+octset( octet_t *oct, char *s, int len)
+{
+	oct->val = s;
+	oct->len = oct->size = len;
+}
+

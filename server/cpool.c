@@ -71,3 +71,69 @@ srv_init(srv_t * srv, char *cnfg)
 
 	return 0;
 }
+
+static void
+P_conn_free( void *v)
+{
+	if (v)
+		conn_free( (conn_t *) v );
+}
+
+void
+srv_free( srv_t *srv)
+{
+	if (srv->work)
+		tpool_destroy( srv->work, 1);
+
+	if (srv->root)
+		ruleset_free( srv->root );
+
+	if (srv->plugin) 
+		plugin_unload_all( srv->plugin);
+
+	if (srv->id)
+		free( srv->id );
+
+	if (srv->certificateFile)
+		free( srv->certificateFile);
+
+	if (srv->privateKey)
+		free( srv->privateKey);
+
+	if (srv->caList)
+		free( srv->caList);
+
+	if (srv->dhFile)
+		free( srv->dhFile );
+
+	if (srv->SslEntropyFile)
+		free( srv->SslEntropyFile);
+
+	if (srv->passwd)
+		free( srv->passwd );
+
+	if (srv->logfile)
+		free( srv->logfile);
+
+	if (srv->pidfile)
+		free( srv->pidfile );
+
+	if (srv->uds)
+		free( srv->uds );
+
+	if (srv->rulefile)
+		free( srv->rulefile) ;
+
+	if (srv->server_id)
+		free( srv->server_id);
+	
+	if (srv->hostname)
+		free( srv->hostname);
+
+	if (srv->connections)
+		afpool_free( srv->connections, P_conn_free);
+
+
+	memset( srv, 0, sizeof( srv_t )) ;
+}
+

@@ -22,15 +22,15 @@
 #include <wrappers.h>
 #include <spocp.h>
 
-int             atom_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
-int             range_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
-int             prefix_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
-int             suffix_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
-int             list_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
-int             element_rm(junc_t * ap, element_t * ep, ruleinst_t * rt);
+int	atom_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
+int	range_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
+int	prefix_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
+int	suffix_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
+int	list_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
+int	element_rm(junc_t * ap, element_t * ep, ruleinst_t * rt);
 
-int             rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt);
-int             rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt);
+int	rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt);
+int	rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt);
 
 /************************************************************
 *                                                           *
@@ -347,7 +347,7 @@ rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt)
  * Returns: 
  */
 /*
- * void rm_index( index_t *ip, ruleinst_t *rt ) { int i, j ;
+ * void rm_index( spocp_index_t *ip, ruleinst_t *rt ) { int i, j ;
  * 
  * for( i = 0 ; i < ip->n ; i++ ) { if( ip->arr[i] == rt ) { if( i + 1 ==
  * ip->n ) * the last one * ip->arr[i] = 0 ; else { for( j = i+1 ; j < ip->n
@@ -369,8 +369,8 @@ rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt)
 int
 rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt)
 {
-	branch_t       *bp;
-	index_t        *inx;
+	branch_t	*bp;
+	spocp_index_t	*inx;
 
 	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"rm end_of_rule");
 	bp = ARRFIND(jp, SPOC_ENDOFRULE);

@@ -121,10 +121,10 @@ spocp_stream_socket(int lport)
 int
 spocp_unix_domain_socket(char *uds)
 {
-	int             fd;
-	struct sockaddr_un sun;
+	int			fd;
+	struct sockaddr_un	sun_addr;
 
-	if ((fd = socket(PF_LOCAL, SOCK_STREAM, 0)) < 0) {
+	if ((fd = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
 		LOG(SPOCP_DEBUG)
 		    traceLog(LOG_ERR,"Unable to create socket: %s\n", strerror(errno));
 		return -1;
@@ -132,11 +132,11 @@ spocp_unix_domain_socket(char *uds)
 
 	unlink(uds);
 
-	memset(&sun, 0, sizeof(struct sockaddr_un));
-	sun.sun_family = AF_LOCAL;
-	strcpy(sun.sun_path, uds);
+	memset(&sun_addr, 0, sizeof(struct sockaddr_un));
+	sun_addr.sun_family = AF_UNIX;
+	strcpy(sun_addr.sun_path, uds);
 
-	if (bind(fd, (SA *) & sun, sizeof(sun)) == -1) {
+	if (bind(fd, (SA *) & sun_addr, sizeof(sun_addr)) == -1) {
 		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unable to bind to socket: %s",
 					strerror(errno));
 		return -1;

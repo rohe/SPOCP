@@ -65,7 +65,7 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 		return 0;
 	}
 
-	bcs = (bcspec_t *) Malloc(sizeof(bcspec_t));
+	bcs = (bcspec_t *) Calloc(1,sizeof(bcspec_t));
 
 	bcs->plugin = p;
 	bcs->name = oct2strdup(spec, 0);
@@ -975,7 +975,7 @@ bcdef_get(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * o,
  */
 
 spocp_result_t
-bcond_check(element_t * ep, index_t * id, octarr_t ** oa)
+bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 {
 	int             i;
 	spocp_result_t  r = SPOCP_DENIED;

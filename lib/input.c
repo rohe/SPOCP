@@ -15,7 +15,9 @@
 
  ***************************************************************************/
 
+#ifdef X_OPEN
 #define _XOPEN_SOURCE
+#endif
 
 #include <struct.h>
 #include <string.h>
@@ -30,7 +32,6 @@
 #include <func.h>
 #include <spocp.h>
 #include <proto.h>
-
 
 spocp_result_t  get_str(octet_t * so, octet_t * ro);
 spocp_result_t  get_and(octet_t * oct, element_t * ep);
@@ -72,20 +73,12 @@ atom_new(octet_t * op)
 {
 	atom_t         *ap;
 
-	ap = (atom_t *) Malloc(sizeof(atom_t));
+	ap = (atom_t *) Calloc(1,sizeof(atom_t));
 
 	if (op) {
-		ap->val.val = Strndup(op->val, op->len);
-		ap->val.len = op->len;
-		ap->val.size = op->len;
-
+		octcpy(&ap->val, op);
 		ap->hash = lhash((unsigned char *) op->val, op->len, 0);
-	} else {
-		ap->val.val = 0;
-		ap->val.len = 0;
-		ap->val.size = 0;
-		ap->hash = 0;
-	}
+	} 
 
 	return ap;
 }
@@ -332,7 +325,7 @@ to_gmt(octet_t * s, octet_t * t)
 	time_t          tid;
 
 	if (s->len == 19 || s->len == 20) {
-		t->val = Strndup(s->val, 19);
+		octcpy(t, s);
 		t->len = 19;
 	} else {		/* offset */
 		strncpy(time, s->val, 19);
@@ -407,8 +400,7 @@ set_limit(boundary_t * bp, octet_t * op)
 		break;
 
 	case SPOC_ALPHA:
-		bp->v.val.val = Strndup(op->val, op->len);
-		bp->v.val.len = op->len;
+		octcpy( &bp->v.val, op);
 		r = SPOCP_SUCCESS;
 		break;
 

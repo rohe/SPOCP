@@ -238,6 +238,7 @@ int		oct2strcmp(octet_t * o, char *s);
 int		oct2strncmp(octet_t * o, char *s, size_t l);
 char		*oct2strdup(octet_t * op, char ec);
 int		oct2strcpy(octet_t * op, char *str, size_t len, char ec);
+void		octset( octet_t *, char *, int );
 
 octet_t		*str2oct( char *, int );
 int		octtoi(octet_t * o);

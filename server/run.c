@@ -476,6 +476,8 @@ spocp_srv_run(srv_t * srv)
 				if (res != SPOCP_SUCCESS)
 					continue;
 
+				gettimeofday( &conn->op_start, NULL );
+
 				if (XYZ)
 					timestamp("add work item");
 

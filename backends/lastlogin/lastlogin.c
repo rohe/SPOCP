@@ -11,7 +11,11 @@
 
  ***************************************************************************/
 
+#include <config.h>
+
+#ifdef GLIBC2
 #define _XOPEN_SOURCE 500	/* glibc2 needs this */
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -35,6 +35,16 @@ iobuf_new(size_t size)
 	return io;
 }
 
+void 
+iobuf_free( spocp_iobuf_t *io)
+{
+	if (io) {
+		if (io->bsize)
+			free( io->buf );
+		free(io);
+	}
+}
+
 spocp_result_t
 iobuf_insert(spocp_iobuf_t * io, char *where, char *src, int srclen)
 {

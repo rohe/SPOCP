@@ -19,12 +19,12 @@
 #include <func.h>
 #include <wrappers.h>
 
-index_t        *
+spocp_index_t        *
 index_new(int size)
 {
-	index_t        *new;
+	spocp_index_t        *new;
 
-	new = (index_t *) Malloc(sizeof(index_t));
+	new = (spocp_index_t *) Malloc(sizeof(spocp_index_t));
 
 	if (size) {
 		new->size = size;
@@ -44,10 +44,10 @@ index_new(int size)
  * good pointing to the old since that one will be deleted 
  */
 
-index_t        *
-index_dup(index_t * id, ruleinfo_t * ri)
+spocp_index_t        *
+index_dup(spocp_index_t * id, ruleinfo_t * ri)
 {
-	index_t        *new;
+	spocp_index_t        *new;
 	int             i;
 	ruleinst_t     *r;
 
@@ -70,7 +70,7 @@ index_dup(index_t * id, ruleinfo_t * ri)
 }
 
 void
-index_free(index_t * id)
+index_free(spocp_index_t * id)
 {
 	int             i;
 
@@ -84,8 +84,8 @@ index_free(index_t * id)
 	}
 }
 
-index_t        *
-index_add(index_t * id, ruleinst_t * ri)
+spocp_index_t        *
+index_add(spocp_index_t * id, ruleinst_t * ri)
 {
 	ruleinst_t    **ra;
 
@@ -108,7 +108,7 @@ index_add(index_t * id, ruleinst_t * ri)
 }
 
 int
-index_rm(index_t * id, ruleinst_t * ri)
+index_rm(spocp_index_t * id, ruleinst_t * ri)
 {
 	int             i, j;
 

@@ -19,6 +19,7 @@ RCSID("$Id$");
  */
 #define NTHREADS        5
 
+#define DEF_CNFG	"config"
 /*
  * srv_t srv ; 
  */
@@ -171,8 +172,8 @@ main(int argc, char **argv)
 	unsigned int    clilen;
 	struct sockaddr_in cliaddr;
 	struct timeval  start, end;
-	char           *cnfg =
-	    "config", localhost[MAXNAMLEN + 1], path[MAXNAMLEN + 1];
+	char           *cnfg = DEF_CNFG;
+	char		localhost[MAXNAMLEN + 1], path[MAXNAMLEN + 1];
 	FILE           *pidfp;
 	octet_t         oct;
 	ruleset_t      *rs;
@@ -193,7 +194,15 @@ main(int argc, char **argv)
 	pthread_mutex_init(&(srv.mlock), NULL);
 
 	gethostname(localhost, MAXNAMLEN);
+#ifdef HAVE_GETDOMAINNAME
 	getdomainname(path, MAXNAMLEN);
+#else
+	{
+		char *pos;
+		if(pos = strstr(localhost, ".")) strncpy(path, pos+1, MAXNAMLEN);
+		else strcpy(path, "");
+	}
+#endif
 
 	if (0)
 		printf("Domain: %s\n", path);
@@ -400,7 +409,7 @@ main(int argc, char **argv)
 			srv.id = (char *) Malloc(7 + strlen(srv.uds));
 			sprintf(srv.id, "spocp-%s", srv.uds);
 
-			srv.type = AF_LOCAL;
+			srv.type = AF_UNIX;
 		}
 
 		signal(SIGCHLD, sig_chld);
@@ -443,7 +452,13 @@ main(int argc, char **argv)
 		gettimeofday(&end, NULL);
 
 		print_elapsed("query time:", start, end);
+
+		conn_free( conn );
 	}
+
+	srv_free( &srv );
+	if (cnfg != DEF_CNFG)
+		free( cnfg );
 
 	exit(0);
 }

@@ -207,11 +207,11 @@ element_t	*element_new_set( varr_t *);
  * index.c 
  */
 
-index_t        *index_new(int size);
-void            index_free(index_t * id);
-index_t        *index_dup(index_t * id, ruleinfo_t * ri);
-index_t        *index_add(index_t * id, ruleinst_t * ri);
-int             index_rm(index_t * id, ruleinst_t * ri);
+spocp_index_t        *index_new(int size);
+void            index_free(spocp_index_t * id);
+spocp_index_t        *index_dup(spocp_index_t * id, ruleinfo_t * ri);
+spocp_index_t        *index_add(spocp_index_t * id, ruleinst_t * ri);
+int             index_rm(spocp_index_t * id, ruleinst_t * ri);
 
 
 /*
@@ -400,8 +400,8 @@ void		bcdef_free(bcdef_t * bcd);
 
 
 spocp_result_t	bcexp_eval(element_t *, element_t *, bcexp_t *, octarr_t **);
-spocp_result_t  bcond_check(element_t *, index_t *, octarr_t **);
-varr_t         *bcond_users(db_t *, octet_t *);
+spocp_result_t	bcond_check(element_t *, spocp_index_t *, octarr_t **);
+varr_t		*bcond_users(db_t *, octet_t *);
 
 /*
  * --- sllist.c --- 

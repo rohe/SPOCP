@@ -772,10 +772,8 @@ boundary_dup(boundary_t * bp)
 	switch (bp->type & 0x07) {
 	case SPOC_ALPHA:
 	case SPOC_DATE:
-		if (bp->v.val.len) {
-			nbp->v.val.val = Strndup(bp->v.val.val, bp->v.val.len);
-			nbp->v.val.len = bp->v.val.len;
-		}
+		if (bp->v.val.len) 
+			octcpy( &nbp->v.val, &bp->v.val);
 		break;
 
 	case SPOC_NUMERIC:

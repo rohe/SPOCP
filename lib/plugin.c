@@ -194,6 +194,7 @@ plugin_load(plugin_t * top, char *name, char *load)
 
 	new->handle = handle;
 	new->name = strdup(name);
+	new->next = NULL;
 
 	if (top == 0)
 		return new;
@@ -218,7 +219,6 @@ plugin_unload( plugin_t *pl )
 		if (pl->handle)
 			dlclose( pl->handle );
 
-		free(pl);
 	}
 }
 

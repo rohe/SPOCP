@@ -728,7 +728,7 @@ static int
 spocpc_connect(char *srv, int nsec)
 {
 	int port, res = 0, sockfd = 0, val;
-	struct sockaddr_un sun;
+	struct sockaddr_un sun_addr;
 	struct sockaddr_in sin;
 	struct in_addr **pptr;
 	struct hostent *hp;
@@ -741,16 +741,20 @@ spocpc_connect(char *srv, int nsec)
 
 		sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
 
-		memset(&sun, 0, sizeof(sun));
-		sun.sun_family = AF_LOCAL;
+		memset(&sun_addr, 0, sizeof(sun_addr));
+		sun_addr.sun_family = AF_LOCAL;
 
-		strcpy(sun.sun_path, srv);
+		strcpy(sun_addr.sun_path, srv);
 
-		res = connect(sockfd, (SA *) & sun, sizeof(sun));
+		res = connect(sockfd, (SA *) & sun_addr, sizeof(sun_addr));
 
 		if (res != 0) {
 			traceLog(LOG_ERR,"connect error [%s] \"%s\"\n", srv,
+#ifdef sun
+			    strerror(errno);
+#else
 			    strerror_r(errno, buf, 256));
+#endif
 			return 0;
 		}
 	} else {		/* IP socket */
