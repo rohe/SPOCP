@@ -206,7 +206,7 @@ int main( int argc, char **argv )
 	octet_t		*op,loc, *ext = 0;
 	spocp_result_t	rc, sr;
 	char 		*cnfg = 0, str[1024];
-	int		i, runbc = 0, m;
+	int		i, runbc = 0, m, c = 1;
 	octarr_t	*info = 0;
 
 	memset( &srv, 0, sizeof( srv_t ));
@@ -288,27 +288,27 @@ int main( int argc, char **argv )
 		printf("%s", str);
 
 		if (extended)
-			printf("\n");
+			printf("\n\n");
 
 		octln( &loc, op);
 		if(( rc = element_get(&loc, &ep)) == SPOCP_SUCCESS) {
-			for ( r = top, m = 0 ; r ; r = r->next ) { 
+			for ( r = top, m = 0, c = 0 ; r ; r = r->next, c++ ) { 
 				if (extended) {
 					*ext->val = '\0';
 					ext->len = 0;
 				}
 	
 				if ( elementcmp( ep, r->ep, ext ) == 0 ) {
-					printf( " YES [%s", r->strrule);
+					printf( "(%d) YES [%s", c, r->strrule);
 					if (runbc) {
 						sr = bcexp_eval(ep, r->ep,
 						    r->bcond->exp, &info);
 						if (sr==SPOCP_SUCCESS)
-							printf(", bcond: OK\n");
+							printf(", bcond: OK]\n");
 						else if (sr==SPOCP_DENIED)
-							printf(", bcond: DENIED\n");
+							printf(", bcond: DENIED]\n");
 						else
-							printf(", bcond: %d\n",sr);
+							printf(", bcond: %d]\n",sr);
 					}
 					else
 						printf("]\n");
@@ -316,8 +316,8 @@ int main( int argc, char **argv )
 				}
 				else if( extended ) {
 					oct2strcpy( ext, str, 1024, '%' );
-					printf("\t[%s] of [%s]\n",
-					   str, r->strrule);
+					printf("(%d)     [%s] of [%s]\n",
+					   c, str, r->strrule);
 				}
 			}
 
