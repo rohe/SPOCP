@@ -245,9 +245,9 @@ main(int argc, char **argv)
 
 		case 'h':
 		default:
-			fprintf(stderr,
-				"Usage: %s [-t] [-f configfile] [-d debuglevel]\n",
-				argv[0]);
+			fprintf(stderr, "Usage: %s [-t] ", argv[0]);
+			fprintf(stderr, "[-f configfile] ");
+			fprintf(stderr, "[-D] [-d debuglevel]\n");
 			exit(0);
 		}
 	}
