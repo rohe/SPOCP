@@ -4,7 +4,7 @@
  * \author Roland Hedberg <roland@catalogix.se>
  */
 /***************************************************************************
-                          string.c  -  description
+                          sexp.c  -  description
                              -------------------
     begin                : Sat Oct 12 2002
     copyright            : (C) 2002 by Umeå University, Sweden
