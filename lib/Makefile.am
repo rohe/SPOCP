@@ -4,11 +4,11 @@ lib_LTLIBRARIES = libspocp.la
 
 libspocp_la_SOURCES =  \
 	db0.c hash.c hashfunc.c log.c ssn.c verify.c \
-	backend.c element.c match.c wrappers.c index.c \
-	cache.c free.c input.c string.c rbtree.c octnode.c \
-	parr.c io.c spocp.c rm.c print.c slist.c list.c \
-	extref.c ll.c sha1.c aci.c subelem.c be_cpool.c \
-	plugin.c cachetime.c
+	match.c wrappers.c index.c rdwr.c \
+	cache.c free.c input.c string.c rbtree.c octarr.c \
+	parr.c io.c spocp.c rm.c slist.c list.c \
+	ll.c sha1.c subelem.c be_cpool.c oct.c sexp.c \
+	plugin.c cachetime.c rvapi.c aci.c varr.c bcond.c
 
-libspocp_la_LDFLAGS = -version-info 1:1:1
+libspocp_la_LDFLAGS = -version-info 1:2:0
 
