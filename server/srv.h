@@ -308,7 +308,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )  ;
 
 /* config.c */
 int            read_config( char *file, srv_t *srv ) ;
-spocp_result_t conf_get( void *vp, infotype_t arg, char *pl, char *key, void **res ) ;
+spocp_result_t conf_get( void *vp, int arg, char *pl, char *key, void **res ) ;
 int            set_backend_cachetime( srv_t *srv ) ;
 
 /* */

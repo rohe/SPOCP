@@ -49,7 +49,7 @@ void conf_clear( srv_t *srv )
 
 /*------------------------------------------------------------------ */
 
-spocp_result_t conf_get( void *vp, infotype_t arg, char *pl, char *key, void **res )
+spocp_result_t conf_get( void *vp, int arg, char *pl, char *key, void **res )
 {
   srv_t     *srv = (srv_t *) vp ;
   octarr_t  *on ;
