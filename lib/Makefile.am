@@ -12,7 +12,8 @@ libspocp_la_SOURCES =  \
 	parr.c io.c spocp.c rm.c slist.c list.c \
 	ll.c sha1.c subelem.c be_cpool.c oct.c sexp.c \
 	plugin.c cachetime.c rvapi.c aci.c varr.c bcond.c \
-	dback.c dbapi.c cache.c sexptool.c parse.c sum.c resset.c
+	dback.c dbapi.c cache.c sexptool.c parse.c sum.c resset.c \
+	check.c
 
 libspocp_la_LDFLAGS = -version-info 2:2:0
 libspocpbasic_la_LDFLAGS = -version-info 2:1:0

@@ -21,14 +21,20 @@ int             ruleset_print(ruleset_t * rs);
 static          spocp_result_t
 rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 {
-	spocp_result_t  res = SPOCP_DENIED;
+	spocp_result_t  res = SPOCP_DENIED, sum = SPOCP_DENIED;
 	ruleset_t      *trs;
 	comparam_t      comp;
 	octarr_t	*oa=0;
 	resset_t	*xrs=0;
 	int		all = scope&0xF0 ;
+	checked_t	*cr=0;
 
 	memset(&comp,0,sizeof(comparam_t));
+
+#ifdef AVLUS
+	traceLog(LOG_INFO,"rec_allow %d", scope&0x0F);
+	ruleset_print( rs );
+#endif
 
 	switch (scope&0x0F) {
 	case SUBTREE:
@@ -45,21 +51,41 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 			for (; trs ; trs = trs->right) {
 				xrs = 0;
 				res = rec_allow(trs, ep, scope, &xrs);
-				if(xrs)
-					resset_join(*rset, xrs);
-				if( !all && res != SPOCP_SUCCESS)
+				if(res == SPOCP_SUCCESS)
+					sum = res;
+					if(xrs)
+						*rset = resset_join(*rset, xrs);
+
+				/* If I'm not interested in everything then
+				 * one is good enough */
+				if( !all && res == SPOCP_SUCCESS)
 					break;
 			}
+			res = sum;
 		}
+		else {
+			if (rs->db)
+				comp.rc = SPOCP_SUCCESS;
+				comp.head = ep;
+				comp.blob = &oa;
+				comp.all = all;
+				comp.cr = &cr;
 
-	case BASE:
-		comp.rc = SPOCP_SUCCESS;
-		comp.head = ep;
-		comp.blob = &oa;
-		comp.all = all;
+				res = allowed(rs->db->jp, &comp, rset);
+#ifdef AVLUS
+			/*DEBUG(SPOCP_DSRV)*/ if (rset) {
+				traceLog(LOG_DEBUG
+					,"BASE got %d and Result Set", res);
+				resset_print(*rset);
+				traceLog(LOG_DEBUG,"---------------------------");
 
-		if (rs->db)
-			res = allowed(rs->db->jp, &comp, rset);
+			}
+			else
+				traceLog(LOG_DEBUG,"No rset");
+#endif
+			if ( *(comp.cr))
+				checked_free( *(comp.cr) );
+		}
 		break;
 
 	case ONELEVEL:
@@ -76,12 +102,23 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 				if (rs->db)
 					res = allowed(trs->db->jp, &comp, &xrs);
 				if(xrs)
-					resset_join(*rset, xrs);
+					*rset = resset_join(*rset, xrs);
 			}
 		}
+#ifdef AVLUS
+		/*DEBUG(SPOCP_DSRV)*/ if (rset) {
+			traceLog(LOG_DEBUG,"ONELEVEL got Result Set");
+			resset_print(*rset);
+			traceLog(LOG_DEBUG,"---------------------------");
+		}
+		else
+			traceLog(LOG_DEBUG,"No rset");
+#endif
+
 		break;
 
 	}
+
 
 	return res;
 }
@@ -135,6 +172,16 @@ ss_allow(ruleset_t * rs, octet_t * sexp, resset_t **rset, int scope)
 		res = rec_allow(rs, ep, scope, rset);
 		element_free(ep);
 	}
+
+#ifdef AVLUS
+	/*DEBUG(SPOCP_DSRV)*/ if (rset) {
+		traceLog(LOG_DEBUG,"ss_allow returned Result Set");
+		resset_print(*rset);
+		traceLog(LOG_DEBUG,"---------------------------");
+	}
+	else
+		traceLog(LOG_DEBUG,"No rset from ss_allow");
+#endif
 
 	return res;
 }
@@ -469,20 +516,19 @@ ss_dup(ruleset_t * rs, int scope)
  * --------------------------------------------------------- 
  */
 
+/*
 static int
 print_db(db_t * db)
 {
 	if (db == 0)
 		return 0;
 
-	/*
-	 * print_junc( db->jp ) ; 
-	 */
 	if (db->ri)
 		ruleinfo_print(db->ri);
 
 	return 0;
 }
+*/
 
 static int
 ruleset_print_r(ruleset_t * rs)
@@ -499,7 +545,7 @@ int
 ruleset_print(ruleset_t * rs)
 {
 	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"rulesetname: \"%s\"", rs->name);
-	print_db(rs->db);
+	/* print_db(rs->db); */
 	/*
 	 * print_aci( rs->aci ) ; 
 	 */

@@ -178,12 +178,20 @@ typedef struct _branch {
  * -------------------------------------------------- 
  */
 
+typedef struct _checked {
+	spocp_result_t		rc;
+	struct _ruleinstance	*ri;
+	octet_t			*blob;
+	struct _checked		*next;
+} checked_t;
+
 typedef struct _com_param {
 	element_t	*head;
 	octarr_t	**blob;
 	spocp_result_t	rc;
 	int		all;
 	int		nobe;
+	checked_t 	**cr;
 } comparam_t;
 
 typedef struct _res_set {

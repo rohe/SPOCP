@@ -59,11 +59,13 @@ allowed(junc_t * ap, comparam_t *comp, resset_t **rspp)
 	comp->rc = SPOCP_DENIED;
 
 	if ((rs = element_match_r(ap, comp->head, comp))) {
-		DEBUG(SPOCP_DSRV) {
-			traceLog(LOG_DEBUG,"Allowed returned Result Set");
+#ifdef AVLUS
+		/*DEBUG(SPOCP_DSRV)*/ {
+			traceLog(LOG_DEBUG,"Allowed() got Result Set");
 			resset_print(rs);
 			traceLog(LOG_DEBUG,"---------------------------");
 		}
+#endif
 		comp->rc = SPOCP_SUCCESS ;
 		*rspp = rs ;
 	}

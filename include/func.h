@@ -421,7 +421,7 @@ void		bcdef_free(bcdef_t * bcd);
 
 
 spocp_result_t	bcexp_eval(element_t *, element_t *, bcexp_t *, octarr_t **);
-spocp_result_t	bcond_check(element_t *, spocp_index_t *, octarr_t **);
+spocp_result_t	bcond_check(element_t *,spocp_index_t *,octarr_t **,checked_t **);
 varr_t		*bcond_users(db_t *, octet_t *);
 
 /*
@@ -461,6 +461,7 @@ void	ll_rm_link(ll_t * lp, node_t * np);
  */
 
 int		element_print( octet_t *oct, element_t *ep);
+void		element_struct( octet_t *oct, element_t *ep);
 char		*element2str( element_t *ep);
 element_t	*element_reduce( element_t *ep ) ;
 
@@ -469,6 +470,18 @@ element_t	*element_reduce( element_t *ep ) ;
  */
 
 element_t	*get_indexes( junc_t *jp );
+
+/*
+ * check.c
+ */
+
+void		checked_free( checked_t *c );
+checked_t	*checked_rule( ruleinst_t *ri, checked_t **cr);
+spocp_result_t	checked_res( ruleinst_t *ri, checked_t **cr);
+void		add_checked( ruleinst_t *ri, spocp_result_t rc,
+	       		octet_t *blob, checked_t **cr);
+void 		checked_print( checked_t *c );
+
 
 #endif
 

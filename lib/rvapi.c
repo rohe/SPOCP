@@ -166,18 +166,18 @@ list_new(void)
 /********************************************************************/
 
 static list_t  *
-list_dup(list_t * lp, element_t * e)
+list_dup(list_t * lp, element_t *parent)
 {
-	list_t	 *new = 0;
+	list_t		*new = 0;
 	element_t	*ep = 0, *le;
 
 	if (lp == 0)
 		return 0;
 
 	new = list_new();
-	new->head = ep = element_dup(lp->head, e);
+	new->head = ep = element_dup(lp->head, parent);
 	for (le = lp->head->next; le; le = le->next) {
-		ep->next = element_dup(le, e);
+		ep->next = element_dup(le, parent);
 		ep = ep->next;
 	}
 
@@ -262,7 +262,7 @@ set_dup(varr_t * va, element_t * parent)
 
 	new = varr_dup(va, &i_element_dup);
 
-	set_memberof(va, parent);
+	set_memberof(new, parent);
 
 	return new;
 }
@@ -1082,7 +1082,9 @@ parse_path(octet_t * o)
 		sp++, i++) {
 		if (*sp == '/') {
 			if (oa == 0) {
+				/*
 				traceLog(LOG_DEBUG, "New octarr");
+				*/
 				oa = octarr_new(2);
 				oct = oct_new(sp - o->val, o->val);
 				octarr_add(oa, oct);

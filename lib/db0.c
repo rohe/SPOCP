@@ -26,6 +26,10 @@
 #include <rbtree.h>
 #include <dback.h>
 
+/*
+#define AVLUS 1
+*/
+
 static junc_t *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
 			    ruleinst_t * ri, int n);
 junc_t	*rm_next(junc_t * ap, branch_t * bp);
@@ -219,14 +223,14 @@ atom_add(branch_t * bp, atom_t * ap)
 {
 	buck_t	 *bucket = 0;
 
+	DEBUG(SPOCP_DSTORE) 
+		oct_print(LOG_DEBUG,"atom_add", &ap->val);
+
 	if (bp->val.atom == 0)
 		bp->val.atom = phash_new(3, 50);
 
 	bucket = phash_insert(bp->val.atom, ap, ap->hash);
 	bucket->refc++;
-
-	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Atom \"%s\" [%d]", ap->val.val,
-				     bucket->refc);
 
 	if (bucket->next == 0)
 		bucket->next = junc_new();
@@ -482,12 +486,12 @@ set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
 
 	for (v = varr_first(va), dsva = ds->va, i=0; v;
 	     v = varr_next(va, v), i++) {
-		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG, "set element %d", i);
+		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG, "- set element %d -", i);
 		elem = (element_t *) v;
 		if ((ap = element_add(pl, jp, elem, rt, 0)) == 0)
 			break;
 		dsva = varr_add(dsva, ap);
-		ap = add_next(pl, ap, ep, rt);
+		/*ap = add_next(pl, ap, ep, rt);*/
 	}
 	ds->va = dsva;
 
@@ -568,15 +572,16 @@ list_close(junc_t * ap, element_t **epp, ruleinst_t * ri, int *eor)
 	element_t      *parent, *ep = *epp;
 
 	do {
-		ap = list_end(ap);
-
 		parent = ep->memberof;
+
+		if (parent->type == SPOC_LIST) 
+			ap = list_end(ap);
 
 		DEBUG(SPOCP_DSTORE) {
 			if (parent->type == SPOC_LIST) {
-				traceLog(LOG_DEBUG,
-					"end_list that started with \"%s\"",
-					parent->e.list->head->e.atom->val.val);
+				oct_print(LOG_DEBUG,
+					"end_list that started with",
+					&parent->e.list->head->e.atom->val);
 			}
 			else if(parent->type == SPOC_SET) 
 				traceLog(LOG_DEBUG,"Set end");
@@ -585,11 +590,17 @@ list_close(junc_t * ap, element_t **epp, ruleinst_t * ri, int *eor)
 		}
 
 		ep = parent;
-	} while (ep->type == SPOC_LIST && ep->next == 0 && ep->memberof != 0);
+
+		DEBUG(SPOCP_DSTORE)
+			traceLog(LOG_DEBUG,"type:%d next:%p memberof:%p",
+				ep->type, ep->next, ep->memberof);
+
+	} while ((ep->type == SPOC_LIST || ep->type == SPOC_SET)
+			&& ep->next == 0 && ep->memberof != 0);
 
 	*epp = parent;
 	if (parent->memberof == 0) {
-		rule_end(ap, ri);
+		ap = rule_end(ap, ri);
 		*eor = 1;
 	} else
 		*eor = 0;
@@ -602,17 +613,33 @@ add_next(plugin_t * plugin, junc_t * jp, element_t * ep, ruleinst_t * ri)
 {
 	int	     eor = 0;
 
+#ifdef AVLUS
+	{
+		octet_t *eop ;
+
+		eop = oct_new( 512,NULL);
+		element_print( eop, ep );
+		oct_print( LOG_INFO, "add_next() after", eop);
+		oct_free( eop);
+	}
+#endif
+
 	if (ep->next) {
-		/* traceLog( LOG_DEBUG, "next exists"); */
+		DEBUG(SPOCP_DSTORE)
+			traceLog( LOG_DEBUG, "next exists");
 		jp = element_add(plugin, jp, ep->next, ri, 1);
 	}
 	else if (ep->memberof) {
+		DEBUG(SPOCP_DSTORE)
+			traceLog( LOG_DEBUG, "No next exists");
 		/*
 		 * if( ep->memberof->type == SPOC_SET ) ; 
 		 */
+		
 		if (ep->type != SPOC_LIST)	/* a list never closes itself */
 			jp = list_close(jp, &ep, ri, &eor);
 
+		/* ep is now one of the parents of the original ep */
 		if ( !eor && ep->next) {
 			/*traceLog( LOG_DEBUG, "next exists");*/
 			jp = element_add(plugin, jp, ep->next, ri, 1);
@@ -647,9 +674,16 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 
 	bp = ARRFIND(jp, ep->type);
 
-	/*
-	 * DEBUG( SPOCP_DSTORE ) traceLog(LOG_DEBUG,"Items: %s", set_item_list( jp ) ) ; 
-	 */
+#ifdef AVLUS
+	{
+		octet_t *eop ;
+
+		eop = oct_new( 512,NULL);
+		element_print( eop, ep );
+		oct_print( LOG_INFO, "element_add", eop);
+		oct_free( eop);
+	}
+#endif
 
 	if (bp == 0) {
 		bp = (branch_t *) Calloc(1, sizeof(branch_t));
@@ -659,9 +693,6 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 	} else {
 		bp->count++;
 	}
-
-	DEBUG(SPOCP_DSTORE)
-		traceLog(LOG_DEBUG,"Branch [%d] [%d]", bp->type, bp->count);
 
 	if (ep->type == SPOC_SET){
 		ap = set_add(bp, ep, pl, jp, rt);
@@ -1173,6 +1204,17 @@ store_right(db_t * db, element_t * ep, ruleinst_t * rt)
 		db->jp = junc_new();
 
 	ec = element_dup( ep, NULL );
+
+#ifdef AVLUS
+	{
+		octet_t *eop ;
+
+		eop = oct_new( 512,NULL);
+		element_struct( eop, ec );
+		oct_print( LOG_INFO, "struct", eop);
+		oct_free( eop);
+	}
+#endif
 
 	if (element_add(db->plugins, db->jp, ep, rt, 1) == 0)
 		r = SPOCP_OPERATIONSERROR;

@@ -33,7 +33,9 @@
 #include <spocp.h>
 #include <proto.h>
 
-/* #define DEBUG_INP 1 */
+/*
+#define AVLUS 1
+*/
 
 spocp_result_t  get_str(octet_t * so, octet_t * ro);
 spocp_result_t  get_and(octet_t * oct, element_t * ep);
@@ -66,6 +68,9 @@ element_new()
 	element_t      *ep;
 
 	ep = (element_t *) Calloc(1, sizeof(element_t));
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"New element: %p", (void *) ep);
+#endif
 
 	return ep;
 }
@@ -90,14 +95,18 @@ atom_new(octet_t * op)
  */
 
 void
-set_memberof(varr_t * va, element_t * group)
+set_memberof(varr_t * va, element_t * parent)
 {
 	void           *vp;
 	element_t      *ep;
 
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"set_memberof = %p",(void *) parent);
+#endif
+
 	for (vp = varr_first(va); vp; vp = varr_next(va, vp)) {
 		ep = (element_t *) vp;
-		ep->memberof = group;
+		ep->memberof = parent;
 	}
 }
 
@@ -208,7 +217,7 @@ list_new(void)
 static spocp_result_t
 get_set(octet_t * oct, element_t * ep)
 {
-	element_t      *nep = 0;
+	element_t      *nep = 0, *parent=ep;
 	varr_t         *pa, *sa = 0;
 	spocp_result_t  rc;
 
@@ -244,9 +253,8 @@ get_set(octet_t * oct, element_t * ep)
 		varr_free(sa);
 	} else {
 		ep->e.set = sa;
+		set_memberof(sa, parent);
 	}
-
-	set_memberof(sa, ep);
 
 	if (*oct->val == ')') {
 		oct->val++;
@@ -711,12 +719,12 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"List tag");
 
 	ep->type = SPOC_LIST;
-#ifdef DEBUG_INP
+#ifdef AVLUS
 	traceLog(LOG_DEBUG,"list_new");
 #endif
 	ep->e.list = list_new();
 
-#ifdef DEBUG_INP
+#ifdef AVLUS
 	traceLog(LOG_DEBUG,"element_new");
 #endif
 	pep = ep->e.list->head = element_new();
@@ -726,7 +734,7 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 	 */
 	pep->memberof = ep;
 	pep->type = SPOC_ATOM;
-#ifdef DEBUG_INP
+#ifdef AVLUS
 	traceLog(LOG_DEBUG,"atom_new");
 #endif
 	pep->e.atom = atom_new(to);

@@ -14,7 +14,7 @@
 #include <dback.h>
 
 /*
- * #define AVLUS 1
+#define AVLUS 1
  */
 
 /*! Local struct used to store parsed information about bcond s-expressions */
@@ -964,6 +964,7 @@ bcdef_get(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * o,
 	return bcd;
 }
 
+
 /*
  * ---------------------------------------------------------------------- 
  */
@@ -978,11 +979,14 @@ bcdef_get(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * o,
  */
 
 spocp_result_t
-bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
+bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa, checked_t **cr)
 {
 	int             i;
 	spocp_result_t  r = SPOCP_DENIED;
-	ruleinst_t     *ri = 0;
+	ruleinst_t	*ri = 0;
+	checked_t	*c;
+	octarr_t	*loa=0;
+	octet_t		*blob=0;
 
 	/*
 	 * find the top 
@@ -996,6 +1000,17 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 	for (i = 0; i < id->n; i++) {
 		ri = id->arr[i];
 
+		if ((c = checked_rule( ri, cr ))) {
+#ifdef AVLUS
+			checked_print(c);
+#endif
+			r = c->rc;
+			if (c->blob)
+				*oa = octarr_add(*oa, octdup(c->blob));
+			if (r == SPOCP_SUCCESS)
+				break;
+		}
+
 		if (ri->bcond == 0) {
 #ifdef AVLUS
 			traceLog(LOG_INFO, "No bcond");
@@ -1004,20 +1019,28 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 #ifdef AVLUS
 				traceLog(LOG_INFO, "Adds blob");
 #endif
-				*oa = octarr_add(*oa, octdup(ri->blob));
+				blob = octdup(ri->blob);
 			r = SPOCP_SUCCESS;
-			break;
 		}
-
-		r = bcexp_eval(ep, ri->ep, ri->bcond->exp, oa);
-		{
-			traceLog(LOG_INFO,"boundary condition \"%s\" returned %d\n",
+		else {
+			r = bcexp_eval(ep, ri->ep, ri->bcond->exp, &loa);
+			if (loa) {
+				blob = loa->arr[0];
+				*oa = octarr_add(*oa, blob);
+				loa->n = 0;
+				octarr_free(loa);
+			}
+			traceLog(LOG_INFO,
+				"boundary condition \"%s\" returned %d\n",
 				 ri->bcond->name, r);
 		}
 
 		if (r == SPOCP_SUCCESS) {
-			if (ri->blob)
-				*oa = octarr_add(*oa, octdup(ri->blob));
+			add_checked( ri, r, octdup(blob), cr );
+			*oa = octarr_add(*oa, blob);
+			LOG(SPOCP_INFO) {
+				oct_print(LOG_INFO,"Matched rule",ri->rule);
+			}
 			break;
 		}
 	}
@@ -1026,10 +1049,6 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 	octarr_print( LOG_INFO, *oa );
 #endif
 
-	LOG(SPOCP_INFO) {
-		if (r == SPOCP_SUCCESS) 	/* if so ri has to be defined */
-			oct_print(LOG_INFO,"Matched rule", ri->rule);
-	}
 
 	return r;
 }

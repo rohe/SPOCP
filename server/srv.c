@@ -165,6 +165,7 @@ add_response_blob(spocp_iobuf_t * out, int rc, octet_t * data)
 
 	if (data)
 		sr = iobuf_add_octet( out, data) ;
+		traceLog(LOG_DEBUG,"added response: %s",out->buf);
 
 	if (sr != SPOCP_SUCCESS)
 		return sr;
@@ -274,8 +275,9 @@ postop( work_info_t *wi, spocp_result_t rc, const char *msg)
 		*/
 	}
 
-	DEBUG(SPOCP_DSRV) 
-		iobuf_print("work buffer",wi->buf);
+#ifdef AVLUS
+	iobuf_print("postop work buffer",wi->buf);
+#endif
 	iobuf_shift(wi->conn->in);
 
 	return rc;
@@ -723,7 +725,7 @@ com_query(work_info_t *wi)
 	}
 
 	DEBUG(SPOCP_DSRV) { 
-		traceLog(LOG_DEBUG, "allow returned %d (%p)", r, rset);
+		traceLog(LOG_DEBUG, "allow returned %d", r);
 #ifdef AVLUS
 		if (rset)
 			resset_print( rset );
@@ -739,6 +741,7 @@ com_query(work_info_t *wi)
 				continue;
 
 			on = trs->blob;
+
 #ifdef AVLUS
 			octarr_print(LOG_DEBUG,on);
 #endif
@@ -751,9 +754,8 @@ com_query(work_info_t *wi)
 
 				DEBUG(SPOCP_DSRV) 
 					oct_print(LOG_DEBUG,"returns", oct);
-#ifdef AVLUS
-					oct_free(oct);
-#endif
+
+				oct_free(oct);
 			}
 		}
 	}

@@ -219,7 +219,7 @@ rss_add( resset_t *rs, spocp_index_t *si, comparam_t *comp)
 }
 
 static resset_t  *
-ending(junc_t * jp, element_t * ep, comparam_t * comp)
+ending(junc_t * jp, element_t *ep, comparam_t * comp)
 {
 	branch_t	*bp;
 	element_t	*nep;
@@ -241,7 +241,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		if (comp->nobe) {
 			res = rss_add( res, si, comp);
 		}
-		else if ((r = bcond_check(comp->head, si, comp->blob))
+		else if ((r = bcond_check(comp->head,si,comp->blob,comp->cr))
 				== SPOCP_SUCCESS) {
 #ifdef AVLUS
 			traceLog(LOG_DEBUG,"ENDOFRULE"); 
@@ -254,8 +254,6 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 	}
 
 	if (jp->item[SPOC_ENDOFLIST]) {
-		DEBUG(SPOCP_DMATCH) 
-			traceLog(LOG_DEBUG,"ENDOFLIST marker");
 
 		bp = jp->item[SPOC_ENDOFLIST];
 
@@ -266,7 +264,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 			eop = oct_new( 512,NULL);
 			element_print( eop, ep );
-			oct_print( LOG_INFO, "ELEMENT:", eop);
+			oct_print( LOG_INFO, "Last element in list", eop);
 			oct_free( eop);
 #endif
 
@@ -279,12 +277,14 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 				if (vl && vl->item[SPOC_ENDOFRULE]) {
 					DEBUG(SPOCP_DMATCH) 
-						traceLog(LOG_DEBUG,"ENDOFRULE marker(1)");
+						traceLog(LOG_DEBUG,
+							"ENDOFRULE marker(1)");
 					/*
 					 * THIS IS WHERE BCOND IS CHECKED 
 					 */
 					si = vl->item[SPOC_ENDOFRULE]->val.id;
-					r = bcond_check(comp->head, si, comp->blob);
+					r = bcond_check(comp->head, si, comp->blob,
+						comp->cr);
 					if (r == SPOCP_SUCCESS) {
 						res = rss_add( res, si, comp);
 
@@ -292,14 +292,17 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 							return res;
 					}
 				} 
+
+				return res;
 			}
 
 			nep = ep->memberof;
 
 			DEBUG(SPOCP_DMATCH) {
 				if (nep->type == SPOC_LIST) {
-					traceLog(LOG_DEBUG,"found end of list [%s]",
-						 &nep->e.list->head->e.atom->val);
+					oct_print(LOG_DEBUG,
+					    "found end of list of",
+					    &nep->e.list->head->e.atom->val);
 				}
 			}
 
@@ -316,9 +319,9 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 				DEBUG(SPOCP_DMATCH) {
 					if (nep->type == SPOC_LIST) {
-						oct_print( LOG_DEBUG,
-						    "found end of list [%s]",
-						     &nep->e.list->head->e.atom->val);
+						oct_print(LOG_DEBUG,
+					    	   "found end of list of",
+					   	   &nep->e.list->head->e.atom->val);
 					}
 				}
 
@@ -331,7 +334,9 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 			} else if (vl->item[SPOC_ENDOFRULE]) {
 				DEBUG(SPOCP_DMATCH) 
-					traceLog(LOG_DEBUG,"ENDOFRULE marker(3) nobe:%d", comp->nobe);
+					traceLog(LOG_DEBUG,
+						"ENDOFRULE marker(3)",
+						comp->nobe);
 				/*
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */
@@ -340,12 +345,21 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 					res = rss_add( res, si, comp);
 				}
 				else {
-					r = bcond_check(comp->head, si, comp->blob);
+					r = bcond_check(comp->head, si, comp->blob,
+						comp->cr);
 					if (r == SPOCP_SUCCESS) {
 						res = rss_add( res, si, comp);
 					}
 				}
 			}
+			else
+				DEBUG(SPOCP_DMATCH) {
+					traceLog(LOG_DEBUG,"Weird !?");
+					traceLog(LOG_DEBUG,"memberof %p",
+						nep->memberof);
+					junc_print( 0, vl );
+				}
+
 		} else {
 			vl = bp->val.list;
 			while(1) {
@@ -362,7 +376,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 					}
 					else {
 						r = bcond_check(comp->head, si,
-							comp->blob);
+							comp->blob, comp->cr);
 						if (r == SPOCP_SUCCESS) { 
 							res = rss_add(res,si,comp);
 						}
@@ -385,7 +399,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 	} 
 
 #ifdef AVLUS
-	traceLog(LOG_DEBUG,"Ending %p", res);
+	traceLog(LOG_DEBUG,"--Ending %p--", res);
 #endif
 
 	return res;
@@ -443,7 +457,7 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 	element_t	*sep;
 
 	DEBUG(SPOCP_DMATCH)
-		traceLog(LOG_DEBUG,"Do Next");
+		traceLog(LOG_DEBUG,"Next ?");
 
 	rs = ending(ju, ep, comp);
 	sep = ep;
@@ -454,27 +468,41 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 
 	if (ep->next == 0) {	/* end of list */
 		do {
-			if (!ep->memberof)
+			/* reached the top list */
+			if (ep->memberof == 0)
 				break;
-			if ((bp = ju->item[SPOC_ENDOFLIST]) == 0)
+
+			bp = ju->item[SPOC_ENDOFLIST];
+
+			if (bp)
+				ju = bp->val.list;
+			else
 				break;
-			ju = bp->val.list;
+
 			ep = ep->memberof;
+
 		} while (ep->next == 0 && ju->item[SPOC_ENDOFLIST]);
 
-		if (!ep->memberof) {	/* reached the end */
+		/*
+		if (ep->memberof == 0) {
 			DEBUG(SPOCP_DMATCH)
 			    traceLog(LOG_DEBUG,"ending called from next");
 
 			if ( sep == ep )
 				return rs;
 
-			if ((rs = resset_join(rs,ending(ju, ep, comp))) && !comp->all) 
+			if ((rs = resset_join(rs,ending(ju, ep, comp))) &&
+				!comp->all) 
 				return rs;
 		}
+		*/
 	}
 
-	rs = resset_join(rs,element_match_r(ju, ep->next, comp));
+	DEBUG(SPOCP_DMATCH)
+		traceLog(LOG_DEBUG,"Do Next");
+
+	if (ep->next)
+		rs = resset_join(rs,element_match_r(ju, ep->next, comp));
 
 #ifdef AVLUS
 	traceLog(LOG_DEBUG,"Next() %p", rs);
@@ -494,7 +522,6 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 	slist_t		**slp;
 	int		i;
 	atom_t		*atom;
-	char		*tmp;
 	resset_t	*rs = 0;
 
 	if (ep == 0)
@@ -505,9 +532,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 	if ((bp = ARRFIND(db, SPOC_ATOM)) != 0) {
 		if ((ju = atom2atom_match(atom, bp->val.atom))) {
 			DEBUG(SPOCP_DMATCH) {
-				tmp = oct2strdup(&atom->val, '%');
-				traceLog(LOG_DEBUG,"Matched atom %s", tmp);
-				Free(tmp);
+				oct_print(LOG_DEBUG,"Matched atom",&atom->val);
 			}
 			rs = next(ju, ep, comp);
 
@@ -515,9 +540,8 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 				return rs;
 		} else {
 			DEBUG(SPOCP_DMATCH) {
-				tmp = oct2strdup(&atom->val, '%');
-				traceLog(LOG_DEBUG,"Failed to matched atom %s", tmp);
-				Free(tmp);
+				oct_print(LOG_DEBUG,"Failed to matched atom",
+					&atom->val);
 			}
 		}
 	}
@@ -676,7 +700,7 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 		comp->all = old;
 		comp->nobe = 0;
 		if (setrs) {
-			if( bcond_check(comp->head, setrs->si, comp->blob)
+			if( bcond_check(comp->head, setrs->si, comp->blob, comp->cr)
 			    == SPOCP_SUCCESS) {
 				res = rss_add( res, setrs->si, comp);
 #ifdef AVLUS

@@ -261,7 +261,7 @@ get_path(spocp_charbuf_t * io)
 	octet_t		*oct = 0 ;
 
 	do {
-		for (cp = io->start; *cp && (ALPHA(*cp) || *cp == '/'); cp++);
+		for (cp = io->start; *cp && (DIRCHAR(*cp) || *cp == '/'); cp++);
 
 		if (*cp == 0) {
 			len = cp - io->start;

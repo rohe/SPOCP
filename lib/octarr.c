@@ -319,11 +319,13 @@ octarr_print( int pri, octarr_t *oa)
 	char	leading[32];
 	int	i;
 
+	if (oa ) {
 #ifdef AVLUS
-	traceLog(LOG_INFO,"octarr at %p", oa);
+		traceLog(LOG_INFO,"octarr at %p", oa);
 #endif
-	for (i = 0; i < oa->n ; i++) {
-		sprintf(leading,"octarr[%d](%p)",i, oa->arr[i]);
-		oct_print(pri, leading ,oa->arr[i]);
+		for (i = 0; i < oa->n ; i++) {
+			sprintf(leading,"octarr[%d](%p)",i, (void *) oa->arr[i]);
+			oct_print(pri, leading ,oa->arr[i]);
+		}
 	}
 }

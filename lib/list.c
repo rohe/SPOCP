@@ -56,21 +56,21 @@ void
 junc_print(int lev, junc_t * jp)
 {
 	traceLog(LOG_DEBUG,"|---------------------------->");
-	if (jp->item[0])
+	if (jp->item[SPOC_ATOM])
 		traceLog(LOG_DEBUG,"Junction[%d]: ATOM", lev);
-	if (jp->item[1])
+	if (jp->item[SPOC_LIST])
 		traceLog(LOG_DEBUG,"Junction[%d]: LIST", lev);
-	if (jp->item[2])
+	if (jp->item[SPOC_SET])
 		traceLog(LOG_DEBUG,"Junction[%d]: SET", lev);
-	if (jp->item[3])
+	if (jp->item[SPOC_PREFIX])
 		traceLog(LOG_DEBUG,"Junction[%d]: PREFIX", lev);
-	if (jp->item[4])
+	if (jp->item[SPOC_SUFFIX])
 		traceLog(LOG_DEBUG,"Junction[%d]: SUFFIX", lev);
-	if (jp->item[5])
+	if (jp->item[SPOC_RANGE])
 		traceLog(LOG_DEBUG,"Junction[%d]: RANGE", lev);
-	if (jp->item[6])
+	if (jp->item[SPOC_ENDOFLIST])
 		traceLog(LOG_DEBUG,"Junction[%d]: ENDOFLIST", lev);
-	if (jp->item[7]) {
+	if (jp->item[SPOC_ENDOFRULE]) {
 		spocp_index_t *id;
 		int i;
 
@@ -79,14 +79,8 @@ junc_print(int lev, junc_t * jp)
 		for (i = 0; i < id->n; i++) 
 			traceLog(LOG_DEBUG,"Rule: %p", id->arr[i]);
 	}
-	if (jp->item[8])
-		traceLog(LOG_DEBUG,"Junction[%d]: ExTREF", lev);
-	if (jp->item[9])
+	if (jp->item[SPOC_ANY])
 		traceLog(LOG_DEBUG,"Junction[%d]: ANY", lev);
-	if (jp->item[10])
-		traceLog(LOG_DEBUG,"Junction[%d]: REPEAT", lev);
-	if (jp->item[11])
-		traceLog(LOG_DEBUG,"Junction[%d]: REGEXP", lev);
 	traceLog(LOG_DEBUG,">----------------------------|");
 }
 

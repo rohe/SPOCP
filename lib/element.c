@@ -5,6 +5,7 @@
 #include <spocp.h>
 #include <func.h>
 #include <rvapi.h>
+#include <wrappers.h>
 
 /*
  * ----------------------------------------------------------------------
@@ -119,6 +120,75 @@ element_print( octet_t *oct, element_t *ep)
 
 	return r;
 }
+
+static void
+element_list_struct( octet_t *oct, element_t *ep)
+{
+	char		line[128];
+	if (!ep) return ;
+
+	sprintf(line,"[%p,parent=%p,next=%p](", (void*)ep, 
+		(void*)ep->memberof,(void *)ep->next);
+	octcat( oct, line, strlen(line));
+
+	for( ep = ep->e.list->head; ep ; ep = ep->next )
+		element_struct(oct, ep);
+
+	octcat( oct, ")", 1 );
+}
+
+static void
+element_set_struct( octet_t *oct, element_t *ep)
+{
+	int		i;
+	varr_t		*va = ep->e.set;
+	element_t	*vep;
+	char		line[128];
+
+	if (!ep) return ;
+
+	sprintf(line,"[%p,parent=%p,next=%p](set", (void *)ep,
+			(void *)ep->memberof,(void *)ep->next);
+
+	octcat( oct, line, strlen(line));
+
+	if (va) {
+		for( i = 0 ; i < (int)va->n ; i++ ) {
+			vep = ( element_t * ) va->arr[i];
+			element_struct(oct, vep);
+		}
+	}
+
+	octcat( oct, ")", 1 );
+}
+
+void
+element_struct( octet_t *oct, element_t *ep)
+{
+	char		line[256], *tmp;
+
+	if (!ep) return;
+
+	switch( ep->type ) {
+	case SPOC_ATOM:
+		tmp = oct2strdup(&ep->e.atom->val, '\\');
+		sprintf(line,"[%p,parent=%p,next=%p,val=%s]",
+			(void *)ep,(void *)ep->memberof,(void *)ep->next, tmp);
+		octcat(oct,line,strlen(line));
+		Free(tmp);
+		break;
+	case SPOC_LIST:
+		element_list_struct( oct, ep);
+		break;
+	case SPOC_SET:
+		element_set_struct( oct, ep);
+		break;
+	default:
+		octcat(oct,"B",1);
+		break;
+	}
+}
+
 
 char *
 element2str( element_t *e )
