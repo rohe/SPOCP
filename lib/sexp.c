@@ -23,10 +23,9 @@
 
 #include <func.h>
 
-#include <struct.h>
-#include <wrappers.h>
 #include <spocp.h>
 #include <macros.h>
+#include <wrappers.h>
 
 /*!
  * \brief Grabs the length field from a S-expression

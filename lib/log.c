@@ -1,5 +1,4 @@
-/*
- *!
+/*!
  * \file lib/log.c
  * \author Roland Hedberg <roland@catalogix.se
  */
@@ -37,16 +36,18 @@
 #include <pthread.h>
 #endif
 
-#include <struct.h>
 #include <spocp.h>
+#include <dbapi.h>
 
 #ifdef DMALLOC
 #include <dmalloc.h>
 #endif
 
+/*! The file descriptor to which the logging should go */
 FILE           *spocp_logf = 0;
 int             spocp_loglevel = 0;
 int             spocp_debug = 0;
+/*! The process ID of the server startup process */
 int             procid = 0;
 
 #ifdef HAVE_LIBPTHREAD
@@ -55,8 +56,7 @@ pthread_mutex_t loglock;
 
 void            traceLog(const char *fmt, ...);
 
-/*
- *!
+/*!
  * \brief Opens a file to which logging information is to be written
  * \param file The name of the file to be open 
  * \param level The level at which the logging should be made
@@ -149,8 +149,7 @@ tracelog_doit(const char *fmt, va_list ap)
 	return;
 }
 
-/*
- *!
+/*!
  * \brief Logs information to a logfile if one is opened otherwise to stderr
  * \param fmt A format specifier
  * \param ... A variable amount of arguments of varying type
@@ -169,8 +168,7 @@ traceLog(const char *fmt, ...)
 	return;
 }
 
-/*
- *!
+/*!
  * \brief Log a fatal error to the logfile
  * \param msg A message format string 
  * \param s A string 
@@ -185,8 +183,7 @@ FatalError(char *msg, char *s, int i)
 	exit(1);
 }
 
-/*
- *!
+/*!
  * \brief calculates and prints the elapsed time between a start and end timepoint
  * \param s A string to be written before the elapsed time
  * \param start The start time
@@ -211,10 +208,9 @@ print_elapsed(char *s, struct timeval start, struct timeval end)
 			end.tv_usec);
 }
 
-/*
- *!
+/*!
  * \brief Prints a timestamp in the logfile
- * \param A text to write after the time
+ * \param txt Text to write after the time
  */
 void
 timestamp(char *txt)

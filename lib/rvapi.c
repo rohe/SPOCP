@@ -1,5 +1,4 @@
-/*
- * ! \file lib/rvapi.c \author Roland Hedberg <roland@catalogi.se> 
+/*! \file lib/rvapi.c \author Roland Hedberg <roland@catalogi.se> 
  */
 
 /***************************************************************************
@@ -50,8 +49,7 @@ atom_dup(atom_t * ap)
 /*
  * ====================================================================== 
  */
-/*
- * ! \brief Joins a set of atoms with a separator in betweem into one string
+/*! \brief Joins a set of atoms with a separator in betweem into one string
  * of bytes. If given a list which contains both atoms and other elements all
  * non-atom elements will just be silently ignores. \param e A pointer to a
  * element structure which should contain either a set or a list of elements
@@ -155,7 +153,6 @@ list_new(void)
 	list_t         *new;
 
 	new = (list_t *) Malloc(sizeof(list_t));
-	new->hstrlist = 0;
 	new->head = 0;
 
 	return new;
@@ -173,7 +170,6 @@ list_dup(list_t * lp, element_t * e)
 		return 0;
 
 	new = list_new();
-	new->hstrlist = lp->hstrlist;
 	new->head = ep = element_dup(lp->head, e);
 	for (le = lp->head->next; le; le = le->next) {
 		ep->next = element_dup(le, e);
@@ -266,8 +262,8 @@ set_dup(varr_t * va, element_t * parent)
 
 
 /********************************************************************/
-/*
- * ! \brief Duplicates a element struct \param ep The element to be duplicated
+/*!
+ * \brief Duplicates a element struct \param ep The element to be duplicated
  * \param memberof The element that is to be the parent of the copy \return A
  * pointer to the copy 
  */
@@ -281,7 +277,6 @@ element_dup(element_t * ep, element_t * memberof)
 
 	new = element_new();
 
-	new->not = ep->not;
 	new->type = ep->type;
 	new->memberof = memberof;
 
@@ -316,8 +311,8 @@ element_dup(element_t * ep, element_t * memberof)
 /*
  * ====================================================================== 
  */
-/*
- * ! \brief Adds a element to a list of elements, the element is added to the
+/*!
+ * \brief Adds a element to a list of elements, the element is added to the
  * end of the list. If the list is empty a new list is created and the element 
  * is added as the first of the list. The S-expression restriction that the
  * first element in a list has to be a atom is not inforced in this case. Any
@@ -359,8 +354,8 @@ element_list_add(element_t * le, element_t * e)
  * ====================================================================== 
  */
 
-/*
- * ! \brief Adds a element to an array of elements. The difference between
+/*!
+ * \brief Adds a element to an array of elements. The difference between
  * this and element_add_list is that the array is by definition unsorted, so
  * the added element might end up anywhere in the array. Array differs from
  * Set in that the special restrictions that are valid for sets are not so for 
@@ -391,8 +386,8 @@ element_array_add(element_t * le, element_t * e)
 /*
  * ====================================================================== 
  */
-/*
- * ! \brief The number of elements in this element. Only returns the number of 
+/*!
+ * \brief The number of elements in this element. Only returns the number of 
  * immediate elements, so if this list contains lists those lists are counted 
  * as 1 and not as the number of elements in the sublists. If the element is a 
  * list, array or set then the number of elements in those are returned, if it 
@@ -428,8 +423,8 @@ element_size(element_t * e)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief There are different types of elements this function returns a
+/*!
+ * \brief There are different types of elements this function returns a
  * indicator of what kind of element it is. \param e The element which type is 
  * asked for \return O if atom, 1 if list, 2 if set, 3 if prefix, 4 is suffix
  * 5 if range, 9 if an array and 10 if a NULL element. 
@@ -495,8 +490,8 @@ list_search(element_t * e, octet_t * tag, varr_t * r)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief This function finds all lists in a S-expression that has a
+/*!
+ * \brief This function finds all lists in a S-expression that has a
  * specific tag \param e The parsed respresentation of the S-exxpression that 
  * should be searched \param tag the list tag \return An element array
  * containing the list/lists or NULL if no list with that tag was found. 
@@ -528,8 +523,8 @@ element_find_list(element_t * e, octet_t * tag)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Given a path specification find the element list that matches that 
+/*!
+ * \brief Given a path specification find the element list that matches that 
  * description \param e The element to be searched \param oa An octarr_t
  * struct representing the path specification \param i The level in the tree
  * to which the search has reached \return A Pointer to the matching list or
@@ -583,8 +578,8 @@ element_traverse(element_t * e, octarr_t * oa, int i)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! \brief Gives you the first element in a list, or one element from a array
+/*!
+ * \brief Gives you the first element in a list, or one element from a array
  * or set element \param e A pointer to the element from which the element
  * should be picked \return A pointer to the subelement or if the element given 
  * was not a list, array or set NULL. 
@@ -607,8 +602,8 @@ element_first(element_t * e)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! \brief Gives you the last element in a list, or one element from a array
+/*!
+ * \brief Gives you the last element in a list, or one element from a array
  * or set element. If you use this function on a array or set it should not
  * return the same element as element_first() provided that the array or set
  * element contains more than one element. \param e A pointer to the element
@@ -635,8 +630,8 @@ element_last(element_t * e)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! \brief Gives you the nth element in a list, or one element from a array
+/*!
+ * \brief Gives you the nth element in a list, or one element from a array
  * or set element \param e A pointer to the element list from which the
  * element should be picked \param n The index of the element to pick \return
  * A pointer to the subelement . If the element given is a atom alement and
@@ -666,8 +661,8 @@ element_nth(element_t * e, int n)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! \brief Another function that lets you pick a list of subelements. Here
+/*!
+ * \brief Another function that lets you pick a list of subelements. Here
  * you specify the index of the first and the last subelement. -1 denotes that 
  * last subelement in the list. \param e A pointer to the list element \param
  * start The starting index \param end The ending index. \return A pointer to
@@ -739,8 +734,8 @@ element_intervall(element_t * e, int start, int end)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! \brief This function compares two elements and decides whether they are
+/*!
+ * \brief This function compares two elements and decides whether they are
  * equal or not. Only atom or list elements can be compared at present. \param 
  * e0, e1 the two elements that are to be compared. \return Returns 0 if the
  * elements are equal and non zero if they are not. 
@@ -793,8 +788,8 @@ element_cmp(element_t * e0, element_t * e1)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Swaps the places of the subelements in a list such that the first
+/*!
+ * \brief Swaps the places of the subelements in a list such that the first
  * subelement becomes the last and the last the first. This function only
  * works on element lists. \param e The element list to be reversed. 
  */
@@ -835,8 +830,8 @@ element_reverse(element_t * e)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! The element struct is a container which within itself holds the value
+/*!
+ * The element struct is a container which within itself holds the value
  * bound to the element. This function will return a pointer to the element
  * data itself. If the element is of the type SPOCP_ATOM,SPOCP_SUFFiX or
  * SPOCP_PREFIX the returned pointer will point to a octet_t struct. If the
@@ -883,8 +878,8 @@ element_data(element_t * e)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! \brief For transversals in a tree, this function will give you the parent 
+/*!
+ * \brief For transversals in a tree, this function will give you the parent 
  * of the element you supply it with. \param e A element \return A pointer to
  * the parent element if it exists, otherwise NULL. 
  */
@@ -1004,8 +999,8 @@ parse_path(octet_t * o)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! This function allows you to pick specific elements from a element
+/*!
+ * This function allows you to pick specific elements from a element
  * representing a parsed S-expression. \param spec The specification of which 
  * element to pick allowed syntax /A/B/C - the list with tag 'C' within the
  * list with tag 'B' within the list with tag 'A' //D - The list/-s with the 
@@ -1200,8 +1195,8 @@ element_eval(octet_t * spec, element_t * e, int *rc)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! This function takes a 'string' containing ${0}, ${1} and so on, where
+/*!
+ * This function takes a 'string' containing ${0}, ${1} and so on, where
  * substitutions should be made and a list of ATOM elements that should be
  * inserted at the substitution points. The number within the "${" "}" refers
  * to the index of the element in the elementlist. If the element provided to

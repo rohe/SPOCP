@@ -327,7 +327,7 @@ int     spocp_conn_read( conn_t *conn ) ;
 
 /* ------ read.c ------- */
 
-int   read_rules( srv_t *, char *, dbcmd_t *, keyval_t ** ) ;
+int   read_rules( srv_t *, char *, dbcmd_t *) ;
 int   dback_read_rules( dbcmd_t *dbc, srv_t *srv, spocp_result_t *rc ) ;
 
 #ifdef HAVE_SSL

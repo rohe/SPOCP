@@ -55,7 +55,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	/*
 	 * octet_t **sql_constraint; 
 	 */
-	int             n, i;
+	int             i;
 	/*
 	 * int n_constraint; 
 	 */

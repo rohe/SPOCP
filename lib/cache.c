@@ -1,3 +1,8 @@
+/*!
+ * \file cache.c
+ * \author Roland Hedberg <roalnd@catalogix.se>
+ * \brief functions for set and retireving cache results
+ */
 
 /***************************************************************************
                           cache.c  -  description
@@ -18,45 +23,22 @@
 #include <string.h>
 
 #include <spocp.h>
-#include <struct.h>
 #include <plugin.h>
 #include <varr.h>
-#include <db0.h>
-#include <func.h>
 #include <wrappers.h>
 
+/*! The maximum number of results to cache, perhaps this should be configurable */
 #define MAX_CACHED_VALUES 1024
 
+/*! \brief Calculates the hash over an array of bytes
+ * \param s The byte array
+ * \param len The length of the byte array
+ * \param init Seed
+ * \return A number
+*/
+unsigned int lhash(unsigned char *s, unsigned int len, unsigned int init);
 /*
  * ======================================================================= 
- */
-
-/**********************************************************
-*               Hash an array of strings                  *
-**********************************************************/
-/*
- * Arguments: argc number of strings argc the vector containing the strings
- * 
- * Returns: unsigned integer representing the total hashvalue 
- */
-/*
- * static unsigned int hash_arr( int argc, char **argv ) { int i ; unsigned
- * int hashv = 0 ;
- * 
- * for( i = 0 ; i < argc ; i++ ) hashv = lhash( (unsigned char *) argv[i],
- * strlen( argv[i] ), hashv ) ;
- * 
- * return hashv ; } 
- */
-
-/**********************************************************
-*          Create a new structure for cached values       *
-**********************************************************/
-/*
- * Arguments: h the hashvalue calculated for arg ct cache time r the result of 
- * evaluation of the external reference (1/0)
- * 
- * Returns: a cacheval struct with everything filled in 
  */
 
 static cacheval_t *
@@ -84,17 +66,6 @@ cacheval_free(cacheval_t * cvp)
 		free(cvp);
 	}
 }
-
-/*
- * static void *cacheval_dup( void *vp) { cacheval_t *new, *old ;
- * 
- * old = ( cacheval_t * ) vp ;
- * 
- * new = cacheval_new( old->hash, 0, old->res ) ; new->timeout = old->timeout
- * ;
- * 
- * return (void *) new ; } 
- */
 
 /*
  * ---------------------------------------------------------------------- 
@@ -169,16 +140,16 @@ cache_fifo_rm(cache_t * cp)
  * ---------------------------------------------------------------------- 
  */
 
-/***********************************************************
-* Cache a result of the evaluation of a external reference *
-***********************************************************/
-/*
- * Arguments: harr The pointer to a array to which the result should be added
- * arg The argument, normally a external reference after variable
- * substitutions ct cache time r the result of evaluation of the external
- * reference (1/0)
+/*!
+ * \brief Cache a result of the evaluation of a external reference *
+ * \param cp A pointer to thye cached results
+ * \param arg The argument, normally a external reference after variable
+ * substitutions 
+ * \param ct cache time 
+ * \param r the result of evaluation of the external reference (1/0)
+ * \param blob A 'dynamic' blob that should be return.
  * 
- * Returns: TRUE if OK 
+ * \return A pointer to the cache of cached results
  */
 
 cache_t        *
@@ -217,15 +188,14 @@ cache_value(cache_t * cp, octet_t * arg, unsigned int ct, int r,
 	return cp;
 }
 
-/************************************************************************
-* Checks whether there exists a cache value for this specific reference *
-************************************************************************/
-/*
- * Arguments: gp Pointer to a array where results are cached for this type of
- * reference arg The argument, normally a external reference after variable
+/*!
+ * \brief Checks whether there exists a cache value for this specific reference 
+ * \param cp Pointer to a array where results are cached for this type of
+ * reference 
+ * \param arg The argument, normally a external reference after variable
  * substitutions
- * 
- * Returns: CACHED | result(0/1) 
+ * \param blob A 'dynamic' blob that should be cached.
+ * \return CACHED | result(0/1) 
  */
 
 int
@@ -254,16 +224,12 @@ cached(cache_t * cp, octet_t * arg, octet_t * blob)
 	return cvp->res;
 }
 
-/************************************************************
-*          remove a previously cached result              *
-************************************************************/
-/*
- * Arguments: gp Pointer to a array where results are cached for this type of
- * reference arg The argument, normally a external reference after variable
- * substitutions ct Number of seconds this result can be cached r The result
- * to be cached
- * 
- * Returns: TRUE if OK 
+/*!
+ * \brief  remove a previously cached result
+ * \param cp Pointer to a array where results are cached for this type of
+ * reference
+ * \param arg The argument, normally a external reference after variable
+ * substitutions
  */
 
 void

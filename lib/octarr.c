@@ -112,7 +112,7 @@ octarr_mr(octarr_t * oa, size_t n)
 			oa->n = 0;
 			oa->arr = (octet_t **) Calloc(n, sizeof(octet_t *));
 		}
-		else if (n > oa->size)
+		else if (n > (size_t) oa->size) {
 			oa->size = n;
 
 			arr = (octet_t **)
@@ -219,31 +219,6 @@ octarr_join(octarr_t * target, octarr_t * source)
 
 	return target;
 }
-
-/*
-char           *
-safe_strcat(char *dest, char *src, int *size)
-{
-	char           *tmp;
-	int             dl, sl;
-
-	if (src == 0 || *size <= 0)
-		return 0;
-
-	dl = strlen(dest);
-	sl = strlen(src);
-
-	if (sl + dl > *size) {
-		*size = sl + dl + 32;
-		tmp = Realloc(dest, *size);
-		dest = tmp;
-	}
-
-	strcat(dest, src);
-
-	return dest;
-}
-*/
 
 /*!
  * \brief Removes a specific octet struct from a octarr struct, the octarr

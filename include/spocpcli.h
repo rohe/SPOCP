@@ -95,10 +95,6 @@ int	spocpc_reopen(SPOCP * spocp, int nsec);
 ssize_t	spocpc_readn(SPOCP * spocp, char *str, ssize_t max);
 ssize_t	spocpc_writen(SPOCP * spocp, char *str, ssize_t max);
 
-int spocpc_sexp_elements(char *r, int n, octet_t line[], int s, int *rc);
-int skip_length(char **sexp, int n, int *rc);
-
-int sexp_get_response(octet_t * buf, octet_t * code, octet_t * info);
 int spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid);
 
 int spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
@@ -106,7 +102,7 @@ int spocpc_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
 int spocpc_send_subject(SPOCP * spocp, char *subject, queres_t * qr);
 int spocpc_send_query(SPOCP *, char *path, char *query, queres_t * qr);
 int spocpc_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr);
-int spocpc_send_logout(SPOCP * spocp, queres_t * qr);
+int spocpc_send_logout(SPOCP * spocp);
 int spocpc_open_transaction(SPOCP * spocp, queres_t * qr);
 int spocpc_commit(SPOCP * spocp, queres_t * qr);
 int spocpc_attempt_tls(SPOCP * spocp, queres_t * qr);

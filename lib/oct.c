@@ -22,13 +22,9 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <func.h>
-
-#include <struct.h>
-#include <wrappers.h>
 #include <spocp.h>
-#include <macros.h>
 #include <proto.h>
+#include <wrappers.h>
 
 /*
  * ====================================================================== 
@@ -621,118 +617,6 @@ oct2strcpy(octet_t * op, char *str, size_t len, char ec)
 		*sp = '\0';
 	}
 	return op->len;
-}
-
-/*
- * ---------------------------------------------------------------------- 
- */
-
-/*! \brief Replaces part of a octet with another octet string \param oct The 
- * original octet string \param insert The octetstring to insert \param where
- * Where the insert should be placed \param replen The number of bytes in the
- * original that should be replaced \param noresize A flag that is set
- * prohibits the original from being resized \return A spocp result code 
- */
-static          spocp_result_t
-oct_replace(octet_t * oct, octet_t * insert, int where, int replen,
-	    int noresize)
-{
-	int             n, r;
-	char           *sp;
-
-	if (where > (int) oct->len) {	/* would mean undefined bytes in the
-					 * middle, no good */
-		return -1;
-	}
-
-	/*
-	 * final length 
-	 */
-	n = oct->len + insert->len - replen;
-
-	if (n - (int) oct->size > 0) {
-		if (noresize)
-			return SPOCP_DENIED;
-		if (oct_resize(oct, n) != SPOCP_SUCCESS)
-			return SPOCP_DENIED;
-		oct->size = (size_t) n;
-	}
-
-	/*
-	 * where the insert should be placed 
-	 */
-	sp = oct->val + where;
-
-	/*
-	 * amount of bytes to move 
-	 */
-	r = oct->len - where - replen;
-
-	/*
-	 * move bytes, to create space for the insert 
-	 */
-	memmove(sp + insert->len, sp + replen, r);
-	memcpy(sp, insert->val, insert->len);
-
-	oct->len = n;
-
-	return SPOCP_SUCCESS;
-}
-
-/*
- * ---------------------------------------------------------------------- 
- */
-/*! \brief Replaces occurences of the form "$$(key)" with the value connected 
- * to the key 'key' in a keyval struct. \param src The original octet string
- * \param kvp A linked list of keyval_t structs \param noresize A flag that
- * denotes whether this function can resize the original octet string if
- * needed. \return A Spocp result code 
- */
-spocp_result_t
-oct_expand(octet_t * src, keyval_t * kvp, int noresize)
-{
-	int             n;
-	keyval_t       *vp;
-	octet_t         oct;
-
-	if (kvp == 0)
-		return SPOCP_SUCCESS;
-
-	oct.size = 0;
-
-	/*
-	 * starts all over from the beginning of the string which means that
-	 * it can handle recursively expansions 
-	 */
-	while ((n = octstr(src, "$$(")) >= 0) {
-
-		oct.val = src->val + n + 3;
-		oct.len = src->len - (n + 3);
-
-		oct.len = octchr(&oct, ')');
-		if (oct.len < 0)
-			return 1;	/* is this an error or what ?? */
-
-		for (vp = kvp; vp; vp = vp->next) {
-			if (octcmp(vp->key, &oct) == 0) {
-				oct.val -= 3;
-				oct.len += 4;
-				if (oct_replace
-				    (src, vp->val, n, oct.len,
-				     noresize) != SPOCP_SUCCESS)
-					return SPOCP_DENIED;
-				break;
-			}
-		}
-
-		if (vp == 0) {
-			LOG(SPOCP_WARNING) traceLog("Unkown global: \"%s\"",
-						    oct.val);
-			return SPOCP_DENIED;
-		}
-	}
-
-	return SPOCP_SUCCESS;
 }
 
 /*

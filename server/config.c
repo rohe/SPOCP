@@ -451,7 +451,7 @@ read_config(char *file, srv_t * srv)
 							 "Non numeric specification");
 					}
 				} else if (strcmp(s, "cachetime") == 0) {
-					if (plugin_add_cachedef(pl, cp) < 0)
+					if (plugin_add_cachedef(pl, cp) == FALSE )
 						traceLog(err_msg, n,
 							 "Cachetime def");
 				} else if (pl->ccmds == 0) {	/* No

@@ -18,6 +18,7 @@
 #include <macros.h>
 #include <db0.h>
 #include <struct.h>
+#include <plugin.h>
 #include <func.h>
 #include <wrappers.h>
 #include <spocp.h>

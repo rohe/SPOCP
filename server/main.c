@@ -88,7 +88,6 @@ main(int argc, char **argv)
 	char           *cnfg =
 	    "config", localhost[NAME_MAX + 1], path[NAME_MAX + 1];
 	srv_t           srv;
-	keyval_t       *globals = 0;
 	FILE           *pidfp;
 	octet_t         oct;
 	ruleset_t      *rs;
@@ -229,7 +228,7 @@ main(int argc, char **argv)
 		dbc.handle = 0;
 
 		if (srv.rulefile
-		    && read_rules(&srv, srv.rulefile, &dbc, &globals) != 0) {
+		    && read_rules(&srv, srv.rulefile, &dbc) != 0) {
 			LOG(SPOCP_ERR) traceLog("Error while reading rules");
 			exit(1);
 		}

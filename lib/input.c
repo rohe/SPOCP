@@ -747,12 +747,6 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 		traceLog("Input end of list with tag [%s]", tmp);
 		free(tmp);
 	}
-	/*
-	 * compute hash of the whole list in string representation This is
-	 * sort of an artifact, has very limited usage 
-	 */
-	ep->e.list->hstrlist =
-	    lhash((unsigned char *) base, lo->val - base, 0);
 
 	return SPOCP_SUCCESS;
 }

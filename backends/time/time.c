@@ -23,6 +23,7 @@
 #include <time.h>
 
 #include <spocp.h>
+#include <func.h>
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>

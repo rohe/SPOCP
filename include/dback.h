@@ -6,40 +6,65 @@
 struct __dback;
 struct _dback_cmd_param;
 
+/*! function prototype for the dback functions */
 typedef void   *(dbackfn) (struct _dback_cmd_param *, void *, void *,
 			   spocp_result_t *);
 
 typedef struct dback_struct dback_t;
 
+/*! Struct for the backend handling a persistent store to publish its
+  functions */
 struct dback_struct {
+	/*! Major version of the Spocp library this pluggin was built agains */
 	int             version;
+	/*! Minor version of the Spocp library this pluggin was built agains */
 	int             minor_version;
+	/*! Name of the backend sourcefile */
 	const char     *filename;
-	unsigned long   magic;	/* So its not at the same place as in plugin_t 
-				 */
+	/*! A magic number, this is here so the server can test whether the library
+	 * to be loaded really is a spocp backend */
+	unsigned long   magic;	
+
+	/*! the dynamic library handle */ 
+	void           *handle;	
+	/*! where the plugin can keep its data */
+	void           *conf;	
+	/*! The name by which the backend should be known to the server*/
 	char           *name;
-	void           *handle;	/* the dynamic library handle */
-	void           *conf;	/* where the plugin can keep its data */
 
 	/*
 	 * These are absolute necessities 
 	 */
+	/*! The function that gets a dataitem from a data store */
 	dbackfn        *get;
+	/*! The function that puts a dataitem from a data store */
 	dbackfn        *put;
+	/*! The function that replaces one dataitem in a data store with another */
 	dbackfn        *replace;
+	/*! The function that deletes a dataitem from a data store */
 	dbackfn        *delete;
+	/*! A function that retrieves keys which can be used to retrieve all 
+	    dataitems from a store */
 	dbackfn        *allkeys;
 
 	/*
 	 * These are optional 
 	 */
+	/*! start a transaction against a datastore */
 	dbackfn        *begin;
+	/*! ends a transaction against a datastore, without commiting any changes  */
 	dbackfn        *end;
+	/*! commit a transaction against a datastore */
 	dbackfn        *commit;
+	/*! reset the datastore to the state that was when the transaction
+	    was started */
 	dbackfn        *rollback;
 
+	/*! Initialize the data store */
 	dbackfn        *init;
 
+	/*! functions that should be used to handle configuration directives for
+	    this backend */
 	const conf_com_t *ccmds;
 };
 

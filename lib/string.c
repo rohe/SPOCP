@@ -20,9 +20,6 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <func.h>
-
-#include <struct.h>
 #include <wrappers.h>
 #include <spocp.h>
 #include <macros.h>
@@ -177,5 +174,26 @@ find_balancing(char *p, char left, char right)
 		}
 	}
 	return (NULL);
+}
+
+/*
+ * --------------------------------------------------------------------- 
+ */
+
+/*!
+ * \brief frees an array of char arrays
+ * \param m A pointer to the array of arrays 
+ */
+
+void charmatrix_free( char **m )
+{
+	int i ;
+
+	if (m) {
+		for (i = 0; m[i] != 0; i++ ) {
+			free(m[i]);
+		}
+		free(m);
+	}
 }
 

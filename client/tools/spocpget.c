@@ -81,7 +81,7 @@ spocp_list(SPOCP * spocp, char *file)
 	if (fp != stdout)
 		fclose(fp);
 
-	spocpc_send_logout(spocp, &qres);
+	spocpc_send_logout(spocp);
 	spocpc_close(spocp);
 	free_spocp(spocp);
 

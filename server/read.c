@@ -35,10 +35,9 @@ ptree_free(ptree_t * ptp)
  */
 
 static ptree_t *
-parse_sexp(octet_t * sexp, keyval_t ** globals)
+parse_sexp(octet_t * sexp)
 {
 	ptree_t        *ptp, *ntp = 0, *ptr;
-	octet_t         oct;
 
 	if (*sexp->val == '(') {
 		ptp = (ptree_t *) calloc(1, sizeof(ptree_t));
@@ -46,7 +45,7 @@ parse_sexp(octet_t * sexp, keyval_t ** globals)
 		sexp->val++;
 		sexp->len--;
 		while (sexp->len && *sexp->val != ')') {
-			if ((ptr = parse_sexp(sexp, globals)) == 0) {
+			if ((ptr = parse_sexp(sexp)) == 0) {
 				ptree_free(ptp);
 				return 0;
 			}
@@ -65,27 +64,11 @@ parse_sexp(octet_t * sexp, keyval_t ** globals)
 			ptree_free(ptp);
 			return 0;
 		}
-	} else if (strncmp(sexp->val, "$$(", 3) == 0) {
-		if (oct_expand(sexp, *globals, 1) != SPOCP_SUCCESS) {
-			return 0;
-		}
-		ptp = parse_sexp(sexp, globals);
 	} else {
 		ptp = (ptree_t *) calloc(1, sizeof(ptree_t));
 		if (get_str(sexp, &ptp->val) != SPOCP_SUCCESS) {
 			ptree_free(ptp);
 			return 0;
-		}
-		if (octstr(&ptp->val, "$$(") >= 0) {
-			oct.size = 0;
-			octcpy(&oct, &ptp->val);
-			if (oct_expand(&oct, *globals, 1) != SPOCP_SUCCESS) {
-				ptree_free(ptp);
-				return 0;
-			}
-			ptp->val.val = oct.val;
-			ptp->val.size = oct.size;
-			ptp->val.len = oct.len;
 		}
 	}
 
@@ -143,7 +126,7 @@ recreate_sexp(octet_t * o, ptree_t * ptp)
  */
 
 int
-read_rules(srv_t * srv, char *file, dbcmd_t * dbc, keyval_t ** globals)
+read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 {
 	FILE           *fp;
 	char           *sp, *tmp;
@@ -197,7 +180,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc, keyval_t ** globals)
 			tmp = oct2strdup( ck->val, 0 ) ;
 			LOG(SPOCP_DEBUG) traceLog("include directive \"%s\"",
 						  tmp);
-			if ((rc = read_rules(srv, tmp, dbc, globals)) < 0) {
+			if ((rc = read_rules(srv, tmp, dbc)) < 0) {
 				traceLog("Include problem");
 			}
 		}

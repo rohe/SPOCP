@@ -295,6 +295,33 @@ lsln_to_arr(lsln_t * sl)
  * ========================================================== 
  */
 
+static char           *
+safe_strcat(char *dest, char *src, int *size)
+{
+	char           *tmp;
+	int             dl, sl;
+
+	if (src == 0 || *size <= 0)
+		return 0;
+
+	dl = strlen(dest);
+	sl = strlen(src);
+
+	if (sl + dl > *size) {
+		*size = sl + dl + 32;
+		tmp = realloc(dest, *size);
+		dest = tmp;
+	}
+
+	strcat(dest, src);
+
+	return dest;
+}
+
+/*
+ * ========================================================== 
+ */
+
 void
 scnode_free(scnode_t * scp)
 {

@@ -249,7 +249,7 @@ main(int argc, char **argv)
 	}
 
 	memset(&qres, 0, sizeof(queres_t));
-	spocpc_send_logout(spocp, &qres);
+	spocpc_send_logout(spocp);
 	spocpc_close(spocp);
 	free_spocp(spocp);
 

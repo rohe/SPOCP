@@ -1,3 +1,8 @@
+/*!
+ * \file plugin.c
+ * \author Roland Hedberg <roland@catalogix.se>
+ * \brief Functions that handles backends
+ */
 #include <config.h>
 
 #include <sys/types.h>
@@ -19,6 +24,11 @@ plugin_t       *plugin_get(plugin_t * top, char *name);
  * ------------------------------------------------------------------------------------ 
  */
 
+/*!
+ * \brief Create a new pdyn_t struct
+ * \param size The maximum size of the connection pool
+ * \return The pdyn_t struct
+ */
 pdyn_t         *
 pdyn_new(int size)
 {
@@ -30,6 +40,10 @@ pdyn_new(int size)
 	return pp;
 }
 
+/*!
+ * \brief Frees a pdyn_t struct
+ * \param pdp pointer to the struct to be freed.
+ */
 void
 pdyn_free(pdyn_t * pdp)
 {
@@ -42,86 +56,16 @@ pdyn_free(pdyn_t * pdp)
 
 /*
  * ------------------------------------------------------------------------------------ 
- * *
- * 
- * static pconf_t *pconf_new( char *key, octet_t *val ) { pconf_t *new ;
- * 
- * new = ( pconf_t * ) Malloc ( sizeof( pconf_t )) ; new->key = Strdup( key )
- * ; new->val = octarr_add( 0, octdup(val)) ; new->next = 0 ;
- * 
- * return new ; }
- * 
- * static void pconf_free( pconf_t *pc ) { if( pc ) { if( pc->key ) free(
- * pc->key ) ; if( pc->val ) octarr_free( pc->val ) ; if( pc->next )
- * pconf_free( pc->next ) ; free( pc ) ; } }
- * 
- * static plugin_t *pconf_set_keyval( plugin_t *top, char *pname, char *key,
- * char *val ) { plugin_t *pl ; pconf_t *pc = 0 ; octet_t oct ;
- * 
- * pl = plugin_get( top, pname ) ;
- * 
- * if( top == 0 ) top = pl ;
- * 
- * if( key ) { for( pc = pl->conf ; pc ; pc = pc->next ) { if( strcmp( key,
- * pc->key ) == 0 ) break ; } }
- * 
- * oct.val = val ; oct.size = 0 ; oct.len = strlen( val ) ;
- * 
- * if( pc == 0 ) { if( !pl->conf ) pl->conf = pconf_new( key, &oct ) ; else {
- * for( pc = pl->conf ; pc->next ; pc = pc->next ) ; pc->next = pconf_new( key, 
- * &oct ) ; } } else { octarr_add( pc->val, octdup( &oct ) ) ; }
- * 
- * return top ; }
- * 
- * octarr_t *pconf_get_keys_by_plugin( plugin_t *top, char *pname ) { pconf_t
- * *pc ; octarr_t *res = 0 ; plugin_t *pl ; octet_t oct ;
- * 
- * if( pname == 0 || *pname == '\0' ) return 0 ;
- * 
- * oct.val = pname ; oct.len = strlen( pname ) ; oct.size = 0 ;
- * 
- * if(( pl = plugin_match( top, &oct )) == 0 ) return 0 ;
- * 
- * for( pc = pl->conf ; pc ; pc = pc->next ) { oct.val = pc->key ; oct.len =
- * strlen( pc->key ) ; res = octarr_add( res, octdup( &oct ) ) ; }
- * 
- * return res ; }
- * 
- * octarr_t *pconf_get_keyval( plugin_t *pl, char *key ) { pconf_t *pc ;
- * 
- * for( pc = pl->conf ; pc ; pc = pc->next ) { if( strcmp( pc->key, key ) == 0
- * ) return pc->val ; }
- * 
- * return 0 ; }
- * 
- * octarr_t *pconf_get_keyval_by_plugin( plugin_t *top, char *pname, char *key
- * ) { plugin_t *pl ; octet_t oct ;
- * 
- * if( pname == 0 || *pname == '\0' ) return 0 ;
- * 
- * oct.val = pname ; oct.len = strlen( pname ) ; oct.size = 0 ;
- * 
- * if(( pl = plugin_match( top, &oct )) == 0 ) return 0 ;
- * 
- * return pconf_get_keyval( pl, key ) ; }
- * 
- * 
- * *
- * ------------------------------------------------------------------------------------ 
  */
 
-/*
- * static plugin_t *plugin_new( char *name ) { plugin_t *new ;
- * 
- * new = ( plugin_t * ) Calloc ( 1, sizeof( plugin_t )) ;
- * 
- * #ifdef HAVE_LIBPTHREAD pthread_mutex_init( &new->mutex, NULL ) ; #endif
- * 
- * new->name = Strdup( name ) ;
- * 
- * return new ; } 
+/*!
+ * \brief Find a specific backend
+ * \param top The head of a list of plugin structs
+ * \param oct The name of the plugin that should be found, represented as a
+ *   octet struct.
+ * \return A pointer to the corresponding plugin struct or NULL if there
+ *   was no loaded backend with that name.
  */
-
 plugin_t       *
 plugin_match(plugin_t * top, octet_t * oct)
 {
@@ -137,6 +81,14 @@ plugin_match(plugin_t * top, octet_t * oct)
 	return 0;
 }
 
+/*!
+ * \brief Find a specific backend
+ * \param top The head of a list of plugin structs
+ * \param name The name of the plugin that should be found, represented as a
+ *   NULL terminated string.
+ * \return A pointer to the corresponding plugin struct or NULL if there
+ *   was no loaded backend with that name.
+ */
 plugin_t       *
 plugin_get(plugin_t * top, char *name)
 {
@@ -156,6 +108,13 @@ plugin_get(plugin_t * top, char *name)
 	return 0;
 }
 
+/*!
+ * \brief Add information about how results should be cached
+ * \param pl A pointer to the plugin struct that hands the information
+ *   for the backend in question
+ * \param s A string representing the cache definition
+ * \return TRUE/FALSE
+ */
 int
 plugin_add_cachedef(plugin_t * pl, char *s)
 {
@@ -163,14 +122,14 @@ plugin_add_cachedef(plugin_t * pl, char *s)
 	octet_t         oct;
 
 	if (s == 0 || *s == '\0')
-		return -1;
+		return FALSE;
 
 	oct_assign(&oct, s);
 
 	ct = cachetime_new(&oct);
 
 	if (ct == 0)
-		return -1;
+		return FALSE;
 
 	if (pl->dyn == 0)
 		pl->dyn = pdyn_new(0);
@@ -178,43 +137,20 @@ plugin_add_cachedef(plugin_t * pl, char *s)
 	ct->next = pl->dyn->ct;
 	pl->dyn->ct = ct;
 
-	return 1;
+	return TRUE;
 }
 
 /*
- * plugin_t *plugin_add_conf( plugin_t *top, char *pname, char *key, char *val 
- * ) { if( key == 0 || *key == '\0' ) return 0 ;
- * 
- * return pconf_set_keyval( top, pname, key, val ) ; } 
- */
-
-/*
  * ------------------------------------------------------------------------------------ 
  */
-
-/*
- * static void plugin_free( plugin_t *pl ) { if( pl ) { if( pl->handle )
- * dlclose( pl->handle ) ; if( pl->name ) free( pl->name ) ; if( pl->dyn )
- * pdyn_free( pl->dyn ) ; * don't know how to free this if( pl->conf )
- * xyz_free( pl->conf ) ; * free( pl ) ; } }
- * 
- * static plugin_t *plugin_rm( plugin_t **top, plugin_t *pl ) { plugin_t
- * *prev, *next ;
- * 
- * next = pl->next ;
- * 
- * if( pl == *top ) { *top = next ; } else { for( prev = *top ; prev->next !=
- * pl ; prev = prev->next ) ; prev->next = next ; }
- * 
- * plugin_free( pl ) ;
- * 
- * return next ; } 
+/*!
+ * \brief Load a backend
+ * \param top The top of the list of plugin structs representing the backends
+ *   loaded so far.
+ * \param name The name of the backend
+ * \param load The filename of the backend library
+ * \return The new top of the plugin list
  */
-
-/*
- * ------------------------------------------------------------------------------------ 
- */
-
 plugin_t       *
 plugin_load(plugin_t * top, char *name, char *load)
 {
@@ -264,6 +200,11 @@ plugin_load(plugin_t * top, char *name, char *load)
 	return top;
 }
 
+/*!
+ * \brief List the name of all backends that has been successfully 
+ *  loaded.
+ * \param pl The top of the list of plugin structs
+ */
 void
 plugin_display(plugin_t * pl)
 {

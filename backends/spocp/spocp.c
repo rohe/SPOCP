@@ -25,12 +25,10 @@ static int
 P_spocp_close(void *vp)
 {
 	SPOCP          *spocp;
-	queres_t        qres;
 
 	spocp = (SPOCP *) vp;
 
-	memset( &qres, 0, sizeof( queres_t )) ;
-	spocpc_send_logout(spocp, &qres);
+	spocpc_send_logout(spocp);
 	spocpc_close(spocp);
 	free_spocp(spocp);
 

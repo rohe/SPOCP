@@ -46,11 +46,14 @@
 
 #if!defined(MAXHOSTNAMELEN) || (MAXHOSTNAMELEN < 64)
 #undef MAXHOSTNAMELEN
+/*! The max size of a FQDN */
 #define MAXHOSTNAMELEN 256
 #endif
 
+/*! Should not have to define this here */
 char	*strndup(const char *old, size_t sz);
 
+/*! Local shothand alias */
 typedef struct sockaddr SA;
 
 /*! 
