@@ -274,9 +274,8 @@ varr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, varr_t *res )
   return res ;
 }
 
-junc_t *ssn_free( ssn_t *pssn )
+void ssn_free( ssn_t *pssn )
 {
-  junc_t *juncp = 0 ;
   ssn_t  *down ;
 
   while( pssn ) {
@@ -287,13 +286,11 @@ junc_t *ssn_free( ssn_t *pssn )
       pssn = down ;
     }
     else {
-      juncp = pssn->next ;
+      if( pssn->next ) junc_free( pssn->next ) ;
       free( pssn ) ;
       pssn = 0 ;
     }
   }
-
-  return juncp ;
 }
 
 junc_t *ssn_delete( ssn_t **top, char *sp, int direction )

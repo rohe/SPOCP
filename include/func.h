@@ -213,7 +213,7 @@ junc_t *ssn_delete( ssn_t **top, char *sp, int direction ) ;
 ssn_t  *ssn_dup( ssn_t *, ruleinfo_t *ri ) ;
 varr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, varr_t *res ) ;
 varr_t *get_all_ssn_followers( branch_t *bp, int type, varr_t *pa ) ;
-junc_t *ssn_free( ssn_t * );
+void    ssn_free( ssn_t * );
 
 /* parr.c */
 
