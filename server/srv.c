@@ -209,6 +209,9 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 			return SPOCP_SUCCESS;
 	}
 
+	traceLog( LOG_INFO,
+		"opinitial(1): max=%d, min=%d, path=%d .. oparg->n=%d",
+		max,min,path, oparg->n);
 	/* Too many or few arguments? There might not be a max */
 	if (max && oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
 	if (oparg->n < min) return SPOCP_MISSING_ARG;
@@ -219,6 +222,10 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 	else 
 		wi->oppath = 0;
 	
+	traceLog( LOG_INFO,
+		"opinitial(2): max=%d, min=%d, path=%d .. oparg->n=%d",
+		max,min,path, oparg->n);
+
 	if (oparg->n < min) return SPOCP_MISSING_ARG;
 
 	/* allowed to run the operation ? */
@@ -229,7 +236,7 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 			char           *str;
 
 			str = oct2strdup(wi->oppath, '%');
-			traceLog(LOG_INFO,"ERR: No \"/%s\" ruleset", str);
+			traceLog(LOG_INFO,"ERR: No \"%s\" ruleset", str);
 			free(str);
 
 			r = SPOCP_DENIED|UNKNOWN_RULESET;
@@ -656,9 +663,23 @@ com_query(work_info_t *wi)
 		return postop(wi, SPOCP_UNWILLING,0);
 
 	LOG(SPOCP_INFO) {
-		str = oct2strdup(wi->oparg->arr[0], '%');
-		traceLog(LOG_INFO,"[%d]QUERY:%s", conn->fd, str);
-		free(str);
+		if ( wi->oparg ) {
+			if (wi->oparg->n == 1) {
+				str = oct2strdup(wi->oparg->arr[0], '%');
+				traceLog(LOG_INFO,"[%d]QUERY:%s", conn->fd, str);
+				free(str);
+			}
+			else if (wi->oparg->n == 2) {
+				char *pa, *se;
+
+				pa = oct2strdup(wi->oparg->arr[0], '%');
+				se = oct2strdup(wi->oparg->arr[1], '%');
+				traceLog(LOG_INFO,"[%d]QUERY:%s %s",
+				    conn->fd, pa, se);
+				free(pa);
+				free(se);
+			}
+		}
 	}
 
 	r = opinitial( wi, &rs, 1, 1, 1);

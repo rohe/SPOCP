@@ -175,17 +175,26 @@ one_level(octet_t * name, ruleset_t * rs)
  */
 
 /*
- * returns 1 if a ruleset is found with the given name 
+ * returns pointer to the ruleset if it exists otherwise NULL
  */
-int
-ruleset_find(octet_t * name, ruleset_t ** rs)
+ruleset_t *
+ruleset_find(octet_t * name, ruleset_t * rs)
 {
 	octet_t         loc;
 	ruleset_t      *r, *nr = 0;
 	octarr_t       *oa = 0;
 	int             i, pathlen;
 
-	if (*rs == 0)
+	/*
+	{
+		char *tmp;
+		tmp = oct2strdup( name, '%' );
+		traceLog(LOG_INFO, "Find ruleset %s", tmp );
+		free(tmp);
+	}
+	*/
+
+	if (rs == 0)
 		return 0;
 
 	/*
@@ -193,29 +202,26 @@ ruleset_find(octet_t * name, ruleset_t ** rs)
 	 */
 	if (name == 0 || name->len == 0
 	    || (*name->val == '/' && name->len == 1)) {
-		for (r = *rs; r->up; r = r->up);
-		*rs = r;
-		return 1;
+		for (r = rs; r->up; r = r->up);
+		return r;
 	}
 	/*
 	 * server part 
 	 */
 	else if (name->len >= 2 && *name->val == '/'
 		 && *(name->val + 1) == '/') {
-		for (r = *rs; r->up; r = r->up);
+		for (r = rs; r->up; r = r->up);
 
 		loc.val = "//";
 		loc.len = 2;
 		if ((nr = one_level(&loc, r)) == 0) {
-			*rs = r;
-			return 0;
+			return NULL;
 		}
 
 		if (nr && name->len == 2) {
-			*rs = nr;
 			name->val += 2;
 			name->len -= 2;
-			return 1;
+			return nr;
 		}
 
 		loc.val = name->val + 2;
@@ -226,37 +232,34 @@ ruleset_find(octet_t * name, ruleset_t ** rs)
 	 * absolute path 
 	 */
 	else if (*name->val == '/') {
-		for (nr = *rs; nr->up; nr = nr->up);
+		for (nr = rs; nr->up; nr = nr->up);
 		octln(&loc, name);
 		loc.val++;
 		loc.len--;
 		r = nr;
-	} else {
-		return 0;	/* don't do relative */
-	}
+	} else 
+		return NULL;	/* don't do relative */
 
 	oa = path_split(&loc, &pathlen);
 	for (i = 0; oa && i < oa->n; i++) {
 		r = nr->down;
 		if (r == 0) {
-			*rs = r;
-			return 0;
+			return NULL;
 		}
 
 		if ((nr = one_level(oa->arr[i], r)) == 0)
 			break;
 	}
 
-	if (nr == 0) {
-		*rs = r;
-		return 0;
-	} else
-		*rs = nr;
+	if (nr == 0) 
+		return NULL;
 
 	name->val = loc.val + pathlen;
 	name->len = loc.len - pathlen;
 
-	return 1;
+	/* traceLog(LOG_INFO,"Found \"%s\"", nr->name); */
+
+	return nr;
 }
 
 /*
@@ -303,24 +306,36 @@ add_to_level(octet_t * name, ruleset_t * rs)
  */
 
 ruleset_t      *
-ruleset_create(octet_t * name, ruleset_t ** root)
+ruleset_create(octet_t * name, ruleset_t *root)
 {
-	ruleset_t      *r = 0, *nr;
+	ruleset_t      *r, *nr;
 	octet_t         loc;
 	octarr_t       *oa = 0;
 	int             i, pathlen = 0;
 
-	if (*root == 0) {
-		*root = r = ruleset_new(0);
+	/*
+	{
+		char *tmp;
+
+		tmp = oct2strdup( name, '%' );
+		traceLog(LOG_INFO,"Create ruleset: %s", tmp);
+		free(tmp);
+	}
+	*/
+
+	if (root == 0) {
+		root = ruleset_new(0);
 
 		if (name == 0 || name->len == 0
 		    || (name->len == 1 && *name->val == '/'))
-			return r;
+			return root;
 	} else
-		r = *root;
+	       traceLog(LOG_INFO, "Got some kind of tree");	
 
 
-	if( name == 0 || name->len == 0 ) return r ;
+	if( name == 0 || name->len == 0 ) return root ;
+
+	r = root;
 
 	/*
 	 * special case 
@@ -364,7 +379,7 @@ ruleset_create(octet_t * name, ruleset_t ** root)
 	name->val = loc.val + pathlen;
 	name->len = loc.len - pathlen;
 
-	return r;
+	return root;
 }
 
 /*

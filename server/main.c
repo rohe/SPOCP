@@ -257,8 +257,7 @@ main(int argc, char **argv)
 		}
 	}
 
-	if (srv.root == 0)
-		srv.root = ruleset_new(0);
+	srv.root = ruleset_new(0);
 
 	/*
 	 * where I put the access rules for access to this server and its
@@ -267,8 +266,12 @@ main(int argc, char **argv)
 	snprintf(path, MAXNAMLEN, "%s/server", localcontext);
 	oct.val = path;
 	oct.len = strlen(path);
-	if ((rs = ruleset_create(&oct, &srv.root)) == 0)
+	if ((rs = ruleset_create(&oct, srv.root)) == 0)
 		exit(1);
+	/* this because of a side effect of ruleset_create() */
+	oct.val = path;
+	oct.len = strlen(path);
+	rs = ruleset_find( &oct, srv.root );
 	rs->db = db_new();
 
 	/*
@@ -277,8 +280,11 @@ main(int argc, char **argv)
 	snprintf(path, MAXNAMLEN, "%s/operation", localcontext);
 	oct.val = path;
 	oct.len = strlen(path);
-	if ((rs = ruleset_create(&oct, &srv.root)) == 0)
+	if ((rs = ruleset_create(&oct, srv.root)) == 0)
 		exit(1);
+	oct.val = path;
+	oct.len = strlen(path);
+	rs = ruleset_find( &oct, srv.root );
 	rs->db = db_new();
 
 	if (srv_init(&srv, cnfg) < 0)

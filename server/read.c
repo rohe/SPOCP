@@ -190,13 +190,12 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 		else if (*chunk->val->val == '/' || *chunk->val->val == '(') {
 			trs = rs;
 			if (*chunk->val->val == '/') {
-				if (ruleset_find( chunk->val, &trs) == 0) {
-					ruleset_create(chunk->val, &rs);
-					LOG(SPOCP_DEBUG)
-					    traceLog(LOG_DEBUG,"ruleset name: \"%s\"",
-					    rs->name);
-					trs = rs;
-					ruleset_find(chunk->val, &trs);
+				if ((trs = ruleset_find( chunk->val, rs)) == NULL) {
+					octet_t oct;
+
+					octln( &oct, chunk->val);
+					rs = ruleset_create(chunk->val, rs);
+					trs = ruleset_find(&oct, rs);
 					trs->db = db_new();
 				}
 
@@ -223,6 +222,8 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				oa = octarr_add(oa, octdup(rdef.blob->val)) ;
 			}
 			
+			traceLog(LOG_INFO,"Adding rule to ruleset \"%s\"", trs->name);
+
 			r = dbapi_rule_add(&(trs->db), srv->plugin, dbc, oa, NULL);
 			if (r == SPOCP_SUCCESS)
 				n++;
