@@ -31,7 +31,78 @@
  * o Check exception handling
  */
 
-void spocp_server_run( srv_t *srv )
+
+/* ---------------------------------------------------------------------- */
+
+/* !!! This is borrowed from OpenLDAP !!!! */
+
+/* Return a pair of socket descriptors that are connected to each other.
+ * The returned descriptors are suitable for use with select(). The two
+ * descriptors may or may not be identical; the function may return
+ * the same descriptor number in both slots. It is guaranteed that
+ * data written on sds[1] will be readable on sds[0]. The returned
+ * descriptors may be datagram oriented, so data should be written
+ * in reasonably small pieces and read all at once. On Unix systems
+ * this function is best implemented using a single pipe() call.
+ */
+
+int lutil_pair( int sds[2] )
+{
+#ifdef HAVE_PIPE
+        return pipe( sds );
+#else
+        struct sockaddr_in si;
+        int rc, len = sizeof(si);
+        int sd;
+
+        sd = socket( AF_INET, SOCK_DGRAM, 0 );
+        if ( sd == SPOCP_SOCKET_INVALID ) {
+                return sd;
+        }
+
+        (void) memset( (void*) &si, '\0', len );
+        si.sin_family = AF_INET;
+        si.sin_port = 0;
+        si.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
+
+        rc = bind( sd, (struct sockaddr *)&si, len );
+        if ( rc == SPOCP_SOCKET_ERROR ) {
+                close(sd);
+                return rc;
+        }
+
+        rc = getsockname( sd, (struct sockaddr *)&si, (socklen_t *) &len );
+        if ( rc == SPOCP_SOCKET_ERROR ) {
+                close(sd);
+                return rc;
+        }
+
+        rc = connect( sd, (struct sockaddr *)&si, len );
+        if ( rc == SPOCP_SOCKET_ERROR ) {
+                close(sd);
+                return rc;
+        }
+
+        sds[0] = sd;
+#if !HAVE_WINSOCK
+        sds[1] = dup( sds[0] );
+#else
+        sds[1] = sds[0];
+#endif
+        return 0;
+#endif
+}
+
+
+void wake_listener(int w) 
+{
+  if(w) write( wake_sds[1], "0", 1 );
+} 
+
+/* ---------------------------------------------------------------------- */
+
+
+void spocp_srv_run( srv_t *srv )
 {
 
 #ifdef HAVE_LIBWRAP
@@ -61,14 +132,16 @@ void spocp_server_run( srv_t *srv )
     FD_ZERO(&wfds);
       
     FD_SET( srv->listen_fd, &rfds );
-    maxfd = srv->listen_fd;
-      
-    if( !first_active( srv->connections) ) {
-      if( pe ) pe = 0, traceLog( "Empty queue" ) ; 
-    }
+    FD_SET( wake_sds[0], &rfds );
+    maxfd = MAX( wake_sds[0], srv->listen_fd ) ;
 
-    /* Loop through connection list and prune away closed connections */
-    for( pi = first_active( srv->connections ) ; pi ; pi = next ) {
+    /* Loop through connection list and prune away closed connections, 
+       the active are added to the fd_sets 
+       Since this routine is the only one that adds and delets connections
+       and there is only one thread that runs this routine I don't have to
+       lock the connection pool 
+    */
+    for( pi = afpool_first( srv->connections ) ; pi ; pi = next ) {
       conn = ( conn_t * ) pi->info ;
  
       if(( err = pthread_mutex_lock(&conn->clock)) != 0)
@@ -79,30 +152,34 @@ void spocp_server_run( srv_t *srv )
                                   conn->fd, conn->status, conn->ops_pending);
       */
 
+      /* this since pi might disapear before the next turn of this loop is done */
+      next = pi->next ;
+
       if( conn->stop && conn->ops_pending <= 0 ) {
-        next = pi->next ;
+        if( 0 ) timestamp( "removing connection" ) ;
         conn->close( conn ) ;
-        reset_conn( conn ) ;
+        conn_reset( conn ) ;
         /* unlocks the conn struct as a side effect */
-        return_item( srv->connections, pi );
+        item_return( srv->connections, pi );
 
-        /* remove from the set of file descriptors */
-        FD_CLR( conn->fd, &rfds ) ;
-        FD_CLR( conn->fd, &wfds ) ;
- 
-        continue ;
-      }
-    
-      if(!conn->stop) {
-        maxfd = MAX( maxfd, conn->fd );
-        FD_SET(conn->fd,&rfds);
-        FD_SET(conn->fd,&wfds);
-      }
-    
-      if(( err = pthread_mutex_unlock( &conn->clock )) != 0 )
-        traceLog("Panic: unable to release lock on connection: %s",strerror(err));
+        /* release lock */
+        if(( err = pthread_mutex_unlock( &conn->clock )) != 0 )
+          traceLog("Panic: unable to release lock on connection: %s",strerror(err));
 
-       next = pi->next ;
+        pe-- ;
+        if( 0 ) traceLog("Next is %p", next ) ;
+      }
+      else { 
+        if(!conn->stop) {
+          maxfd = MAX( maxfd, conn->fd );
+          FD_SET(conn->fd,&rfds);
+          FD_SET(conn->fd,&wfds);
+        }
+    
+        if(( err = pthread_mutex_unlock( &conn->clock )) != 0 )
+          traceLog("Panic: unable to release lock on connection: %s",strerror(err));
+
+      }
     }
 
     /* 0.001 seconds timeout */
@@ -111,7 +188,7 @@ void spocp_server_run( srv_t *srv )
 
     if(0) timestamp( "before select" ) ;
     /* Select on all file descriptors, don't wait forever */
-    nready = select(maxfd+1,&rfds,&wfds,NULL,&noto); 
+    nready = select(maxfd+1,&rfds,&wfds,NULL, 0 ); 
     if(0) timestamp( "after select" ) ;
       
     /* Check for errors */
@@ -123,10 +200,14 @@ void spocp_server_run( srv_t *srv )
     /* Timeout... or nothing there */
     if(nready == 0) continue;
       
+    if(0) timestamp( "Readable/Writeable" ) ;
 
-    if(0)timestamp( "Readable/Writeable" ) ;
+    /* traceLog( "maxfd: %d, nready: %d", maxfd, nready ) ;  */
 
-    /* traceLog( "maxfd: %d, nready: %d", maxfd, nready ) ; */
+    if( FD_ISSET( wake_sds[0], &rfds ) ) {
+       char c[BUFSIZ];
+       read( wake_sds[0], c, sizeof(c) );
+    }
 
     /* 
      *  Check for new connections 
@@ -134,9 +215,8 @@ void spocp_server_run( srv_t *srv )
       
     if(FD_ISSET(srv->listen_fd,&rfds)) {
 
-      if(0) timestamp( "New connection" ) ;
+      if(1) timestamp( "New connection" ) ;
 
-      nready--;
       len = sizeof(client_addr);
       client = accept( srv->listen_fd, (struct sockaddr *)&client_addr, &len);
       
@@ -155,7 +235,7 @@ void spocp_server_run( srv_t *srv )
         goto fdloop;
       }
 
-      if(fcntl( client, F_SETFL, val|O_NONBLOCK ) == -1) {
+      if( fcntl( client, F_SETFL, val|O_NONBLOCK ) == -1) {
         traceLog("Unable to set socket nonblock on fd=%d: %s",client,strerror(errno));
         close(client);
         goto fdloop;
@@ -193,8 +273,8 @@ void spocp_server_run( srv_t *srv )
       }
 #endif /* HAVE_LIBWRAP */
       
-      /* get a connection object, mutex locked as a side effect */
-      pi = get_item( srv->connections ) ; 
+      /* get a connection object */
+      pi = afpool_get_empty( srv->connections ) ; 
 
       if( pi ) conn = (conn_t *) pi->info ;
       else conn = 0 ;
@@ -207,12 +287,13 @@ void spocp_server_run( srv_t *srv )
         /* initialize all the conn values */
 
         DEBUG( SPOCP_DSRV )traceLog( "Initializing connection to %s", hostbuf ) ;
-        init_conn( conn, srv, client, hostbuf ) ;
+        conn_setup( conn, srv, client, hostbuf ) ;
 
-        /* pthread_mutex_unlock( &conn->lock ) ; */
-        pe = 1 ;
+        afpool_push_item( srv->connections, pi ) ;
+
+        pe++ ;
       }
-      if(0) timestamp( "Done with new connection setup" ) ;
+      if(1) timestamp( "Done with new connection setup" ) ;
     }
 
     /* 
@@ -221,76 +302,73 @@ void spocp_server_run( srv_t *srv )
      */
       
 fdloop:
-
-    for( pi = first_active( srv->connections ) ; pi && ( nready > 0 ) ; pi = pi->next ) {
+    for( pi = afpool_first( srv->connections ) ; pi ; pi = pi->next ) {
       spocp_result_t res;
       proto_op       *operation = 0 ;
+      /* int            f = 0 ; */
     
       conn = ( conn_t *) pi->info ;
 
       /* wasn't around when the select was done */
       if( conn->fd > maxfd ) {
-        traceLog( "Not this time ! Too young") ;
+        if( 0 ) traceLog( "Not this time ! Too young") ;
         continue ;
       }
 
+      /*
+       Don't have to lock the connection, locking the io bufferts are
+       quite sufficient 
       if(( err = pthread_mutex_lock(&conn->clock)) != 0)
         traceLog("Panic: unable to obtain lock on connection %d: %s",
                   conn->fd,strerror(err));
+      */
     
       if( FD_ISSET( conn->fd, &rfds ) && !conn->stop) {
         if(0) timestamp( "input readable") ; 
-        nready--;
 
         /* read returns number of bytes read */
-        n = conn->readn( conn, conn->in->w, conn->in->left );
-        /* traceLog( "Read returned %d", n ) ;  */
-        if( n == 0 ) { /* connection terminated by other side */
+        n = spocp_conn_read( conn );
+        if( 0 ) traceLog( "Read returned %d from %d", n, conn->fd ) ;  
+        /* traceLog( "[%s]", conn->in->buf ) ; */
+        if( n == 0 ) { /* connection probably terminated by other side */
           conn->stop = 1 ;
-          goto next_connection;
+          continue ;
         }
         if(0) timestamp( "read con" ) ; 
 
-        conn->in->w += n ;
-        conn->in->left -= n ;
-        
         res = get_operation( conn, &operation ) ;
-        /* traceLog( "Getops returned %d", res ) ;*/
-        if(res != SPOCP_SUCCESS) goto next_connection;
+        if( 0 ) traceLog( "Getops returned %d", res ) ;
+        if(res != SPOCP_SUCCESS) continue ;
 
         if(0) timestamp( "add work item" ) ; 
         /* this will not happen until the for loop is done */
         tpool_add_work( srv->work, operation, (void *) conn ) ;
       }
 
-      if(FD_ISSET(conn->fd,&wfds)) { /* will happen extremly seldom, since synchronous protocol */
+      if(FD_ISSET(conn->fd,&wfds)) { 
         if(0) timestamp( "output writeable") ; 
 
-        if(!FD_ISSET(conn->fd,&rfds)) nready--;
+        n = iobuf_content( conn->out ) ;
 
-        n = conn->out->w - conn->out->r ;
-
-        if( n == 0 ) flush_io_buffer( conn->out ) ;
+        if( n == 0 ) iobuf_flush( conn->out ) ;
         else {
           if(0) timestamp( "**writing con" ) ; 
         
-          DEBUG( SPOCP_DSRV ) traceLog("main: Outgoing data on fd %d\n",conn->fd);
-          n = conn->writen( conn, conn->out->r, n ) ;
-          if(0) timestamp( "**wrote con" ) ; 
+          DEBUG( SPOCP_DSRV ) traceLog("Outgoing data on fd %d (%d)\n",conn->fd, n);
 
-          /* traceLog( "Wrote %d bytes", n ) ; */
+          n = spocp_conn_write( conn ) ;
 
-          if( n == -1 ) 
-            goto next_connection;
+          if( n == -1 ) traceLog("Error in writing to %d", conn->fd );
         } 
       }
     
-next_connection:
-    
+      /*
       if(( err = pthread_mutex_unlock(&conn->clock)) != 0)
         traceLog("Panic: unable to release lock on connection %d: %s",
                  conn->fd,strerror(err));
+       */
     
     }
+    if( 0 ) timestamp( "one loop done" ) ;
   }
 }
