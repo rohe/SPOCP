@@ -287,8 +287,9 @@ int main( int argc, char **argv )
 		oct2strcpy( op, str, 1024, '%');
 		printf("%s", str);
 
+		printf("\n");
 		if (extended)
-			printf("\n\n");
+			printf("\n");
 
 		octln( &loc, op);
 		if(( rc = element_get(&loc, &ep)) == SPOCP_SUCCESS) {
@@ -300,7 +301,7 @@ int main( int argc, char **argv )
 	
 				if ( elementcmp( ep, r->ep, ext ) == 0 ) {
 					printf( "(%d) YES [%s", c, r->strrule);
-					if (runbc) {
+					if (runbc && r->bcond ) {
 						sr = bcexp_eval(ep, r->ep,
 						    r->bcond->exp, &info);
 						if (sr==SPOCP_SUCCESS)
