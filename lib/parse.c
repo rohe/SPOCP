@@ -1,3 +1,8 @@
+/*!
+ * \file parse.c
+ * \author Roland Hedberg <roland@catalogix.se>
+ * \brief Functions used to parse a S-expression
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,6 +29,10 @@ chunk_new(octet_t * o)
 	return cp;
 }
 
+/*!
+ * \brief Frees a chunk struct 
+ * \param c The chunk struct
+ */
 void
 chunk_free(spocp_chunk_t * c)
 {
@@ -91,6 +100,12 @@ base64_decode(char *str)
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Grabs a line from some input
+ * \param io Information about the input 
+ * \return NULL if no more information was found at the source, otherwise a 
+ *  pointer to the beginning of the character buffer
+ */
 char    *
 get_more(spocp_charbuf_t * io)
 {
@@ -145,7 +160,8 @@ rm_sp(char *str, int len)
 
 /*--------------------------------------------------------------------------------*/
 
-static int de_escape( char *str, int len )
+static int
+de_escape( char *str, int len )
 {
   octet_t tmp ;
 
@@ -362,8 +378,11 @@ get_hex( spocp_charbuf_t * io)
 	return oct;
 }
 
+/*! \brief I'm waiting for a hexadecimal character */
 #define HEXCHAR 1
+/*! \brief I'm waiting for a '\' character */
 #define SLASH   2
+/*! \brief I'm waiting for a duo of hexadecimal characters */
 #define HEXDUO  4
 
 static octet_t *
@@ -468,6 +487,11 @@ skip_whites(spocp_charbuf_t * io)
 
 /*--------------------------------------------------------------------------------*/
 
+/*! 
+ * \brief Check which significant character that is next in the buffer
+ * \param cb A pointer to the buffer
+ * \return The character or 0 if there are no more characters
+ */
 char
 charbuf_peek( spocp_charbuf_t *cb )
 {
@@ -479,6 +503,12 @@ charbuf_peek( spocp_charbuf_t *cb )
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Get a chunk of the buffer, chunks are sets of characters that are 
+ * parts of the same syntactical element
+ * \param io Pointer to the input structur
+ * \return a chunk 
+ */
 spocp_chunk_t        *
 get_chunk(spocp_charbuf_t * io)
 {
@@ -535,6 +565,12 @@ get_chunk(spocp_charbuf_t * io)
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Adds a chunk to the end of a double linked list
+ * \param pp The last chunk of the list
+ * \param np The chunk that should be added
+ * \return A pointer to the new last chunk
+ */ 
 spocp_chunk_t		*
 chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np )
 {
@@ -549,6 +585,12 @@ chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np )
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Gets all the chunks that belongs to one S-expression
+ * \param ib The character buffer from which the information should be picked
+ * \param pp The list of chunks to which this list should be added
+ * \return The last chunk of the combined list
+ */
 spocp_chunk_t		*
 get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp )
 {
@@ -572,6 +614,12 @@ get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp )
 
 /*--------------------------------------------------------------------------------*/
 
+/*!
+ * \brief Converts a list of chunks to a canonical S-expression
+ * \param c The list of chunks
+ * \return A octet struct containing the S-expression or NULL if something
+ *  went wrong
+ */
 octet_t *
 chunk2sexp( spocp_chunk_t *c )
 {

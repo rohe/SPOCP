@@ -862,7 +862,9 @@ spocpc_connect(char *srv, int nsec)
 /*!
  * \brief Initializes a Spocp session, that is creates a Spocp struct but does not
  *   connect to any server.
- * \param host Where the server is to be found, space separated list of servers
+ * \param hosts Where the servers is to be found, space separated list of servers
+ * \param tv_sec The seconds part of the timeout for I/O (read/writes)
+ * \param tv_usec The usec part of the timeout value
  * \return A Spocp connection struct
  */
 SPOCP *
