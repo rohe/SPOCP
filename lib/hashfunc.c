@@ -10,6 +10,8 @@ You can use this free for any purpose.  It has no warranty.
 #include <stddef.h>
 #include <stdlib.h>
 
+#include <func.h>
+
 #define hashsize(n) ((unsigned int)1<<(n))
 #define hashmask(n) (hashsize(n)-1)
 
@@ -94,7 +96,7 @@ acceptable.  Do NOT use for cryptographic purposes.
 --------------------------------------------------------------------
 */
 
-unsigned int bj_hash( unsigned char *k, unsigned int length, unsigned int initval)
+__attribute__((unused)) static unsigned int bj_hash( unsigned char *k, unsigned int length, unsigned int initval)
 {
    register unsigned int a,b,c,len;
 
@@ -146,7 +148,7 @@ unsigned int bj_hash( unsigned char *k, unsigned int length, unsigned int initva
 --------------------------------------------------------------------
 */
 
-unsigned int bj_hash3( unsigned char *k, unsigned int length, unsigned int initval)
+static unsigned int bj_hash3( unsigned char *k, unsigned int length, unsigned int initval)
 {
    register unsigned int a,b,c,len;
 
@@ -203,7 +205,7 @@ unsigned int bj_hash3( unsigned char *k, unsigned int length, unsigned int initv
 }
 
 /* basically the same as is used by reiserfs */
-unsigned int r5_hash (const char *s, int len, unsigned int a )
+__attribute__((unused)) static unsigned int r5_hash (const char *s, int len, unsigned int a )
 {
   while( len-- ) {
     a += *s << 4;
@@ -216,7 +218,7 @@ unsigned int r5_hash (const char *s, int len, unsigned int a )
 }
 
 /* don't know where I got this from */
-unsigned int c_hash (char *str, int len, unsigned int init )
+__attribute__((unused)) static unsigned int c_hash (char *str, int len, unsigned int init )
 {
   unsigned int value;   /* Used to compute the hash value.  */
   int index;          /* Used to cycle through random values. */
