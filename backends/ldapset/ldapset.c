@@ -1515,7 +1515,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 		cv = cached(dyn->cv, oct, &cb);
 
 	if (cv) {
-		traceLog("ldapset: cache hit");
+		LOG( SPOCP_DEBUG) traceLog("ldapset: cache hit");
 
 		if (cv == EXPIRED) {
 			cached_rm(dyn->cv, oct);
@@ -1582,10 +1582,12 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 
 						vset_free(res);
 					} else {
+/*
 						if (rc)
 							r = rc;
 						else
-							r = SPOCP_DENIED;
+*/
+						r = SPOCP_DENIED;
 					}
 
 					if (bc)
@@ -1623,7 +1625,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 	if (oct != cpp->arg)
 		oct_free(oct);
 
-	traceLog("ldapset => %d", r);
+	LOG( SPOCP_DEBUG) traceLog("ldapset => %d", r);
 
 	return r;
 }
