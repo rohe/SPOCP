@@ -62,6 +62,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include <func.h>
 
 
 typedef struct _scnode {
@@ -100,7 +101,7 @@ typedef struct _strlistnode {
   char *str ;
   struct _strlistnode *next ;
   struct _strlistnode *prev ;
-} sln_t ;
+} lsln_t ;
 
 typedef struct _vset {
   int          scope ; /* SC_BASE | SC_ONELEV | SC_SUBTREE */
@@ -108,9 +109,9 @@ typedef struct _vset {
   int          restype ; /* SC_VAL | SC_DN */
   int          recurs ;
   char         *attr ;
-  sln_t        *attset ;
-  sln_t        *dn ;
-  sln_t        *val ;
+  lsln_t        *attset ;
+  lsln_t        *dn ;
+  lsln_t        *val ;
   struct _vset *left    ; /* which vset will I get the lefthand Set from */
   struct _vset *right   ; /* which vset will I get the righthand Set from */
   struct _vset *up      ; /* whom I'm delivering to */
@@ -130,28 +131,28 @@ void	vset_print( vset_t *sp, int ns ) ;
 
 vset_t   *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc ) ;
 
-sln_t    *get_results( LDAP *, LDAPMessage *, sln_t *, sln_t *, int, int ) ;
+lsln_t    *get_results( LDAP *, LDAPMessage *, lsln_t *, lsln_t *, int, int ) ;
 void     rm_children( vset_t *sp ) ;
 
-sln_t    *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret ) ;
+lsln_t    *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret ) ;
 LDAP     *open_conn( char *server, spocp_result_t *ret ) ;
 
 befunc ldapset_test ;
 
 /* ========================================================== */
 
-static sln_t *sln_new( char *s )
+static lsln_t *lsln_new( char *s )
 {
-  sln_t *new ;
+  lsln_t *new ;
 
-  new = (sln_t *) calloc (1, sizeof( sln_t )) ;
+  new = (lsln_t *) calloc (1, sizeof( lsln_t )) ;
 
   new->str = s ;
 
   return new ;
 }
 
-static void sln_free( sln_t *slp )
+static void lsln_free( lsln_t *slp )
 {
   if( slp ) {
     if( slp->str ) free( slp->str ) ;
@@ -160,12 +161,12 @@ static void sln_free( sln_t *slp )
   }
 }
 
-static sln_t *sln_add( sln_t *slp, char *s )
+static lsln_t *lsln_add( lsln_t *slp, char *s )
 {
-  sln_t *loc ;
+  lsln_t *loc ;
 
   if( slp == 0 ) 
-    return sln_new( s ) ;
+    return lsln_new( s ) ;
 
   for( loc = slp ; loc ; loc = loc->next ) {
     if( strcmp( loc->str, s ) == 0 ) return slp ;
@@ -173,28 +174,28 @@ static sln_t *sln_add( sln_t *slp, char *s )
 
   for( loc = slp ; loc->next ; loc = loc->next ) ;
 
-  loc->next = sln_new( s ) ;
+  loc->next = lsln_new( s ) ;
 
   return slp ;
 }
 
-static sln_t *sln_dup( sln_t *old )
+static lsln_t *lsln_dup( lsln_t *old )
 {
-  sln_t *new = 0 ;
+  lsln_t *new = 0 ;
 
-  for( ; old ; old = old->next ) new = sln_add( new, old->str ) ;
+  for( ; old ; old = old->next ) new = lsln_add( new, old->str ) ;
 
   return new ;
 }
 
-static sln_t *sln_or( sln_t *a, sln_t *b )
+static lsln_t *lsln_or( lsln_t *a, lsln_t *b )
 {
-  sln_t *ls, *res = 0 ;
+  lsln_t *ls, *res = 0 ;
 
   for(  ; b ; b = b->next ) {
     for( ls = a ; ls ; ls = ls->next ) {
       if( ls->str && strcmp( ls->str, b->str) == 0 ) { 
-        res = sln_add( res, ls->str ) ;
+        res = lsln_add( res, ls->str ) ;
         ls->str = 0 ;  
         break ;
       }
@@ -204,27 +205,27 @@ static sln_t *sln_or( sln_t *a, sln_t *b )
   return res ;
 }
 
-static sln_t *sln_join( sln_t *a, sln_t *b )
+static lsln_t *lsln_join( lsln_t *a, lsln_t *b )
 {
   for(  ; b ; b = b->next ) {
-    a = sln_add( a, b->str ) ;
+    a = lsln_add( a, b->str ) ;
     b->str = 0 ;
   }
 
   return a ;
 }
 
-static sln_t *sln_and( sln_t *a, sln_t *b )
+static lsln_t *lsln_and( lsln_t *a, lsln_t *b )
 {
-  sln_t *ls, *res = 0 ;
+  lsln_t *ls, *res = 0 ;
 
   for( ls = a ; ls ; ls = ls->next ) {
-    res = sln_add( res, ls->str ) ;
+    res = lsln_add( res, ls->str ) ;
     ls->str = 0 ;
   }
 
   for( ls = b ; ls ; ls = ls->next ) {
-    res = sln_add( res, ls->str ) ;
+    res = lsln_add( res, ls->str ) ;
     ls->str = 0 ;
   }
 
@@ -232,7 +233,7 @@ static sln_t *sln_and( sln_t *a, sln_t *b )
 }
 
 /* this ought really to be UTF-8 aware */
-static int sln_find( sln_t *sl, char *s )
+static int lsln_find( lsln_t *sl, char *s )
 {
   for( ; sl ; sl = sl->next ) 
     if( strcasecmp( sl->str, s ) == 0 ) return 1 ;
@@ -241,23 +242,23 @@ static int sln_find( sln_t *sl, char *s )
 }
 
 /*
-static sln_t *sln_first( sln_t *sl )
+static lsln_t *lsln_first( lsln_t *sl )
 {
   return sl ;
 }
 
-static sln_t *sln_next( sln_t *sl )
+static lsln_t *lsln_next( lsln_t *sl )
 {
   return sl->next ;
 }
 */
 
-static char *sln_get_val( sln_t *sl )
+static char *lsln_get_val( lsln_t *sl )
 {
   return sl->str ;
 }
 
-static int sln_values( sln_t *sl ) 
+static int lsln_values( lsln_t *sl ) 
 {
   int i = 0 ;
 
@@ -266,12 +267,12 @@ static int sln_values( sln_t *sl )
   return i ;
 }
 
-static char **sln_to_arr( sln_t *sl )
+static char **lsln_to_arr( lsln_t *sl )
 {
   char **arr ;
   int  i ;
 
-  arr = ( char **) calloc( sln_values( sl ) + 1, sizeof( char * )) ;
+  arr = ( char **) calloc( lsln_values( sl ) + 1, sizeof( char * )) ;
 
   for( i = 0 ; sl ; sl = sl->next, i++ ) arr[i] = sl->str ;
 
@@ -328,9 +329,9 @@ void vset_free( vset_t *sp )
 {
   if( sp ) {
     /* if( sp->attr ) free( sp->attr ) ; */
-    if( sp->attset ) sln_free( sp->attset ) ;
-    if( sp->dn )     sln_free( sp->dn) ;
-    if( sp->val )    sln_free( sp->val ) ;
+    if( sp->attset ) lsln_free( sp->attset ) ;
+    if( sp->dn )     lsln_free( sp->dn) ;
+    if( sp->val )    lsln_free( sp->val ) ;
     if( sp->left )   vset_free( sp->left ) ;
     if( sp->right )  vset_free( sp->right ) ;
 
@@ -342,7 +343,7 @@ void vset_print( vset_t *sp, int ns )
 {
   char  space[16] ;
   int   i ;
-  sln_t *ts ;
+  lsln_t *ts ;
 
   memset( space, 0, sizeof( space ) ) ;
   memset( space, ' ', ns ) ;
@@ -353,17 +354,17 @@ void vset_print( vset_t *sp, int ns )
   printf("--\n" ) ;
   if( sp->attset ) {
     for( ts = sp->attset, i = 0 ; ts ; ts = ts->next, i++ ) 
-      printf( "%sattr[%d]: %s\n", space, i, sln_get_val( ts )) ;
+      printf( "%sattr[%d]: %s\n", space, i, lsln_get_val( ts )) ;
   }
 
   if( sp->dn ) {
     for( ts = sp->dn, i = 0 ; ts ; ts = ts->next, i++ ) 
-      printf( "%sdn[%d]: %s\n", space, i, sln_get_val( ts )) ;
+      printf( "%sdn[%d]: %s\n", space, i, lsln_get_val( ts )) ;
   }
 
   if( sp->val ) {
     for( ts = sp->val, i = 0 ; ts ; ts = ts->next, i++ ) 
-      printf( "%sval[%d]: %s\n", space, i, sln_get_val( ts )) ;
+      printf( "%sval[%d]: %s\n", space, i, lsln_get_val( ts )) ;
   }
 
   printf("->\n" ) ;
@@ -650,7 +651,7 @@ vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc )
         return 0 ;
       }
 
-      sp->dn = sln_add( sp->dn, strndup( scp->str +1 , scp->size -3) ) ;
+      sp->dn = lsln_add( sp->dn, lstrndup( scp->str +1 , scp->size -3) ) ;
       break ;
 
     case '[' :
@@ -663,7 +664,7 @@ vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc )
         return 0 ;
       }
 
-      sp->val = sln_add( sp->val, strndup( scp->str +1, scp->size -3)) ;
+      sp->val = lsln_add( sp->val, lstrndup( scp->str +1, scp->size -3)) ;
       break ;
 
     case '{' : /* str == "{}" */
@@ -699,7 +700,7 @@ vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc )
             *cp++ = 0 ;                /* don't have to reset since it's not used again */
             while( *cp == ',' ) cp++ ;
           }
-          sp->attset = sln_add( sp->attset, strdup(ap) ) ;
+          sp->attset = lsln_add( sp->attset, strdup(ap) ) ;
           /* sp->attr = strdup( scp->str ) ; */
           ap = cp ;
         } while ( cp != 0 ) ;    
@@ -720,7 +721,7 @@ vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc )
             *rc = SPOCP_SYNTAXERROR ;
             return 0 ;
           }
-          sp->dn = sln_add( sp->dn, oct2strdup(oa->arr[n], '\\') ) ;
+          sp->dn = lsln_add( sp->dn, oct2strdup(oa->arr[n], '\\') ) ;
         }
       }
       else {
@@ -729,7 +730,7 @@ vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc )
         /* traceLog( "[%c][%c]", *scp->str, *dnp ) ; */
 
         if( *scp->str != '\\' ) {
-          sp->val = sln_add( sp->val, strdup(scp->str) ) ;
+          sp->val = lsln_add( sp->val, strdup(scp->str) ) ;
           scp->str = 0 ;
           scp->size = 0 ;
         }
@@ -744,7 +745,7 @@ vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc )
             *rc = SPOCP_SYNTAXERROR ;
             return 0 ;
           }
-          sp->dn = sln_add( sp->dn, oct2strdup(oa->arr[n], '\\') ) ;
+          sp->dn = lsln_add( sp->dn, oct2strdup(oa->arr[n], '\\') ) ;
         }
       }
   }
@@ -752,16 +753,16 @@ vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc )
   return sp ;
 }
 
-sln_t *get_results(
+lsln_t *get_results(
   LDAP *ld,
   LDAPMessage *res,
-  sln_t *attr,
-  sln_t *val,
+  lsln_t *attr,
+  lsln_t *val,
   int type,
   int ao )
 {
   int         i, nr ; 
-  sln_t       *set = 0 ;
+  lsln_t       *set = 0 ;
   LDAPMessage *e ;
   BerElement  *be = NULL ;
   char        **vect = 0, *ap, *dn ;
@@ -773,7 +774,7 @@ sln_t *get_results(
 
   if( ao == SC_OR ) { 
     /* traceLog("SC_OR") ; */
-    if( type == SC_VAL ) set = sln_dup( val ) ;
+    if( type == SC_VAL ) set = lsln_dup( val ) ;
 
     for( e = ldap_first_entry( ld, res ) ; e != NULL ;
          e = ldap_next_entry( ld, e )) {
@@ -784,7 +785,7 @@ sln_t *get_results(
       if( type == SC_DN ) {
         /* LOG( SPOCP_DEBUG ) traceLog( "Collecting DNs" ) ; */
         dn = ldap_get_dn( ld, e ) ;
-        set = sln_add( set, strdup(dn) ) ;
+        set = lsln_add( set, strdup(dn) ) ;
         ldap_memfree( dn ) ;
       }
       else {
@@ -794,16 +795,16 @@ sln_t *get_results(
           /* unsigned comparision between attribute names */
           /* LOG( SPOCP_DEBUG ) traceLog( "Got attribute: %s", ap ) ; */
 
-          if( sln_find( attr, ap ) == 0 ) continue ;
+          if( lsln_find( attr, ap ) == 0 ) continue ;
            
           vect = ldap_get_values( ld, e, ap )  ;
 
           for( i = 0 ; vect[i] ; i++ ) {
             /* LOG( SPOCP_DEBUG ) traceLog( "Among the ones I look for" ) ; */
             /* disregard if not a value I'm looking for */
-            if( sln_find( val, vect[i] ) == 0 ) continue ;
+            if( lsln_find( val, vect[i] ) == 0 ) continue ;
 
-            set = sln_add( set, strdup(vect[i]) ) ;
+            set = lsln_add( set, strdup(vect[i]) ) ;
           }
 
           ldap_value_free( vect ) ;
@@ -819,7 +820,7 @@ sln_t *get_results(
       if( type == SC_DN ) {
         /* LOG( SPOCP_DEBUG ) traceLog( "Collecting DNs" ) ; */
         dn = ldap_get_dn( ld, e ) ;
-        set = sln_add( set, strdup(dn) ) ;
+        set = lsln_add( set, strdup(dn) ) ;
         ldap_memfree( dn ) ;
       }
       else {
@@ -831,14 +832,14 @@ sln_t *get_results(
           /* LOG( SPOCP_DEBUG ) traceLog( "Got attribute: %s", ap ) ; */
 
           /* uninteresting attribute */
-          if( sln_find( attr, ap ) == 0 ) continue ;
+          if( lsln_find( attr, ap ) == 0 ) continue ;
    
           vect = ldap_get_values( ld, e, ap ) ;
 
           for( i = 0 ; vect[i] ; i++ ) {
-            if( sln_find( val, vect[i] ) == 0 ) continue ;
+            if( lsln_find( val, vect[i] ) == 0 ) continue ;
 
-            set = sln_add( set, strdup(vect[i]) ) ;
+            set = lsln_add( set, strdup(vect[i]) ) ;
           }
 
           ldap_value_free( vect ) ;
@@ -849,10 +850,10 @@ sln_t *get_results(
 
 /*
   if( set ) {
-    sln_t *tmp ;
+    lsln_t *tmp ;
 
-    for( tmp = sln_first( set ), i = 0 ; tmp  ; tmp = sln_next( tmp ), i++ ) 
-       LOG( SPOCP_DEBUG ) traceLog( "set[%d]: %s", i, (char *) sln_get_val( tmp )) ; 
+    for( tmp = lsln_first( set ), i = 0 ; tmp  ; tmp = lsln_next( tmp ), i++ ) 
+       LOG( SPOCP_DEBUG ) traceLog( "set[%d]: %s", i, (char *) lsln_get_val( tmp )) ; 
   }
 */
 
@@ -925,11 +926,11 @@ LDAP *open_conn( char *server, spocp_result_t *ret )
   return ld ;
 }
 
-sln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
+lsln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
 {
   int         rc, scope, size = 256, na ;
-  sln_t       *arr = 0, *sa = 0 ;
-  sln_t       *attrset = vsetp->attset, *dn = vsetp->dn, *val = vsetp->val ;
+  lsln_t       *arr = 0, *sa = 0 ;
+  lsln_t       *attrset = vsetp->attset, *dn = vsetp->dn, *val = vsetp->val ;
   char        *base, *va, **attr ;
   char        *filter ;
   LDAPMessage *res = 0 ;
@@ -945,8 +946,8 @@ sln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
 
   filter = ( char * ) malloc ( size * sizeof( char )) ;
 
-  na = sln_values( vsetp->attset ) ;
-  attr = sln_to_arr( vsetp->attset ) ;
+  na = lsln_values( vsetp->attset ) ;
+  attr = lsln_to_arr( vsetp->attset ) ;
 
   if( vsetp->scope == SC_BASE ) 
     scope = LDAP_SCOPE_BASE ;
@@ -963,10 +964,10 @@ sln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
 
   for(  ; attrset ; attrset = attrset->next ) {
     if( val ) {
-      if( sln_values( val ) == 1 ) {
-        va = sln_get_val( val ) ;
+      if( lsln_values( val ) == 1 ) {
+        va = lsln_get_val( val ) ;
         filter = safe_strcat( filter, "(", &size  ) ;
-        filter = safe_strcat( filter, sln_get_val( attrset ), &size ) ;
+        filter = safe_strcat( filter, lsln_get_val( attrset ), &size ) ;
         filter = safe_strcat( filter, "=", &size ) ;
         filter = safe_strcat( filter, va, &size ) ;
         filter = safe_strcat( filter, ")", &size ) ;
@@ -974,9 +975,9 @@ sln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
       else {
         filter = safe_strcat( filter, "(|", &size ) ;
         for( val = vsetp->val ; val ; val = val->next ) {
-          va = sln_get_val( val ) ;
+          va = lsln_get_val( val ) ;
           filter = safe_strcat( filter, "(", &size ) ;
-          filter = safe_strcat( filter, sln_get_val( attrset ), &size ) ;
+          filter = safe_strcat( filter, lsln_get_val( attrset ), &size ) ;
           filter = safe_strcat( filter, "=", &size ) ;
           filter = safe_strcat( filter, va, &size ) ;
           filter = safe_strcat( filter, ")", &size ) ;
@@ -986,7 +987,7 @@ sln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
     }
     else {
       filter = safe_strcat( filter, "(", &size ) ;
-      filter = safe_strcat( filter, sln_get_val( attrset ), &size ) ;
+      filter = safe_strcat( filter, lsln_get_val( attrset ), &size ) ;
       filter = safe_strcat( filter, "=*)", &size ) ;
     }
   }
@@ -996,7 +997,7 @@ sln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
   /* val might be 0, that is I'm not really interested in the set of values */
 
   for(  ; dn ; dn = dn->next ) {
-    base = sln_get_val( dn ) ;
+    base = lsln_get_val( dn ) ;
     res = 0 ;
 
 /*
@@ -1006,14 +1007,14 @@ sln_t *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret )
 
     if(( rc = ldap_search_s( ld, base, scope, filter, attr, 0, &res ))) {
       ldap_perror( ld, "During search" ) ;
-      sln_free( arr ) ;
+      lsln_free( arr ) ;
       arr = 0 ;
       *ret = SPOCP_OTHER ;
     }
     else {
       if(( sa = get_results( ld, res, vsetp->attset, val, vsetp->restype, vsetp->type ))) {
-        arr = sln_join( arr, sa ) ;
-        sln_free( sa ) ;
+        arr = lsln_join( arr, sa ) ;
+        lsln_free( sa ) ;
       }
     }
 
@@ -1039,7 +1040,7 @@ void rm_children( vset_t *sp )
 vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
 {
   /* vset_t   *tmp ; */
-  sln_t *arr ;
+  lsln_t *arr ;
 
   if( sp->left ) {
     if(( sp->left = vset_compact( sp->left, ld, rc )) == 0 ) {
@@ -1122,20 +1123,20 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
 
       /* what type of values did I get back ? */
       if( sp->restype == SC_DN ) {
-        if( sp->dn ) sln_free( sp->dn ) ;
+        if( sp->dn ) lsln_free( sp->dn ) ;
         sp->dn = arr ;
-        if( sp->val ) sln_free( sp->val ) ;
+        if( sp->val ) lsln_free( sp->val ) ;
         sp->val = 0 ;
       }
       else {
-        if( sp->val ) sln_free( sp->val ) ;
+        if( sp->val ) lsln_free( sp->val ) ;
         sp->val = arr ;
-        if( sp->dn ) sln_free( sp->dn ) ;
+        if( sp->dn ) lsln_free( sp->dn ) ;
         sp->dn = 0 ;
       }
 
       /* don't need the attribute sets anymore */
-      sln_free( sp->attset ) ;
+      lsln_free( sp->attset ) ;
       sp->attset = 0 ;
       /* Just so this can't be used as a query once more */
       sp->scope = 0 ;
@@ -1145,8 +1146,8 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
 /*       LOG( SPOCP_DEBUG ) traceLog( "ANDing two sets --" ) ; */
 
       if( sp->left->dn && sp->right->dn ) {
-        if( sp->dn ) sln_free( sp->dn ) ;
-        sp->dn = sln_and( sp->left->dn, sp->right->dn ) ;
+        if( sp->dn ) lsln_free( sp->dn ) ;
+        sp->dn = lsln_and( sp->left->dn, sp->right->dn ) ;
 
         rm_children( sp ) ;
         if( sp->dn == 0 ) {
@@ -1156,8 +1157,8 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
         }
       }
       else if( sp->left->val && sp->right->val ) {
-        if( sp->val ) sln_free( sp->val ) ;
-        sp->val = sln_and( sp->left->val, sp->right->val ) ;
+        if( sp->val ) lsln_free( sp->val ) ;
+        sp->val = lsln_and( sp->left->val, sp->right->val ) ;
 
         rm_children( sp ) ;
         if( sp->val == 0 ) {
@@ -1176,12 +1177,12 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
     if( sp->left == 0 && sp->right == 0 ) ;
     else if( sp->left == 0 ) {
       if( sp->right->dn ) {
-        if( sp->dn) sln_free( sp->dn ) ;
+        if( sp->dn) lsln_free( sp->dn ) ;
         sp->dn = sp->right->dn ;
         sp->right->dn = 0 ;
       }
       else if( sp->right->val ) {
-        if( sp->val) sln_free( sp->val ) ;
+        if( sp->val) lsln_free( sp->val ) ;
         sp->val = sp->right->val ;
         sp->right->val = 0 ;
       }
@@ -1189,12 +1190,12 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
     }
     else if( sp->right == 0 ) {
       if( sp->left->dn ) {
-        if( sp->dn) sln_free( sp->dn ) ;
+        if( sp->dn) lsln_free( sp->dn ) ;
         sp->dn = sp->left->dn ;
         sp->left->dn = 0 ;
       }
       else if( sp->left->val ) {
-        if( sp->val) sln_free( sp->val ) ;
+        if( sp->val) lsln_free( sp->val ) ;
         sp->val = sp->left->val ;
         sp->left->val = 0 ;
       }
@@ -1202,16 +1203,16 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
     }
     else if( sp->left->dn || sp->right->dn ) {
       if( sp->right->dn && sp->left->dn ) {
-        if( sp->dn ) sln_free( sp->dn ) ;
-        sp->dn = sln_or( sp->left->dn, sp->right->dn ) ;
+        if( sp->dn ) lsln_free( sp->dn ) ;
+        sp->dn = lsln_or( sp->left->dn, sp->right->dn ) ;
       }
       else if( sp->left->dn) {
-        if( sp->dn) sln_free( sp->dn ) ;
+        if( sp->dn) lsln_free( sp->dn ) ;
         sp->dn = sp->left->dn ;
         sp->left->dn = 0 ;
       }
       else {
-        if( sp->dn) sln_free( sp->dn ) ;
+        if( sp->dn) lsln_free( sp->dn ) ;
         sp->dn = sp->right->dn ;
         sp->right->dn = 0 ;
       }
@@ -1220,16 +1221,16 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
     }
     else if( sp->left->val || sp->right->val ) {
       if( sp->right->val && sp->left->val ) {
-        if( sp->val ) sln_free( sp->val ) ;
-        sp->val = sln_or( sp->left->val, sp->right->val ) ;
+        if( sp->val ) lsln_free( sp->val ) ;
+        sp->val = lsln_or( sp->left->val, sp->right->val ) ;
       }
       else if( sp->left->val) {
-        if( sp->val) sln_free( sp->val ) ;
+        if( sp->val) lsln_free( sp->val ) ;
         sp->val = sp->left->val ;
         sp->left->val = 0 ;
       }
       else {
-        if( sp->val) sln_free( sp->val ) ;
+        if( sp->val) lsln_free( sp->val ) ;
         sp->val = sp->right->val ;
         sp->right->val = 0 ;
       }
