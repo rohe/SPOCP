@@ -1013,15 +1013,18 @@ parse_path(octet_t * o)
  * except the tag == 1,...,last ..A[n-m] elements n to m allowed formats
  * [n], [-m], [n-m], [n-], ["last"], [-"last"], [n-"last"] first element has
  * index 0 ..A* and ..A[1-] is equivalent //A | //B All list starting with
- * either A or B \brief Picks subelements from a S-expression \param e The
- * element representing the parsed S-expression \param rc A pointer to a int,
+ * either A or B
+ * \brief Picks subelements from a S-expression
+ * \param e The element representing the parsed S-expression 
+ * \param rc A pointer to a spocp result code enum,
  * this is where the error code will be placed if some problem was encountered 
- * will doing the picking \result A pointer to a element containing the picked 
+ * will doing the picking
+ * \result A pointer to a element containing the picked 
  * element/-s 
  */
 
 element_t      *
-element_eval(octet_t * spec, element_t * e, int *rc)
+element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
 {
 	element_t      *re = 0, *ep = 0, *ie = 0, *sep = 0;
 	element_t      *pe = 0, *se = 0;

@@ -14,7 +14,7 @@ element_t      *element_parent(element_t * e);
 
 void           *element_data(element_t * e);
 
-element_t      *element_eval(octet_t * spec, element_t * e, int *rc);
+element_t      *element_eval(octet_t * spec, element_t * e, spocp_result_t *rc);
 
 int             element_cmp(element_t * a, element_t * b);
 

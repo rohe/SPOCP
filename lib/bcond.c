@@ -530,7 +530,8 @@ bcond_eval(element_t * qp, element_t * rp, bcspec_t * bcond, octet_t * oct)
 {
 	octet_t         spec;
 	element_t      *tmp, *xp = 0;
-	int             sl, rl, rc;
+	int             sl, rl;
+	spocp_result_t	rc = SPOCP_DENIED;
 	cmd_param_t     cpt;
 
 	octln(&spec, bcond->spec);
