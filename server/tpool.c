@@ -17,7 +17,7 @@ typedef struct _ptharg {
   int      id ;
 } ptharg_t ;
 
-int add_work_structs( pool_t *pool, int n )
+static int add_work_structs( pool_t *pool, int n )
 {
   int i ;
   void *tw ;
@@ -34,14 +34,14 @@ int add_work_structs( pool_t *pool, int n )
   return i ;
 }
 
-void free_work_struct( void *vp )
+static void free_work_struct( void *vp )
 {
   if( vp ) {
     free( vp ) ;
   }
 }
 
-void free_wpool( afpool_t *afp )
+static void free_wpool( afpool_t *afp )
 {
   pool_t *pool ;
   pool_item_t *pi ;

@@ -55,7 +55,7 @@ char *rc_unwilling               = "3:51020:Unwilling to perform" ;
  ***************************************************************************/
 
 
-void add_response( spocp_iobuf_t *out, int rc )
+static void add_response( spocp_iobuf_t *out, int rc )
 {
   if( rc == SPOCP_SUCCESS ) {
     iobuf_add( out, rc_ok ) ;
@@ -143,7 +143,7 @@ static int sexp_err( conn_t *conn, int l )
 
 /* --------------------------------------------------------------------------------- */
 
-spocp_result_t get_oparg( octet_t *arg, octarr_t **oa )
+static spocp_result_t get_oparg( octet_t *arg, octarr_t **oa )
 {
   spocp_result_t r = SPOCP_SUCCESS ;
   int            i ; 
@@ -162,7 +162,7 @@ spocp_result_t get_oparg( octet_t *arg, octarr_t **oa )
   return r ;
 }
 
-void oparg_clear( conn_t *con ) 
+static void oparg_clear( conn_t *con ) 
 {
   /* reset operation arguments */
   octarr_free( con->oparg ) ;
@@ -269,7 +269,7 @@ spocp_result_t com_logout( conn_t *conn )
   delete       = "6:DELETE" l-path length ":" ruleid
  
 */
-spocp_result_t com_delete( conn_t *conn )
+static spocp_result_t com_delete( conn_t *conn )
 {
   spocp_result_t   r = SPOCP_SUCCESS ;
   int              wr ;
@@ -933,14 +933,14 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
 */
 /* ================================================================================ */
 
-void send_and_flush_results( conn_t *conn )
+static void send_and_flush_results( conn_t *conn )
 {
   send_results( conn ) ;
 
   spocp_conn_write( conn ) ;
 }
 
-int native_server( conn_t *con )
+static int native_server( conn_t *con )
 {
   spocp_result_t   r = SPOCP_SUCCESS ;
   spocp_iobuf_t    *in, *out ;
