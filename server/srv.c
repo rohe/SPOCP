@@ -917,14 +917,12 @@ AGAIN:
       }
       else continue ;
     }
-    else 
-      con->last_event = now ; /* reset the timeout counter */
 
     if( n ) { 
       DEBUG( SPOCP_DSRV ) traceLog("Got %d(%d new)  bytes", in->w - in->r, n ) ;
     }
 
-    /* no chars, obviously nothing for me to do */
+    /* If no chars, obviously nothing for me to do */
     while( in->w - in->r ) {
       if(( r = get_operation( con, &oper )) == SPOCP_SUCCESS ) {
         r = (*oper)( con ) ;
@@ -968,6 +966,8 @@ AGAIN:
         clear_buffers( con ) ;
       }
     }
+    /* reset the timeout counter after the server is done with the operations */
+    time( &con->last_event ) ;
   }
 
 clearout:
