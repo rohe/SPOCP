@@ -28,7 +28,8 @@ rescode_t rescode[] = {
  { SPOCP_TRANS_COMP, "3:204", "20:Transaction complete" },
  { SPOCP_SSL_START ,"3:205", "18:Ready to start TLS" },
 
- { SPOCP_SASLBINDINPROGRESS ,"3:301", "26:Authentication in progress" },
+ { SPOCP_AUTHDATA , ",3:301",NULL },
+ { SPOCP_AUTHINPROGRESS ,"3:300", "26:Authentication in progress" },
 
  { SPOCP_BUSY, "3:400", "4:Busy" },
  { SPOCP_TIMEOUT , "3:401", "7:Timeout" },
@@ -54,6 +55,7 @@ rescode_t rescode[] = {
  { SPOCP_CERT_ERR ,"3:518", "20:Authentication error" },
  { SPOCP_UNWILLING ,"3:519", "20:Unwilling to perform" },
  { SPOCP_EXISTS ,"3:520", "14:Already exists" } ,
+ { SPOCP_AUTHERR ,"3:521", "21:Authentication error"},
 
  { 0, NULL, NULL }
 } ;
@@ -61,35 +63,42 @@ rescode_t rescode[] = {
 /***************************************************************************
  ***************************************************************************/
 
-static spocp_result_t add_response( spocp_iobuf_t *out, int rc, const char *fmt, ... )
+static rescode_t *
+find_rescode(int rc)
 {
-  va_list ap;
-  spocp_result_t res;
-
-  va_start(ap,fmt);
-  res = add_response_blob_va(out,rc,NULL,fmt,ap);
-  va_end(ap);
-
-  return res;
+  register int i;
+  
+  for( i = 0 ; rescode[i].rc ; i++ ) {
+    if( rescode[i].code == rc )
+      return &rescode[i];
+  }
+  
+  return 0;
 }
 
-static spocp_result_t add_response_blob( spocp_iobuf_t *out, int rc, octet_t *data, const char *fmt, ... )
+static spocp_result_t add_response_va(spocp_iobuf_t *out, int rc, const char *fmt, va_list ap)
 {
-  va_list ap;
-  spocp_result_t res;
-
-  va_start(ap,fmt);
-  res = add_response_blob_va(out,rc,data,fmt,ap);
-  va_end(ap);
-
-  return res;
-}
-
-static spocp_result_t add_response_blob_va( spocp_iobuf_t *out, int rc, octet_t *data, const char *fmt, va_list ap )
-{
-  int     i, n ;
+  int     n ;
   spocp_result_t sr = SPOCP_SUCCESS ;
   char    buf[SPOCP_MAXLINE] ;
+  rescode_t *rescode = find_rescode(rc);
+
+  if (rescode == NULL)
+    rescode = find_rescode(SPOCP_OTHER);
+  
+  sr = iobuf_add( out, rescode->rc ) ;
+  if (fmt) {
+    n = vsnprintf( buf, SPOCP_MAXLINE, fmt, ap ) ;
+    if( n >= SPOCP_MAXLINE )  /* OUTPUT truncated */
+      sr = SPOCP_LOCAL_ERROR ;
+    else 
+      sr = iobuf_add( out, buf ) ;
+  } else {
+    if (rescode->def != NULL)
+      sr = iobuf_add( out, rescode->def ) ;
+  }
+
+#if 0
 
   for( i = 0 ; rescode[i].rc ; i++ ) {
     if( rescode[i].code == rc ) {
@@ -106,11 +115,34 @@ static spocp_result_t add_response_blob_va( spocp_iobuf_t *out, int rc, octet_t 
       break ;
     }
   }
-
   /* unknown response code */
   if( rescode[i].rc == 0 ) sr = add_response( out, SPOCP_OTHER, NULL ) ;
 
+#endif
+
   return sr ;
+}
+
+static spocp_result_t add_response( spocp_iobuf_t *out, int rc, const char *fmt, ... )
+{
+  va_list ap;
+  spocp_result_t res;
+
+  va_start(ap,fmt);
+  res = add_response_va(out,rc,fmt,ap);
+  va_end(ap);
+
+  return res;
+}
+
+static spocp_result_t add_response_blob(spocp_iobuf_t *out, int rc, octet_t *data)
+{
+  spocp_result_t sr = add_response(out,rc,NULL);
+
+  if (sr != SPOCP_SUCCESS)
+    return sr;
+
+  return data != NULL ? iobuf_add_octet(out,data) : sr;
 }
 
 /*
@@ -198,8 +230,10 @@ spocp_result_t com_capa(conn_t *conn)
       msg = mechs;
     }
   }
+
+ err:
 #endif
-  
+
   add_response( conn->out, r, msg ) ;
 
   if (msg != NULL)
@@ -213,7 +247,6 @@ spocp_result_t com_capa(conn_t *conn)
 spocp_result_t com_auth( conn_t *conn )
 {
   spocp_result_t  r = SPOCP_SUCCESS ;
-  const char     *msg = NULL;
   int             wr ;
   char            data[8192];
   size_t          len;
@@ -241,14 +274,14 @@ spocp_result_t com_auth( conn_t *conn )
     conn->sasl_mech = oct2strdup(conn->oparg->arr[0],'%');
     wr = sasl_server_start(conn->sasl,
 			   conn->sasl_mech,
-			   conn->oparg->n > 1 ? conn->oparg->arr[1].val : NULL,
-			   conn->oparg->n > 1 ? conn->oparg->arr[1].len : 0,
+			   conn->oparg->n > 1 ? conn->oparg->arr[1]->val : NULL,
+			   conn->oparg->n > 1 ? conn->oparg->arr[1]->len : 0,
 			   &data,
 			   &len);
   } else { /* step */
     wr  = sasl_server_step(conn->sasl,
-			   conn->oparg->n > 0 ? conn->oparg->arr[0].val : NULL,
-			   conn->oparg->n > 0 ? conn->oparg->arr[0].len : 0,
+			   conn->oparg->n > 0 ? conn->oparg->arr[0]->val : NULL,
+			   conn->oparg->n > 0 ? conn->oparg->arr[0]->len : 0,
 			   &data,
 			   &len);
   }
@@ -258,14 +291,16 @@ spocp_result_t com_auth( conn_t *conn )
   switch (wr) {
   case SASL_OK:
     wr = sasl_getprop(conn->sasl,SASL_USERNAME,(const void **)&conn->sasl_username);
-    add_response_blob( conn->out, SPOCP_SUCCESS, data, NULL ) ;
+    add_response_blob( conn->out, SPOCP_MULTI, data) ;
+    add_response(conn->out,SPOCP_SUCCESS,"Authentication OK");
     break;
   case SASL_CONTINUE:
-    add_response_blob( conn->out, SPOCP_SASLBINDINPROGRESS, data, NULL ) ;
+    add_response_blob( conn->out, SPOCP_AUTHDATA, data) ;
+    add_response(conn->out,SPOCP_AUTHINPROGRESS,NULL);
     break;
   default:
     LOG (SPOCP_ERR) traceLog("SASL start/step failed: %d",sasl_errstring(wr,NULL,NULL));
-    add_response(conn->out,SPOCP_AUTH,"Authentication failed");
+    add_response(conn->out,SPOCP_AUTHERR,"Authentication failed");
   }
 
 #else
@@ -971,15 +1006,14 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
 
   *oper = 0 ;
 
+  l = op.len;
   switch( op.len ) {
     case 8:
       if( strncasecmp( op.val, "STARTTLS", 8 ) == 0 ) {
         *oper = &com_starttls ;
-        l = 8 ;
       } 
       else if( strncasecmp( op.val, "ROLLBACK", 8 ) == 0 ) {
         *oper = &com_rollback ;
-        l = 8 ;
       } 
       
       break ;
@@ -987,30 +1021,24 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
     case 6:
       if( strncasecmp( op.val, "LOGOUT", 6 ) == 0 ) {
         *oper = &com_logout ;
-        l = 6 ;
       }
       else if( strncasecmp( op.val, "DELETE", 6 ) == 0 ) {
         *oper = &com_delete;
-        l = 6 ;
       }
       else if( strncasecmp( op.val, "COMMIT", 6 ) == 0 ) {
         *oper = &com_commit ;
-        l = 6 ;
       }
       break ;
 
     case 5:
       if( strncasecmp( op.val, "QUERY", 5 ) == 0 ) {
         *oper = &com_query ;
-        l = 5 ;
       }
       else if( strncasecmp( op.val, "LOGIN", 5 ) == 0 ) {
         *oper = &com_login ; 
-        l = 5 ;
       }
       else if( strncasecmp( op.val, "BEGIN", 5 ) == 0 ) {
         *oper = &com_begin ; 
-        l = 5 ;
       }
 /*
       else if( strncasecmp( op.val, "BCOND", 5 ) == 0 ) {
@@ -1023,27 +1051,28 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
     case 7:
       if( strncasecmp( op.val, "SUBJECT", 7 ) == 0 ) {
         *oper = &com_subject ; 
-        l = 7 ;
       }
       break ;
 
     case 3:
       if( strncasecmp( op.val, "ADD", 3 ) == 0 ) {
         *oper = &com_add ;
-        l = 3 ;
       }
       break ;
 
     case 4:
       if( strncasecmp( op.val, "LIST", 4 ) == 0 ) {
         *oper = &com_list ;
-        l = 4 ;
       }
       else if( strncasecmp( op.val, "AUTH", 4 ) == 0 ) {
         *oper = &com_auth ;
-        l = 4 ;
+      } else if (strncasecmp( op.val, "CAPA", 4) == 0) {
+	*oper = &com_capa;
       }
       break ;
+  default:
+    l = 0;
+
   }
   
   if( l ) {

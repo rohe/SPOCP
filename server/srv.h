@@ -389,6 +389,7 @@ spocp_result_t com_logout( conn_t *conn ) ;
 spocp_result_t com_query( conn_t *conn ) ;
 spocp_result_t com_starttls( conn_t *conn ) ;
 spocp_result_t com_auth( conn_t *conn );
+spocp_result_t com_capa( conn_t *conn );
 spocp_result_t com_remove( conn_t *conn ) ;
 spocp_result_t com_add( conn_t *conn ) ;
 spocp_result_t com_list( conn_t *conn ) ;
