@@ -9,6 +9,7 @@ RCSID("$Id$");
 
 
 typedef struct sockaddr SA;
+extern int received_sigterm;
 
 #define XYZ 0
 
@@ -190,7 +191,11 @@ spocp_srv_run(srv_t * srv)
 		 * connections and there is only one thread that runs this
 		 * routine I don't have to lock the connection pool 
 		 */
-		for (pi = afpool_first(srv->connections); pi; pi = next) {
+		pi = afpool_first(srv->connections);
+
+		if( pi == 0 && received_sigterm) break;
+
+		for (; pi; pi = next) {
 			conn = (conn_t *) pi->info;
 
 			if ((err = pthread_mutex_lock(&conn->clock)) != 0)
@@ -280,10 +285,11 @@ spocp_srv_run(srv_t * srv)
 		}
 
 		/*
-		 *  Check for new connections 
+		 * Check for new connections, don't accept any if SIGTERM has
+		 * been received 
 		 */
 
-		if (FD_ISSET(srv->listen_fd, &rfds)) {
+		if (received_sigterm == 0 && FD_ISSET(srv->listen_fd, &rfds)) {
 
 			if (XYZ)
 				timestamp("New connection");
@@ -497,6 +503,10 @@ spocp_srv_run(srv_t * srv)
 						conn->status = CNST_ACTIVE;
 				}
 			}
+			else if( received_sigterm ) {
+				run_stop( srv, conn, pi);
+				pe--;
+			}
 
 			/*
 			 * if(( err = pthread_mutex_unlock(&conn->clock)) !=
@@ -508,4 +518,6 @@ spocp_srv_run(srv_t * srv)
 		if (XYZ)
 			timestamp("one loop done");
 	}
+	
+	exit(0);
 }
