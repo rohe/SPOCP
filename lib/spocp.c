@@ -191,13 +191,6 @@ spocp_result_t spocp_add_rule( void **vp, octarr_t *oa )
   return r;
 }
 
-__attribute__((unused)) static int spocp_rules( void *vp )
-{
-  db_t  *db = (db_t *) vp ;
-  
-  return nrules( db->ri ) ;
-}
-
 void *spocp_dup( void *vp, spocp_result_t *r ) 
 {
   db_t *db = (db_t *) vp ;
