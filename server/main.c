@@ -98,6 +98,7 @@ sig_usr1( int signo )
 	traceLog(LOG_NOTICE, "Received SIGUSR1");
 	stat( srv.rulefile, &statbuf );
 	if (statbuf.st_mtime != srv.mtime ) {
+		srv.mtime = statbuf.st_mtime;
 		con = conn_new();
 		con->srv = &srv;
 		con->rs = srv.root;
@@ -446,4 +447,5 @@ main(int argc, char **argv)
 
 	exit(0);
 }
+
 

@@ -72,13 +72,18 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 	} else if ( oct2strcmp(pp->val, ";include" ) == 0 ) {
 		pp = chunk_add( pp, get_chunk( ib )) ;
 	} else {	/* should be a boundary condition definition,
-			 * has threeor more chunks
+			 * has three or more chunks
 			 */
 		pp = chunk_add( pp, get_chunk( ib ));
 		if( pp && oct2strcmp(pp->val, ":=") == 0 ) {
 			pp = chunk_add( pp, get_chunk( ib ));
-			if( oct2strcmp( pp->val, "(" ) == 0 ) {
+			if( pp && oct2strcmp( pp->val, "(" ) == 0 ) {
 				pp = get_sexp( ib, pp);
+			}
+			else if( pp == 0) {
+				traceLog(LOG_ERR,"Parse error at \"%s\"", ib->start);
+				chunk_free(head);
+				return 0;
 			}
 		}
 		else {

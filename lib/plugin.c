@@ -215,6 +215,8 @@ plugin_unload( plugin_t *pl )
 			/* how do I remove this */
 		if (pl->name) 
 			free( pl->name );
+		if (pl->handle)
+			dlclose( pl->handle );
 
 		free(pl);
 	}

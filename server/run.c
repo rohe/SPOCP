@@ -518,6 +518,9 @@ spocp_srv_run(srv_t * srv)
 		if (XYZ)
 			timestamp("one loop done");
 	}
+
+	/* will deconnect all external connections held by the plugins */
+	ruleset_free( srv->root );
 	
 	traceLog(LOG_NOTICE,"Closing down");
 	exit(0);

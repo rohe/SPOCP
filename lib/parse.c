@@ -474,11 +474,12 @@ get_quote( spocp_charbuf_t * io)
 						expect = 0;
 					else if (HEX(*cp))
 						expect = HEXCHAR;
-					else
+					else {
 						traceLog(LOG_ERR,
 						    "Expected hex or escape char \"%s\""
 						    ,cp);
 						return 0;
+					}
 				}
 				continue;
 			}
