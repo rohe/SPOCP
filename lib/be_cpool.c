@@ -1,6 +1,6 @@
-#ifndef __BE_CPOOL_H
-#define __BE_CPOOL_H
-
+/*! \file lib/be_cpool.c
+ * \author Roland Hedberg <roland@catalogix.se>
+ */
 #include <string.h>
 #include <pthread.h>
 
@@ -9,7 +9,7 @@
 #include <wrappers.h>
 #include <macros.h>
 
-becon_t *becon_new( int copy )
+static becon_t *becon_new( int copy )
 {
   becon_t *bc ;
 
@@ -25,21 +25,7 @@ becon_t *becon_new( int copy )
   return bc ;
 }
 
-becon_t *becon_dup( becon_t *old )
-{
-  becon_t *new = becon_new( 1 ) ;
-
-  new->arg     = octdup( old->arg ) ;
-  new->close   = old->close ;
-  new->last    = old->last ;
-  new->con     = old->con ;
-  new->c_lock  = old->c_lock ;
-  new->status  = old->status ;
-
-  return new ;
-}
-
-void becon_free( becon_t *bc, int close )
+static void becon_free( becon_t *bc, int close )
 {
   if( bc ) {
     if( close ) { 
@@ -64,8 +50,12 @@ void becon_free( becon_t *bc, int close )
 }
 
 /* ------------------------------------------------------------------- */
-
-becpool_t *becpool_new( size_t max, int copy )
+/*!
+ * Creates a new backend connection pool.
+ * \param max Max number of connections that can be held in the pool
+ * \copy
+ */
+becpool_t *becpool_new( size_t max )
 {
   becpool_t *bcp ;
 
@@ -73,35 +63,11 @@ becpool_t *becpool_new( size_t max, int copy )
   bcp->size = 0 ;
   bcp->max = max ;
   bcp->head = bcp->tail = 0 ;
-  if( !copy ) {
-    bcp->lock = ( pthread_mutex_t * ) Malloc ( sizeof( pthread_mutex_t )) ;
-    pthread_mutex_init( bcp->lock, 0 ) ;
-  }
+
+  bcp->lock = ( pthread_mutex_t * ) Malloc ( sizeof( pthread_mutex_t )) ;
+  pthread_mutex_init( bcp->lock, 0 ) ;
 
   return bcp ;
-}
-
-becpool_t *becpool_dup( becpool_t *bcp )
-{
-  becpool_t *new ;
-  becon_t   *bc, *cpy ;
-
-  new = becpool_new( bcp->max, 1 ) ;
-
-  for( bc = bcp->head ; bc ; bc = bc->next ) {
-    cpy = becon_dup( bc ) ;
-    if( new->head == 0 ) new->head = new->tail = cpy ;
-    else {
-      new->tail->next = cpy ;
-      cpy->prev = new->tail ;
-      cpy->next = 0 ;
-      new->tail = cpy ;
-    } 
-  }
-
-  pthread_mutex_unlock( bcp->lock ) ;
-
-  return new ;
 }
 
 void becpool_rm( becpool_t *bcp, int close )
@@ -128,11 +94,21 @@ void becpool_rm( becpool_t *bcp, int close )
 }
 
 /* ------------------------------------------------------------------- */
+int becpool_full( becpool_t *bcp )
+{
+  if( bcp->size == bcp->max ) return 1 ;
+  else return 0 ;
+}
 
+/*!
+ * Pushes a connection onto the connection pool
+ */
 becon_t *becon_push( octet_t *arg, closefn *close, void *con, becpool_t *bcp )
 {
   becon_t *bc, *old = 0 ;
  
+  if( becpool_full( bcp ) ) return 0 ;
+
   bc = becon_new( 0 ) ;
   
   bc->arg = octdup( arg ) ;
@@ -145,22 +121,6 @@ becon_t *becon_push( octet_t *arg, closefn *close, void *con, becpool_t *bcp )
   pthread_mutex_lock( bcp->lock ) ;
 
   bc->last = time( (time_t*) 0 );
-
-  /* If I have reached the maximum number of open file descriptors 
-     release the oldest unused
-   */
-  if( bcp->size == bcp->max ) {
-    if( old->status == CON_ACTIVE ) {
-       becon_free( bc, 0 ) ;  /* free but don't close */
-       return 0 ;
-    }
-
-    old = bcp->head ;
-    bcp->head = old->next ;
-    bcp->head->prev = 0 ;
-    becon_free( old, 1 ) ;
-    bcp->size-- ;
-  }
 
   /* place the newest at the end */
 
@@ -229,7 +189,7 @@ becon_t *becon_get( octet_t *arg, becpool_t *bcp )
 
 void becon_return( becon_t *bc )
 {
-  bc->last = time( (time_t*) 0 ); /* update last usage */
+  bc->last = time( (time_t *) 0 ); /* update last usage */
   bc->status = CON_FREE ;
   pthread_mutex_unlock( bc->c_lock ) ;
 }
@@ -275,6 +235,4 @@ void becon_update( becon_t *bc, void *con )
 {
   bc->con = con ;
 }
-
-#endif
 
