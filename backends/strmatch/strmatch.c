@@ -28,7 +28,7 @@ befunc strmatch_test ;
 #define CASE       0
 #define CASEIGNORE 1
 
-static element_t *gete( element_t *ep, octet_t *oct ) 
+__attribute__((unused)) static element_t *gete( element_t *ep, octet_t *oct ) 
 {
   int     rc ;
   octet_t spec ;
