@@ -70,6 +70,7 @@ spocp_open_log(char *file, int level)
 	spocp_debug = level;
 
 	if (file && strcmp(file, "syslog") == 0) {
+		log_syslog = 1;
 		openlog( "spocp", LOG_NDELAY|LOG_CONS, LOG_LOCAL3);
 	}
 
@@ -167,7 +168,7 @@ traceLog(int priority, const char *fmt, ...)
 	va_start(ap, fmt);
 
 	if (log_syslog)
-		syslog( LOG_WARNING, fmt, ap);
+		vsyslog( LOG_WARNING, fmt, ap);
 	else
 		tracelog_doit(priority, fmt, ap);
 
