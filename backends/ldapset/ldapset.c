@@ -26,7 +26,8 @@
  * 
  * base		=	'\' d
  * 
- * conj		=	"&" | "|" ext = "/" | "%" | "$"	 
+ * conj		=	"&" | "|"
+ * ext		=	 "/" | "%" | "$"	 
  *	; base, onelevel resp. subtree search
  * 
  * a		=	%x41-5A / %x61-7A ; lower and upper case ASCII
@@ -209,6 +210,18 @@ lsln_or(lsln_t * a, lsln_t * b)
 {
 	lsln_t         *ls, *res = 0;
 
+	LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "lsnl_or" ) ; 
+	for (ls = a; ls; ls = ls->next) {
+		res = lsln_add(res, ls->str);
+		ls->str = 0;
+	}
+
+	for (ls = b; ls; ls = ls->next) {
+		res = lsln_add(res, ls->str);
+		ls->str = 0;
+	}
+
+/*
 	for (; b; b = b->next) {
 		for (ls = a; ls; ls = ls->next) {
 			if (ls->str && strcmp(ls->str, b->str) == 0) {
@@ -218,6 +231,7 @@ lsln_or(lsln_t * a, lsln_t * b)
 			}
 		}
 	}
+*/
 
 	return res;
 }
@@ -238,14 +252,16 @@ lsln_and(lsln_t * a, lsln_t * b)
 {
 	lsln_t         *ls, *res = 0;
 
-	for (ls = a; ls; ls = ls->next) {
-		res = lsln_add(res, ls->str);
-		ls->str = 0;
-	}
-
-	for (ls = b; ls; ls = ls->next) {
-		res = lsln_add(res, ls->str);
-		ls->str = 0;
+	LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "lsnl_and" ) ; 
+	for (; b; b = b->next) {
+		for (ls = a; ls; ls = ls->next) {
+			if (ls->str && strcmp(ls->str, b->str) == 0) {
+				traceLog(LOG_DEBUG, "Add %s", ls->str);
+				res = lsln_add(res, ls->str);
+				ls->str = 0;
+				break;
+			}
+		}
 	}
 
 	return res;
@@ -299,6 +315,15 @@ lsln_to_arr(lsln_t * sl)
 		arr[i] = sl->str;
 
 	return arr;
+}
+
+static void
+lsln_print( lsln_t *ll )
+{
+	int i;
+
+	for( i=0 ;ll ; i++, ll = ll->next)
+		traceLog( LOG_INFO, "(%d) \"%s\"", i, ll->str);
 }
 
 /*
@@ -868,7 +893,7 @@ lsln_t         *
 get_results(LDAP * ld,
 	    LDAPMessage * res, lsln_t * attr, lsln_t * val, int type, int ao)
 {
-	int             i, nr;
+	int             i, nr, wildcard = 0;
 	lsln_t         *set = 0;
 	LDAPMessage    *e;
 	BerElement     *be = NULL;
@@ -882,6 +907,8 @@ get_results(LDAP * ld,
 	/*
 	 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Found %d matching entries", nr ) ; 
 	 */
+	if ( val && index(val->str,'*'))
+		wildcard = 1;
 
 	if (ao == SC_OR) {
 		/*
@@ -938,8 +965,8 @@ get_results(LDAP * ld,
 						 * disregard if not a value
 						 * I'm looking for 
 						 */
-						if (lsln_find(val, vect[i]) ==
-						    0)
+						if ( !wildcard &&
+						    lsln_find(val, vect[i]) == 0)
 							continue;
 
 						set =
@@ -990,8 +1017,8 @@ get_results(LDAP * ld,
 					vect = ldap_get_values(ld, e, ap);
 
 					for (i = 0; vect[i]; i++) {
-						if (lsln_find(val, vect[i]) ==
-						    0)
+						if (!wildcard &&
+						    lsln_find(val, vect[i]) == 0)
 							continue;
 
 						set =
@@ -1236,8 +1263,10 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 	LOG( SPOCP_DEBUG ) {
 		if (arr == 0)
 			traceLog(LOG_DEBUG, "LDAP return NULL (%d)", *ret );
-		else
-			traceLog(LOG_DEBUG, "LDAP return a set (%d)", *ret);
+		else {
+			traceLog(LOG_DEBUG, "LDAP returned a set (%d)", *ret);
+			lsln_print( arr );
+		}
 	} 
 
 	return arr;
@@ -1398,14 +1427,50 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 					vset_free(sp);
 					return 0;
 				}
-			} else if (sp->left->val && sp->right->val) {
-				if (sp->val)
-					lsln_free(sp->val);
-				sp->val =
-				    lsln_and(sp->left->val, sp->right->val);
+			} else {
+				if (sp->left->val && sp->right->val) {
+					if (sp->val)
+						lsln_free(sp->val);
+
+					sp->val =
+					    lsln_and(sp->left->val, sp->right->val);
+
+				} else if (sp->left->val && sp->right->dn) {
+					if( sp->restype == SC_DN ) {
+						if (sp->dn)
+							lsln_free(sp->dn);
+					} else if (sp->val)
+						lsln_free(sp->val);
+
+					arr =
+					    lsln_and(sp->left->val, sp->right->dn);
+
+					if( sp->restype == SC_DN ) 
+						sp->dn = arr;
+					else
+						sp->val = arr;
+
+				} else if (sp->left->dn && sp->right->val) {
+					if( sp->restype == SC_DN ) {
+						if (sp->dn)
+							lsln_free(sp->dn);
+					} else if (sp->val)
+						lsln_free(sp->val);
+
+					arr =
+					    lsln_and(sp->left->dn, sp->right->val);
+
+					if( sp->restype == SC_DN ) 
+						sp->dn = arr;
+					else
+						sp->val = arr;
+				}
+				else
+					return 0;
 
 				rm_children(sp);
-				if (sp->val == 0) {
+				if (( sp->restype == SC_DN && sp->dn == 0) ||
+				    ( sp->restype != SC_DN && sp->val == 0)) {
 					/*
 					 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "The
 					 * resulting set was empty" ) ; 
@@ -1413,9 +1478,6 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 					vset_free(sp);
 					return 0;
 				}
-			} else {
-				vset_free(sp);
-				return 0;
 			}
 		}
 	} else if (sp->type == SC_OR) {
@@ -1519,7 +1581,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 
 	LOG( SPOCP_DEBUG ) {
 		tmp = oct2strdup( cpp->arg, '%' );
-		traceLog( LOG_DEBUG , "Ldapset test on: \"%s\"", tmp );
+		LOG( SPOCP_DEBUG) traceLog( LOG_DEBUG , "Ldapset test on: \"%s\"", tmp );
 		free(tmp);
 	}
 
@@ -1528,7 +1590,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 
 	LOG( SPOCP_DEBUG ) {
 		tmp = oct2strdup( oct, '%' );
-		traceLog( LOG_DEBUG , "Expanded: \"%s\"", tmp);
+		LOG( SPOCP_DEBUG) traceLog( LOG_DEBUG , "Expanded: \"%s\"", tmp);
 		free(tmp);
 	}
 
