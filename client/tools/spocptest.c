@@ -76,7 +76,7 @@ main(int argc, char **argv)
 
 			memset(&qres, 0, sizeof(queres_t));
 
-			r = spocpc_send_query(spocp, path, rule, &qres) ;
+			r = spocpc_str_send_query(spocp, path, rule, &qres) ;
 
 			if ( r == SPOCPC_OK && qres.rescode == SPOCP_SUCCESS) {
 				if (qres.blob) {
@@ -126,7 +126,7 @@ main(int argc, char **argv)
 
 			memset(&qres, 0, sizeof(queres_t));
 
-			r = spocpc_send_query(spocp, path, rule, &qres);
+			r = spocpc_str_send_query(spocp, path, rule, &qres);
 
 			if (r == SPOCPC_OK) {
 				if (qres.rescode != ok) {

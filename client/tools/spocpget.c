@@ -67,7 +67,7 @@ spocp_list(SPOCP * spocp, char *file)
 #endif
 
 	if (subject &&
-	    (spocpc_send_subject(spocp, "subject", &qres) != SPOCPC_OK ||
+	    (spocpc_str_send_subject(spocp, "subject", &qres) != SPOCPC_OK ||
 		qres.rescode != SPOCP_SUCCESS))
 		exit(1);
 

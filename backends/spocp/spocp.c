@@ -13,12 +13,14 @@
 #include <spocpcli.h>
 
 /*
- * arg is composed of the following parts spocphost:path:rule
+ * arg is composed of the following parts spocphost:operation:arg
  * 
+ * where arg are [len ":" path] len ":" sexp [ len ":" bcond [ len ":" blob ]]
+ *
  * The native Spocp protocol is used 
  */
 
-extern int      debug;
+extern int      spocpc_debug;
 befunc          spocp_test;
 
 static int
@@ -40,13 +42,14 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 {
 	spocp_result_t  r = SPOCP_DENIED;
 
-	octarr_t       *argv;
-	octet_t        *oct;
-	char           *path, *server, *query;
-	becon_t        *bc = 0;
-	SPOCP          *spocp;
-	pdyn_t         *dyn = cpp->pd;
-	queres_t       qres ;
+	octarr_t	*argv;
+	octet_t		*host, *oper, *oct, *path, *query=0;
+	octet_t		*rule=0, *info=0, *bcond=0;
+	char		*server;
+	becon_t		*bc = 0;
+	SPOCP		*spocp;
+	pdyn_t		*dyn = cpp->pd;
+	queres_t	qres ;
 
 	if (cpp->arg == 0)
 		return SPOCP_MISSING_ARG;
@@ -59,13 +62,13 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 	if (oct != cpp->arg)
 		oct_free(oct);
 
-	debug = 0;
-	oct = argv->arr[0];
+	spocpc_debug = 0;
+	host = argv->arr[0];
 
 	memset( &qres, 0, sizeof( queres_t )) ;
 
-	if (dyn == 0 || (bc = becon_get(oct, dyn->bcp)) == 0) {
-		server = oct2strdup(oct, 0);
+	if (dyn == 0 || (bc = becon_get(host, dyn->bcp)) == 0) {
+		server = oct2strdup(host, 0);
 		traceLog("Spocp query to %s", server);
 
 		spocp = spocpc_open( 0, server, 2);
@@ -77,7 +80,7 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 		} else if (dyn && dyn->size) {
 			if (!dyn->bcp)
 				dyn->bcp = becpool_new(dyn->size);
-			bc = becon_push(oct, &P_spocp_close, (void *) spocp,
+			bc = becon_push(host, &P_spocp_close, (void *) spocp,
 					dyn->bcp);
 		}
 	} else {
@@ -87,9 +90,9 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 		 * sending a dummy query ? 
 		 */
 		if ((r =
-		     spocpc_send_query(spocp, "", "(5:XxXxX)",
+		     spocpc_str_send_query(spocp, "", "(5:XxXxX)",
 				       &qres)) == SPOCPC_OK) {
-			if( qres.rescode == SPOCP_UNAVAILABLE )
+			if (qres.rescode == SPOCP_UNAVAILABLE )
 				if (spocpc_reopen(spocp, 1) == FALSE)
 					r = SPOCP_UNAVAILABLE;
 		}
@@ -105,15 +108,29 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 		else {
 			traceLog("filedesc: %d", spocp->fd);
 
-			path = oct2strdup(argv->arr[1], 0);
-			query = oct2strdup(argv->arr[2], 0);
+			oper = argv->arr[1];
+			path = argv->arr[2];
 
-			if ((r =
-			     spocpc_send_query(spocp, path, query,
-					       &qres)) == SPOCPC_OK ) {
+			if (oct2strcmp( oper, "QUERY") == 0 ) {
+				query = argv->arr[3];
+				r = spocpc_send_query(spocp, path, query,
+					       &qres);
+			}
+			else if (oct2strcmp( oper, "ADD") == 0 ) {
+				rule = argv->arr[3];
+				if (argv->n >= 4 ) 
+					bcond = argv->arr[4];
+				if (argv->n == 5 ) 
+					info = argv->arr[5];
+
+				r = spocpc_send_add(spocp, path, rule, bcond,
+				    info, &qres);
+			}
+
+			if (r == SPOCPC_OK ) {
 				if (qres.rescode == SPOCP_SUCCESS ) {
 					r = SPOCP_SUCCESS ;
-					if( qres.blob ) {
+					if (qres.blob ) {
 						/* just pick the first */
 						octmove(blob, qres.blob->arr[0]);	
 						octarr_free(qres.blob);
@@ -122,9 +139,6 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 			}
 
 			traceLog("Spocp returned:%d", (int) r);
-
-			free(path);
-			free(query);
 		}
 	}
 

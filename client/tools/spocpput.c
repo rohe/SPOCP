@@ -78,7 +78,7 @@ spocp_add(SPOCP * spocp, char *file, char *subject)
 #endif
 
 	if (subject &&
-	    (spocpc_send_subject(spocp, "subject", &qres) != SPOCPC_OK ||
+	    (spocpc_str_send_subject(spocp, "subject", &qres) != SPOCPC_OK ||
 		qres.rescode != SPOCP_SUCCESS))
 		exit(1);
 
@@ -113,7 +113,7 @@ spocp_add(SPOCP * spocp, char *file, char *subject)
 		memset(&qres, 0, sizeof(queres_t));
 
 		if ((rc =
-			spocpc_send_add(spocp, path, line, bcexp, 0,
+			spocpc_str_send_add(spocp, path, line, bcexp, 0,
 			    &qres)) != SPOCPC_OK)
 			printf("COMMUNICATION PROBLEM [%d]\n", rc);
 

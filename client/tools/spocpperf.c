@@ -188,7 +188,7 @@ main(int argc, char **argv)
 			arr[i++] = strdup(buf);
 
 		memset(&qres, 0, sizeof(queres_t));
-		if (spocpc_send_query(spocp, path, buf, &qres) == SPOCPC_OK &&
+		if (spocpc_str_send_query(spocp, path, buf, &qres) == SPOCPC_OK &&
 		    qres.rescode == SPOCP_SUCCESS) {
 			if (qres.blob) {
 				int l;
@@ -208,7 +208,7 @@ main(int argc, char **argv)
 	for (j = 0; j < repeat; j++) {
 		for (k = 0; k < i; k++) {
 			memset(&qres, 0, sizeof(queres_t));
-			if (spocpc_send_query(spocp, path, arr[k],
+			if (spocpc_str_send_query(spocp, path, arr[k],
 				&qres) == SPOCP_SUCCESS) {
 				if (qres.blob) {
 					int l;

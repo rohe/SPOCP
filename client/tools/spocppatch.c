@@ -221,11 +221,11 @@ main(int argc, char **argv)
 		if (*s == '+') {
 			if (spocpc_debug)
 				traceLog("rule [%s]", cp);
-			res = spocpc_send_add(spocp, path, cp, 0, 0, &qres);
+			res = spocpc_str_send_add(spocp, path, cp, 0, 0, &qres);
 		} else if (rid) {	/* can't do delete without a ruleid */
 			if (spocpc_debug)
 				traceLog("ruleid [%s]", ruleid);
-			res = spocpc_send_delete(spocp, path, ruleid, &qres);
+			res = spocpc_str_send_delete(spocp, path, ruleid, &qres);
 		} else
 			res = SPOCPC_PARAM_ERROR;
 
