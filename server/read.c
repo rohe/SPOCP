@@ -145,6 +145,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 		op = oct_new( 256, NULL);
 		sp = getcwd(op->val, op->size);
 		traceLog(LOG_ERR,"I'm in \"%s\"", sp);
+		oct_free(op);
 		return -1;
 	}
 
