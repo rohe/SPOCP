@@ -10,8 +10,6 @@
 #include <wrappers.h>
 #include <macros.h>
 
-static char *actions[] = { "compare", "LIST", "ADD", "DELETE", "check", NULL } ;
-
 /*!
  * A successfull matching of a query against the ruledatabase returns a pointer
  * to a junction where one of the branches is a array of pointer to rule instances.
