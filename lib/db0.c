@@ -839,7 +839,6 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
 {
   ruleinfo_t  *ri ;
   ruleinst_t  *rt ;
-  octet_t     uid ;
 
   if( db->ri == 0 ) db->ri = ri = ruleinfo_new() ;
   else ri = db->ri ;
