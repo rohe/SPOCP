@@ -644,7 +644,6 @@ com_query(conn_t * conn)
 	spocp_iobuf_t  *out = conn->out;
 	ruleset_t      *rs = conn->rs;
 	char           *str;
-	int		wr;
 	/*
 	 * struct timeval tv ;
 	 * 

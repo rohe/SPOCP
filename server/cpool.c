@@ -12,7 +12,7 @@ cpool_new(int nc)
 	conn_t         *con;
 	int             i;
 
-	if (1)
+	if (0)
 		traceLog("cpool_new\n");
 
 	afpool = afpool_new();
@@ -22,7 +22,7 @@ cpool_new(int nc)
 
 	pool = afpool->free;
 
-	if (1)
+	if (0)
 		traceLog("max simultaneous connections: %d\n", nc);
 
 	if (nc) {
@@ -44,9 +44,10 @@ cpool_new(int nc)
 int
 srv_init(srv_t * srv, char *cnfg)
 {
+	/*
 	fprintf(stderr, "init_server\n");
-
 	fprintf(stderr, "Read config\n");
+	*/
 
 	if (read_config(cnfg, srv) == 0)
 		return -1;

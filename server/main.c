@@ -80,7 +80,7 @@ sig_chld(int signo)
 int
 main(int argc, char **argv)
 {
-	int             debug = 0;
+	int             debug = 0, conftest = 0;
 	int             i = 0, nrules = 0;
 	unsigned int    clilen;
 	struct sockaddr_in cliaddr;
@@ -127,7 +127,7 @@ main(int argc, char **argv)
 		if (strlen(argv[i]) > 512)
 			argv[i][512] = '\0';
 
-	while ((i = getopt(argc, argv, "hf:d:")) != EOF) {
+	while ((i = getopt(argc, argv, "htf:d:")) != EOF) {
 		switch (i) {
 
 		case 'f':
@@ -140,10 +140,14 @@ main(int argc, char **argv)
 				debug = 0;
 			break;
 
+		case 't':
+			conftest = 1;
+			break;
+
 		case 'h':
 		default:
 			fprintf(stderr,
-				"Usage: %s [-f configfile] [-d debuglevel]\n",
+				"Usage: %s [-t] [-f configfile] [-d debuglevel]\n",
 				argv[0]);
 			exit(0);
 		}
@@ -188,10 +192,13 @@ main(int argc, char **argv)
 		spocp_open_log(0, debug);
 
 
-	traceLog("Local context: \"%s\"", localcontext);
-	traceLog("initializing backends");
-	LOG(SPOCP_INFO) if (srv.root->db)
-		plugin_display(srv.plugin);
+	LOG(SPOCP_INFO) {
+		traceLog("Local context: \"%s\"", localcontext);
+		traceLog("initializing backends");
+		if (srv.root->db)
+			plugin_display(srv.plugin);
+	}
+
 	if (srv.plugin) {
 		run_plugin_init(&srv);
 	}
@@ -241,6 +248,12 @@ main(int argc, char **argv)
 		LOG(SPOCP_INFO)
 		    traceLog
 		    ("Got the rules from the persistent store, will not read the rulefile");
+	}
+
+	/* If only testing configuration and rulefile this is as far as I go */
+	if (conftest) {
+		traceLog("Configuration was OK");
+		exit(0);
 	}
 
 	gettimeofday(&start, NULL);
