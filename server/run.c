@@ -11,7 +11,7 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-#define XYZ 1
+#define XYZ 0
 
 /*
  * ---------------------------------------------------------------------- 
@@ -335,17 +335,22 @@ spocp_srv_run(srv_t * srv)
 			 * fdloop; } 
 			 */
 
-			/*
-			 * Get address not hostname of the connection 
-			 */
-			if ((err =
-			     spocp_getnameinfo((SA *) & client_addr, len, hname,
-					 NI_MAXHOST, ipaddr, 64)) != 0) {
-				close(client);
-				goto fdloop;
-			}
+			if( srv->type == AF_INET || srv->type == AF_INET6 ) {
+				/*
+				 * Get address not hostname of the connection 
+				 */
+				if ((err =
+			     	    spocp_getnameinfo((SA *) & client_addr,
+				    len, hname,
+				    NI_MAXHOST, ipaddr, 64)) != 0) {
+					close(client);
+					goto fdloop;
+				}
 
-			if (strcmp(hname, "localhost") == 0) {
+				if (strcmp(hname, "localhost") == 0) {
+					strcpy(hname, srv->hostname);
+				}
+			} else { /* something else I should get instead ? */
 				strcpy(hname, srv->hostname);
 			}
 
