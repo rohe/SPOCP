@@ -55,6 +55,23 @@ static void becon_free( becon_t *bc, int close )
 
 /* ------------------------------------------------------------------- */
 
+static int becpool_full( becpool_t *bcp )
+{
+  if( bcp->size == bcp->max ) return 1 ;
+  else return 0 ;
+}
+
+/* ====================================================================== * 
+                    PUBLIC FUNCTIONS 
+ * ====================================================================== */
+
+/*!
+ * \fn void becpool_rm( becpool_t *bcp, int close )
+ * \brief Removes a backend connection pool
+ * \param bcp The connection pool
+ * \param close A flag denoting whether any open connections should be closed
+ *    before the connection representation is removed
+ */
 void becpool_rm( becpool_t *bcp, int close )
 {
   becon_t *pres, *next ;
@@ -68,27 +85,12 @@ void becpool_rm( becpool_t *bcp, int close )
     }
 
     pthread_mutex_unlock( bcp->lock ) ;
-
-    if( close ) {
-      pthread_mutex_destroy( bcp->lock ) ;
-      free( bcp->lock ) ;
-    }
+    pthread_mutex_destroy( bcp->lock ) ;
+    free( bcp->lock ) ;
 
     free( bcp ) ;
   }
 }
-
-/* ------------------------------------------------------------------- */
-
-static int becpool_full( becpool_t *bcp )
-{
-  if( bcp->size == bcp->max ) return 1 ;
-  else return 0 ;
-}
-
-/* ====================================================================== * 
-                    PUBLIC FUNCTIONS 
- * ====================================================================== */
 
 /*!
  * \brief Creates a new backend connection pool
