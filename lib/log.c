@@ -97,9 +97,6 @@ tracelog_doit(const char *fmt, va_list ap)
 	time_t          t;
 	struct tm       tm;
 
-	if (spocp_logf == 0)
-		return;
-
 	memset(buf, 0, SPOCP_MAXLINE);
 
 	time(&t);
