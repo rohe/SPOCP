@@ -47,7 +47,6 @@ int spocp_writen( conn_t *ct, char *str, size_t n )
      just fake it */
 
   if( fd == STDIN_FILENO ) {
-    char *tmp ;
     octet_t oct ;
 
     oct.val = str ;
@@ -114,10 +113,7 @@ int spocp_readn( conn_t *ct, char *str, size_t max )
 
   if( retval ) {
     if(( n = read(fd, str, max)) <= 0 ) {
-      if( errno == EINTR || errno == 0 )
-      {
-        n = 0 ;
-      }
+      if( errno == EINTR || errno == 0 ) n = 0 ;
       else return -1 ;
     }
   }
@@ -136,13 +132,11 @@ void spocp_read_and_drop( conn_t *conn, unsigned int num )
   char buf[4096] ;
   int n, lc = 0 ;
 
-  do
-  {
+  do {
     if( num > 4096 ) n = spocp_readn( conn, buf, 4096 ) ;
     else n = spocp_readn( conn, buf, num ) ;
 
-    if( n == 0 )
-    {
+    if( n == 0 ) {
       lc++ ;
       continue ;
     }
@@ -403,6 +397,7 @@ int send_results( conn_t *conn )
   char           ldef[16] ;
   int            nr ;
 
+  if(0) timestamp( "Send results" ) ;
   len = out->w - out->r ;
 
   nr = snprintf( ldef, 16, "%d:", len ) ;
@@ -434,6 +429,8 @@ int send_results( conn_t *conn )
   
   /* managed to send everything, reset buffer */
   flush_io_buffer( out ) ;
+
+  if(0) timestamp( "Send done" ) ;
 
   return 1;
 }
@@ -487,5 +484,35 @@ void con_reset( conn_t *con )
       con->transpsec = 0 ;
     }
   }
+}
+
+int spocp_send_results( conn_t *conn )
+{
+  return send_results( conn ) ;
+}
+
+/* this is only used when reading from stdin */
+conn_t *spocp_open_connection( int fd, srv_t *srv )
+{
+  conn_t *con ;
+  pool_item_t *pi ;
+
+  pi = get_item( srv->connections ) ;
+  if( pi == 0 ) {
+    traceLog( "No items" ) ;
+    return 0 ;
+  }
+
+  con = (conn_t *) pi->info ;
+
+  if( con ) {
+    con->fd = fd ;
+    if( fd == STDIN_FILENO ) con->fdw = STDOUT_FILENO ; 
+    else con->fdw = -1 ;
+
+    con->srv = srv ;
+  }
+
+  return con ;
 }
 
