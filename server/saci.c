@@ -407,13 +407,14 @@ spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
     return SPOCP_SUCCESS ;
   }
 
-  oct.val = path ;
-  oct.len = strlen(path) ;
+  oct_assign( &oct, path ) ;
 
   if( 0 ) traceLog( "Looking for ruleset [%s](%p)", path, con->rs ) ;
 
   rs = con->rs ;
-  if( ruleset_find( &oct, &rs ) != 0 ) return SPOCP_DENIED ;
+
+  /* No ruleset means evrything is allowed !!! */
+  if( ruleset_find( &oct, &rs ) == 0 ) return SPOCP_SUCCESS ;
 
   if( 0 ) traceLog( "Making the internal access query" ) ;
   sexp = sexp_constr( con, arg ) ;
