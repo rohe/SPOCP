@@ -128,11 +128,11 @@ spocp_open_log(char *file, int level)
 	int	lev;
 	char	*cp;
 
-	if (file == 0 || *file == 0 )
-		return SPOCP_MISSING_ARG;
-
 	spocp_loglevel = (level & SPOCP_LEVELMASK);
 	spocp_debug = level;
+
+	if (file == 0 || *file == 0 )
+		return SPOCP_MISSING_ARG;
 
 	cp = index( file, ':' );
 	if (cp == 0) 

@@ -212,6 +212,13 @@ opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
 {
 	spocp_result_t r = SPOCP_SUCCESS;
 
+	if (conn->oparg == 0 ) {
+		if (min) 
+			return SPOCP_MISSING_ARG;
+		else
+			return SPOCP_SUCCESS;
+	}
+
 	/* Too many or few arguments? There might not be a max */
 	if (max && conn->oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
 	if (conn->oparg->n < min) return SPOCP_MISSING_ARG;
@@ -868,7 +875,7 @@ com_list(conn_t * conn)
 
 	if (conn->transaction) return SPOCP_UNWILLING;
 
-	if ((rc = opinitial( conn, &rs, 1, 1, 0)) == SPOCP_SUCCESS ) {
+	if ((rc = opinitial( conn, &rs, 1, 0, 0)) == SPOCP_SUCCESS ) {
 
 /*	
 		if (0)

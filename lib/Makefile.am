@@ -14,6 +14,6 @@ libspocp_la_SOURCES =  \
 	plugin.c cachetime.c rvapi.c aci.c varr.c bcond.c \
 	dback.c dbapi.c cache.c sexptool.c parse.c sum.c
 
-libspocp_la_LDFLAGS = -version-info 1:4:0
-libspocpbasic_la_LDFLAGS = -version-info 1:4:0
+libspocp_la_LDFLAGS = -version-info 2:1:0
+libspocpbasic_la_LDFLAGS = -version-info 2:1:0
 
