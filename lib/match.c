@@ -245,7 +245,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 							vl->
 							item[SPOC_ENDOFRULE]->
 							val.id, comp->blob);
-					if (r != SPOCP_SUCCESS)
+					if (r == SPOCP_SUCCESS)
 						return vl;
 				} 
 			}
@@ -302,7 +302,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 					r = bcond_check(comp->head,
 						jp->item[SPOC_ENDOFRULE]->val.
 						id, comp->blob);
-					if (r != SPOCP_SUCCESS)
+					if (r == SPOCP_SUCCESS)
 						return jp;
 				}
 
@@ -315,7 +315,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 				r = bcond_check(comp->head,
 						vl->item[SPOC_ENDOFRULE]->val.
 						id, comp->blob);
-				if (r != SPOCP_SUCCESS)
+				if (r == SPOCP_SUCCESS)
 					return vl;
 			}
 		} else {
@@ -345,7 +345,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		 */
 		r = bcond_check(comp->head, jp->item[SPOC_ENDOFRULE]->val.id,
 				comp->blob);
-		if (r != SPOCP_SUCCESS)
+		if (r == SPOCP_SUCCESS)
 			return 0;
 		else
 			return jp;
