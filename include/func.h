@@ -90,6 +90,8 @@ void      strarr_free( strarr_t *sa ) ;
 
 int      str_expand( char *src, keyval_t *kvp, char *dest, size_t size ) ;
 
+char *sexp_print( char *sexp, unsigned int *bsize, char *fmt, ... ) ;
+
 /* free.c */
 
 void atom_free( atom_t *ap ) ;
@@ -368,7 +370,7 @@ void   rbt_print( rbt_t *rbt ) ;
 parr_t *rbt2parr( rbt_t *rh ) ;
 
 /* octnode.c */
-octnode_t *octnode_add( octnode_t *on, octet_t *oct ) ;
+octnode_t *octnode_add( octnode_t *on, octet_t *oct, int link ) ;
 void       octnode_free( octnode_t *on ) ;
 octnode_t *octnode_join( octnode_t *a, octnode_t *b) ;
 int        octnode_cmp( octnode_t *a, octnode_t *b ) ;
