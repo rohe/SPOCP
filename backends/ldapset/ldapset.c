@@ -332,9 +332,9 @@ lsln_print( lsln_t *ll )
 static char *
 ls_strdup( char *s )
 {
-	 char *new, *sp, *cp;
+	char *new, *sp, *cp;
 
-	if( strstr( s, "*()\\") == NULL ) {
+	if( strpbrk( s, "*()\\") == NULL ) {
 		return strdup( s );
 	}
 
@@ -389,7 +389,7 @@ safe_strcat(char *dest, char *src, int *size)
 	sl = strlen(src);
 
 	if (sl + dl > *size) {
-		*size = sl + dl + 32;
+		*size = sl + dl + 128;
 		tmp = realloc(dest, *size);
 		dest = tmp;
 	}
