@@ -200,7 +200,7 @@ typedef struct _conn {
   dbcmd_t          dbc ;
 
   /* transaction stuff */
-  int              transaction ;
+  int              transaction ; /* Set (!= 0) if transaction is active */
 
   pthread_mutex_t  clock ;
 
@@ -268,6 +268,13 @@ typedef struct _tpool {
   pthread_cond_t      queue_not_full;
   pthread_cond_t      queue_empty;
 } tpool_t;
+
+typedef struct opstack_t {
+	int			oper;
+	octet_t			*oppath;
+	octarr_t		*oparg;
+	struct opstack_t	*next;
+} opstack_t ;
 
 /* ---------------------------------------------------------------------- */
 

@@ -14,6 +14,8 @@
 #include <stdarg.h>
 #include "locl.h"
 
+#define UNKNOWN_RULESET 256
+
 typedef struct _rescode {
 	int             code;
 	char           *rc;
@@ -192,17 +194,75 @@ oparg_clear(conn_t * con)
 	con->oppath = 0;
 }
 
+/* ---------------------------------------------------------------------- */
+
+static spocp_result_t 
+opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
+{
+	spocp_result_t r = SPOCP_SUCCESS;
+
+	/* Too many arguments, there might not be a max */
+	if (max && conn->oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
+	if (conn->oparg->n < min) return SPOCP_MISSING_ARG;
+
+	/* Only path definitions start with '/' and they have to */
+	if( path && *(conn->oparg->arr[0]->val) == '/') 
+		conn->oppath = octarr_pop(conn->oparg);
+	else 
+		conn->oppath = 0;
+	
+	if (conn->oparg->n < min) return SPOCP_MISSING_ARG;
+
+	if (( r = operation_access(conn)) == SPOCP_SUCCESS) {
+
+		if( conn->oppath == 0 );
+		else if ((ruleset_find(conn->oppath, rs)) != 1) {
+			char           *str;
+
+			str = oct2strdup(conn->oppath, '%');
+			traceLog("ERR: No \"/%s\" ruleset", str);
+			free(str);
+
+			r = SPOCP_DENIED|UNKNOWN_RULESET;
+		}
+	} 
+
+	return r;
+}
+
+static spocp_result_t
+postop( conn_t *conn, spocp_result_t rc, const char *msg)
+{
+	int wr;
+
+	add_response(conn->out, rc, msg);
+
+	if (msg != NULL)
+		free((char *) msg);
+
+	if ((wr = send_results(conn)) == 0)
+		rc = SPOCP_CLOSE;
+
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
+
+	return rc;
+}
+
+/* ---------------------------------------------------------------------- */
+
 spocp_result_t
 com_capa(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
 	const char     *msg = NULL;
-	int             wr;
 
 	LOG(SPOCP_INFO) traceLog("Attempt to authenticate");
 
 #ifdef HAVE_SASL
 	if (conn->sasl == NULL) {
+		int	wr;
+
 		wr = sasl_server_new("spocp",
 				     conn->srv->hostname,
 				     NULL, NULL, NULL, NULL, 0, &conn->sasl);
@@ -215,9 +275,10 @@ com_capa(conn_t * conn)
 	}
 
 	if (conn->oparg->n == 0) {	/* list auth mechs */
-		const char     *mechs;
-		size_t          mechlen;
-		int             count;
+		const char	*mechs;
+		size_t		mechlen;
+		int		count;
+		int		wr;
 
 		wr = sasl_listmech(conn->sasl, NULL, NULL, " ", NULL, &mechs,
 				   &mechlen, &count);
@@ -233,18 +294,7 @@ com_capa(conn_t * conn)
       err:
 #endif
 
-	add_response(conn->out, r, msg);
-
-	if (msg != NULL)
-		free((char *) msg);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
+	return postop( conn, r, msg );
 }
 
 spocp_result_t
@@ -392,14 +442,7 @@ com_starttls(conn_t * conn)
 	}
 #endif
 
-	add_response(conn->out, r, 0);
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -448,21 +491,12 @@ spocp_result_t
 com_logout(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_CLOSE;
-	int             wr;
 
 	LOG(SPOCP_INFO) traceLog("LOGOUT requested ");
 
-	add_response(conn->out, r, 0);
-
 	conn->stop = 1;
 
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -479,75 +513,22 @@ static spocp_result_t
 com_delete(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
-	int             wr;
-	ruleset_t      *rs = conn->rs, *trs;
+	ruleset_t      *rs = conn->rs;
 
 	LOG(SPOCP_INFO) traceLog("DELETE requested ");
 
-	/*
-	 * while within a transaction I have a local copy 
-	 */
-	if (conn->transaction)
-		rs = conn->rs;
-	else
-		rs = conn->srv->root;
-
-	switch (conn->oparg->n) {
-	case 1:
-		conn->oppath = 0;
-		break;
-
-	case 2:
-		conn->oppath = octarr_pop(conn->oparg);
-
-		if (*(conn->oppath->val) != '/') {
-			r = SPOCP_SYNTAXERROR;
-			goto D_DONE;
-		}
-		break;
-
-	case 0:
-		r = SPOCP_MISSING_ARG;
-		break;
-
-	default:
-		r = SPOCP_PARAM_ERROR;
-	}
-
-	if (operation_access(conn) != SPOCP_SUCCESS)
-		goto D_DONE;
-
-	trs = rs;
-	if ((ruleset_find(conn->oppath, &trs)) != 1) {
-		char           *str;
-
-		str = oct2strdup(conn->oppath, '%');
-		traceLog("ERR: No \"/%s\" ruleset", str);
-		free(str);
-
-		r = SPOCP_DENIED;
-	} else {
+	/* possible pathspecification but apart from that exactly one argument */
+	if ((r = opinitial(conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS){
 		/*
 		 * get write lock, do operation and release lock 
-		 */
-		/*
 		 * locking the whole tree, is that really necessary ? 
 		 */
 		pthread_rdwr_wlock(&rs->rw_lock);
-		r = ss_del_rule(trs, &conn->dbc, conn->oparg->arr[0], SUBTREE);
+		r = ss_del_rule(rs, &conn->dbc, conn->oparg->arr[0], SUBTREE);
 		pthread_rdwr_wunlock(&rs->rw_lock);
 	}
 
-      D_DONE:
-	add_response(conn->out, r, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -558,7 +539,6 @@ spocp_result_t
 com_commit(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
-	int             wr;
 	ruleset_t      *rs;
 
 	LOG(SPOCP_INFO) traceLog("COMMIT requested");
@@ -591,15 +571,7 @@ com_commit(conn_t * conn)
 		conn->transaction = 0;
 	}
 
-	add_response(conn->out, r, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -610,12 +582,12 @@ spocp_result_t
 com_query(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
-	int             wr;
 	octarr_t       *on = 0;
 	octet_t        *oct;
 	spocp_iobuf_t  *out = conn->out;
-	ruleset_t      *rs, *trs;
-	char           *str, buf[1024];
+	ruleset_t      *rs = conn->rs;
+	char           *str;
+	int		wr;
 	/*
 	 * struct timeval tv ;
 	 * 
@@ -631,61 +603,20 @@ com_query(conn_t * conn)
 		free(str);
 	}
 
-	/*
-	 * while within a transaction I have a local copy 
-	 */
+	if ((r = opinitial( conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS) {
+/*
+		if (0)
+			timestamp("ss_allow");
+*/
 
-	if (conn->transaction)
-		rs = conn->rs;
-	else
-		rs = conn->srv->root;
+		pthread_rdwr_rlock(&rs->rw_lock);
+		r = ss_allow(rs, conn->oparg->arr[0], &on, SUBTREE);
+		pthread_rdwr_runlock(&rs->rw_lock);
 
-	/*
-	 * traceLog( "OP argc: %d", conn->oparg->n) ; 
-	 */
-
-	switch (conn->oparg->n) {
-	case 1:
-		conn->oppath = 0;
-		break;
-
-	case 2:
-		conn->oppath = octarr_pop(conn->oparg);
-		if (*(conn->oppath->val) != '/') {
-			r = SPOCP_SYNTAXERROR;
-		}
-
-	case 0:
-		r = SPOCP_MISSING_ARG;
-		break;
-
-	default:
-		r = SPOCP_PARAM_ERROR;
-	}
-
-	if (r == SPOCP_SUCCESS
-	    && (r = operation_access(conn)) == SPOCP_SUCCESS) {
-
-		trs = rs;
-
-		if ((ruleset_find(conn->oppath, &trs)) != 1) {
-			str = oct2strdup(conn->oppath, '%');
-			traceLog("ERR: No \"/%s\" ruleset", str);
-			free(str);
-			r = SPOCP_DENIED;
-		} else if ((r = pathname_get(trs, buf, 1024)) == SPOCP_SUCCESS) {
-
-			DEBUG(SPOCP_DPARSE)
-			    traceLog("Matching against ruleset \"%s\"", buf);
-
-			if (0)
-				timestamp("ss_allow");
-			pthread_rdwr_rlock(&rs->rw_lock);
-			r = ss_allow(trs, conn->oparg->arr[0], &on, SUBTREE);
-			pthread_rdwr_runlock(&rs->rw_lock);
-			if (0)
-				timestamp("ss_allow done");
-		}
+/*
+		if (0)
+			timestamp("ss_allow done");
+*/
 	}
 
 	if (r == SPOCP_SUCCESS && on) {
@@ -710,25 +641,15 @@ com_query(conn_t * conn)
 			/*
 			 * wait for the master to empty the queue 
 			 */
-			pthread_mutex_lock(&conn->out->lock);
-			pthread_cond_wait(&conn->out->empty, &conn->out->lock);
-			pthread_mutex_unlock(&conn->out->lock);
+			pthread_mutex_lock(&out->lock);
+			pthread_cond_wait(&out->empty, &out->lock);
+			pthread_mutex_unlock(&out->lock);
 		}
 
 		octarr_free(on);
 	}
 
-	add_response(out, r, 0);
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-	if (0)
-		timestamp("Wrote result");
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -749,16 +670,10 @@ spocp_result_t
 com_login(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_DENIED;
-	int             wr;
 
 	LOG(SPOCP_WARNING) traceLog("LOGIN: not supported");
 
-	add_response(conn->out, r, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -769,7 +684,6 @@ spocp_result_t
 com_begin(conn_t * conn)
 {
 	spocp_result_t  rc = SPOCP_SUCCESS;
-	int             wr;
 	ruleset_t      *rs = conn->srv->root;
 
 	LOG(SPOCP_INFO) traceLog("BEGIN requested");
@@ -796,12 +710,7 @@ com_begin(conn_t * conn)
 			conn->transaction = 1;
 	}
 
-	add_response(conn->out, rc, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		rc = SPOCP_CLOSE;
-
-	return rc;
+	return postop( conn, rc, 0);
 }
 
 /*
@@ -812,47 +721,18 @@ spocp_result_t
 com_subject(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_DENIED;
-	int             wr;
-	ruleset_t      *rs;
+	ruleset_t      *rs = conn->srv->root;
 
 	LOG(SPOCP_INFO) traceLog("SUBJECT definition");
 
-	/*
-	 * while within a transaction I have a local copy 
-	 */
-	if (conn->transaction)
-		rs = conn->rs;
-	else
-		rs = conn->srv->root;
-
-	switch (conn->oparg->n) {
-	case 0:
-		oct_free(conn->sri.subject);
-		break;
-
-	case 1:
-		conn->sri.subject = octarr_pop(conn->oparg);
-		break;
-
-	case 2:		/* auth token too */
-		r = SPOCP_NOT_SUPPORTED;
-		break;
-
-	default:
-		r = SPOCP_PARAM_ERROR;
-		break;
+	if ((r = opinitial( conn, &rs, 0, 1, 1)) == SPOCP_SUCCESS) {
+		if (conn->oparg->n)
+			conn->sri.subject = octarr_pop(conn->oparg);
+		else
+			oct_free(conn->sri.subject);
 	}
 
-	/*
-	 * ?? if( operation_access( conn ) != SPOCP_SUCCESS ) goto S_DONE ; 
-	 */
-
-	add_response(conn->out, r, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	return r;
+	return postop( conn, r, 0);
 }
 
 /*
@@ -866,97 +746,37 @@ com_subject(conn_t * conn)
 spocp_result_t
 com_add(conn_t * conn)
 {
-	spocp_result_t  rc = SPOCP_DENIED;	/* The default */
-	ruleset_t      *trs, *rs = conn->rs;
-	spocp_iobuf_t  *out = conn->out;
-	int             wr;
+	spocp_result_t	rc = SPOCP_DENIED;	/* The default */
+	ruleset_t	*rs = conn->rs;
 
 	LOG(SPOCP_INFO) traceLog("ADD rule");
 
-	/*
-	 * while within a transaction I have a local copy 
-	 */
-	if (conn->transaction)
-		rs = conn->rs;
-	else
-		rs = conn->srv->root;
+	if ((rc = opinitial( conn, &rs, 1, 1, 3)) == (SPOCP_DENIED|UNKNOWN_RULESET)) {
+		ruleset_t	*trs ;
 
-	switch (conn->oparg->n) {
-	case 0:
-		rc = SPOCP_MISSING_ARG;
-		break;
-
-	case 1:
-		conn->oppath = 0;
-		break;
-
-		/*
-		 * if I have two arguments then it could be path + rule or
-		 * rule + blob It's easy to see the difference between path
-		 * and rule so I'll use that 
-		 */
-
-	case 2:		/* path and rule or rule and bcond */
-	case 3:		/* path, rule and bcond or rule,bcond and blob 
-				 */
-		if (*(conn->oparg->arr[0]->val) == '/') {	/* First
-								 * argument is 
-								 * path */
-			conn->oppath = octarr_pop(conn->oparg);
-		} else {	/* No path */
-			conn->oppath = 0;
+		if ((trs = ruleset_create(conn->oppath, &rs))){
+			rc = SPOCP_SUCCESS;
+			rs = trs;
 		}
-		break;
-
-
-	case 4:		/* path, rule, bcond and blob */
-		if (*(conn->oparg->arr[0]->val) != '/')
-			rc = SPOCP_SYNTAXERROR;
-		else
-			conn->oppath = octarr_pop(conn->oparg);
-
-		break;
-
-	default:
-		rc = SPOCP_PARAM_ERROR;
-		break;
 	}
 
-	if (rc != SPOCP_DENIED || operation_access(conn) != SPOCP_SUCCESS)
-		goto ADD_DONE;
+	if (rc == SPOCP_SUCCESS) {
+		/*
+		 * If a transaction is in operation wait for it to complete 
+		 */
+		pthread_mutex_lock(&rs->transaction);
+		/*
+		 * get write lock, do operation and release lock 
+		 */
+		pthread_rdwr_wlock(&rs->rw_lock);
 
-	/*
-	 * will not recreate something that already exists 
-	 */
-	trs = ruleset_create(conn->oppath, &rs);
+		rc = spocp_add_rule((void **) &(rs->db), conn->oparg);
 
-	/*
-	 * If a transaction is in operation wait for it to complete 
-	 */
-	pthread_mutex_lock(&trs->transaction);
-	/*
-	 * get write lock, do operation and release lock 
-	 */
-	pthread_rdwr_wlock(&trs->rw_lock);
+		pthread_rdwr_wunlock(&rs->rw_lock);
+		pthread_mutex_unlock(&rs->transaction);
+	}
 
-	rc = spocp_add_rule((void **) &(trs->db), conn->oparg);
-
-	pthread_rdwr_wunlock(&trs->rw_lock);
-	pthread_mutex_unlock(&trs->transaction);
-
-	while (conn->in->r < conn->in->w && WHITESPACE(*conn->in->r))
-		conn->in->r++;
-
-      ADD_DONE:
-	add_response(out, rc, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		rc = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return rc;
+	return postop( conn, rc, 0);
 }
 
 /*
@@ -969,7 +789,7 @@ spocp_result_t
 com_list(conn_t * conn)
 {
 	spocp_result_t  rc = SPOCP_DENIED;
-	ruleset_t      *rs, *trs;
+	ruleset_t      *rs = conn->rs;
 	int             i, r = 0, wr;
 	octet_t        *op;
 	octarr_t       *oa = 0;	/* where the result is put */
@@ -977,81 +797,51 @@ com_list(conn_t * conn)
 
 	LOG(SPOCP_INFO) traceLog("LIST requested");
 
-	/*
-	 * while within a transaction I have a local copy 
-	 */
-	if (conn->transaction)
-		rs = conn->rs;
-	else
-		rs = conn->srv->root;
 
-	/*
-	 * first argument, if any, might be ruleset name 
-	 */
+	if ((rc = opinitial( conn, &rs, 1, 1, 0)) == SPOCP_SUCCESS ) {
 
-	if (conn->oparg && *(conn->oparg->arr[0]->val) == '/') {
-		conn->oppath = octarr_pop(conn->oparg);
+/*	
+		if (0)
+			traceLog( "Getting the list" );
+*/
 
-		trs = rs;
-		if ((ruleset_find(conn->oppath, &trs)) != 1) {
-			char           *str;
+		oa = octarr_new( 32 ) ;
+		pthread_rdwr_rlock(&rs->rw_lock);
+		rc = treeList(rs, conn, oa, 1);
+		pthread_rdwr_runlock(&rs->rw_lock);
 
-			str = oct2strdup(conn->oppath, '%');
-			traceLog("ERR: No \"/%s\" ruleset", str);
-			free(str);
-			r = SPOCP_DENIED;
-			goto L_DONE;
-		}
-	} else
-		trs = rs;
+		
+/*
+		if (0)
+			traceLog( "Translating list to result" );
+*/
 
-	if (0)
-		traceLog( "Getting the list" );
+		if (oa && oa->n) {
+			for (i = 0; i < oa->n; i++) {
+				op = oa->arr[i];
 
-	oa = octarr_new( 32 ) ;
-	pthread_rdwr_rlock(&rs->rw_lock);
-	rc = treeList(trs, conn, oa, 1);
-	pthread_rdwr_runlock(&rs->rw_lock);
+				LOG(SPOCP_DEBUG) {
+					char           *str;
+					str = oct2strdup(op, '\\');
+					traceLog(str);
+					free(str);
+				}
 
-	
-	if (0)
-		traceLog( "Translating list to result" );
+				if ((rc = add_response_blob(out, SPOCP_MULTI,
+						op)) != SPOCP_SUCCESS)
+					break;
 
-	if (oa && oa->n) {
-		for (i = 0; i < oa->n; i++) {
-			op = oa->arr[i];
-
-			LOG(SPOCP_DEBUG) {
-				char           *str;
-				str = oct2strdup(op, '\\');
-				traceLog(str);
-				free(str);
-			}
-
-			if ((rc = add_response_blob(out, SPOCP_MULTI,
-					op)) != SPOCP_SUCCESS)
-				break;
-			/* wake_listener(1) ; */
-
-			if ((wr = send_results(conn)) == 0) {
-				r = SPOCP_CLOSE;
-				break;
+				if ((wr = send_results(conn)) == 0) {
+					r = SPOCP_CLOSE;
+					break;
+				}
 			}
 		}
 
 		octarr_free(oa);
 	}
 
-      L_DONE:
-	add_response(out, rc, 0);
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
+	return postop( conn, rc, 0);
 }
 
 /*

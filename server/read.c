@@ -131,7 +131,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	FILE           *fp;
 	char           *sp, *tmp;
 	int             n = 0, f = 0, r;
-	octet_t         oct;
+	octet_t         oct, *op;
 	octarr_t       *oa = 0;
 	ruleset_t      *rs = 0, *trs;
 	spocp_result_t  rc = SPOCP_SUCCESS;
@@ -173,7 +173,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	 * the length of the 'string'. '\' hex hex is probably going to be the 
 	 * choice 
 	 */
-	while (( chunk = get_object( &buf, 0 )) != 0 ) {
+	while (rc == SPOCP_SUCCESS && ( chunk = get_object( &buf, 0 )) != 0 ) {
 		if (oct2strcmp(chunk->val, ";include ") == 0) {	/* include
 								 * file */
 			ck = chunk->next;
@@ -185,8 +185,6 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			}
 		}
 		else if (*chunk->val->val == '/' || *chunk->val->val == '(') {
-			octet_t *o;
-
 			trs = rs;
 			if (*chunk->val->val == '/') {
 				if (ruleset_find( chunk->val, &trs) == 0) {
@@ -207,15 +205,13 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 
 			ruledef_return( &rdef, ck ) ;
 			if( rdef.rule ) {
-				tmp = chunk2sexp( rdef.rule ) ;
-				o = oct_new( strlen( tmp ), tmp) ;
-				oa = octarr_add(oa, o) ;
+				op = chunk2sexp( rdef.rule ) ;
+				oa = octarr_add(oa, op) ;
 			}
 			
 			if( rdef.bcond) {
-				tmp = chunk2sexp( rdef.bcond ) ;
-				o = oct_new( strlen( tmp ), tmp) ;
-				oa = octarr_add(oa, o) ;
+				op = chunk2sexp( rdef.bcond ) ;
+				oa = octarr_add(oa, op) ;
 			}
 			
 			if( rdef.blob ) {
@@ -237,15 +233,13 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			
 		}
        		else {
-			octet_t *key, *val, to;
+			octet_t *key, *val, *to = 0;
 
 			key = chunk->val ;
 			if( *chunk->next->next->val->val == '(' ) {
 				ruledef_return( &rdef, chunk->next->next ) ;
 				if( rdef.rule) {
-					tmp = chunk2sexp( rdef.rule ) ;
-					oct_assign( &to, tmp );
-					val = &to ;
+					val = to = chunk2sexp( rdef.rule ) ;
 				}
 				else {
 					LOG( SPOCP_WARNING )
@@ -258,7 +252,10 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			else 
 				val = chunk->next->next->val ;
 
-			bcdef_add(rs->db, srv->plugin, dbc, key, val);
+			if (bcdef_add(rs->db, srv->plugin, dbc, key, val) == 0 )
+				rc = SPOCP_LOCAL_ERROR;
+
+			if (to) oct_free( to );
 		}
 
 		chunk_free( chunk ) ;

@@ -433,7 +433,7 @@ octpbrk(octet_t * op, octet_t * acc)
 octet_t        *
 oct_new(size_t size, char *val)
 {
-	octet_t        *new;
+	octet_t	*new;
 
 	new = (octet_t *) Malloc(sizeof(octet_t));
 
@@ -453,6 +453,7 @@ oct_new(size_t size, char *val)
 			new->val = (char *) Calloc(new->len, sizeof(char));
 			new->size = new->len;
 		}
+		else new->len = size;
 
 		memcpy(new->val, val, new->len);
 	} 

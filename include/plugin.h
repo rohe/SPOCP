@@ -93,7 +93,7 @@ typedef struct {
  * plugin info 
  */
 
-/*! function to call for a raw-args */
+/*! \brief Prototype for functions that handle configuration directives */
 typedef         spocp_result_t(conf_args) (void **conf, void *cmd_data,
 					   int argc, char **argv);
 
@@ -132,9 +132,9 @@ typedef struct {
 /*
  * backend functions 
  */
-/*! function prototype for the backend test function */
+/*! \brief prototype for the backend test function */
 typedef         spocp_result_t(befunc) (cmd_param_t * cdp, octet_t * blob);
-/*! function prototype for the backend initialization function */
+/*! \brief prototype for the backend initialization function */
 typedef         spocp_result_t(beinitfn) (void **conf, pdyn_t ** d);
 
 /*! \brief Information about a dynamically plugged in backend */

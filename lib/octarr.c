@@ -53,10 +53,13 @@ octarr_dup(octarr_t * old)
 	int             i;
 	octarr_t       *new;
 
+	if (old == NULL) return NULL;
+
 	new = octarr_new(old->size);
 
 	for (i = 0; i < old->n; i++)
 		new->arr[i] = octdup(old->arr[i]);
+
 	new->n = old->n;
 
 	return new;

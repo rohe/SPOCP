@@ -7,6 +7,7 @@
 
 #include <time.h>
 #include <sys/time.h>
+#include <stdio.h>
 
 /*!
  * system health levels 
@@ -195,16 +196,25 @@ typedef struct {
 	char	*sexp_subject;
 } spocp_req_info_t;
 
+/*! \brief information about a piece of a S-expression, used for parsing */
 typedef struct _chunk {
+	/*! The piece */
 	octet_t        *val;
+	/*! Next chunk */
 	struct _chunk  *next;
+	/*! Previouos chunk */
 	struct _chunk  *prev;
 } spocp_chunk_t;
 
-typedef struct _char_buffert {
+/*! \brief Input buffer used by the S-expression parsing functions */
+typedef struct {
+	/*! Pointer to the string to parse */
 	char           *str;
+	/*! Where parsing should start */
 	char           *start;
+	/*! The size of the memory area where the string is stored */
 	int             size;
+	/*! Pointer to a file descriptor where more bytes can be gotten */
 	FILE           *fp;
 } spocp_charbuf_t;
 
