@@ -409,9 +409,13 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
             blob.len = bcond.len - d ; 
             blob.size = 0 ; 
         
+            oa = octarr_add( oa, octdup( &bcond )) ;
             oa = octarr_add( oa, octdup( &blob )) ;
           }
+          else 
+            oa = octarr_add( oa, octdup( &bcond )) ;
 
+/*
           if(( r = is_bcref( &bcond, &val )) == SPOCP_SUCCESS ) 
             bcd = bcdef_find( rs->db->bcdef, &val ) ;
           else
@@ -424,10 +428,11 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
             octclr( &prev ) ;
             return 0 ;
           }
+*/
         }
       }
 
-      if(( r = ss_add_rule( rs, oa, bcd )) == SPOCP_SUCCESS ) n++ ;
+      if(( r = spocp_add_rule( (void **) &(rs->db), oa )) == SPOCP_SUCCESS ) n++ ;
       else {
         LOG( SPOCP_WARNING ) traceLog("Failed to add rule: \"%s\"", oct.val ) ;
         f++ ;

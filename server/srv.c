@@ -610,12 +610,10 @@ moving toward
 
 spocp_result_t com_add( conn_t *conn )
 {
-  spocp_result_t rc = SPOCP_DENIED, r ; /* The default */
+  spocp_result_t rc = SPOCP_DENIED ; /* The default */
   ruleset_t      *trs, *rs = conn->rs ;
   spocp_iobuf_t  *out = conn->out ;
   int             wr ;
-  bcdef_t        *bcd = 0 ;
-  octet_t        br, *o ;
   
   LOG( SPOCP_INFO ) traceLog("ADD rule") ;
 
@@ -642,18 +640,6 @@ spocp_result_t com_add( conn_t *conn )
       }
       else { /* No path */
         conn->oppath = 0 ;
-
-        o = octarr_rm( conn->oparg, 1 ) ;
-
-        if( oct2strcmp( o, "NULL" ) == 0 ) bcd = NULL ;
-        else if(( r = is_bcref( o, &br )) == SPOCP_SUCCESS ) {
-          bcd = bcdef_find( rs->db->bcdef, &br ) ;
-          if( bcd == NULL ) rc = SPOCP_MISSING_ARG ;
-        }
-        else {
-          bcd = bcdef_add( rs->db->plugins, 0, o, &rs->db->bcdef ) ;
-          if( bcd == 0 ) rc = SPOCP_SYNTAXERROR ;
-        }
       }
       break ;
 
@@ -661,18 +647,6 @@ spocp_result_t com_add( conn_t *conn )
     case 4 : /* path, rule, bcond and blob */
       if( *(conn->oparg->arr[0]->val) != '/' ) rc = SPOCP_SYNTAXERROR ;
       else conn->oppath = octarr_pop( conn->oparg ) ;
-
-      o = octarr_rm( conn->oparg, 1 ) ;
-
-      if( oct2strcmp( o, "NULL" ) == 0 ) bcd = NULL ;
-      else if(( r = is_bcref( o, &br )) == SPOCP_SUCCESS ) { /* it's a ref */
-        bcd = bcdef_find( rs->db->bcdef, &br ) ;
-        if( bcd == NULL ) rc = SPOCP_MISSING_ARG ;
-      }
-      else {
-        bcd = bcdef_add( rs->db->plugins, 0, o, &rs->db->bcdef ) ;
-        if( bcd == 0 ) rc = SPOCP_SYNTAXERROR ;
-      }
 
       break ;
 
@@ -691,7 +665,7 @@ spocp_result_t com_add( conn_t *conn )
   /* get write lock, do operation and release lock */
   pthread_rdwr_wlock( &trs->rw_lock ) ;
 
-  rc = ss_add_rule( trs, conn->oparg, bcd ) ; 
+  rc = spocp_add_rule( (void **) &(trs->db), conn->oparg ) ; 
 
   pthread_rdwr_wunlock( &trs->rw_lock ) ;
   pthread_mutex_unlock( &trs->transaction ) ;
