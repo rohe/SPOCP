@@ -694,23 +694,18 @@ octet_t *
 chunk2sexp( spocp_chunk_t *c )
 {
 	int		p = 0, len = 0 ;
-	spocp_chunk_t	*ck ;
+	spocp_chunk_t	*ck = c ;
 	char		*sp, lf[16] ;
 	octet_t		*res;
 
 	if (c == 0) 
 		return 0;
 
-	/* The first chunk should be a "(" and the last a ")" */
-	if( oct2strcmp( c->val, "(" ) != 0 ) 
+	/* The first chunk should be a "(" and the last a ")", but where
+	 * the last one is I don't know at this point
+	 */
+	if( oct2strcmp( ck->val, "(" ) != 0 ) 
 		return 0;
-
-	/* find the last */
-	for( ck = c; c->next ; c = c->next);
-	if( oct2strcmp( ck->val, ")" ) != 0 ) 
-		return 0;
-
-	ck = c;
 
 	/* calculate the length of the resulting S-expression */
 	do {
