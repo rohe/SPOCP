@@ -173,7 +173,7 @@ varr_or(varr_t * a, varr_t * b, int noninv)
 }
 
 void           *
-varr_common(varr_t * a, varr_t * b)
+varr_first_common(varr_t * a, varr_t * b)
 {
 	unsigned int    i;
 
@@ -185,6 +185,24 @@ varr_common(varr_t * a, varr_t * b)
 			return a->arr[(int) i];
 
 	return 0;
+}
+
+varr_t		*
+varr_and(varr_t *a, varr_t *b)
+{
+	varr_t	*res = 0 ;
+	int	i ;
+
+	if (a == 0 || b == 0)
+		return 0 ;
+
+	for (i = 0; i < (int) a->n; i++) {
+		if (varr_find(b, a->arr[i]) >= 0 )
+			res = varr_add(res, a->arr[i]) ;
+	}
+
+
+	return res ;
 }
 
 void           *

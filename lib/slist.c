@@ -66,7 +66,7 @@ varr_junc_nth(varr_t * va, int n)
 junc_t         *
 varr_junc_common(varr_t * a, varr_t * b)
 {
-	return (junc_t *) varr_common(a, b);
+	return (junc_t *) varr_first_common(a, b);
 }
 
 junc_t         *
@@ -496,13 +496,10 @@ sl_match(slist_t * slp, boundary_t * item)
 		}
 	}
 
-	/* sieve out all the ones that are below and above */
-	if( up && lp ) res = varr_or(lp, up, 0);
-	else {
-		res = 0 ;
-		varr_free(lp);
-		varr_free(up);
-	}
+	/* sieve out all the ones that are both below and above */
+	res = varr_and(lp, up);
+	varr_free(lp);
+	varr_free(up);
 
 	return res;
 }
@@ -579,7 +576,9 @@ sl_range_match(slist_t * slp, range_t * rp)
 			break;
 	}
 
-	res = varr_or(lp, up, 0);
+	res = varr_and(lp, up);
+	varr_free(lp);
+	varr_free(up);
 
 	return res;
 }
@@ -642,7 +641,7 @@ sl_range_rm(slist_t * slp, range_t * rp, int *rc)
 	/*
 	 * there should never be more than one in common 
 	 */
-	jp = (junc_t *) varr_common(low->junc, upp->junc);
+	jp = (junc_t *) varr_first_common(low->junc, upp->junc);
 	if (jp) {
 		jp = varr_junc_rm(low->junc, jp);
 		jp = varr_junc_rm(upp->junc, jp);
@@ -903,7 +902,7 @@ sl_dup(slist_t * old, ruleinfo_t * ri)
 			/*
 			 * there should never be more than one common 
 			 */
-			if ((vp = varr_common(oc->junc, pc->junc)) != 0) {
+			if ((vp = varr_first_common(oc->junc, pc->junc)) != 0) {
 
 				jp = junc_dup((junc_t *) vp, ri);
 
@@ -915,7 +914,7 @@ sl_dup(slist_t * old, ruleinfo_t * ri)
 		/*
 		 * there should never be more than one common 
 		 */
-		if ((vp = varr_common(oc->junc, pc->junc)) != 0) {
+		if ((vp = varr_first_common(oc->junc, pc->junc)) != 0) {
 
 			jp = junc_dup((junc_t *) vp, ri);
 
