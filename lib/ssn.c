@@ -274,7 +274,7 @@ varr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, varr_t *res )
   return res ;
 }
 
-static junc_t *ssn_free( ssn_t *pssn )
+junc_t *ssn_free( ssn_t *pssn )
 {
   junc_t *juncp = 0 ;
   ssn_t  *down ;
