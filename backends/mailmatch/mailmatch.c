@@ -20,7 +20,7 @@
 #include <plugin.h>
 #include <rvapi.h>
 
-befunc mailmatch ;
+befunc addrmatch_test ;
 
 /*
    The format of arg is:
