@@ -415,20 +415,6 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
           else 
             oa = octarr_add( oa, octdup( &bcond )) ;
 
-/*
-          if(( r = is_bcref( &bcond, &val )) == SPOCP_SUCCESS ) 
-            bcd = bcdef_find( rs->db->bcdef, &val ) ;
-          else
-            bcd = bcdef_add( rs->db->plugins, 0, &bcond, &rs->db->bcdef ) ;
-          
-          if( bcd == 0 ) {
-            traceLog( "Reference to unknown boundary condition" ) ;
-            ruleset_free( vp ) ;
-            if( exp ) oct_free( exp ) ;
-            octclr( &prev ) ;
-            return 0 ;
-          }
-*/
         }
       }
 
@@ -502,7 +488,7 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
           }
         }
       }
-      else bcdef_add( rs->db->plugins, &key, &val, &rs->db->bcdef ) ;
+      else bcdef_add( rs->db, &key, &val ) ;
     }
 
     if( exp ) oct_free( exp ) ;

@@ -382,12 +382,13 @@ void bcdef_delink( bcdef_t *bcd )
 
 /* ---------------------------------------------------------------------- */
 
-bcdef_t *bcdef_add( plugin_t *plt, octet_t *name, octet_t *data, bcdef_t **list ) 
+bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data ) 
 {
   bcexp_t   *bce ;
   bcdef_t   *bcd, *bc ;
   char       cname[45] ;
   stree_t   *st ;
+  plugin_t  *plt = db->plugins ;
 
   if( *data->val == '(' ) {
     if(( st = parse_sexp( data )) == 0 ) return 0 ;
@@ -402,7 +403,7 @@ bcdef_t *bcdef_add( plugin_t *plt, octet_t *name, octet_t *data, bcdef_t **list 
 
   bcd = bcdef_new() ;
 
-  bce = transv_stree( plt, st, *list, bcd ) ;
+  bce = transv_stree( plt, st, db->bcdef, bcd ) ;
 
   stree_free( st ) ;
 
@@ -421,12 +422,14 @@ bcdef_t *bcdef_add( plugin_t *plt, octet_t *name, octet_t *data, bcdef_t **list 
     }
   }
 
+  dback_save( db->dback, bcd->name, data, 0, 0 ) ; 
+
   bcd->exp = bce ;
 
   if( bcd->name ) {
-    if( *list == 0 ) *list = bcd ;
+    if( db->bcdef == 0 ) db->bcdef = bcd ;
     else {
-      for( bc = *list ; bc->next ; bc = bc->next ) ;
+      for( bc = db->bcdef ; bc->next ; bc = bc->next ) ;
       bc->next = bcd ;
       bcd->prev = bc ;
     }
@@ -460,15 +463,15 @@ spocp_result_t bcdef_del( bcdef_t **root, octet_t *name )
 /* ---------------------------------------------------------------------- */
 
 spocp_result_t
-  bcdef_replace( plugin_t *pl, octet_t *name, octet_t *data, bcdef_t **root ) 
+  bcdef_replace( db_t *db, octet_t *name, octet_t *data ) 
 {
   bcdef_t    *old, *new ;
   bcexp_t    *bce ;
   ruleinst_t *ri ;
 
-  old = bcdef_find( *root, name ) ;
+  old = bcdef_find( db->bcdef, name ) ;
   
-  if(( new = bcdef_add( pl, name, data, root )) == 0 ) return SPOCP_PROTOCOLERROR ;
+  if(( new = bcdef_add( db, name, data )) == 0 ) return SPOCP_PROTOCOLERROR ;
 
   /* if nothing to replace this is just an add */
   if( old == 0 ) return SPOCP_SUCCESS ;
@@ -487,7 +490,7 @@ spocp_result_t
      should be removed */
   bcdef_delink( old ) ;
 
-  *root = bcdef_rm( *root, old ) ;
+  db->bcdef = bcdef_rm( db->bcdef, old ) ;
 
   bcdef_free( old ) ;
 
@@ -667,7 +670,7 @@ bcdef_t *bcdef_get( octet_t *o, db_t *db, spocp_result_t *rc )
     if( bcd == NULL ) *rc = SPOCP_MISSING_ARG ;
   }
   else {
-    bcd = bcdef_add( db->plugins, 0, o, &db->bcdef ) ;
+    bcd = bcdef_add( db, 0, o ) ;
     if( bcd == 0 ) *rc = SPOCP_SYNTAXERROR ;
   }
 
