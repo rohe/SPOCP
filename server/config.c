@@ -68,19 +68,13 @@ void conf_clear( srv_t *srv )
 
 /*------------------------------------------------------------------ */
 
-spocp_result_t conf_get( void *vp, int arg, char *plk, void **res )
+spocp_result_t conf_get( void *vp, infotype_t arg, char *pl, char *key, void **res )
 {
   srv_t     *srv = (srv_t *) vp ;
   octarr_t  *on ;
-  char      *pl, *key = 0 ;
 
   switch( arg ) {
     case PLUGIN :
-      pl = strdup(plk) ;
-      if(( key = index( pl, ':' )) != 0 ) {
-        *key++ = '\0'  ;
-      }
-
       if( srv->root == 0 || srv->root->db == 0 || srv->root->db->plugins == 0 ) *res = 0 ;
       else {
         if( key ) {
@@ -222,6 +216,11 @@ int read_config( char *file, srv_t *srv )
     if( *s == 0 || *s == '#' ) continue ;
 
     cp = strchr( s, '=' ) ;
+    if( cp == 0 ) {
+      fprintf(stderr, "Error in line %d\n", n ) ;
+      continue ;
+    }
+
     sp = cp ;
     for( *cp++ = '\0' ; *cp && ( *cp == ' ' || *cp == '\t' ) ; cp++ ) *cp = '\0' ;
     while( *sp == ' ' || *sp == '\t' ) *sp-- = '\0' ;
