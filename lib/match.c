@@ -151,14 +151,6 @@ varr_t *range2range_match( range_t *ra, slist_t *slp )
   return sl_range_match( slp, ra ) ;
 }
 
-__attribute__((unused)) static element_t *skip_list_tails( element_t *ep )
-{
-  for( ep = ep->memberof ; ep && ep->next == 0 ; ep = ep->memberof ) ;
-
-  if( ep ) return ep->next ;
-  else return 0 ;
-}
-
 /*
 
 This is the matrix over comparisions, that I'm using
@@ -456,124 +448,6 @@ static int common_type( varr_t *va )
   }
 
   return type ;
-}
-
-__attribute__((unused)) static varr_t *set_match( junc_t *db, varr_t *set, spocp_result_t *rc ) 
-{
-  int         type = common_type( set ) ;
-  int         i, n ;
-  varr_t     *pa[3], *tmp, *pp, *all = 0 ;
-  element_t  *elem ;
-  slist_t   **slp ;
-  branch_t   *bp = 0 ;
-
-  for( i = 0 ; i < 3 ; i++ ) pa[i] = 0 ;
-
-  switch( type ) {
-    case SPOC_LIST:  /* can't match */
-      return 0 ;
-
-    case SPOC_ATOM: /* can match prefix, suffix or range */
-      if(( bp = ARRFIND( db, SPOC_PREFIX )) != 0 ) {
-
-        elem = varr_nth( set, 0 ) ;
-        n = varr_len( set ) ;
-        pa[0] = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
-
-        for( i = 1 ; pa[0] && i < n ; i++ ) {
-          elem = varr_nth( set, i ) ;
-          tmp = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
-    
-          if( tmp ) pa[0] = varr_or( pa[0], tmp, 0 ) ;
-        }
-      }
-    
-      if(( bp = ARRFIND( db, SPOC_SUFFIX )) != 0 ) {
-    
-        elem = varr_nth( set, 0 ) ;
-        n = varr_len( set ) ;
-
-        pa[1] = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
-    
-        for( i = 1 ; pa[1] && i < n ; i++ ) {
-          elem = varr_nth( set, i ) ;
-          tmp = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
-    
-          if( tmp ) pa[1] = varr_or( pa[1], tmp, 0 ) ;
-        }
-      }
-    
-      if(( bp = ARRFIND( db, SPOC_RANGE )) != 0 ) {
-        /* how do I get to know the type ?
-           I don't so I have to test everyone */
-    
-        for( slp = bp->val.range , i = 0 ; slp && i < DATATYPES ; i++, slp++ ) {
-          elem = varr_nth( set, 0 ) ;
-          n = varr_len( set ) ;
-
-          if( *slp ) pp = atom2range_match( elem->e.atom, slp[i], i, rc ) ;
-          else continue ;
-
-          for( i = 1 ; pp && i < n ; i++ ) {
-            elem = varr_nth( set, i ) ;
-            tmp = atom2range_match( elem->e.atom, slp[i], i, rc ) ;
-            if( tmp ) pp = varr_or( pp, tmp, 0 ) ;
-          }
-
-          pa[2] = varr_or( pa[2], pp, 0 ) ;
-        }
-      }
-
-      if( pa[0] ) {
-        all = varr_or(pa[0], pa[1], 0) ;
-      }
-      break ;
-
-    case SPOC_PREFIX: /* can only match prefixes */
-      if(( bp = ARRFIND( db, SPOC_PREFIX )) != 0 ) {
-
-        elem = varr_nth( set, 0 ) ;
-        n = varr_len( set ) ;
-
-        pa[0] = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
-
-        for( i = 1 ; pa[0] && i < n ; i++ ) {
-          elem = varr_nth( set, i ) ;
-          tmp = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
-    
-          if( tmp ) pa[0] = varr_or( pa[0], tmp, 0 ) ;
-        }
-        all = pa[0] ;
-      }
-      break ;
-
-    case SPOC_SUFFIX: /* can only match suffixes */
-      if(( bp = ARRFIND( db, SPOC_SUFFIX )) != 0 ) {
-    
-        elem = varr_nth( set, 0 ) ;
-        n = varr_len( set ) ;
-
-        pa[1] = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
-    
-        for( i = 1 ; pa[1] && i < n ; i++ ) {
-          elem = varr_nth( set, i ) ;
-          tmp = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
-    
-          if( tmp ) pa[1] = varr_or( pa[1], tmp, 0 ) ;
-        }
-        all = pa[1] ;
-      }
-    
-      break ;
-
-    case SPOC_RANGE: /* can only match ranges */
-      break ;
-
-    case -1 : /* can only match another set */
-      break ; 
-  }
-
-  return all ; 
 }
 
 /*****************************************************************/
