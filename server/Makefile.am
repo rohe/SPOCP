@@ -1,7 +1,7 @@
 bin_PROGRAMS = spocd dbg_spocd
 
-common_SOURCES = con.c socket.c rdwr.c \
-	aci.c ruleset.c util.c read.c ss.c 
+common_SOURCES = con.c socket.c init.c \
+	saci.c ruleset.c util.c read.c ss.c 
 
 spocd_SOURCES = main.c srv.c thread.c tls.c \
 	config.c $(common_SOURCES)
