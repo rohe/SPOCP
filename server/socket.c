@@ -20,8 +20,6 @@ typedef struct sockaddr SA ;
 
 #define LISTENQ 256
 
-int lutil_pair( int sds[2] ) ;
-
 /* ---------------------------------------------------------------------- */
 
 int spocp_stream_socket( int lport )
