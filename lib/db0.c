@@ -47,10 +47,6 @@ static ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob, char *bcname ) ;
 ruleinst_t *ruleinst_dup( ruleinst_t *ri )  ;
 void       ruleinst_free( ruleinst_t *ri ) ;
 
-void       P_ruleinst_free( void * ) ;
-
-int P_uid_match( void  *vp, void *pattern ) ;
-
 /* ------------------------------------------------------------ */
 
 /* ------------------------------------------------------------ */
@@ -231,7 +227,7 @@ junc_t *atom_add( branch_t *bp, atom_t *ap )
 
 /************************************************************/
 
-junc_t *any_add( branch_t *bp ) 
+static junc_t *any_add( branch_t *bp ) 
 {
   if( bp->val.next == 0 ) bp->val.next = junc_new() ;
 
@@ -240,19 +236,19 @@ junc_t *any_add( branch_t *bp )
 
 /************************************************************/
 
-char *P_print_junc( item_t i )
+__attribute__((unused)) static char *P_print_junc( item_t i )
 {
   junc_print( 0, (junc_t *) i ) ;
 
   return 0 ;
 }
   
-void P_free_junc( item_t i )
+__attribute__((unused)) static void P_free_junc( item_t i )
 {
   junc_free(( junc_t *) i ) ;
 }
 
-item_t P_junc_dup( item_t i, item_t j )
+__attribute__((unused)) static item_t P_junc_dup( item_t i, item_t j )
 {
   return junc_dup( ( junc_t * ) i , ( ruleinfo_t *) j ) ; 
 }
@@ -347,7 +343,7 @@ junc_t *list_add( plugin_t *pl, branch_t *bp, list_t *lp, ruleinst_t *ri )
 *                                                           *
 ************************************************************/
 
-void list_clean( junc_t *jp, list_t *lp )
+static void list_clean( junc_t *jp, list_t *lp )
 {
   element_t *ep = lp->head, *next ;
   buck_t    *buck ;
@@ -438,7 +434,7 @@ Arguments:
 Returns: pointer to next node in the tree
 */
 
-junc_t *suffix_add( branch_t *bp, atom_t *ap )
+static junc_t *suffix_add( branch_t *bp, atom_t *ap )
 {
   /* assumes that the string to add is '\0' terminated */
   return ssn_insert( &bp->val.suffix, ap->val.val, BACKWARD ) ;
@@ -476,7 +472,7 @@ Arguments:
 Returns: pointer to next node in the tree
 */
 
-junc_t *rule_end( junc_t *ap, ruleinst_t *ri )
+static junc_t *rule_end( junc_t *ap, ruleinst_t *ri )
 {
   branch_t *bp ;
 
@@ -516,7 +512,7 @@ Returns: pointer to next node in the tree
 Should mark in some way that end of rule has been reached 
 */
 
-junc_t *list_close( junc_t *ap, element_t *ep, ruleinst_t *ri, int *eor )
+static junc_t *list_close( junc_t *ap, element_t *ep, ruleinst_t *ri, int *eor )
 {
   element_t *parent ;
 
@@ -721,7 +717,7 @@ ruleinst_t *ruleinst_dup( ruleinst_t *ri )
   return new ;
 }
 
-item_t P_ruleinst_dup( item_t i, item_t j )
+static item_t P_ruleinst_dup( item_t i, item_t j )
 {
   return (void *) ruleinst_dup( (ruleinst_t *) i ) ;
 }
@@ -738,7 +734,7 @@ void ruleinst_free( ruleinst_t *rt )
   }
 }
 
-int uid_match( ruleinst_t *rt, char *uid )
+static int uid_match( ruleinst_t *rt, char *uid )
 {
   /* traceLog( "%s <> %s", rt->uid, uid ) ; */
 
@@ -747,17 +743,17 @@ int uid_match( ruleinst_t *rt, char *uid )
 
 /* --------- ruleinst functions ----------------------------- */
 
-int P_match_uid( void  *vp, void *pattern )
+__attribute__((unused)) static int P_match_uid( void  *vp, void *pattern )
 {
   return uid_match( (ruleinst_t *) vp, (char *) pattern ) ;
 }
 
-void P_ruleinst_free( void *vp )
+static void P_ruleinst_free( void *vp )
 {
   ruleinst_free(( ruleinst_t * ) vp ) ;
 }
 
-int P_ruleinst_cmp( void *a, void *b )
+static int P_ruleinst_cmp( void *a, void *b )
 {
   ruleinst_t *ra, *rb ;
  
@@ -771,12 +767,12 @@ int P_ruleinst_cmp( void *a, void *b )
 }
 
 /* PLACEHOLDER */
-char *P_ruleinst_print( void *vp ) 
+static char *P_ruleinst_print( void *vp ) 
 {
   return 0 ;
 }
 
-Key P_ruleinst_key( item_t i )
+static Key P_ruleinst_key( item_t i )
 {
   ruleinst_t *ri = ( ruleinst_t *) i ;
 
@@ -875,7 +871,7 @@ int rules( db_t *db )
   else return 1 ;
 }
 
-varr_t *get_rule_inx( ruleinfo_t *ri ) 
+__attribute__((unused)) static varr_t *get_rule_inx( ruleinfo_t *ri ) 
 {
   if( ri == 0 ) return 0 ;
 
@@ -1009,7 +1005,7 @@ Arguments:
 Returns:	TRUE if OK
 */
 
-spocp_result_t store_right( db_t *db, element_t *ep, ruleinst_t *rt )
+static spocp_result_t store_right( db_t *db, element_t *ep, ruleinst_t *rt )
 {
   int         r ;
 
@@ -1091,14 +1087,14 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd
   return rc ;
 }
 
-int P_print_str( void *vp )
+__attribute__((unused)) static int P_print_str( void *vp )
 {
   traceLog( "%s", (char *) vp ) ;
  
   return 0 ;
 }
 
-int ruleinst_print( ruleinst_t *ri )
+static int ruleinst_print( ruleinst_t *ri )
 {
   char *str ;
 
@@ -1118,7 +1114,7 @@ int ruleinst_print( ruleinst_t *ri )
   return 0 ;
 }
 
-int P_print_ruleinstance( void *vp )
+__attribute__((unused)) static int P_print_ruleinstance( void *vp ) 
 {
   return ruleinst_print( (ruleinst_t *) vp ) ;
 }
