@@ -39,12 +39,12 @@ befunc          difftime_test;
  */
 
 /*
- * format of time definition diff = YYMMDD_HH:MM:SS;YYMMDDTHH:MM:SS; ('+' /
+ * format of time definition diff = YYMMDD_HH:MM:SS;YYYY-MM-DDTHH:MM:SS; ('+' /
  * '-' ) ('+' / '-' )
  * 
  * 000007_00:00:00;2003-09-21T08:00:00;++
  * 
- * 7 days
+ * more than 7 days after 20030921
  * 
  * 1 year = 365 days 1 month = 30 days 1 day = 86400 seconds
  * 
