@@ -173,3 +173,11 @@ time_test(cmd_param_t * cpp, octet_t * blob)
 	octarr_free(argv);
 	return res;
 }
+
+plugin_t        time_module = {
+	SPOCP20_PLUGIN_STUFF,
+	time_test,
+	NULL,
+	NULL
+};
+

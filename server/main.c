@@ -111,7 +111,8 @@ main(int argc, char **argv)
 	gethostname(localhost, NAME_MAX);
 	getdomainname(path, NAME_MAX);
 
-	printf("Domain: %s\n", path);
+	if (0)
+		printf("Domain: %s\n", path);
 
 	srv.hostname = strdup(localhost);
 

@@ -135,6 +135,7 @@ varr_dup(varr_t * old, dfunc * df)
 		else
 			new->arr[i] = df(old->arr[i], 0);
 	}
+        new->n = old->n ;
 
 	return new;
 }

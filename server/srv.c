@@ -240,6 +240,9 @@ com_capa(conn_t * conn)
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
 
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
+
 	return r;
 }
 
@@ -320,6 +323,9 @@ com_auth(conn_t * conn)
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
 
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
+
 	return r;
 }
 
@@ -389,6 +395,9 @@ com_starttls(conn_t * conn)
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
 
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
+
 	return r;
 }
 
@@ -424,6 +433,9 @@ com_rollback(conn_t * conn)
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
 
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
+
 	return r;
 }
 
@@ -445,6 +457,9 @@ com_logout(conn_t * conn)
 
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
+
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
 
 	return r;
 }
@@ -528,6 +543,9 @@ com_delete(conn_t * conn)
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
 
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
+
 	return r;
 }
 
@@ -576,6 +594,9 @@ com_commit(conn_t * conn)
 
 	if ((wr = send_results(conn)) == 0)
 		r = SPOCP_CLOSE;
+
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
 
 	return r;
 }
@@ -924,13 +945,15 @@ com_add(conn_t * conn)
 
 	while (conn->in->r < conn->in->w && WHITESPACE(*conn->in->r))
 		conn->in->r++;
-	iobuf_shift(conn->in);
 
       ADD_DONE:
 	add_response(out, rc, 0);
 
 	if ((wr = send_results(conn)) == 0)
 		rc = SPOCP_CLOSE;
+
+	iobuf_shift(conn->in);
+	oparg_clear(conn);
 
 	return rc;
 }

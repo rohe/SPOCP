@@ -222,6 +222,8 @@ plugin_load(plugin_t * top, char *name, char *load)
 	char           *modulename;
 	void           *handle;
 
+	traceLog( "Loading plugin: \"%s\"", name ) ;
+
 	for (pl = top; pl; pl = pl->next) {
 		if (strcmp(pl->name, name) == 0) {
 			traceLog("%s: Already loaded that plugin", name);

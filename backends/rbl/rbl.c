@@ -104,3 +104,10 @@ rbl_test(cmd_param_t * cpp, octet_t * blob)
 	else
 		return SPOCP_DENIED;
 }
+
+plugin_t        rbl_module = {
+	SPOCP20_PLUGIN_STUFF,
+	rbl_test,
+	NULL,
+	NULL
+};

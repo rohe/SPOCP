@@ -316,6 +316,9 @@ ruleset_create(octet_t * name, ruleset_t ** root)
 	} else
 		r = *root;
 
+
+	if( name == 0 || name->len == 0 ) return r ;
+
 	/*
 	 * special case 
 	 */
@@ -471,4 +474,5 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 
 	return rc;
 }
+
 

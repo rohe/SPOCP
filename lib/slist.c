@@ -37,7 +37,7 @@
  * ]->[ ]->[ ]->[ ]->[ ]->[ ]
  * 
  * The number of nodes skipped is variable, though at each level at least as
- * much as the larges on the immediate lower level 
+ * much as the largest one of the immediate lower level 
  */
 
 /************************************************************************/
@@ -354,7 +354,7 @@ sl_rec_find(slnode_t * node, boundary_t * item, int n, int *flag)
 
 		if (n == 0) {	/* reached the bottom */
 			*flag = 1;
-			return node->next[0];	/* So what's return is the
+			return node->next[0];	/* So what's returned is the
 						 * next bigger */
 		}
 
@@ -473,6 +473,7 @@ sl_match(slist_t * slp, boundary_t * item)
 	 * found a exakt match 
 	 */
 	if (flag == 0) {
+		/* collect all below */
 		for (nc = slp->head; nc != node->next[0]; nc = nc->next[0])
 			lp = varr_or(lp, nc->junc, 1);
 
@@ -484,7 +485,7 @@ sl_match(slist_t * slp, boundary_t * item)
 			if (nc->item == 0)
 				break;
 		}
-	} else {
+	} else { /* what I have is a pointer to a larger value */
 		for (nc = slp->head; nc != node; nc = nc->next[0])
 			lp = varr_or(lp, nc->junc, 1);
 
@@ -495,7 +496,13 @@ sl_match(slist_t * slp, boundary_t * item)
 		}
 	}
 
-	res = varr_or(lp, up, 0);
+	/* sieve out all the ones that are below and above */
+	if( up && lp ) res = varr_or(lp, up, 0);
+	else {
+		res = 0 ;
+		varr_free(lp);
+		varr_free(up);
+	}
 
 	return res;
 }
