@@ -29,9 +29,9 @@ spocp_result_t difftime_test( octet_t *arg, becpool_t *b, octet_t *blob ) ;
 /* ======================================================== */
 
 /* format of time definition
- diff = YYMMDDTHH:MM:SS;YYMMDD_HH:MM:SS; ('+' / '-' ) ('+' / '-' )
+ diff = YYMMDD_HH:MM:SS;YYMMDDTHH:MM:SS; ('+' / '-' ) ('+' / '-' )
 
- 000007_00:00:00;2003-09-21T08:00:00
+ 000007_00:00:00;2003-09-21T08:00:00;++
 
  7 days 
 
@@ -45,20 +45,20 @@ spocp_result_t difftime_test( octet_t *arg, becpool_t *b, octet_t *blob ) ;
  delta = time difference
 
 [--]
- pt < gt && pt + delta <  gt
- +------>+      o
+ pt < gt && pt < gt - delta
+          +       ¤<---- o
 
 [-+]
- pt < gt && pt + delta >  gt
- +---o-->+      
+ pt < gt && pt > gt - delta
+       ¤<-+-------o      
 
 [+-]
  pt > gt && pt < gt + delta
- +<--o-------+
+  o-------+----->¤
  
 [++]
 pt > gt && pt > gt + delta
- o  <--------+
+  o---->¤ +
  
  */
 
