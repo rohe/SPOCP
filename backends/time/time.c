@@ -106,9 +106,8 @@ check_date(octet_t * date, time_t * pt, int flag)
 spocp_result_t
 time_test(cmd_param_t * cpp, octet_t * blob)
 {
-	spocp_result_t  res = SPOCP_SUCCESS;
-	char           *sp;
-	int             i;
+	spocp_result_t  res = SPOCP_DENIED;
+	char           *sp, *ep;
 	time_t          pt;
 	struct tm      *ptm;
 	octarr_t       *argv;
@@ -137,35 +136,35 @@ time_test(cmd_param_t * cpp, octet_t * blob)
 	}
 
 	switch (argv->n) {
-	case 4:		/* time of day not later than */
+	case 5:		/* time of day not later than */
 		if ((res =
 		     check_time_of_day(argv->arr[4], &pt, 1)) != SPOCP_SUCCESS)
 			break;
 
-	case 3:		/* time of day not earlier than */
+	case 4:		/* time of day not earlier than */
 		if ((res =
 		     check_time_of_day(argv->arr[3], &pt, 0)) != SPOCP_SUCCESS)
 			break;
 
-	case 2:		/* the correct day of the week */
+	case 3:		/* the correct day of the week */
 		day = argv->arr[2];
 		if (day->len) {
-			for (sp = day->val, i = 0; *sp && i < (int) day->len;
-			     sp++, i++)
+			for (sp = day->val, ep = day->val+day->len; sp != ep && *sp ;
+			     sp++)
 				if ((*sp - '0') == ptm->tm_wday)
 					break;
 
-			if (i == (int) day->len) {
+			if (sp == ep) {
 				res = SPOCP_DENIED;
 				break;
 			}
 		}
 
-	case 1:		/* before this date */
+	case 2:		/* before this date */
 		if ((res = check_date(argv->arr[1], &pt, 1)) != SPOCP_SUCCESS)
 			break;
 
-	case 0:		/* after this date */
+	case 1:		/* after this date */
 		if ((res = check_date(argv->arr[0], &pt, 0)) != SPOCP_SUCCESS)
 			break;
 	}
