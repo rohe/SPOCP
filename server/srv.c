@@ -938,7 +938,19 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
   else return SPOCP_SUCCESS ;
 }
 
-/* --------------------------------------------------------------------------------- */
+/* ================================================================================ */
+/* 
+   Below is only used when reading and wrting to stdout, something you do when
+   you are debugging 
+*/
+/* ================================================================================ */
+
+void send_and_flush_results( conn_t *conn )
+{
+  send_results( conn ) ;
+
+  spocp_conn_write( conn ) ;
+}
 
 int native_server( conn_t *con )
 {
@@ -982,6 +994,7 @@ AGAIN:
         LOG( SPOCP_DEBUG ) traceLog( "command returned %d", r ) ;
         LOG( SPOCP_DEBUG ) traceLog( "%d chars left in the input buffer", in->w - in->r) ;
 
+        spocp_conn_write( con ) ;
         oparg_clear( con ) ;
 
         if( r == SPOCP_CLOSE ) goto clearout;
@@ -990,7 +1003,7 @@ AGAIN:
         }
         else if( r == SPOCP_UNKNOWNCOMMAND ) {  /* Unknown keyword */
           add_response( out, r ) ;
-          wr = send_results( con ) ;
+          send_and_flush_results( con ) ;
         }
 
         if( in->r == in->w ) iobuf_flush( in ) ;
@@ -1005,7 +1018,7 @@ AGAIN:
           l = get_len( &attr ) ;
           if(( r = iobuf_resize( in, l - attr.len )) != SPOCP_SUCCESS ) {
             add_response( out, r ) ;
-            wr = send_results( con ) ;
+            send_and_flush_results( con ) ;
             oparg_clear( con ) ;
             conn_iobuf_clear( con ) ;
           }
