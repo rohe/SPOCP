@@ -232,7 +232,8 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 	if (( r = operation_access(wi)) == SPOCP_SUCCESS) {
 
 		/* if a ruleset path is defined and exists use it */
-		if( wi->oppath != 0 && (ruleset_find(wi->oppath, rs)) != 1) {
+		if( wi->oppath != 0 &&
+		    (*rs = ruleset_find(wi->oppath, *rs)) == NULL) {
 			char           *str;
 
 			str = oct2strdup(wi->oppath, '%');
@@ -682,6 +683,7 @@ com_query(work_info_t *wi)
 		}
 	}
 
+	ruleset_tree( rs, 0 );
 	r = opinitial( wi, &rs, 1, 1, 1);
 	if (r == SPOCP_SUCCESS) {
 /*
@@ -832,11 +834,12 @@ com_add(work_info_t *wi)
 
 	rc = opinitial( wi, &rs, 1, 1, 3);
 	if (rc == UNKNOWN_RULESET) {
-		ruleset_t	*trs ;
+		octet_t		oct;
 
-		if ((trs = ruleset_create(wi->oppath, &rs))){
+		octln(&oct, wi->oppath);
+		if (ruleset_create(wi->oppath, rs) != NULL ){
 			rc = SPOCP_SUCCESS;
-			rs = trs;
+			rs = ruleset_find(&oct, rs);
 		}
 	}
 

@@ -101,6 +101,20 @@ ruleset_new(octet_t * name)
  */
 
 void
+ruleset_tree( ruleset_t *rs, int level )
+{
+	if (rs) {
+		traceLog(LOG_INFO, "(%d) Name: %s", level, rs->name);
+		if (rs->left)
+			ruleset_tree( rs->left, level );
+		if (rs->right)
+			ruleset_tree( rs->right, level );
+		if (rs->down)
+			ruleset_tree( rs->down, level+1 );
+	}
+}
+
+void
 ruleset_free(ruleset_t * rs)
 {
 	if (rs) {
@@ -153,7 +167,7 @@ one_level(octet_t * name, ruleset_t * rs)
 		return 0;
 
 	do {
-		if (0)
+		if (1)
 			traceLog(LOG_DEBUG,"one_level: [%s](%d),[%s]", name->val,
 				 name->len, rs->name);
 		c = oct2strcmp(name, rs->name);
@@ -185,17 +199,17 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 	octarr_t       *oa = 0;
 	int             i, pathlen;
 
-	/*
 	{
 		char *tmp;
 		tmp = oct2strdup( name, '%' );
 		traceLog(LOG_INFO, "Find ruleset %s", tmp );
 		free(tmp);
 	}
-	*/
 
-	if (rs == 0)
+	if (rs == 0) {
+		traceLog(LOG_INFO,"ruleset_find() no starting point");
 		return 0;
+	}
 
 	/*
 	 * the root 
@@ -232,18 +246,21 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 	 * absolute path 
 	 */
 	else if (*name->val == '/') {
+		traceLog(LOG_INFO,"Absolute path");
 		for (nr = rs; nr->up; nr = nr->up);
 		octln(&loc, name);
 		loc.val++;
 		loc.len--;
-		r = nr;
 	} else 
 		return NULL;	/* don't do relative */
 
-	oa = path_split(&loc, &pathlen);
+	if(( oa = path_split(&loc, &pathlen)))
+		traceLog(LOG_INFO,"%d levels in path", oa->n );
+
 	for (i = 0; oa && i < oa->n; i++) {
 		r = nr->down;
 		if (r == 0) {
+			traceLog(LOG_INFO,"Nothing below this level");
 			return NULL;
 		}
 
@@ -257,7 +274,7 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 	name->val = loc.val + pathlen;
 	name->len = loc.len - pathlen;
 
-	/* traceLog(LOG_INFO,"Found \"%s\"", nr->name); */
+	traceLog(LOG_INFO,"Found \"%s\"", nr->name); 
 
 	return nr;
 }
