@@ -76,3 +76,5 @@
 #include <dbapi.h>
 
 #include <srv.h>
+
+#include <readcnf.h>
