@@ -90,7 +90,7 @@ octarr_t *pconf_get_keys_by_plugin( plugin_t *top, char *pname )
   for( pc = pl->conf ; pc ; pc = pc->next ) {
     oct.val = pc->key ;
     oct.len = strlen( pc->key ) ;
-    res = octarr_add( res, &oct ) ;
+    res = octarr_add( res, octdup( &oct ) ) ;
   }
 
   return res ;
