@@ -5,4 +5,4 @@ spocp_HDRS = proto.h struct.h plugin.h be.h rvapi.h \
 
 EXTRA_DIST = $(spocp_HDRS)
 
-include_HEADERS = spocp.h spocpcli.h rvapi.h be.h plugin.h
+include_HEADERS = spocp.h spocpcli.h rvapi.h be.h plugin.h sexptool.h

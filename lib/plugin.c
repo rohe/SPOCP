@@ -180,6 +180,7 @@ plugin_load(plugin_t * top, char *name, char *load)
 	}
 
 	modulename = (char *) Malloc(strlen(name) + strlen("_module") + 1);
+	/* Flawfinder: ignore */
 	sprintf(modulename, "%s_module", name);
 
 	new = (plugin_t *) dlsym(handle, modulename);

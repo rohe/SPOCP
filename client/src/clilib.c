@@ -155,15 +155,18 @@ print_tls_errors(void)
 static int
 password_cb(char *buf, int num, int rwflag, void *userdata)
 {
-	if (num < (int) strlen((char *) userdata) + 1) {
+	size_t len;
+
+	len = strlen( (char *) userdata);
+	if (num < (int) len + 1) {
 		if (spocpc_debug)
 			traceLog(LOG_DEBUG,"Not big enough place for the password (%d)",
 			    num);
 		return (0);
 	}
 
-	strcpy(buf, userdata);
-	return (strlen(userdata));
+	strncpy(buf, num-1, userdata);
+	return ((int) len);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -799,7 +802,7 @@ spocpc_connect(char *srv, int nsec)
 
 		memset(&serv_addr, 0, sizeof(serv_addr));
 		serv_addr.sun_family = AF_UNIX;
-		strcpy(serv_addr.sun_path, srv);
+		strlcpy(serv_addr.sun_path, srv, sizeof(serv_addr.sun_path));
 
 		res = connect(sockfd, (SA *) &serv_addr, sizeof(serv_addr));
 

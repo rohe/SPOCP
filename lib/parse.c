@@ -730,7 +730,7 @@ chunk2sexp( spocp_chunk_t *c )
 		else if( oct2strcmp( ck->val, ")" ) == 0 )
 			p--, *sp++ = ')' ;
 		else {
-			sprintf( lf, "%d:", ck->val->len ) ;
+			snprintf( lf, 16, "%d:", (unsigned int) ck->val->len ) ;
 			memcpy( sp, lf, strlen(lf)) ;
 			sp += strlen( lf ) ;
 			memcpy( sp, ck->val->val, ck->val->len ) ;

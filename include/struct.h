@@ -15,6 +15,8 @@
 #define __STRUCT_H
 
 #include <config.h>
+#include <stdint.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <unistd.h>

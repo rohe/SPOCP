@@ -202,10 +202,11 @@ tracelog_doit(int priority, const char *fmt, va_list ap)
 	/*
 	 * place the timestamp up front 
 	 */
-	sprintf(buf, "%s [%d]: ", date, procid);
+	snprintf(buf, SPOCP_MAXLINE, "%s [%d]: ", date, procid);
 	len = strlen(buf);
 	sp = buf + len;
 
+	/* Flawfinder: ignore */
 	r = vsnprintf(sp, SPOCP_MAXLINE - len, fmt, ap);	/* this is
 								 * safe */
 

@@ -318,12 +318,12 @@ octet_t		*sexp_normalize(char *);
  * =============================================================================== 
  */
 
-/*! The curremt log level */
-extern int	spocp_loglevel;
+/*! The current log level */
+int	spocp_loglevel;
 /*! The debug level */ 
-extern int	spocp_debug;
+int	spocp_debug;
 /* whether syslog is used or not */
-extern int	log_syslog;
+int	log_syslog;
 
 /*
  * =============================================================================== 

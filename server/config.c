@@ -277,7 +277,7 @@ read_config(char *file, srv_t * srv)
 				section = DBACK;
 			else {
 				section = PLUGIN;
-				strcpy(pluginname, sp);
+				strlcpy(pluginname, sp, sizeof( pluginname));
 				pl = 0;
 			}
 

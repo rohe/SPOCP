@@ -100,6 +100,7 @@ Strcat(char *dest, char *src, int *size)
 		dest = tmp;
 	}
 
+	/* Flawfinder: ignore */
 	strcat(dest, src);
 
 	return dest;
@@ -116,6 +117,46 @@ strnlen(const char *s, size_t len)
 	for (i = 0; i < len && s[i]; i++);
 
 	return i;
+}
+#endif
+
+#ifndef HAVE_STRLCPY
+size_t          strlcpy(char *dst, const char *s, size_t size);
+
+size_t
+strlcpy(char *dst, const char *s, size_t size)
+{
+	size_t          i = strlen(s);
+
+	if( i < size-1)
+		strcpy( dst, s) ;
+	else {
+		strncpy( dst, s, size-1);
+		dst[size-1] = '\0';
+	}
+
+	return i;
+}
+#endif
+
+#ifndef HAVE_STRLCAT
+size_t          strlcat(char *dst, const char *s, size_t size);
+
+size_t
+strlcat(char *dst, const char *s, size_t size)
+{
+	size_t	a = strlen(dst);
+	size_t	b = strlen(s);
+
+	if( (a+b) < size-1 )
+		strcat( dst, s) ;
+	else {
+		b = size - a - 1;
+		strncat( dst, s, b);
+		dst[size-1] = '\0';
+	}
+
+	return b;
 }
 #endif
 
@@ -245,6 +286,7 @@ xStrcat(char *dest, char *src, int *size)
 		dest = tmp;
 	}
 
+	/* Flawfinder: ignore */
 	strcat(dest, src);
 
 	return dest;

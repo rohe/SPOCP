@@ -134,7 +134,7 @@ spocp_unix_domain_socket(char *uds)
 
 	memset(&serv_addr, 0, sizeof(struct sockaddr_un));
 	serv_addr.sun_family = AF_UNIX;
-	strcpy(serv_addr.sun_path, uds);
+	strlcpy(serv_addr.sun_path, uds, sizeof(serv_addr.sun_path));
 
 	if (bind(fd, (SA *) &serv_addr, sizeof(serv_addr)) < 0) {
 		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unable to bind to socket: %s",

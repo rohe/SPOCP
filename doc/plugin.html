@@ -3,13 +3,13 @@
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
 	<TITLE>The SPOCP plugin manual</TITLE>
-	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.1  (Linux)">
 	<META NAME="CREATED" CONTENT="20040428;13512000">
-	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
-	<META NAME="CHANGED" CONTENT="20040428;15222500">
+	<META NAME="CHANGEDBY" CONTENT="Roland Hedberg">
+	<META NAME="CHANGED" CONTENT="20040628;13444400">
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
-<H1>The SPOCP plugin developers manual</H1>
+<H1>The SPOCP plug-in developers manual</H1>
 <P>Document Status: Project document, last update 2004-04-28 <BR>Author:
 Roland Hedberg 
 </P>
@@ -28,17 +28,59 @@ Roland Hedberg
 the boundary conditions are evalutated and all the connection to
 external information resources are handled. 
 </P>
-<P>If the doxygen information is built then you can find more
+<P>If the doxygen documentation is built then you can find more
 detailed information on functions and structs there.</P>
 <H2>1. Boundary condition definitions in rules</H2>
 <P>The boundary condition definitions follows a specific format:</P>
 <PRE STYLE="margin-bottom: 0.2in">bcond      = pname &quot;:&quot; *unitsel &quot;:&quot; pspec</PRE><P>
-Where <I>pname </I>is the name of the plugin, <I>unitsel</I> is
+Where <I>pname </I>is the name of the plug-in, <I>unitsel</I> is
 specification of which pieces of information that should be gotten
 from the query S-expression. And <I>pspec</I> is information given
-using a format that is specific to this plugin.</P>
+using a format that is specific to this plug-in.</P>
+<H3>1.1 Unitsel</H3>
+<P>This part of the boundary condition is for picking information
+from the query. Since the query in a parsed format is presented to
+the function it can implement whatever extraction function it needs.
+But since we rightly or wrongly assumed that most implementers wants
+to concentrate on the function that the backend is going to provide
+we thought it would be a good thing to provide this functionality.</P>
+<P>S-expressions can be regarded as representing a tree structure, so
+the use of <A HREF="http://www.w3.org/TR/xpath">XPATH</A> seems
+reasonable. But we have limited our usage to a small subset of what
+XPATH provides; you can use absolute location path (/lpw/subj/id) or
+descendants (//id) to get the sublist/-s in question and then a
+selection to get at the elements of that sublist.</P>
+<P>Thus, if we start with the query S-expression:</P>
+<PRE>(lpw (service Tentamen)(method skapa)(departmentNumber 64545)(uid leifj))
+</PRE><P>
+Then &ldquo;{//uid[1]}&rdquo; will pick the second element from the
+sublist that has &ldquo;uid&rdquo; as tag, the tag being the first
+element. In this case that is the string &ldquo;leifj&rdquo;.</P>
+<P>If the S-expression is:</P>
+<PRE>(spocp (resource jaccount (page 316))(action read)(subject (uid ola) (role manager)))
+</PRE><P>
+&ldquo;{/spocp/subject/role/*}&rdquo; will pick the sequence of
+elements from the a specific sublist with the tag &ldquo;role&rdquo;
+that starts with the second element. In this case that is a single
+element sequence that only contains the string &ldquo;manager&rdquo;.
+&ldquo;/*&rdquo; is equivalent to &ldquo;/[1-]&rdquo;.</P>
+<P>As selections you can use &ldquo;/*&rdquo;, or one of &ldquo;[n]&rdquo;,
+&ldquo;[n-]&rdquo;, &ldquo;[n-m]&rdquo;, &ldquo;[-m]&rdquo; where n
+and m are numbers and n &lt; m. You can also instead of m use the
+string &ldquo;last&rdquo; to denote the last element in a sublist.</P>
+<P> So, if the s-expression is:</P>
+<PRE>(http (resource gif sysinfo_en.png -)(action 0 0)(subject(ip 127.0.0.1)(host localhost))
+</PRE><P>
+Then:</P>
+<UL>
+	<LI><P>&ldquo;//resource/*&rdquo; =&gt; ( &ldquo;gif&rdquo;
+	&ldquo;sysinfo_en.png&rdquo; &ldquo;-&rdquo;) 
+	</P>
+	<LI><P>&ldquo;//resource[1]&rdquo; =&gt; &ldquo;gif&rdquo;</P>
+	<LI><P>&ldquo;//resource[last]&rdquo; =&gt; &ldquo;-&rdquo;</P>
+</UL>
 <H2>2. Function Prototype</H2>
-<P>All the plugin function follows the same format:</P>
+<P>All the plug-in functions MUST follow the same format:</P>
 <PRE STYLE="margin-bottom: 0.2in">spocp_result_t befunc( cmd_param_t *, octet_t *);</PRE><P>
 Where the structure cmd_param_t has the elements: 
 </P>
@@ -53,7 +95,7 @@ Where the structure cmd_param_t has the elements:
 	mentioned above ) on the query S-expression. 
 	</DD><DT>
 	<B>octet_t *arg</B></DT><DD>
-	The plugin specific part ( <I>pspec</I> above ) of a boundary
+	The plug-in specific part ( <I>pspec</I> above ) of a boundary
 	definition 
 	</DD><DT>
 	<B>pdyn_t *pd</B></DT><DD>
@@ -61,27 +103,52 @@ Where the structure cmd_param_t has the elements:
 	connection pool handling 
 	</DD><DT>
 	<B>void *con</B></DT><DD STYLE="margin-bottom: 0.2in">
-	A pointer to something the plugin has created to store plugin
+	A pointer to something the plug-in has created to store plug-in
 	specific information 
 	</DD></DL>
 <P>
-And the octet_t struct is where the plugin should place dynamically
+And the octet_t struct is where the plug-in should place dynamically
 produced blobs.</P>
 <H2>3. Module format</H2>
-<P>We are using a similar format to what Apache is using that is the
-plugin source file must contain information about the plugin
+<P>We are using a similar format to what Apache is using, in that the
+plug-in source file must contain information about the plug-in
 functions, both the two basic ( the test and the initialization
-functions ) as well as the ones that should be used to handle plugin
-configuration directives for this plugin.</P>
-<P>Snippet from the foobar plugins source file:</P>
-<PRE>spocp_result_t foobar_test( cmd_param_t *cpp, octet_t *blob)
+functions ) as well as the ones that should be used to handle plug-in
+configuration directives for this plug-in and a function that can
+remove whatever the plug-in has stored on its own accord.</P>
+<P>Snippet from the foobar plug-ins source file:</P>
+<PRE>typedef struct foobar_t {
+  int foo_defined;
+  ...
+} foobar_t ;
+
+spocp_result_t foobar_test( cmd_param_t *cpp, octet_t *blob)
 {
 ....
 }
 
 spocp_result_t foofunc( void **conf, void *cmd_data, int argc, char **argv)
 {
-....
+  foobar_t *ft = (foobar_t *) *conf;
+
+  if (ft == NULL)
+    *conf = ft = (foobar_t *) calloc (1, sizeof( foobar_t ));
+
+  ft-&gt;foo_defined = 1;
+  ....
+  return SPOCP_SUCCESS;
+}
+
+spocp_result_t free_args( void **conf, void *cmd_data, int argc, char **argv)
+{
+  foobar_t *ft = (foobar_t *) *conf;
+
+  if (ft) {
+    free( ft );
+    *conf = 0;
+  }
+
+  return SPOCP_SUCCESS;
 }
 
 conf_com_t conf = {
@@ -90,10 +157,11 @@ conf_com_t conf = {
 };
 
 plugin_t        foobar_module = {
-	SPOCP20_PLUGIN_STUFF,
-	foobar_test,
-	foobar_init,
-	conffunc
+        SPOCP20_plugin_STUFF,
+        foobar_test,
+        foobar_init,
+        conffunc,
+        free_args
 };</PRE><H2>
 4. APIs</H2>
 <P>Almost all of the backends need the same support from the server

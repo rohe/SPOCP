@@ -414,9 +414,10 @@ pathname_get(ruleset_t * rs, char *buf, int buflen)
 	ruleset_t      *rp;
 
 	for (rp = rs; rp; rp = rp->up) {
-		len += 2;
+		len++;
 		len += strlen(rp->name);
 	}
+	len++;
 
 	if (len > buflen)
 		return SPOCP_OPERATIONSERROR;
@@ -424,7 +425,9 @@ pathname_get(ruleset_t * rs, char *buf, int buflen)
 	*buf = 0;
 
 	for (rp = rs; rp; rp = rp->up) {
+		/* Flawfinder: ignore */
 		strcat(buf, "/");
+		/* Flawfinder: ignore */
 		strcat(buf, rp->name);
 	}
 

@@ -71,10 +71,9 @@ ipnumcmp(octet_t * ipnum, char *ipser)
 	if (inet_aton(h1, &ia1) == 0)
 		return -1;
 
-	if (strlen(ipser) > 18)
+	if( strlcpy(h2, ipser, 18) >= 18)
 		return -1;
-
-	strcpy(h2, ipser);
+	
 	if ((np = index(h2, '/')))
 		*np++ = 0;
 

@@ -13,5 +13,8 @@ EXTRA_DIST = \
 	install-sh \
 	ltmain.sh \
 	missing \
-	mkinstalldirs
+	mkinstalldirs \
+	Setup.mk \
+	spocp.doxy \
+	cf/check_sasl2.my cf/check_ssl.m4
 

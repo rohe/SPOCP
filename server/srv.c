@@ -92,6 +92,7 @@ add_response_va(spocp_iobuf_t * out, int rc, const char *fmt, va_list ap)
 
 	sr = iobuf_add(out, rescode->rc);
 	if (fmt) {
+		/* Flawfinder: ignore */
 		n = vsnprintf(buf, SPOCP_MAXLINE, fmt, ap);
 		if (n >= SPOCP_MAXLINE)	/* OUTPUT truncated */
 			sr = SPOCP_LOCAL_ERROR;

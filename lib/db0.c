@@ -747,7 +747,9 @@ ruleinst_dup(ruleinst_t * ri)
 
 	new = (ruleinst_t *) Calloc(1, sizeof(ruleinst_t));
 
+	/* Flawfinder: ignore */
 	strcpy(new->uid, ri->uid);
+
 	new->rule = octdup(ri->rule);
 	/*
 	 * if( ri->ep ) new->ep = element_dup( ri->ep ) ; 

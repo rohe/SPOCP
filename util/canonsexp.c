@@ -114,6 +114,7 @@ static char *sexp_to_canonical( char *canon, char *sexp )
         n = ep - lp ;
 
         cp = print_len_spec( cp, n ) ;
+	/* Flawfinder: ignore */
         strcpy( cp, ep ) ;
         cp += strlen( ep ) ;
         ep = 0 ;

@@ -243,7 +243,7 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 	char            lenfield[8];
 
 	if (s == 0 || s->len == 0)
-		return SPOCP_SUCCESS;	/* no error */
+		return SPOCP_SUCCESS;	/* adding nothing is no error */
 
 	/*
 	 * the complete length of the bytestring, with length field 
@@ -262,6 +262,7 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 
 	snprintf(lenfield, 8, "%u:", (unsigned int) s->len);
 
+	/* Flawfinder: ignore */
 	strcpy(io->w, lenfield);
 	io->w += lf;
 

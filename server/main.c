@@ -212,6 +212,7 @@ main(int argc, char **argv)
 	localcontext = (char *) Calloc(strlen(localhost) + strlen("//") + 1,
 				       sizeof(char));
 
+	/* Flawfinder: ignore */
 	sprintf(localcontext, "//%s", localhost);
 
 	/*
@@ -258,7 +259,7 @@ main(int argc, char **argv)
 	 * where I put the access rules for access to this server and its
 	 * rules 
 	 */
-	sprintf(path, "%s/server", localcontext);
+	snprintf(path, MAXNAMLEN, "%s/server", localcontext);
 	oct.val = path;
 	oct.len = strlen(path);
 	if ((rs = ruleset_create(&oct, &srv.root)) == 0)
@@ -268,7 +269,7 @@ main(int argc, char **argv)
 	/*
 	 * access rules for operations 
 	 */
-	sprintf(path, "%s/operation", localcontext);
+	snprintf(path, MAXNAMLEN, "%s/operation", localcontext);
 	oct.val = path;
 	oct.len = strlen(path);
 	if ((rs = ruleset_create(&oct, &srv.root)) == 0)
@@ -407,6 +408,7 @@ main(int argc, char **argv)
 				exit(1);
 
 			srv.id = (char *) Malloc(7 + strlen(srv.uds));
+			/* Flawfinder: ignore */
 			sprintf(srv.id, "spocp-%s", srv.uds);
 
 			srv.type = AF_UNIX;

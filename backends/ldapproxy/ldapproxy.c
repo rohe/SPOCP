@@ -100,14 +100,15 @@ dnssrv_lookup( char *domain, char *proto )
 {
 	char		*dname, host[256];
 	unsigned char	*sp, *eos ;
-	int		n, nansv, npack, len;
+	int		dsize, n, nansv, npack, len;
 	dns_packet_t	dns;
 	rr_t		rr;
 	srvrec_t	*srv = 0, *nsrv;
 
-	dname = (char *) calloc( strlen(domain)+strlen(proto)+8, sizeof( char ));
+	dsize = strlen(domain)+strlen(proto)+8;
+	dname = (char *) calloc(dsize , sizeof( char ));
 
-	sprintf( dname, "_%s._tcp.%s", proto, domain);
+	snprintf( dname, dsize-1, "_%s._tcp.%s", proto, domain);
 
 	printf( "dname: %s\n", dname );
 
@@ -476,7 +477,7 @@ ldapproxy_test(cmd_param_t * cpp, octet_t * blob)
 			sr = ( srvrec_t * ) calloc( 1, sizeof( srvrec_t ));
 			sr->srv = ( char * ) calloc( domain->len+6, sizeof( char ));
 			tmp = oct2strdup( domain, 0 );
-			sprintf(sr->srv, "ldap.%s", tmp );
+			snprintf(sr->srv, domain->len+5,"ldap.%s", tmp );
 			free( tmp ); 
 		}
 

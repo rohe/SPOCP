@@ -116,7 +116,7 @@ lastlogin_test(cmd_param_t * cpp, octet_t * blob)
 			/*
 			 * present year, should be done automagically 
 			 */
-			strcpy(date, "2004 ");
+			strlcpy(date, "2004 ", sizeof(date));
 
 			o = argv->arr[0];
 
@@ -177,7 +177,8 @@ lastlogin_test(cmd_param_t * cpp, octet_t * blob)
 				if (since != 0) {
 
 					str = oct2strdup(argv->arr[2], 0);
-					sprintf(test, "LOGIN, user=%s, ", str);
+					snprintf(test,sizeof(test),
+					    "LOGIN, user=%s, ", str);
 					free(str);
 
 					if (argv->n == 4)

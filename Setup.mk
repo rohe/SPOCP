@@ -2,7 +2,7 @@ all:
 	aclocal -I cf
 	autoheader
 	autoconf -I cf
-	libtoolize -c
+	libtoolize -c --force
 	automake -ac
 
 clean:

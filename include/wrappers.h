@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "config.h"
 
 void           *Malloc(size_t size);
 

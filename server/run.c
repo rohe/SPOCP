@@ -45,8 +45,8 @@ spocp_getnameinfo( const struct sockaddr *sa, int len, char *name,
 
 	hp = gethostbyaddr( addr, alen, sa->sa_family );
 	if (hp) {
-		strncpy( name, hp->h_name, namelen );
-		strcpy( ipaddr, inet_ntoa(hp->h_addr_list[0]));
+		strlcpy( name, hp->h_name, namelen );
+		strlcpy( ipaddr, inet_ntoa(hp->h_addr_list[0]), addrlen);
 		rc = 0;
 	} else 
 		rc = h_errno;
@@ -348,10 +348,11 @@ spocp_srv_run(srv_t * srv)
 				}
 
 				if (strcmp(hname, "localhost") == 0) {
-					strcpy(hname, srv->hostname);
+					strlcpy(hname, srv->hostname,
+					    NI_MAXHOST);
 				}
 			} else { /* something else I should get instead ? */
-				strcpy(hname, srv->hostname);
+				strlcpy(hname, srv->hostname, NI_MAXHOST);
 			}
 
 			if (srv->connections) {

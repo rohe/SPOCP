@@ -196,9 +196,11 @@ tls_error(int level, conn_t * conn, char *msg)
 static int
 password_cb(char *buf, int num, int rwflag, void *userdata)
 {
-	char           *passwd = (char *) userdata;
+	char	*passwd = (char *) userdata;
+	int	len;
 
-	if (num < (int) strlen(passwd) + 1) {
+	len = (int) strlen(passwd);
+	if (num < len + 1) {
 		LOG(SPOCP_ERR)
 		    traceLog(LOG_ERR,"Not big enough place for the password (%d)",
 			     num);
@@ -206,7 +208,7 @@ password_cb(char *buf, int num, int rwflag, void *userdata)
 	}
 
 	strcpy(buf, passwd);
-	return (strlen(buf));
+	return (len);
 }
 
 /*************************************************

@@ -428,7 +428,7 @@ boundary_print(boundary_t * bp)
 		{
 			char	*tmp;
 			tmp = inet_ntoa( bp->v.v4 );
-			strcat( ip, tmp);
+			strlcat( ip, tmp, sizeof(op));
 		}
 #endif
 		traceLog(LOG_DEBUG," %x %s %s", bp->type, lte, ip);

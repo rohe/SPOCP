@@ -63,6 +63,7 @@ dback_load(char *name, char *load)
 	}
 
 	modulename = (char *) Malloc(strlen(name) + strlen("_dback") + 1);
+	/* Flawfinder: ignore */
 	sprintf(modulename, "%s_dback", name);
 
 
