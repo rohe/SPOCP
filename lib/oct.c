@@ -437,25 +437,25 @@ oct_new(size_t size, char *val)
 
 	new = (octet_t *) Malloc(sizeof(octet_t));
 
+	new->len = 0;
+
 	if (size) {
 		new->val = (char *) Calloc(size, sizeof(char));
 		new->size = size;
-		new->len = size;
 	} else {
 		new->size = 0;
 		new->val = 0;
 	}
 
 	if (val) {
-		if (!size) {
+		if (size == 0) {
 			new->len = strlen(val);
 			new->val = (char *) Calloc(new->len, sizeof(char));
 			new->size = new->len;
 		}
 
 		memcpy(new->val, val, new->len);
-	} else
-		new->len = 0;
+	} 
 
 	return new;
 }
