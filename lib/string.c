@@ -165,7 +165,7 @@ char *find_balancing(char *p, char left, char right)
   return(NULL);
 }
 
-char **arrdup( int n, char **arr )
+__attribute__((unused)) static char **arrdup( int n, char **arr )
 {
   char **new_arr ;
   int    i ;
@@ -189,7 +189,7 @@ void charmatrix_free( char **arr )
   }
 }
 
-int expand_string( char *src, keyval_t *kvp, char *dest, size_t size )
+__attribute__((unused)) static int expand_string( char *src, keyval_t *kvp, char *dest, size_t size )
 {
   char     *sp, *cp, *pp ;
   int      l ;
