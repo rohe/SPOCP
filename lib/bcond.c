@@ -292,9 +292,9 @@ stree_free(stree_t * stp)
  */
 
 static stree_t *
-parse_sexp(octet_t * sexp)
+parse_bcexp(octet_t * sexp)
 {
-	stree_t        *ptp, *ntp = 0, *ptr;
+	stree_t	*ptp, *ntp = 0, *ptr;
 
 	if (*sexp->val == '(') {
 		ptp = (stree_t *) calloc(1, sizeof(stree_t));
@@ -302,14 +302,29 @@ parse_sexp(octet_t * sexp)
 		sexp->val++;
 		sexp->len--;
 		while (sexp->len && *sexp->val != ')') {
-			if ((ptr = parse_sexp(sexp)) == 0) {
+			if ((ptr = parse_bcexp(sexp)) == 0) {
 				stree_free(ptp);
 				return 0;
 			}
+ 
+			if (ptp->part == 0) {
+				if (ptr->list == 0) {
+					if (oct2strcmp( &ptr->val, "ref") == 0 );
+					else if (oct2strcmp( &ptr->val, "and") == 0 );
+					else if (oct2strcmp( &ptr->val, "or") == 0 );
+					else if (oct2strcmp( &ptr->val, "not") == 0 );
+					else {
+						stree_free(ptr);
+						return 0;
+					}
+				}
+				else {
+					stree_free(ptr);
+					return 0;
+				}
 
-			if (ptp->part == 0)
 				ntp = ptp->part = ptr;
-			else {
+			} else {
 				ntp->next = ptr;
 				ntp = ntp->next;
 			}
@@ -729,7 +744,7 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 	}
 
 	if (*data->val == '(') {
-		if ((st = parse_sexp(data)) == 0)
+		if ((st = parse_bcexp(data)) == 0)
 			return 0;
 	} else {
 		st = (stree_t *) Malloc(sizeof(stree_t));
@@ -848,7 +863,7 @@ bcdef_replace(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 	char           *bcname;
 
 	if (*data->val == '(') {
-		if ((st = parse_sexp(data)) == 0)
+		if ((st = parse_bcexp(data)) == 0)
 			return SPOCP_OPERATIONSERROR;
 	} else {
 		st = (stree_t *) Malloc(sizeof(stree_t));
