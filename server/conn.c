@@ -68,7 +68,7 @@ static void
 conn_env_reset(conn_t * con)
 {
 	if (con) {
-#ifndef HAVE_SSL
+#ifdef HAVE_SSL
 		if (con->subjectDN) {
 			free(con->subjectDN);
 			con->subjectDN = 0;

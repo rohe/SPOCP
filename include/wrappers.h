@@ -16,6 +16,7 @@
 #define __WRAPPERS_H
 
 #include <stdlib.h>
+#include <string.h>
 
 void           *Malloc(size_t size);
 
@@ -30,6 +31,10 @@ char           *Strdup(char *s);
 char           *Strcat(char *dest, char *src, int *size);
 
 char           *Strndup(char *s, size_t n);
+
+#ifndef HAVE_STRNDUP
+char           *strndup(const char *old, size_t sz);
+#endif
 
 /*================================================*/
 

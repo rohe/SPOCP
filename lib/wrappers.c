@@ -120,8 +120,6 @@ strnlen(const char *s, size_t len)
 #endif
 
 #ifndef HAVE_STRNDUP
-char           *strndup(const char *old, size_t sz);
-
 char           *
 strndup(const char *old, size_t sz)
 {

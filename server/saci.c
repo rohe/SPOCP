@@ -1,5 +1,7 @@
 #include "locl.h"
+#include <sexptool.h>
 
+/*
 typedef char   *(argfunc) (conn_t * r);
 
 typedef struct {
@@ -8,43 +10,26 @@ typedef struct {
 	char            type;
 	char            dynamic;
 } arg_t;
+*/
 
-static char    *get_path(conn_t * r);
-static char    *get_action(conn_t * r);
-static char    *get_arguments(conn_t * r);
-static char    *get_ip(conn_t * r);
-static char    *get_host(conn_t * r);
-static char    *get_inv_host(conn_t * r);
-static char    *get_subject(conn_t * r);
+static sexpargfunc get_path;
+
+static sexpargfunc get_action;
+static sexpargfunc get_arguments;
+static sexpargfunc get_ip;
+static sexpargfunc get_host;
+static sexpargfunc get_inv_host;
+static sexpargfunc get_subject;
 #ifdef HAVE_SSL
-static char    *get_ssl_vers(conn_t * c);
-static char    *get_ssl_cipher(conn_t * c);
-static char    *get_ssl_subject(conn_t * c);
-static char    *get_ssl_issuer(conn_t * c);
+static sexpargfunc get_ssl_vers;
+static sexpargfunc get_ssl_cipher;
+static sexpargfunc get_ssl_subject;
+static sexpargfunc get_ssl_issuer;
 #endif
-static char    *get_transpsec(conn_t * r);
+static sexpargfunc get_transpsec;
 
-#define TPSEC_X509	0
-#define TPSEC_X509_WCC	1
-#define TPSEC_KERB	2
 
-char           *tpsec[] = {
-	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher}))",
-	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher})(7:autname4:X509(7:subject%{ssl_subject})(6:issuer%{ssl_issuer})))",
-	"(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))"
-};
-
-char           *srvquery =
-    "(6:server(2:ip%{ip})(4:host%{host})%{transportsec})";
-char           *operquery =
-    "(9:operation%{operation}(4:path%{path})(6:server(2:ip%{ip})(4:host%{host})%{transportsec}))";
-
-arg_t         **tpsec_X509;
-arg_t         **tpsec_X509_wcc;
-arg_t         **srvq;
-arg_t         **operq;
-
-arg_t           transf[] = {
+const sexparg_t           transf[] = {
 	{"ip", get_ip, 'a', FALSE},
 	{"host", get_host, 'a', FALSE},
 	{"invhost", get_inv_host, 'l', FALSE},
@@ -58,26 +43,42 @@ arg_t           transf[] = {
 	{"ssl_subject", get_ssl_subject, 'a', FALSE},
 	{"ssl_issuer", get_ssl_issuer, 'a', FALSE},
 #endif
-	{"transportsec", get_transpsec, 'l', FALSE},
-	{NULL, NULL, 0, FALSE}
+	{"transportsec", get_transpsec, 'l', FALSE}
 };
 
 int             ntransf = (sizeof(transf) / sizeof(transf[0]));
 
-/*
- * arg_t spocp_default[] = { { "(4:http(8:resource", 0, 'l' }, { NULL,
- * path_to_sexp, 'l' }, { "1:-)(6:action", NULL, 'l' }, { NULL, get_method,
- * 'a' }, { NULL, authz_type, 'a' }, { ")(7:subject(2:ip", NULL, 'l' }, {
- * NULL, get_ip, 'a' }, { ")(4:host", NULL, 'l' }, { NULL, get_host, 'a' }, {
- * ")))", NULL, 'l' }, { NULL, NULL, 0 } } ; 
- */
+#ifdef HAVE_SSL
+
+#define TPSEC_X509	0
+#define TPSEC_X509_WCC	1
+#define TPSEC_KERB	2
+
+char           *tpsec[] = {
+	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher}))",
+	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher})(7:autname4:X509(7:subject%{ssl_subject})(6:issuer%{ssl_issuer})))",
+	"(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))"
+};
+
+sexparg_t         **tpsec_X509;
+sexparg_t         **tpsec_X509_wcc;
+
+#endif
+
+char           *srvquery =
+    "(6:server(2:ip%{ip})(4:host%{host})%{transportsec})";
+char           *operquery =
+    "(9:operation%{operation}(4:path%{path})(6:server(2:ip%{ip})(4:host%{host})%{transportsec}))";
+
+sexparg_t         **srvq;
+sexparg_t         **operq;
 
 /*
  * ---------------------------------------------------------------------- 
  */
 
 /*
- * static void argt_free( arg_t **arg ) { int i ;
+ * static void argt_free( sexparg_t **arg ) { int i ;
  * 
  * if( arg ) { for( i = 0 ; arg[i] || arg[i]->type != 0 ; i++ ) { if(
  * arg[i]->var ) free( arg[i]->var ) ; free( arg[i] ) ; } if( arg[i] ) free(
@@ -91,22 +92,23 @@ int             ntransf = (sizeof(transf) / sizeof(transf[0]));
  */
 
 static char    *
-get_ip(conn_t * conn)
+get_ip(void * conn)
 {
-	return (conn->sri.hostaddr);
+	return ((( conn_t *) conn)->sri.hostaddr);
 }
 
 static char    *
-get_host(conn_t * conn)
+get_host(void * conn)
 {
-	return (conn->sri.hostname);
+	return ((( conn_t *) conn)->sri.hostname);
 }
 
 static char    *
-get_subject(conn_t * conn)
+get_subject(void * vp)
 {
 	char            sexp[512], *sp;
 	unsigned int    size = 512;
+	conn_t          *conn = ( conn_t * ) vp ;
 
 	if (conn->sri.sexp_subject == 0) {
 		sp = sexp_printv(sexp, &size, "o", conn->sri.subject);
@@ -118,11 +120,12 @@ get_subject(conn_t * conn)
 }
 
 static char    *
-get_inv_host(conn_t * conn)
+get_inv_host(void * vp)
 {
 	char          **arr, format[16], list[512], *sp;
 	int             n, i, j;
 	unsigned int    size = 512;
+	conn_t		*conn = ( conn_t *) vp;
 
 	if (conn->sri.invhost)
 		return conn->sri.invhost;
@@ -149,10 +152,11 @@ get_inv_host(conn_t * conn)
 }
 
 static char    *
-get_path(conn_t * conn)
+get_path(void * vp)
 {
 	char           *res, *rp;
 	unsigned int    size;
+	const conn_t	*conn = ( conn_t * ) vp;
 
 	if (conn->oppath == 0)
 		return 0;
@@ -170,9 +174,10 @@ get_path(conn_t * conn)
 }
 
 static char    *
-get_action(conn_t * conn)
+get_action(void * vp)
 {
 	char           *res, *rp;
+	const conn_t	*conn = ( conn_t * ) vp;
 	unsigned int    size = conn->oper.len + 9;
 
 	/*
@@ -190,11 +195,12 @@ get_action(conn_t * conn)
 }
 
 static char    *
-get_arguments(conn_t * conn)
+get_arguments(void * vp)
 {
 	char           *res, *rp, format[32];
 	unsigned int    size;
 	int             i;
+	const conn_t 	*conn = ( conn_t *) vp ;
 
 	if (conn->oparg == 0)
 		return 0;
@@ -217,27 +223,27 @@ get_arguments(conn_t * conn)
 
 #ifdef HAVE_SSL
 static char    *
-get_ssl_vers(conn_t * c)
+get_ssl_vers(void * c)
 {
-	return (c->ssl_vers);
+	return ((( conn_t *) c)->ssl_vers);
 }
 
 static char    *
-get_ssl_cipher(conn_t * c)
+get_ssl_cipher(void * c)
 {
-	return (c->cipher);
+	return ((( conn_t * ) c)->cipher);
 }
 
 static char    *
-get_ssl_subject(conn_t * c)
+get_ssl_subject(void * c)
 {
-	return (c->subjectDN);
+	return ((( conn_t *) c)->subjectDN);
 }
 
 static char    *
-get_ssl_issuer(conn_t * c)
+get_ssl_issuer(void * c)
 {
-	return (c->issuerDN);
+	return ((( conn_t *) c)->issuerDN);
 }
 #endif
 
@@ -246,69 +252,22 @@ get_ssl_issuer(conn_t * c)
  */
 
 static char    *
-sexp_constr(conn_t * conn, arg_t ** ap)
-{
-	int             i;
-	unsigned int    size = 2048;
-	char           *argv[32], format[32];
-	char            sexp[2048], *res;
-
-	if (ap == 0)
-		return 0;
-
-	for (i = 0; ap[i]; i++) {
-		format[i] = ap[i]->type;
-
-		if (ap[i]->var)
-			argv[i] = ap[i]->var;
-		else
-			argv[i] = ap[i]->af(conn);
-
-		if (0)
-			LOG(SPOCP_DEBUG) traceLog("SEXP argv[%d]: [%s]", i,
-						  argv[i]);
-	}
-	format[i] = '\0';
-	argv[i] = 0;
-
-	if (0)
-		LOG(SPOCP_DEBUG) traceLog("SEXP Format: [%s]", format);
-
-	if (sexp_printa(sexp, &size, format, (void **) argv) == 0)
-		res = 0;
-	else
-		res = Strdup(sexp);
-
-	/*
-	 * only free them temporary stuff 
-	 */
-	for (i = 0; ap[i]; i++) {
-		if (ap[i]->af && ap[i]->dynamic == TRUE)
-			free(argv[i]);
-	}
-
-	return res;
-}
-
-/*
- * ---------------------------------------------------------------------- 
- */
-
-static char    *
-get_transpsec(conn_t * conn)
+get_transpsec(void * vp)
 {
 	/*
 	 * XXX fixa SPOCP_LAYER-jox här 
 	 */
 #ifdef HAVE_SSL
+	conn_t 	*conn = ( conn_t * ) vp ;
+
 	if (conn->ssl != NULL) {
 		if (conn->transpsec == 0) {
 			if (conn->subjectDN)
 				conn->transpsec =
-				    sexp_constr(conn, tpsec_X509_wcc);
+				    sexp_constr((void *) conn, tpsec_X509_wcc);
 			else
 				conn->transpsec =
-				    sexp_constr(conn, tpsec_X509);
+				    sexp_constr((void *) conn, tpsec_X509);
 		}
 		return conn->transpsec;
 	} else
@@ -319,134 +278,39 @@ get_transpsec(conn_t * conn)
 
 /*
  * ---------------------------------------------------------------------- 
- */
-
-/*
- * format is typically (3:foo%{var}) which is then split into three parts
- * "(3:foo", %{var} and ")" var is looked up in the table of known variables
- * and if it exists the function connected to that variable is included in the 
- * list 
- */
-
-static arg_t  **
-parse_format(const char *format)
-{
-	arg_t         **arg;
-	char           *sp, *vp, *tp;
-	int             i = 0, j = 0, n;
-	char           *copy;
-
-	copy = Strdup((char *) format);
-
-	/*
-	 * This is the max size I know that for sure 
-	 */
-	n = (ntransf * 2) + 2;
-
-	arg = (arg_t **) Calloc(n, sizeof(arg_t *));
-
-	for (sp = copy; *sp;) {
-		if ((vp = strstr(sp, "%{"))) {
-			vp += 2;
-			tp = find_balancing(vp, '{', '}');
-			if (tp == 0) {	/* format error or not, your guess is
-					 * as good as mine */
-				break;	/* I guess it's a string */
-			} else {
-				if (vp - 2 != sp) {
-					*(vp - 2) = '\0';
-					arg[j] =
-					    (arg_t *) malloc(sizeof(arg_t));
-					arg[j]->var = strdup(sp);
-					arg[j]->af = 0;
-					arg[j]->type = 'l';
-					arg[j]->dynamic = TRUE;
-					j++;
-					*(vp - 2) = '$';
-				}
-
-				*tp = '\0';
-				for (i = 0; transf[i].type; i++) {
-					/*
-					 * traceLog( "(%d)[%s] == [%s] ?", i,
-					 * transf[i].var, vp ) ; 
-					 */
-					if (strcmp(transf[i].var, vp) == 0) {
-						arg[j] =
-						    (arg_t *)
-						    malloc(sizeof(arg_t));
-						arg[j]->var = 0;
-						arg[j]->af = transf[i].af;
-						arg[j]->type = transf[i].type;
-						arg[j]->dynamic =
-						    transf[i].dynamic;
-						j++;
-						break;
-					}
-				}
-
-				/*
-				 * unknown variable, clear out and close down 
-				 */
-				if (transf[i].type == 0) {
-					traceLog
-					    ("parse_format: variable [%s] unknown",
-					     vp);
-					for (i = 0; arg[i] && i < n; i++)
-						free(arg[i]);
-					free(arg);
-					return 0;
-				}
-			}
-
-			sp = tp + 1;
-		} else
-			break;
-	}
-
-	if (*sp) {		/* trailing string, which is quite ok */
-		arg[j] = (arg_t *) malloc(sizeof(arg_t));
-		arg[j]->var = strdup(sp);
-		arg[j]->af = 0;
-		arg[j]->type = 'l';
-	}
-
-	return arg;
-}
-
-/*
  * ---------------------------------------------------------------------- 
  */
 
 void
 saci_init(void)
 {
-	/*
-	 * arg_t **tp_sec_kerb ; 
+	/* sexparg_t **tp_sec_kerb ; 
 	 */
 
-	tpsec_X509 = parse_format(tpsec[TPSEC_X509]);
+#ifdef HAVE_SSL
+	tpsec_X509 = parse_format(tpsec[TPSEC_X509], transf, ntransf);
 	if (tpsec_X509 == 0)
 		traceLog("Could not parse TPSEC_X509");
 	else
 		LOG(SPOCP_DEBUG) traceLog("Parsed TPSEC_X509 OK");
 
-	tpsec_X509_wcc = parse_format(tpsec[TPSEC_X509_WCC]);
+	tpsec_X509_wcc = parse_format(tpsec[TPSEC_X509_WCC], transf, ntransf);
 	if (tpsec_X509_wcc == 0)
 		traceLog("Could not parse TPSEC_X509_WCC");
 	else
 		LOG(SPOCP_DEBUG) traceLog("Parsed TPSEC_X509_WCC OK");
-
+#endif
 	/*
-	 * tpsec_kerb = parse_format( tpsec[TPSEC_KERB] ) ; 
+	 * tpsec_kerb = parse_format( tpsec[TPSEC_KERB], transf ) ; 
 	 */
-	srvq = parse_format(srvquery);
+
+	srvq = parse_format(srvquery, transf, ntransf);
 	if (srvq == 0)
 		traceLog("*ERR* Could not parse srvquery");
 	else
 		LOG(SPOCP_DEBUG) traceLog("Parsed srvquery OK");
 
-	operq = parse_format(operquery);
+	operq = parse_format(operquery, transf, ntransf);
 	if (operq == 0)
 		traceLog("*ERR* Could not parse operquery");
 	else
@@ -459,7 +323,7 @@ saci_init(void)
  */
 
 static spocp_result_t
-spocp_access(conn_t * con, arg_t ** arg, char *path)
+spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 {
 	spocp_result_t  res = SPOCP_DENIED;	/* the default */
 	ruleset_t      *rs;

@@ -11,6 +11,7 @@
 
  **************************************************************************/
 
+#include <stdarg.h>
 #include "locl.h"
 
 typedef struct _rescode {

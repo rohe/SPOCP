@@ -53,7 +53,7 @@ gdbm_test(cmd_param_t * cmdp, octet_t * blob)
 	datum           key, res;
 	GDBM_FILE       dbf = 0;
 	spocp_result_t  r = SPOCP_DENIED;
-	int             i, cv;
+	int             i, cv = 0;
 	octet_t        *oct, *o, cb;
 	octarr_t       *argv;
 	char           *str = 0;
@@ -65,7 +65,8 @@ gdbm_test(cmd_param_t * cmdp, octet_t * blob)
 	if ((oct = element_atom_sub(cmdp->arg, cmdp->x)) == 0)
 		return SPOCP_SYNTAXERROR;
 
-	cv = cached(cmdp->pd->cv, oct, &cb);
+	if (cmdp->pd)
+		cv = cached(cmdp->pd->cv, oct, &cb);
 
 	if (cv) {
 		traceLog("ipnum: cache hit");
@@ -82,14 +83,14 @@ gdbm_test(cmd_param_t * cmdp, octet_t * blob)
 
 		o = argv->arr[0];
 
-		if ((bc = becon_get(o, cmdp->pd->bcp)) == 0) {
+		if (cmdp->pd == 0 || (bc = becon_get(o, cmdp->pd->bcp)) == 0) {
 			str = oct2strdup(oct, 0);
 			dbf = gdbm_open(str, 512, GDBM_READER, 0, 0);
 			free(str);
 
 			if (!dbf)
 				r = SPOCP_UNAVAILABLE;
-			else if (cmdp->pd->size) {
+			else if (cmdp->pd && cmdp->pd->size) {
 				if (!cmdp->pd->bcp)
 					cmdp->pd->bcp =
 					    becpool_new(cmdp->pd->size);
@@ -160,7 +161,8 @@ gdbm_test(cmd_param_t * cmdp, octet_t * blob)
 	} else if (cv == (CACHED | SPOCP_DENIED)) {
 		r = SPOCP_DENIED;
 	} else {
-		if (cmdp->pd->ct && (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
+		if (cmdp->pd && cmdp->pd->ct &&
+		    (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
 			time_t          t;
 			t = cachetime_set(oct, cmdp->pd->ct);
 			cmdp->pd->cv =

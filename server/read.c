@@ -11,6 +11,8 @@ typedef struct _ptree {
 } ptree_t;
 
 
+char           *strndup(const char *old, size_t sz);
+
 /*
  * ----------------------------------------------------------------------------- 
  */
@@ -208,7 +210,8 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc, keyval_t ** globals)
 					ruleset_create(chunk->val, &rs);
 					LOG(SPOCP_DEBUG)
 					    traceLog("ruleset name: \"%s\"",
-					    trs->name);
+					    rs->name);
+					trs = rs;
 					ruleset_find(chunk->val, &trs);
 					trs->db = db_new();
 				}
@@ -251,10 +254,26 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc, keyval_t ** globals)
 			
 		}
        		else {
-			octet_t *key, *val;
+			octet_t *key, *val, to;
 
 			key = chunk->val ;
-			val = chunk->next->next->val ;
+			if( *chunk->next->next->val->val == '(' ) {
+				ruledef_return( &rdef, chunk->next->next ) ;
+				if( rdef.rule) {
+					tmp = chunk2sexp( rdef.rule ) ;
+					oct_assign( &to, tmp );
+					val = &to ;
+				}
+				else {
+					LOG( SPOCP_WARNING )
+						traceLog("Error in bconddef");
+					f++;
+					chunk_free( chunk ) ;
+					continue ;
+				}
+			}
+			else 
+				val = chunk->next->next->val ;
 
 			bcdef_add(rs->db, srv->plugin, dbc, key, val);
 		}
@@ -338,7 +357,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 
 			if (bcspec_is(oa->arr[i]) == TRUE) {
 				tmp =
-				    lstrndup(oa->arr[i]->val + 6,
+				    strndup(oa->arr[i]->val + 6,
 					     oa->arr[i]->len - 6);
 
 				r = dback_read(dbc, tmp, &dat0, &dat1,
@@ -362,7 +381,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 
 			if (bcspec_is(oa->arr[i]) == FALSE) {
 				tmp =
-				    lstrndup(oa->arr[i]->val + 6,
+				    strndup(oa->arr[i]->val + 6,
 					     oa->arr[i]->len - 6);
 
 				r = dback_read(dbc, tmp, &dat0, &dat1,

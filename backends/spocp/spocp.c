@@ -10,7 +10,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
-#include "spocpcli.h"
+#include "../../client/include/spocpcli.h"
 
 /*
  * arg is composed of the following parts spocphost:path:rule
@@ -25,10 +25,12 @@ static int
 P_spocp_close(void *vp)
 {
 	SPOCP          *spocp;
+	queres_t        qres;
 
 	spocp = (SPOCP *) vp;
 
-	spocpc_send_logout(spocp);
+	memset( &qres, 0, sizeof( queres_t )) ;
+	spocpc_send_logout(spocp, &qres);
 	spocpc_close(spocp);
 	free_spocp(spocp);
 
@@ -42,11 +44,11 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 
 	octarr_t       *argv;
 	octet_t        *oct;
-	octnode_t      *on = 0;
 	char           *path, *server, *query;
 	becon_t        *bc = 0;
 	SPOCP          *spocp;
 	pdyn_t         *dyn = cpp->pd;
+	queres_t       qres ;
 
 	if (cpp->arg == 0)
 		return SPOCP_MISSING_ARG;
@@ -62,17 +64,19 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 	debug = 0;
 	oct = argv->arr[0];
 
-	if ((bc = becon_get(oct, dyn->bcp)) == 0) {
+	memset( &qres, 0, sizeof( queres_t )) ;
+
+	if (dyn == 0 || (bc = becon_get(oct, dyn->bcp)) == 0) {
 		server = oct2strdup(oct, 0);
 		traceLog("Spocp query to %s", server);
 
-		spocp = spocpc_open(server);
+		spocp = spocpc_open( 0, server, 2);
 		free(server);
 
 		if (spocp == 0) {
 			traceLog("Couldn't open connection");
 			r = SPOCP_UNAVAILABLE;
-		} else if (dyn->size) {
+		} else if (dyn && dyn->size) {
 			if (!dyn->bcp)
 				dyn->bcp = becpool_new(dyn->size);
 			bc = becon_push(oct, &P_spocp_close, (void *) spocp,
@@ -86,15 +90,16 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 		 */
 		if ((r =
 		     spocpc_send_query(spocp, "", "(5:XxXxX)",
-				       0)) == SPOCP_UNAVAILABLE) {
-			if (spocpc_reopen(spocp) == FALSE)
-				r = SPOCP_UNAVAILABLE;
+				       &qres)) == SPOCPC_OK) {
+			if( qres.rescode == SPOCP_UNAVAILABLE )
+				if (spocpc_reopen(spocp, 1) == FALSE)
+					r = SPOCP_UNAVAILABLE;
 		}
 	}
 
 	if (r == SPOCP_DENIED) {
 		/*
-		 * means there is not actual query, just checking if the LDAP
+		 * means there is not actual query, just checking if the SPOCP 
 		 * server is up and running 
 		 */
 		if (argv->n == 1)
@@ -107,11 +112,14 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 
 			if ((r =
 			     spocpc_send_query(spocp, path, query,
-					       &on)) == SPOCP_SUCCESS) {
-				if (on) {
-					octmove(blob, on->oct);	/* just pick
-								 * the first */
-					spocpc_octnode_free(on);
+					       &qres)) == SPOCPC_OK ) {
+				if (qres.rescode == SPOCP_SUCCESS ) {
+					r = SPOCP_SUCCESS ;
+					if( qres.blob ) {
+						/* just pick the first */
+						octmove(blob, qres.blob->arr[0]);	
+						octarr_free(qres.blob);
+					}
 				}
 			}
 

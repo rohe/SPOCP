@@ -212,18 +212,3 @@ charmatrix_free(char **arr)
 	}
 }
 
-/*
- * ---------------- 
- */
-
-char           *
-lstrndup(char *s, int n)
-{
-	char           *tmp;
-
-	tmp = (char *) Malloc((n + 1) * sizeof(char));
-	strncpy(tmp, s, n);
-	tmp[n] = '\0';
-
-	return tmp;
-}

@@ -46,7 +46,7 @@ addrmatch_test(cmd_param_t * cpp, octet_t * blob)
 	char            line[512];
 	char           *filename = 0;
 	FILE           *fp = 0;
-	int             len, n, cv;
+	int             len, n, cv = 0;
 	octarr_t       *argv;
 	octet_t        *oct, *o, cb;
 	becon_t        *bc = 0;
@@ -58,7 +58,8 @@ addrmatch_test(cmd_param_t * cpp, octet_t * blob)
 	if ((oct = element_atom_sub(cpp->arg, cpp->x)) == 0)
 		return SPOCP_SYNTAXERROR;
 
-	cv = cached(dyn->cv, oct, &cb);
+	if (dyn)
+		cv = cached(dyn->cv, oct, &cb);
 
 	if (cv) {
 		traceLog("ipnum: cache hit");
@@ -75,14 +76,14 @@ addrmatch_test(cmd_param_t * cpp, octet_t * blob)
 
 		o = argv->arr[0];
 
-		if ((bc = becon_get(o, dyn->bcp)) == 0) {
+		if (dyn == 0 || (bc = becon_get(o, dyn->bcp)) == 0) {
 			filename = oct2strdup(o, 0);
 			fp = fopen(filename, "r");
 			free(filename);
 
 			if (fp == 0) {
 				r = SPOCP_UNAVAILABLE;
-			} else if (dyn->size) {
+			} else if (dyn && dyn->size) {
 				if (!dyn->bcp)
 					dyn->bcp = becpool_new(dyn->size);
 				bc = becon_push(o, &P_fclose, (void *) fp,
@@ -139,7 +140,7 @@ addrmatch_test(cmd_param_t * cpp, octet_t * blob)
 	} else if (cv == (CACHED | SPOCP_DENIED)) {
 		r = SPOCP_DENIED;
 	} else {
-		if (dyn->ct && (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
+		if (dyn && dyn->ct && (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
 			time_t          t;
 			t = cachetime_set(oct, dyn->ct);
 			dyn->cv =

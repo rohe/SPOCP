@@ -80,6 +80,8 @@ typedef enum {
 	SPOCP_TRANS_COMP,
 	SPOCP_INFO_UNAVAIL,
 	SPOCP_AUTH_ERR,
+	SPOCP_SASLBINDINPROGRESS,
+	SPOCP_SSLCON_EXIST,
 	SPOCP_REDIRECT
 	    /*
 	     * SPOCP_ALIASPROBLEM , SPOCP_ALIASDEREFERENCINGPROBLEM , 
@@ -169,6 +171,18 @@ char           *find_balancing(char *p, char left, char right);
 spocp_result_t  numstr(char *str, long *l);
 spocp_result_t  is_date(octet_t * op);
 void            to_gmt(octet_t * s, octet_t * t);
+
+/*
+ * ===============================================================================
+ */
+
+int             get_len(octet_t * oct);
+spocp_result_t  get_str(octet_t * oct, octet_t * str);
+int             sexp_len(octet_t * sexp);
+
+char           *sexp_printa(char *sexp, unsigned int *bsize, char *fmt,
+			    void **argv);
+char           *sexp_printv(char *sexp, unsigned int *bsize, char *fmt, ...);
 
 /*
  * =============================================================================== 

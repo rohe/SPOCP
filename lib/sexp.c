@@ -24,6 +24,96 @@
 #include <spocp.h>
 #include <macros.h>
 
+int
+get_len(octet_t * op)
+{
+	char           *ep, *sp = op->val;
+	long            l;
+
+	/*
+	 * strtol skips SP (0x20) and allows a leading '-'/'+' so I have to
+	 * check that first, since those are not allowed in this context 
+	 */
+
+	if (*sp == ' ' || *sp == '-' || *sp == '+') {
+		traceLog( "Disallowed char %c in length field", *sp ) ;
+		return -1;
+        }
+
+	l = strtol(sp, &ep, 10);
+
+	/*
+	 * no number read 
+	 */
+	if (ep == sp) {
+		traceLog("No digit found at \"%c%c%c%c\"", *sp, *(sp+1),
+		    *(sp+2), *(sp+3) ) ;
+		return -1;
+        }
+
+	/*
+	 * ep points to the first non digit character or '\0' 
+	 */
+	op->len -= ep - sp;
+	op->val = ep;
+
+	return (int) l;
+}
+
+spocp_result_t
+get_str(octet_t * so, octet_t * ro)
+{
+	if (ro == 0)
+		return SPOCP_OPERATIONSERROR;
+
+	ro->size = 0;
+
+	ro->len = get_len(so);
+
+	if (ro->len < 0) {
+		LOG(SPOCP_ERR) traceLog("In string \"%s\" ", so->val);
+		LOG(SPOCP_ERR) traceLog("parse error: error in lengthfield");
+		return SPOCP_SYNTAXERROR;
+	}
+
+	if ((so->len - 1) < ro->len) {
+		LOG(SPOCP_ERR) {
+			traceLog
+			    ("expected length of string (%d) exceeds input length (%d)",
+			     ro->len, so->len);
+			traceLog("Offending part \"%c%c%c\"", so->val[0],
+				 so->val[1], so->val[2]);
+		}
+		return SPOCP_MISSING_CHAR;
+	}
+
+	if (*so->val != ':') {
+		LOG(SPOCP_ERR) traceLog("parse error: missing \":\"");
+		return SPOCP_SYNTAXERROR;
+	}
+
+	so->val++;
+	so->len--;
+
+	if (ro->len == 0) {
+		LOG(SPOCP_ERR) traceLog("Zero length strings not allowed");
+		return SPOCP_SYNTAXERROR;
+	}
+
+	ro->val = so->val;
+	ro->size = 0;		/* signifying that it's not dynamically
+				 * allocated */
+
+	so->val += ro->len;
+	so->len -= ro->len;
+
+	DEBUG(SPOCP_DPARSE)
+	    traceLog("Got 'string' \"%*.*s\"", ro->len, ro->len, ro->val);
+
+	return SPOCP_SUCCESS;
+}
+
+
 /*
  * -1 if no proper s-exp 0 if missing chars otherwise the number of
  * characters 

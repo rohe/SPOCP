@@ -115,7 +115,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 	char            line[256];
 	char           *cp, **arr, *file = 0, *sp;
 	FILE           *fp = 0;
-	int             j, ne, cv;
+	int             j, ne, cv = 0;
 	becon_t        *bc = 0;
 	pdyn_t         *dyn = cpp->pd;
 
@@ -125,7 +125,8 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 	if ((oct = element_atom_sub(cpp->arg, cpp->x)) == 0)
 		return SPOCP_SYNTAXERROR;
 
-	cv = cached(cpp->pd->cv, oct, &cb);
+	if (dyn)
+		cv = cached(dyn->cv, oct, &cb);
 
 	if (cv) {
 		traceLog("ipnum: cache hit");
@@ -152,7 +153,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 			free(file);
 			if (fp == 0)
 				r = SPOCP_UNAVAILABLE;
-			else if (dyn->size) {
+			else if (dyn && dyn->size) {
 				if (!dyn->bcp)
 					dyn->bcp = becpool_new(dyn->size);
 				bc = becon_push(o, &P_fclose, (void *) fp,
@@ -230,7 +231,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 	} else if (cv == (CACHED | SPOCP_DENIED)) {
 		r = SPOCP_DENIED;
 	} else {
-		if (dyn->ct && (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
+		if (dyn && dyn->ct && (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
 			time_t          t;
 			t = cachetime_set(oct, dyn->ct);
 			dyn->cv =

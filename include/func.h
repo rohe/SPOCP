@@ -53,8 +53,6 @@ junc_t         *element_match_r(junc_t *, element_t *, comparam_t *);
  * input.c 
  */
 
-int             get_len(octet_t * oct);
-spocp_result_t  get_str(octet_t * oct, octet_t * str);
 int             ipv4cmp(struct in_addr *ia1, struct in_addr *ia2);
 int             ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2);
 
@@ -99,17 +97,12 @@ unsigned int    lhash(unsigned char *s, unsigned int len, unsigned int init);
  * string.c 
  */
 
-int             sexp_len(octet_t * sexp);
-
 strarr_t       *strarr_new(int size);
 strarr_t       *strarr_add(strarr_t * sa, char *value);
 void            strarr_free(strarr_t * sa);
 
 int             str_expand(char *src, keyval_t * kvp, char *dest, size_t size);
 
-char           *sexp_printa(char *sexp, unsigned int *bsize, char *fmt,
-			    void **argv);
-char           *sexp_printv(char *sexp, unsigned int *bsize, char *fmt, ...);
 void            oct_assign(octet_t * oct, char *s);
 void            octln(octet_t * a, octet_t * b);
 

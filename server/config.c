@@ -46,9 +46,9 @@ char           *keyword[] = {
 
 #define LINEBUF         1024
 
-#define SYSTEM 1
-#define PLUGIN 2
-#define DBACK  3
+#define SYSTEM 20
+#define PLUGIN 21
+#define DBACK  22
 
 /*
  * roughly 
@@ -393,6 +393,7 @@ read_config(char *file, srv_t * srv)
 				}
 				break;
 
+#ifdef HAVE_SSL
 			case CLIENTCERT:
 				if (strcasecmp(cp, "none") == 0)
 					srv->clientcert = NONE;
@@ -402,6 +403,7 @@ read_config(char *file, srv_t * srv)
 					srv->clientcert = HARD;
 
 				break;
+#endif
 			}
 			break;
 
@@ -542,17 +544,3 @@ read_config(char *file, srv_t * srv)
 	return 1;
 }
 
-/*
- * int set_backend_cachetime( srv_t *srv ) { int i = 0 ; strarr_t *sa ; void
- * *vp = 0 ;
- * 
- * traceLog("Setting backend cachetimes" ) ;
- * 
- * conf_get( srv, CACHETIME, 0, &vp ) ;
- * 
- * if( vp ) { sa = ( strarr_t * ) vp ;
- * 
- * for( i = 0 ; i < sa->argc ; i++ ) { cachetime_new( sa->argv[i] ) ; } }
- * 
- * return i ; } 
- */

@@ -312,29 +312,33 @@ dnl                clients/openldap/Makefile
 dnl                clients/exim/Makefile
 
 AC_CONFIG_FILES([Makefile
-                 include/Makefile
-                 lib/Makefile
-		 doc/Makefile
-		 util/Makefile
-                 backends/Makefile
-                 backends/cert/Makefile
-                 backends/difftime/Makefile
-                 backends/flatfile/Makefile
-                 backends/gdbm/Makefile
-                 backends/ipnum/Makefile
-                 backends/lastlogin/Makefile
-                 backends/ldapset/Makefile
-                 backends/localgroup/Makefile
-                 backends/mailmatch/Makefile
-                 backends/motd/Makefile
-                 backends/rbl/Makefile
-                 backends/regexp/Makefile
-                 backends/spocp/Makefile
-                 backends/sql/Makefile
-                 backends/strmatch/Makefile
-                 backends/system/Makefile
-                 backends/time/Makefile
-                 backends/dback_gdbm/Makefile
-                 server/Makefile])
+		include/Makefile
+		lib/Makefile
+		doc/Makefile
+		util/Makefile
+		backends/Makefile
+		backends/cert/Makefile
+		backends/difftime/Makefile
+		backends/flatfile/Makefile
+		backends/gdbm/Makefile
+		backends/ipnum/Makefile
+		backends/lastlogin/Makefile
+		backends/ldapset/Makefile
+		backends/localgroup/Makefile
+		backends/mailmatch/Makefile
+		backends/motd/Makefile
+		backends/rbl/Makefile
+		backends/regexp/Makefile
+		backends/spocp/Makefile
+		backends/sql/Makefile
+		backends/strmatch/Makefile
+		backends/system/Makefile
+		backends/time/Makefile
+		backends/dback_gdbm/Makefile
+		client/Makefile
+		client/src/Makefile
+		client/include/Makefile
+		client/tools/Makefile
+		server/Makefile])
 AC_OUTPUT
 

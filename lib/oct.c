@@ -490,7 +490,7 @@ void
 oct_free(octet_t * o)
 {
 	if (o) {
-		if (o->val && o->size)
+		if (o->val && o->size && o->len)
 			free(o->val);
 		free(o);
 	}

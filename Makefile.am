@@ -1,6 +1,6 @@
 # $Id$
 
-SUBDIRS = include lib server util backends doc
+SUBDIRS = include lib server util backends doc client
 
 EXTRA_DIST = \
 	COPYRIGHT \

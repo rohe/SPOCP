@@ -561,6 +561,8 @@ get_chunk(spocp_charbuf_t * io)
 static spocp_chunk_t		*
 chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np )
 {
+	if( pp == NULL ) return np ;
+
 	pp->next = np;
 	if (np)
 		np->prev = pp;
@@ -658,10 +660,16 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 		}
 	} else if ( oct2strcmp(pp->val, ";include" ) == 0 ) {
 		pp = chunk_add( pp, get_chunk( ib )) ;
-	} else {	/* should be a boundary condition definition, has three chunks */
+	} else {	/* should be a boundary condition definition,
+			 * has threeor more chunks
+			 */
 		pp = chunk_add( pp, get_chunk( ib ));
-		if( pp && oct2strcmp(pp->val, ":=") == 0 ) 
+		if( pp && oct2strcmp(pp->val, ":=") == 0 ) {
 			pp = chunk_add( pp, get_chunk( ib ));
+			if( oct2strcmp( pp->val, "(" ) == 0 ) {
+				pp = get_sexp( ib, pp);
+			}
+		}
 		else {
 			traceLog("Error in rulefile") ;
 			chunk_free(head);

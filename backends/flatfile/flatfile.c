@@ -51,7 +51,7 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
 	octarr_t       *argv;
 	octet_t        *oct, *o, cb;
 	FILE           *fp;
-	int             j, i, ne, cv;
+	int             j, i, ne, cv = 0;
 	becon_t        *bc = 0;
 
 	if (cpp->arg == 0)
@@ -60,7 +60,8 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
 	if ((oct = element_atom_sub(cpp->arg, cpp->x)) == 0)
 		return SPOCP_SYNTAXERROR;
 
-	cv = cached(cpp->pd->cv, oct, &cb);
+	if (cpp->pd)
+		cv = cached(cpp->pd->cv, oct, &cb);
 
 	if (cv) {
 		traceLog("ipnum: cache hit");
@@ -76,7 +77,7 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
 
 		o = argv->arr[0];
 
-		if ((bc = becon_get(o, cpp->pd->bcp)) == 0) {
+		if (cpp->pd == 0 || (bc = becon_get(o, cpp->pd->bcp)) == 0) {
 
 			str = oct2strdup(argv->arr[0], 0);
 			fp = fopen(str, "r");
@@ -84,7 +85,7 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
 
 			if (fp == 0)
 				r = SPOCP_UNAVAILABLE;
-			else if (cpp->pd->size) {
+			else if (cpp->pd && cpp->pd->size) {
 				if (!cpp->pd->bcp)
 					cpp->pd->bcp =
 					    becpool_new(cpp->pd->size);
@@ -171,7 +172,8 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
 	} else if (cv == (CACHED | SPOCP_DENIED)) {
 		r = SPOCP_DENIED;
 	} else {
-		if (cpp->pd->ct && (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
+		if (cpp->pd && cpp->pd->ct &&
+		    (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
 			time_t          t;
 			t = cachetime_set(oct, cpp->pd->ct);
 			cpp->pd->cv =
