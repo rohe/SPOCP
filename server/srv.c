@@ -319,7 +319,7 @@ static spocp_result_t com_delete( conn_t *conn )
     /* get write lock, do operation and release lock */
     /* locking the whole tree, is that really necessary ? */
     pthread_rdwr_wlock( &rs->rw_lock ) ;
-    r = ss_del_rule( trs, conn->oparg->arr[0], SUBTREE ) ;
+    r = ss_del_rule( trs, &conn->dbc, conn->oparg->arr[0], SUBTREE ) ;
     pthread_rdwr_wunlock( &rs->rw_lock ) ;
   }
 

@@ -856,9 +856,7 @@ static ruleinst_t *
     }
   }
 
-  if( db->dback ) {
-    dback_save( db->dback, dbc,  rt->uid, rule, blob, bcondname ) ; 
-  }
+  if( db->dback ) dback_save( dbc, rt->uid, rule, blob, bcondname ) ; 
 
   rbt_insert( ri->rules, (item_t) rt ) ;
 
