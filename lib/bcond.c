@@ -15,6 +15,9 @@
 #include <proto.h>
 #include <dback.h>
 
+/*!
+ * \brief A simple tree structure built to hold a parsed S-expression
+ */
 typedef struct _stree {
   int list ;
   octet_t val ;
@@ -22,8 +25,9 @@ typedef struct _stree {
   struct _stree *part ;
 } stree_t ;
 
-
-/* ---------------------------------------------------------------------- */
+/* ====================================================================== * 
+                 LOCAL FUNCTIONS
+ * ====================================================================== */
 
 static bcspec_t *bcspec_new( plugin_t *plt, octet_t *spec )
 {
@@ -61,26 +65,6 @@ static void bcspec_free( bcspec_t *bcs )
 
     free( bcs ) ;
   }
-}
-
-/* ---------------------------------------------------------------------- */
-/*!
- * Is this a proper specification of a boundary condition ?
- * \param A pointer to the boundary condition specification
- * \return TRUE is true or FALSE if not
- */
-int bcspec_is( octet_t *spec ) 
-{
-  int n ;
-
-  if(( n = octchr( spec, ':' )) < 0 ) return FALSE ;
-  
-  for( n-- ; n >= 0 && DIRCHAR( spec->val[n] ) ; n-- ) ;
-
-  /* should I check the XPath definitions ? */
-
-  if( n == -1 ) return TRUE ;
-  else return FALSE ;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -128,6 +112,8 @@ static void bcexp_free( bcexp_t *bce )
   }
 }
 
+/* ---------------------------------------------------------------------- */
+
 static void bcdef_free( bcdef_t *bcd )
 {
   bcexp_t *bce ;
@@ -144,6 +130,8 @@ static void bcdef_free( bcdef_t *bcd )
   }
 }
 
+/* ---------------------------------------------------------------------- */
+
 static bcdef_t *bcdef_new( void )
 {
   bcdef_t *new ;
@@ -153,6 +141,8 @@ static bcdef_t *bcdef_new( void )
   return new ;
 }
 
+/* ---------------------------------------------------------------------- */
+
 static bcdef_t *bcdef_find( bcdef_t *bcd, octet_t *pattern )
 {
   for( ; bcd ; bcd = bcd->next ) 
@@ -161,23 +151,7 @@ static bcdef_t *bcdef_find( bcdef_t *bcd, octet_t *pattern )
   return 0 ;
 }
 
-/*
-static bcdef_t *bcdef_append( bcdef_t *bcd, bcdef_t *new )
-{
-  if( bcd == 0 ) return new ;
-  for( ; bcd->next ; bcd = bcd->next ) ;
-  bcd->next = new ;
-  new->prev = bcd ;
-
-  return bcd ;
-}
-
-static varr_t *varr_bcexp_add( varr_t *va, bcexp_t *bce )
-{
-  return varr_add( va, (void *) bce ) ;
-}
-
-*/
+/* ---------------------------------------------------------------------- */
 
 static bcdef_t *bcdef_rm( bcdef_t *root, bcdef_t *rm ) 
 {
@@ -234,7 +208,6 @@ static void stree_free( stree_t *stp )
   }
 }
 
-/* ====================================================================== */
 /*
   bcond        = bcondexpr / bcondref
 
@@ -395,7 +368,7 @@ static void bcexp_deref( bcexp_t *bce )
 /* recursively find all the rules that uses this boundary condition directly or
  * through some intermediate
  */
-varr_t *all_rule_users( bcdef_t *head, varr_t *rules )
+static varr_t *all_rule_users( bcdef_t *head, varr_t *rules )
 {
   void *vp ;
   bcdef_t *bcd ;
@@ -544,7 +517,7 @@ static spocp_result_t bcexp_eval( element_t *qp, element_t *rp, bcexp_t *bce, oc
 /* If it's a reference to a boundary condition it should be of the
    form (ref <name>)
 */
-spocp_result_t is_bcref( octet_t *o, octet_t *res )
+static spocp_result_t is_bcref( octet_t *o, octet_t *res )
 {
   octet_t lc ;
   octet_t op ;
@@ -590,7 +563,28 @@ static char *bcname_make( octet_t *name )
  * ---------------------------------------------------------------------- */
 
 /*!
- * Adds a boundary condition definition to the list of others
+ * \fn int bcspec_is( octet_t *spec ) 
+ * Is this a proper specification of a boundary condition ?
+ * \param spec A pointer to the boundary condition specification
+ * \return TRUE is true or FALSE if not
+ */
+int bcspec_is( octet_t *spec ) 
+{
+  int n ;
+
+  if(( n = octchr( spec, ':' )) < 0 ) return FALSE ;
+  
+  for( n-- ; n >= 0 && DIRCHAR( spec->val[n] ) ; n-- ) ;
+
+  /* should I check the XPath definitions ? */
+
+  if( n == -1 ) return TRUE ;
+  else return FALSE ;
+}
+
+/*!
+ * \fn bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data ) 
+ * \brief Adds a boundary condition definition to the list of others
  * \param db A link to the internal database 
  * \param name The name of the boundary condition specification
  * \param data The boundary condition specification
@@ -669,9 +663,12 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
 
 /* ---------------------------------------------------------------------- */
 /*!
- * Remove a boundary condition from the internal database. 
+ * \fn spocp_result_t bcdef_del( db_t *db, octet_t *name ) 
+ * \brief Remove a boundary condition from the internal database. 
  * A boundary condition can not be removed if there is rules that uses it!
- * 
+ * \param db A pointer to the internal database
+ * \param name The name of the boundary condition
+ * \return A result code, SPOCP_SUCCESS on success
  */
 spocp_result_t bcdef_del( db_t *db, octet_t *name ) 
 {
@@ -700,8 +697,13 @@ spocp_result_t bcdef_del( db_t *db, octet_t *name )
 }
 
 /* ---------------------------------------------------------------------- */
-
 /*!
+ * \fn spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data ) 
+ * \brief Replaces on boundary condition with another without changing the name.
+ * \param db A pointer to the internal database
+ * \param name The name of the boundary condition
+ * \param data The new specification for the boundary condition
+ * \return An appropriate result code
  */
 spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data ) 
 {
@@ -741,6 +743,20 @@ spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data )
 
 /* ---------------------------------------------------------------------- */
 /*!
+ * Given a boundary condition specification, return a pointer to the internal
+ * representation. That includes returning a pointer to a already existing 
+ * stored boundary condition if this specification is a reference. Or if
+ * the specification is not a simple reference, store it and return a pointer to
+ * where it is stored. If the specification is equal to the string "NULL" then 
+ * a NULL pointer is returned.
+ *
+ * \param db A pointer to the internal database
+ * \param o  The boundary conditions specification
+ * \param rc Where the result code of the operation should be stored
+ * \return  A pointer to the internal representation or NULL if it does not 
+ *          exist, is faulty  or references unknown boundary conditions.
+ *          If the boundary condition specification is equal to "NULL", NULL
+ *          is also returned but together with the result code SPOCP_SUCCESS.
  */
 bcdef_t *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc )
 {
@@ -751,7 +767,7 @@ bcdef_t *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc )
   if( oct2strcmp( o, "NULL" ) == 0 ) bcd = NULL ;
   else if(( r = is_bcref( o, &br )) == SPOCP_SUCCESS ) {
     bcd = bcdef_find( db->bcdef, &br ) ;
-    if( bcd == NULL ) *rc = SPOCP_MISSING_ARG ;
+    if( bcd == NULL ) *rc = SPOCP_UNAVAILABLE ;
   }
   else {
     bcd = bcdef_add( db, 0, o ) ;
@@ -763,6 +779,15 @@ bcdef_t *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 /*!
+ * \fn spocp_result_t bcond_check( element_t *ep, index_t *id, octarr_t **oa )
+ * \brief Checks whether a boundary condition is true or false. If the backend 
+ * that does the evaluation return true it might be accompanied by a dynamic
+ * blob.
+ * \param ep A pointer to a internal representation of the parsed query S-expression
+ * \param id A collection of a set of rules that are '<=' the query.
+ * \param oa An octarr struct. this is where the dynamic blob will be placed if
+ *           the backend wants to return one.
+ * \return A result code
  */
 
 spocp_result_t bcond_check( element_t *ep, index_t *id, octarr_t **oa )
@@ -801,7 +826,15 @@ spocp_result_t bcond_check( element_t *ep, index_t *id, octarr_t **oa )
 }
 
 /* ---------------------------------------------------------------------- */
-
+/*!
+ * \fn varr_t *bcond_users( db_t *db, octet_t *bcname )
+ * \brief A niffty function that allows you to find  all rules that are dependent
+ * on a specific boundary condition.
+ * \param db A pointer to the internal database
+ * \param bcname The name of the boundary condition
+ * \return A array of pointers to the rules that uses, directly of indirectly, 
+ *         this boundary condition
+ */
 varr_t *bcond_users( db_t *db, octet_t *bcname )
 {
   bcdef_t *bcd ;

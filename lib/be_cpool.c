@@ -9,6 +9,10 @@
 #include <wrappers.h>
 #include <macros.h>
 
+/* ====================================================================== *
+                    LOCAL FUNCTIONS
+ * ====================================================================== */
+
 static becon_t *becon_new( int copy )
 {
   becon_t *bc ;
@@ -50,27 +54,8 @@ static void becon_free( becon_t *bc, int close )
 }
 
 /* ------------------------------------------------------------------- */
-/*!
- * Creates a new backend connection pool.
- * \param max Max number of connections that can be held in the pool
- * \copy
- */
-becpool_t *becpool_new( size_t max )
-{
-  becpool_t *bcp ;
 
-  bcp = ( becpool_t * ) Malloc ( sizeof( becpool_t )) ;
-  bcp->size = 0 ;
-  bcp->max = max ;
-  bcp->head = bcp->tail = 0 ;
-
-  bcp->lock = ( pthread_mutex_t * ) Malloc ( sizeof( pthread_mutex_t )) ;
-  pthread_mutex_init( bcp->lock, 0 ) ;
-
-  return bcp ;
-}
-
-void becpool_rm( becpool_t *bcp, int close )
+static void becpool_rm( becpool_t *bcp, int close )
 {
   becon_t *pres, *next ;
 
@@ -94,14 +79,47 @@ void becpool_rm( becpool_t *bcp, int close )
 }
 
 /* ------------------------------------------------------------------- */
-int becpool_full( becpool_t *bcp )
+
+static int becpool_full( becpool_t *bcp )
 {
   if( bcp->size == bcp->max ) return 1 ;
   else return 0 ;
 }
 
+/* ====================================================================== * 
+                    PUBLIC FUNCTIONS 
+ * ====================================================================== */
+
 /*!
- * Pushes a connection onto the connection pool
+ * \brief Creates a new backend connection pool
+ * \param max The maximum size of the connection pool, the connections held in this
+ *        should never be allowed to exceed this number.
+ * \return A pointer to the newly created pool
+ */
+becpool_t *becpool_new( size_t max )
+{
+  becpool_t *bcp ;
+
+  bcp = ( becpool_t * ) Malloc ( sizeof( becpool_t )) ;
+  bcp->size = 0 ;
+  bcp->max = max ;
+  bcp->head = bcp->tail = 0 ;
+
+  bcp->lock = ( pthread_mutex_t * ) Malloc ( sizeof( pthread_mutex_t )) ;
+  pthread_mutex_init( bcp->lock, 0 ) ;
+
+  return bcp ;
+}
+
+/* ------------------------------------------------------------------- */
+/*!
+ * \fn becon_t *becon_push( octet_t *, closefn *, void *, becpool_t * )
+ * \brief Pushes a connection onto the connection pool
+ * \param arg The name of the connection
+ * \param close The function that should be used to close a connection of this type
+ * \param con A handle to the connection
+ * \param bcp A pointer to the connection pool
+ * \return A becon_t struct representing an active connection
  */
 becon_t *becon_push( octet_t *arg, closefn *close, void *con, becpool_t *bcp )
 {
@@ -139,7 +157,18 @@ becon_t *becon_push( octet_t *arg, closefn *close, void *con, becpool_t *bcp )
   return bc ;
 }
 
-/* returns bc if there is a usefull connection, otherwise 0 */
+/* ------------------------------------------------------------------- */
+
+/*!
+ * \fn becon_t *becon_get( octet_t *arg, becpool_t *bcp ) 
+ * \brief Get a old unused, hopefully still active connection
+ * \param arg The name of the connection type
+ * \param bcp A pointer to this backends connection pool
+ * \return A pointer to a struct representing the connection if there is
+ *         a usefull connection, otherwise NULL. It will also return NULL 
+ *         if there is no connection pool available, something that might mean
+ *         that this backend should not use connection pools for some reason.
+ */
 
 becon_t *becon_get( octet_t *arg, becpool_t *bcp ) 
 {
@@ -187,6 +216,12 @@ becon_t *becon_get( octet_t *arg, becpool_t *bcp )
   return bc ;
 }
 
+/* ------------------------------------------------------------------- */
+/*!
+ * \fn void becon_return( becon_t *bc )
+ * \brief Return a connection to the pool
+ * \param bc The connection
+ */
 void becon_return( becon_t *bc )
 {
   bc->last = time( (time_t *) 0 ); /* update last usage */
@@ -194,6 +229,15 @@ void becon_return( becon_t *bc )
   pthread_mutex_unlock( bc->c_lock ) ;
 }
 
+/* ------------------------------------------------------------------- */
+
+/*!
+ * \fn void becon_rm( becpool_t *bcp, becon_t *bc )
+ * \brief Removes the representation of a connection from the pool,
+ *    the connection itself should be closed before the representation is removed.
+ * \param bcp The connection pool
+ * \param bc The connection representation
+ */
 void becon_rm( becpool_t *bcp, becon_t *bc )
 {
   becon_t *next, *prev ;
@@ -201,7 +245,6 @@ void becon_rm( becpool_t *bcp, becon_t *bc )
   if( bc == 0 ) return ;
 
   pthread_mutex_lock( bcp->lock ) ;
-
 
   if( bc == bcp->head ) {
     if( bc == bcp->tail ) {
@@ -231,6 +274,14 @@ void becon_rm( becpool_t *bcp, becon_t *bc )
 
 }
 
+/* ------------------------------------------------------------------- */
+/*!
+ * \fn void becon_update( becon_t *bc, void *con )
+ * \brief Used to replaces a defunct connecction with a working
+ * \param bc A pointer to the connection representation
+ * \param con The connection handle
+ *
+ */
 void becon_update( becon_t *bc, void *con )
 {
   bc->con = con ;

@@ -47,6 +47,7 @@ atom_t *atom_dup( atom_t *ap )
 
 /* ====================================================================== */
 /*!
+ * \fn octet_t *atoms_join( element_t *e, char *sep ) 
  * Joins a set of atoms with a separator in betweem into one string of bytes.
  * If given a list which contains both atoms and other elements all non-atom
  * elements will just be silently ignores.
@@ -240,7 +241,12 @@ static varr_t *set_dup( varr_t *va, element_t *parent )
 
 
 /********************************************************************/
-
+/*!
+ * \brief Duplicates a element struct
+ * \param ep The element to be duplicated
+ * \param memberof The element that is to be the parent of the copy
+ * \return A pointer to the copy
+ */
 element_t *element_dup( element_t *ep, element_t *memberof )
 {
   element_t *new = 0 ;
@@ -321,7 +327,8 @@ element_t *element_list_add( element_t *le, element_t *e )
 /* ====================================================================== */
 
 /*!
- * Adds a element to an array of elements. The difference between this and 
+ * \fn element_t *element_array_add( element_t *le, element_t *e )
+ * \brief Adds a element to an array of elements. The difference between this and 
  * element_add_list is that the array is by definition unsorted, so the added
  * element might end up anywhere in the array. Array differs from Set in that the
  * special restrictions that are valid for sets are not so for arrays. An array can
@@ -349,7 +356,8 @@ element_t *element_array_add( element_t *le, element_t *e )
 
 /* ====================================================================== */
 /*!
- * The number of elements in this element. Only returns the number of immediate 
+ * \fn int element_size( element_t *e) 
+ * \brief The number of elements in this element. Only returns the number of immediate 
  * elements, so if this list contains lists those lists are counted as 1 and not
  * as the number of elements in the sublists. If the element is a list, array or
  * set then the number of elements in those are returned, if it is a atom, 1 is
@@ -382,8 +390,9 @@ int element_size( element_t *e)
 
 /* ---------------------------------------------------------------------- */
 /*!
- * There are different types of elements this function returns a indicator of
- * what kind of element it is.
+ * \fn int element_type( element_t *e ) 
+ * \brief There are different types of elements this function returns a indicator of
+ *  what kind of element it is.
  * \param e The element which type is asked for
  * \return O if atom, 1 if list, 2 if set, 3 if prefix, 4 is suffix
  *         5 if range, 9 if an array and 10 if a NULL element.
@@ -554,8 +563,10 @@ element_t *element_last( element_t *e )
 /* ---------------------------------------------------------------------- */
 
 /*!
+ * \fn element_t *element_nth( element_t *e, int n )
  * Gives you the nth element in a list, or one element from a array or set element
- * \param e A pointer to the element from which the element should be picked
+ * \param e A pointer to the element list from which the element should be picked
+ * \param n The index of the element to pick
  * \return A pointer to the subelement . If the element given is a atom alement
  *         and the index was set to 0, the element itself will be returned.
  */
@@ -584,9 +595,9 @@ element_t *element_nth( element_t *e, int n )
  * If start is negative then the starting point is counted from the end of
  * the list element_perl_intervall(e, -2, 2 ), gives you the last two elements 
  * of the list. The first element in the list has index 0.
- * \param The list element
- * \param The index of the starting subelement, this might be a negative number
- * \param The number of subelements that should be extracted.
+ * \param e The list element
+ * \param start The index of the starting subelement, this might be a negative number
+ * \param nr The number of subelements that should be extracted.
  * \return A element list or one element if the sublist length was given as one.
  *         Either newly created, with copies of the subelements 
  *         from the original list. If the element given to the function was not a 

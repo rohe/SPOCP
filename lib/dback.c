@@ -263,6 +263,7 @@ spocp_result_t dback_init( dback_t *dback, void *cfg, void *conf )
 /*!
  * Stores information in the persistent storage
  * \param dback A link to the backend information
+ * \param handle The connection handle cast as a (void *)
  * \param key The key under which the information should be stored.
  * \param oct0, oct1, str Pieces of the information to be stored
  * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
@@ -288,8 +289,9 @@ spocp_result_t
 /*!
  * Replaces information stored under a specific key in the persistent storage
  * \param dback A link to the backend information
+ * \param handle The connection handle cast as a (void *)
  * \param key The key under which the information should be stored.
- * \param oct0, oct1, str Pieces of the information to be stored
+ * \param oct0, oct1, s Pieces of the information to be stored
  * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
  */
 spocp_result_t
@@ -314,6 +316,7 @@ spocp_result_t
 /*!
  * Reads stored information from the persistent storage
  * \param dback A link to the backend information
+ * \param handle The connection handle cast as a (void *)
  * \param key The key under which the information should be stored.
  * \param oct0, oct1, str The information from the persistent storage split into its 
  *   original pieces.
@@ -339,8 +342,9 @@ spocp_result_t
  * Deletes a information pieces connected to a specific key from the persistent 
  * storage.
  * \param dback A link to the backend information
+ * \param handle The connection handle cast as a (void *)
  * \param key The key under which the information was stored.
- * \returns An appropriate result code
+ * \return An appropriate result code
  */
 
 spocp_result_t dback_delete( dback_t *dback, void *handle, char *key )
@@ -361,7 +365,7 @@ spocp_result_t dback_delete( dback_t *dback, void *handle, char *key )
  * When you need to keep a connection open while doing other computations.
  * \param dback A link to the backend information
  * \param r     A pointer to a int where the resultcode is placed
- * \returns A void pointer to a handle the database backend has return as a
+ * \return A void pointer to a handle the database backend has return as a
  *  connection token.
  */
 void *dback_open( dback_t *dback, spocp_result_t *r )
@@ -373,7 +377,7 @@ void *dback_open( dback_t *dback, spocp_result_t *r )
 /*!
  * Closes the connection to the persistent store.
  * \param dback A link to the backend information
- * \param vp The connection handle cast as a (void *)
+ * \param handle The connection handle cast as a (void *)
  * \return The result code
  */
 spocp_result_t dback_close( dback_t *dback, void *handle )
@@ -395,7 +399,7 @@ spocp_result_t dback_close( dback_t *dback, void *handle )
  * returns NULL, and no keys has been added or deleted during the time this 
  * has taken. Then all keys has been returned.
  * \param dback A link to the backend information
- * \param vp A connection handle to the storage facility.
+ * \param handle A connection handle to the storage facility.
  * \param r A pointer to an int where the result code can be placed.
  * \return The key expressed as a octet_t struct.
  */
@@ -409,7 +413,7 @@ octet_t *dback_first_key( dback_t *dback, void *handle, spocp_result_t *r )
 /*!
  * Gets the next ( according to some definition ) key from the persistent store.
  * \param dback A link to the backend information
- * \param vp A connection handle to the storage facility
+ * \param handle A connection handle to the storage facility
  * \param key The previous key.
  * \param r A pointer to an int where the result code can be placed.
  * \return The next key expressed as a octet_t struct.
@@ -425,6 +429,7 @@ octet_t *dback_next_key( dback_t *dback, void *handle, octet_t *key, spocp_resul
  * This is dback_open(), dback_first_key(), dback_next_key(), dback_close rolled into
  * one function.
  * \param dback A link to the backend information
+ * \param handle A connection handle
  * \param r A pointer to an int where the result code can be placed.
  * \return A octetarr struct containing all the keys as octet_t structs
  */
@@ -440,6 +445,7 @@ octarr_t *dback_all_keys( dback_t *dback, void *handle, spocp_result_t *r )
 /*!
  * Begins a transaction against the persistent store
  * \param dback A link to the backend information
+ * \param handle A connection handle
  * \param r A pointer to an int where the result code can be placed.
  * \return A transaction handle cast, to be used when commands are to be run
  *   within this transaction, as a (void *)
