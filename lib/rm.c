@@ -41,7 +41,7 @@ Arguments:
 Returns:
 */
 
-junc_t *branchindex_rm( junc_t *ap, branch_t *bp )
+__attribute__((unused)) static junc_t *branchindex_rm( junc_t *ap, branch_t *bp )
 {
   if( ap ) {
     ap->item[bp->type] = 0 ;
@@ -60,7 +60,7 @@ Arguments:
 Returns:
 */
 
-int junction_index( junc_t *jp )
+static int junction_index( junc_t *jp )
 {
   int i, r ;
  
@@ -80,7 +80,7 @@ Arguments:
 Returns:
 */
 
-int rm_next( junc_t *jp, element_t *elemp, ruleinst_t *rt )
+static int rm_next( junc_t *jp, element_t *elemp, ruleinst_t *rt )
 {
   int r ;
 
@@ -209,7 +209,7 @@ Arguments:
 Returns:
 */
 
-int ssn_rm( branch_t *bp, ssn_t *ssn, char *sp, int direction, element_t *ep, ruleinst_t *rt )
+static int ssn_rm( branch_t *bp, ssn_t *ssn, char *sp, int direction, element_t *ep, ruleinst_t *rt )
 {
   junc_t *jp ;
   int     r ;

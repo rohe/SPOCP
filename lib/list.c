@@ -26,6 +26,9 @@
 varr_t *get_rec_all_rules( junc_t *jp, varr_t *in ) ;
 varr_t *subelem_lte_match( junc_t *, element_t *, varr_t *, varr_t * ) ;
 varr_t *subelem_match_lte( junc_t *, element_t *, varr_t *, varr_t *, spocp_result_t * ) ;
+varr_t *get_rule_indexes( varr_t *, varr_t * );
+varr_t *get_all_to_next_listend( junc_t *, varr_t *, int );
+
 
 /********************************************************************/
 
@@ -154,7 +157,7 @@ varr_t *get_all_to_next_listend( junc_t *jp, varr_t *in, int lev )
 
 /*************************************************************************/
 
-varr_t *range2range_match_lte(range_t *rp, slist_t **sarr, varr_t *pap ) 
+static varr_t *range2range_match_lte(range_t *rp, slist_t **sarr, varr_t *pap ) 
 {
   int dtype = rp->lower.type & 0x07 ;
 
@@ -165,14 +168,14 @@ varr_t *range2range_match_lte(range_t *rp, slist_t **sarr, varr_t *pap )
 
 /*************************************************************************/
 
-varr_t *prefix2prefix_match_lte( atom_t *ap, ssn_t *pssn, varr_t *pap )
+static varr_t *prefix2prefix_match_lte( atom_t *ap, ssn_t *pssn, varr_t *pap )
 {
   return ssn_lte_match( pssn, ap->val.val, FORWARD, pap ) ;
 }
 
 /*************************************************************************/
 
-varr_t *suffix2suffix_match_lte( atom_t *ap, ssn_t *pssn, varr_t *pap )
+static varr_t *suffix2suffix_match_lte( atom_t *ap, ssn_t *pssn, varr_t *pap )
 {
   return ssn_lte_match( pssn, ap->val.val, BACKWARD, pap ) ;
 }
@@ -539,7 +542,7 @@ spocp_result_t get_matching_rules( db_t *db, octarr_t *pat, octarr_t *oa, char *
   return SPOCP_SUCCESS ;
 }
 
-char **get_by_uid( ruleinfo_t *ri, char *pat )
+__attribute__((unused)) static char **get_by_uid( ruleinfo_t *ri, char *pat )
 {
   char **res = 0 ;
  
