@@ -123,9 +123,11 @@ scnode_t *scnode_new( int size ) ;
 scnode_t *scnode_get( octet_t *op, spocp_result_t *rc ) ;
 scnode_t *tree_top( scnode_t *scp ) ;
 
-vset_t   *vset_new( ) ;
+vset_t   *vset_new(void) ;
 void      vset_free( vset_t *sp ) ;
 vset_t   *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc ) ;
+void	vset_print( vset_t *sp, int ns ) ;
+
 vset_t   *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc ) ;
 
 sln_t    *get_results( LDAP *, LDAPMessage *, sln_t *, sln_t *, int, int ) ;
@@ -307,7 +309,7 @@ scnode_t *scnode_new( int size )
   return scp ;
 }
 
-vset_t *vset_new( )
+vset_t *vset_new(void)
 {
   vset_t *vs ;
   
@@ -1243,7 +1245,7 @@ vset_t *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc )
   return sp ;
 }
 
-int P_ldapclose( void *con )
+static int P_ldapclose( void *con )
 {
   return ldap_unbind_s(( LDAP *) con ) ;
 }
