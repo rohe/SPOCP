@@ -3,50 +3,49 @@
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
 	<TITLE>Boundary conditions</TITLE>
-	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
-	<META NAME="CREATED" CONTENT="20040223;15245900">
-	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
-	<META NAME="CHANGED" CONTENT="20040428;15562700">
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.2  (Unix)">
+	<META NAME="CREATED" CONTENT="20041208;10202700">
+	<META NAME="CHANGED" CONTENT="20041208;10233900">
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H1>Boundary conditions</H1>
 <P>Document Status: Project document, last updated
-2004-02-23<BR>Authors: Roland Hedberg and Torbj&ouml;rn Wiberg 
+2004-11-19<BR>Authors: Roland Hedberg and Torbj&ouml;rn Wiberg 
 </P>
 <H2>Content</H2>
 <UL>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#flatfile">2. The
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#flatfile">2. The
 	flatfile boundary condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#time">3. The time
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#time">3. The time
 	boundary condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#gdbm">4. The gdbm
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#gdbm">4. The gdbm
 	boundary condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#ldap">5. The ldapset
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#ldap">5. The ldapset
 	boundary condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#ipnum">6. The ipnum
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#ipnum">6. The ipnum
 	boundary condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#lastlogin">7. The
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#lastlogin">7. The
 	lastlogin boundary condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#addrmatch">8. The mail
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#addrmatch">8. The mail
 	address boundary condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#rbl">9. The RBL boundary
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#rbl">9. The RBL boundary
 	condition</A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in"><A HREF="#strmatch">10. The
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#strmatch">10. The
 	strmatch boundary condition</A> 
 	</P>
 	<LI><P><A HREF="#difftime">11. The difftime boundary condition</A> 
 	</P>
 </UL>
 <H2>1. The general boundary condition format</H2>
-<P ALIGN=LEFT>boundary-condition = type &ldquo;;&rdquo;  *unitsel &ldquo;;&rdquo;
+<P ALIGN=LEFT>boundary-condition = type &ldquo;;&rdquo; *unitsel &ldquo;;&rdquo;
 typespecific</P>
 <P ALIGN=LEFT>Complete specification in the <A HREF="adminguide.html#rulefile">rulefile
 format definition</A>.</P>
@@ -71,18 +70,18 @@ Three cases can appear:
 </P>
 <DL>
 	<DT>Only file is specified 
-	</DT><DD STYLE="margin-bottom: 0.2in">
+	</DT><DD STYLE="margin-bottom: 0.51cm">
 	If the file exists and can be opened for reading, the reference will
 	evaluate to <I>true</I>. If the file does not exist or if it can not
 	be opened for reading, the reference will evaluate to <I>false</I>. 
 	</DD><DT>
 	File and keyword are specified 
-	</DT><DD STYLE="margin-bottom: 0.2in">
+	</DT><DD STYLE="margin-bottom: 0.51cm">
 	If the file contains the specified keyword, the reference will
 	evaluate to <I>true</I>, if not it will evaluate to <I>false</I> 
 	</DD><DT>
 	File, keyword and one or more values are specified 
-	</DT><DD STYLE="margin-bottom: 0.2in">
+	</DT><DD STYLE="margin-bottom: 0.51cm">
 	If the file contains the keyword and if every value specified in the
 	reference also appears as values for that keyword in the file then
 	the reference will evaluate to <I>true</I> otherwise it will
@@ -104,10 +103,12 @@ valid for a limited time, or at recurring intervals.
   endtime      = partial-time</PRE><P>
 Example: 
 </P>
-<PRE STYLE="margin-bottom: 0.2in">  time:2002-08-01_00:00:00;;12345;08:00:00;17:00:00</PRE><P>
+<PRE STYLE="margin-bottom: 0.51cm">  time:2002-08-01_00:00:00;;12345;08:00:00;17:00:00</PRE><P>
 Which means; starting at 00:00:00 on the 1th of August 2002, every
-monday, tuesday, wednesday, thursday and friday between 08:00:00 and
-17:00:00 inclusive this expression will evaluate to <I>true</I>. 
+monday, <SPAN LANG="en-US">Tuesday</SPAN>, <SPAN LANG="en-US">Wednesday</SPAN>,
+<SPAN LANG="en-US">Thursday</SPAN> and <SPAN LANG="en-US">Friday</SPAN>
+between 08:00:00 and 17:00:00 inclusive this expression will evaluate
+to <I>true</I>. 
 </P>
 <H2><A NAME="gdbm"></A>4 The GDBM boundary condition</H2>
 <P>The workings of the GDBM boundary condition is very similar to
@@ -116,7 +117,7 @@ flat file, the ABNF is exactly the same except for 'type'.
 <PRE>  type         = &quot;gdbm&quot;
   typespecific = file [&quot;:&quot; keyword [&quot;:&quot; value *( &quot;,&quot; value )]]
   file         = utf8string
-  keyword      = utf8string      ; keywords are not allowed to start with a '#' se below
+  keyword      = utf8string      ; keywords are not allowed to start with a '#' <SPAN LANG="en-US">see</SPAN> below
   value        = utf8string</PRE><P>
 The format of the datum in the GDBM file is supposed to be 'value
 *(&quot;,&quot; value)'. 
@@ -126,19 +127,19 @@ can appear:
 </P>
 <DL>
 	<DT>Only the file is specified 
-	</DT><DD STYLE="margin-bottom: 0.2in">
+	</DT><DD STYLE="margin-bottom: 0.51cm">
 	If the gdbm file exists and is can be opened for reading, the
 	reference will evaluate to <I>true</I>. If the file does not exist
 	or if it can not be opened for reading, the reference will evaluate
 	to <I>false</I>. 
 	</DD><DT>
 	File and keyword are specified 
-	</DT><DD STYLE="margin-bottom: 0.2in">
+	</DT><DD STYLE="margin-bottom: 0.51cm">
 	If the gdbm file contains the specified keyword, the reference will
 	evaluate to <I>true</I>. If not, it will evaluate to <I>false</I> 
 	</DD><DT>
 	File, keyword and one or more values are specified 
-	</DT><DD STYLE="margin-bottom: 0.2in">
+	</DT><DD STYLE="margin-bottom: 0.51cm">
 	If the gdbm file contains the keyword and if every value specified
 	in the reference also appear as a value for that keyword in the gdbm
 	file, the reference will evaluate to <I>true</I>. Otherwise it will
@@ -185,36 +186,36 @@ this should be a very useful tool for you.
    SP          =  %x20</PRE><P>
 Example: 
 </P>
-<PRE STYLE="margin-bottom: 0.2in">&lt;cn=Group,dc=minorg,dc=se&gt;/member</PRE>
+<PRE STYLE="margin-bottom: 0.51cm">&lt;cn=Group,dc=minorg,dc=se&gt;/member</PRE>
 <DL>
-	<DD STYLE="margin-bottom: 0.2in">
+	<DD STYLE="margin-bottom: 0.51cm">
 	The set of DNs that appear as attribute values of the member
 	attribute in the entry with the DN &quot;cn=Group,dc=minorg,dc=se&quot;.
 	This is then really a check whether the attribute member in
 	&quot;cn=Group, dc=minorg,dc=se&quot; has any values 
 	</DD></DL>
-<PRE STYLE="margin-bottom: 0.2in">{\0$mail &amp; &quot;sven.svensson@minorg.se&quot;}/title &amp; &quot;mib&quot;</PRE>
+<PRE STYLE="margin-bottom: 0.51cm">{\0$mail &amp; &quot;sven.svensson@minorg.se&quot;}/title &amp; &quot;mib&quot;</PRE>
 <DL>
-	<DD STYLE="margin-bottom: 0.2in">
+	<DD STYLE="margin-bottom: 0.51cm">
 	Can be thought of as being evaluated in two steps: 
 	</DD></DL>
 <OL>
 	<LI><DD>
 	Find all the objects in the subtree starting at whatever is given as
-	the first searchbase DN in the LDAP boundary condition and that has
-	&quot;sven.svensson@minorg.se&quot; as an attribute value for the
-	attribute &quot;mail&quot;. 
-	</DD><LI><DD STYLE="margin-bottom: 0.2in">
+	the first <SPAN LANG="en-US">search base</SPAN> DN in the LDAP
+	boundary condition and that has &quot;sven.svensson@minorg.se&quot;
+	as an attribute value for the attribute &quot;mail&quot;. 
+	</DD><LI><DD STYLE="margin-bottom: 0.51cm">
 	Among that set of objects, find the object that has &quot;mib&quot;
 	as an attribute value for the attribute &quot;title&quot;. 
 	</DD></OL>
 <DL>
-	<DD STYLE="margin-bottom: 0.2in">If this was put into a LDAP filter
+	<DD STYLE="margin-bottom: 0.51cm">If this was put into a LDAP filter
 	it would probably be &quot;(&amp;(mail=sven.svensson@minorg.se)(title=mib))&quot;
 		</DD></DL>
-<PRE STYLE="margin-bottom: 0.2in">{\0$mail &amp; &quot;sven.svensson@minorg.se&quot;}/title,personalTitle &amp; &quot;mib&quot;</PRE>
+<PRE STYLE="margin-bottom: 0.51cm">{\0$mail &amp; &quot;sven.svensson@minorg.se&quot;}/title,personalTitle &amp; &quot;mib&quot;</PRE>
 <DL>
-	<DD STYLE="margin-bottom: 0.2in">
+	<DD STYLE="margin-bottom: 0.51cm">
 	Can be thought of as being evaluated in two steps: 
 	</DD></DL>
 <OL>
@@ -223,19 +224,19 @@ Example:
 	the first searchbase DN in the LDAP boundary condition and that has
 	&quot;sven.svensson@minorg.se&quot; as an attribute value for the
 	attribute &quot;mail&quot;. 
-	</DD><LI><DD STYLE="margin-bottom: 0.2in">
+	</DD><LI><DD STYLE="margin-bottom: 0.51cm">
 	Among that set of objects, find the object that has &quot;mib&quot;
 	as an attribute value for either the attributes &quot;title&quot; or
 	&quot;personalTitle&quot;. 
 	</DD></OL>
 <DL>
-	<DD STYLE="margin-bottom: 0.2in">If this was put into a LDAP filter
+	<DD STYLE="margin-bottom: 0.51cm">If this was put into a LDAP filter
 	it would probably be
 	&quot;(&amp;(mail=sven.svensson@minorg.se)(|(title=mib)(personalTitle=mib)))&quot;
 		</DD></DL>
-<PRE STYLE="margin-bottom: 0.2in">&lt;cn=Group,dc=minorg,dc=se&gt;/member &amp; {\0%mail &amp; &quot;tvw@minorg.se&quot;}</PRE>
+<PRE STYLE="margin-bottom: 0.51cm">&lt;cn=Group,dc=minorg,dc=se&gt;/member &amp; {\0%mail &amp; &quot;tvw@minorg.se&quot;}</PRE>
 <DL>
-	<DD STYLE="margin-bottom: 0.2in">
+	<DD STYLE="margin-bottom: 0.51cm">
 	Find any object which has the attribute value &quot;tvw@minorg.se&quot;
 	for the &quot;mail&quot; attribute, using a onelevel search below
 	the DN provided as the first searchbase DN in the LDAP boundary
@@ -292,55 +293,79 @@ And the boundary condition format is:
 </P>
 <PRE>Will return TRUE if it can find a login in the logs that appeared less
 than 'since' ago for the
-specified user.
-
-<A NAME="addrmatch"></A><FONT FACE="Times New Roman, serif"><FONT SIZE=5><B>8. The mail address boundary condition</B></FONT></FONT>
-
-Used when you want to match a email address against a number of mail
-address or mail domain
-specifications.
-File format is :
-
-   comment = '#' whatever CR
+specified user.</PRE><H2>
+<A NAME="addrmatch"></A>8. The mail address boundary condition</H2>
+<P>Used when you want to match a email address against a number of
+mail address or mail domain specifications. <BR>File format is : 
+</P>
+<PRE>   comment = '#' whatever CR
    line    = addr-spec / xdomain CR
    xdomain = ( &quot;.&quot; / &quot;@&quot; ) domain
 ..
-   addr-spec and domain as defined by RFC 822
+   addr-spec and domain as defined by RFC 822</PRE><P>
 Boundary condition format: 
+</P>
+<PRE> 
   type     = &quot;addrmatch&quot;
-  typespec = file &quot;:&quot; addr-spec
-Will do a trailing substring match of the specifications found in the file against the address specified in the boundary condition. Will return TRUE if anyone matched. 
-<A NAME="rbl"></A><FONT FACE="Times New Roman, serif"><FONT SIZE=5><B>9. The RBL boundary condition</B></FONT></FONT>
-The Realtime Blackhole List system works by having the ipaddress of the blocked machines stored as A records in DNS using a specific syntax. The names stored in DNS is constructed by reverting the order of the parts in ip address ( 130.239.16.3 becomes 3.16.239.130 ) and then adding a top domain part ( blackholes.mail-abuse.org ). So if 130.239.16.3 where to be RBL blacklisted there would be a A record in the DNS with the name 3.16.239.130.blackholes.mail-abuse.org . 
-If you want to blacklist machines from using services and you are able to add A records to a DNS server you can use the same mechanism but with your defined top domain part. 
-The format of the boundary condition: 
-  type     = &quot;rbl&quot;
+  typespec = file &quot;:&quot; addr-spec</PRE><P>
+Will do a trailing substring match of the specifications found in the
+file against the address specified in the boundary condition. Will
+return TRUE if anyone matched. 
+</P>
+<H2><A NAME="rbl"></A>9. The RBL boundary condition</H2>
+<P>The Realtime Blackhole List system works by having the ipaddress
+of the blocked machines stored as A records in DNS using a specific
+syntax. The names stored in DNS is constructed by reverting the order
+of the parts in ip address ( 130.239.16.3 becomes 3.16.239.130 ) and
+then adding a top domain part ( blackholes.mail-abuse.org ). So if
+130.239.16.3 where to be RBL blacklisted there would be a A record in
+the DNS with the name 3.16.239.130.blackholes.mail-abuse.org . 
+</P>
+<P>If you want to blacklist machines from using services and you are
+able to add A records to a DNS server you can use the same mechanism
+but with your defined top domain part. 
+</P>
+<P>The format of the boundary condition: 
+</P>
+<PRE>  type     = &quot;rbl&quot;
   typespec = domain &quot;:&quot; ipnum
   ipnum   = oct &quot;.&quot; oct &quot;.&quot; oct &quot;.&quot; oct
   oct     = 1*3dig ; min 0 max 255
-  dig     = %x30-39
-Will return TRUE if there is a A record in DNS with a name constructed from 'domain' and 'ipnum' as described above. 
-<A NAME="strmatch"></A><FONT FACE="Times New Roman, serif"><FONT SIZE=5><B>10. The strmatch boundary condition</B></FONT></FONT>
-Compares two strings The format of the boundary conditions: 
-  type     = &quot;strmatch&quot;
+  dig     = %x30-39</PRE><P>
+Will return TRUE if there is a A record in DNS with a name
+constructed from 'domain' and 'ipnum' as described above. 
+</P>
+<H2><A NAME="strmatch"></A>10. The strmatch boundary condition</H2>
+<P>Compares two strings The format of the boundary conditions: 
+</P>
+<PRE>  type     = &quot;strmatch&quot;
   typespec = string:string[:offset[:num]]
   string   = UTF-8 string
   offset   = number
   num      = number
   number   = 1*dig
-  dig      = %x30-39
-
-
-<A NAME="difftime"></A><FONT FACE="Times New Roman, serif"><FONT SIZE=5><B>10. The difftime boundary condition</B></FONT></FONT>
-Checks the present time agains some given time. There are four different conditions that can be checked: </PRE>
+  dig      = %x30-39</PRE><H2>
+<A NAME="difftime"></A>10. The difftime boundary condition</H2>
+<P>Checks the present time agains some given time. There are four
+different conditions that can be checked: 
+</P>
 <UL>
-	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is after a specifed time and if the different exceeds a certain value. </PRE>
-	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is after a specifed time and if the different is less than a certain value. </PRE>
-	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is before a specifed time and if the different exceeds a certain value. </PRE>
-	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is before a specifed time and if the different is less than a certain value. </PRE>
+	<LI><P STYLE="margin-bottom: 0cm">If the present time is after a
+	specifed time and if the different exceeds a certain value. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">If the present time is after a
+	specifed time and if the different is less than a certain value. 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm">If the present time is before a
+	specifed time and if the different exceeds a certain value. 
+	</P>
+	<LI><P>If the present time is before a specifed time and if the
+	different is less than a certain value. 
+	</P>
 </UL>
-<PRE STYLE="margin-bottom: 0.2in">The format of the boundary condition is: 
-diffspec = diff &quot;;&quot; date &quot;;&quot; when how_much 
+<P>The format of the boundary condition is: 
+</P>
+<PRE>diffspec = diff &quot;;&quot; date &quot;;&quot; when how_much 
 date     = YYMMDDTHH:MM:SS
 diff     = YYMMDD_HH:MM:SS
 when     = before / after
@@ -348,9 +373,10 @@ before   = &quot;-&quot;
 after    = &quot;+&quot;
 how_much = less / more
 less     = &quot;-&quot;
-more     = &quot;+&quot;
-For instance, 
-000007_00:00:00;2003-10-09T08:00:00;-+
-is TRUE if now is before 08:00:00 the 2003-09-09 and if now is more then 7 days before 08:00:00 the 2003-09-09. </PRE>
+more     = &quot;+&quot;</PRE><P>
+For instance,<BR>000007_00:00:00;2003-10-09T08:00:00;-+<BR>is TRUE if
+now is before 08:00:00 the 2003-09-09 and if now is more then 7 days
+before 08:00:00 the 2003-09-09. 
+</P>
 </BODY>
 </HTML>

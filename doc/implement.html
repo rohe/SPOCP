@@ -3,7 +3,7 @@
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
 	<TITLE>Implementers guide</TITLE>
-	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.2  (Unix)">
 	<META NAME="CREATED" CONTENT="20040428;16411600">
 	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
 	<META NAME="CHANGED" CONTENT="20040428;17332100">
@@ -42,63 +42,58 @@ static sexpargfunc get_ssl_subject;
 static sexpargfunc get_ssl_issuer;
 static sexpargfunc get_authinfo;
 static sexpargfunc get_hostinfo;
-
 </PRE><P>
 First some functions that can be used to get information from the
-application, these are extremly application dependent and can
-probably not be used between applications, or sometimes even between
-versions of the same application.</P>
+application, these are <SPAN LANG="en-US">extremely</SPAN>
+application dependent and can probably not be used between
+applications, or sometimes even between versions of the same
+application.</P>
 <PRE>const sexparg_t transf[] = {
-	{ &quot;resource&quot;, path_to_sexp, 'l', TRUE },
-	{ &quot;method&quot;, get_method, 'a', FALSE },
-	{ &quot;acmode&quot;, ac_mode, 'a', FALSE },
-	{ &quot;ip&quot;, get_ip, 'a', FALSE },
-	{ &quot;host&quot;, get_host, 'a', FALSE },
-	{ &quot;invhost&quot;, get_inv_host, 'l', TRUE },
-	{ &quot;uid&quot;, get_uid, 'a', FALSE },
-	{ &quot;authname&quot;, get_authname, 'a', FALSE },
-	{ &quot;authtype&quot;, get_authtype, 'a', FALSE },
-	{ &quot;authinfo&quot;, get_authinfo, 'l', TRUE },
-	{ &quot;hostinfo&quot;, get_hostinfo, 'l', TRUE },
+        { &quot;resource&quot;, path_to_sexp, 'l', TRUE },
+        { &quot;method&quot;, get_method, 'a', FALSE },
+        { &quot;acmode&quot;, ac_mode, 'a', FALSE },
+        { &quot;ip&quot;, get_ip, 'a', FALSE },
+        { &quot;host&quot;, get_host, 'a', FALSE },
+        { &quot;invhost&quot;, get_inv_host, 'l', TRUE },
+        { &quot;uid&quot;, get_uid, 'a', FALSE },
+        { &quot;authname&quot;, get_authname, 'a', FALSE },
+        { &quot;authtype&quot;, get_authtype, 'a', FALSE },
+        { &quot;authinfo&quot;, get_authinfo, 'l', TRUE },
+        { &quot;hostinfo&quot;, get_hostinfo, 'l', TRUE },
 #ifdef MOD_SSL
-	{&quot;ssl_vers&quot;, get_ssl_vers, 'a', FALSE},
-	{&quot;ssl_cipher&quot;, get_ssl_cipher, 'a', FALSE},
-	{&quot;ssl_subject&quot;, get_ssl_subject, 'a', TRUE},
-	{&quot;ssl_issuer&quot;, get_ssl_issuer, 'a', TRUE},
+        {&quot;ssl_vers&quot;, get_ssl_vers, 'a', FALSE},
+        {&quot;ssl_cipher&quot;, get_ssl_cipher, 'a', FALSE},
+        {&quot;ssl_subject&quot;, get_ssl_subject, 'a', TRUE},
+        {&quot;ssl_issuer&quot;, get_ssl_issuer, 'a', TRUE},
 #endif
-	{ &quot;transportsec&quot;, get_transpsec, 'l', TRUE }
-} ;
-</PRE><P>
+        { &quot;transportsec&quot;, get_transpsec, 'l', TRUE }
+} ;</PRE><P>
 This is about putting all the information gathering functions into a
 struct array which later can be used by the function that constructs
 S-expressions from a basic format definition and information pieces
 gathered by these functions. 
 </P>
 <PRE>char *httpquery =
-       &quot;(4:http(8:resource%{resource}1:-)(6:action%{method}%{acmode})%{hostinfo}%{authinfo})&quot;;
-</PRE><P>
-The format definition; every <B>%{...}</B><SPAN STYLE="font-weight: medium"><SPAN STYLE="font-weight: medium">
-constuct refers back to a line in the transf array. So in the place
-occupied by <I>%{resource}</I><SPAN STYLE="font-style: normal"><SPAN STYLE="font-style: normal">
-would be placed whatever the </SPAN></SPAN><I>path_to_sexp()</I><SPAN STYLE="font-style: normal"><SPAN STYLE="font-style: normal">
-function returns.</SPAN></SPAN></SPAN></SPAN></P>
-<PRE>httpq = parse_format(httpquery, transf, ntransf);
-</PRE><P>
+       &quot;(4:http(8:resource%{resource}1:-)(6:action%{method}%{acmode})%{hostinfo}%{authinfo})&quot;;</PRE><P>
+The format definition; every <B>%{...}</B> <SPAN LANG="en-US">construct</SPAN>
+refers back to a line in the transf array. So in the place occupied
+by <I>%{resource}</I> would be placed whatever the <I>path_to_sexp()</I>
+function returns.</P>
+<PRE STYLE="margin-bottom: 0.5cm">httpq = parse_format(httpquery, transf, ntransf);</PRE><P>
 This is where the format definition above are parsed into a more
 usable format.</P>
-<PRE>	sa.r = r;
-	sa.path = 0;
-	sa.authz = authzt;
-	sa.method = met;
+<PRE>        sa.r = r;
+        sa.path = 0;
+        sa.authz = authzt;
+        sa.method = met;
 #ifdef MOD_SSL
-	sa.ssl = ssl;
+        sa.ssl = ssl;
 
-	if (ssl)
-		sexp = sexp_constr( (void *) &amp;sa, a-&gt;sec_template ) ;
-	else
+        if (ssl)
+                sexp = sexp_constr( (void *) &amp;sa, a-&gt;sec_template ) ;
+        else
 #endif
-		sexp = sexp_constr( (void *) &amp;sa, a-&gt;template ) ;
-</PRE><P>
+                sexp = sexp_constr( (void *) &amp;sa, a-&gt;template ) ;</PRE><P>
 And this is where the S-expression, the Spocp query, is constructed.
 The <I>sexp_constr</I> function takes two arguments, the first is a
 void pointer to something application specific, this is the
@@ -107,23 +102,23 @@ is a pointer to the parse S-expression format definition ( which in
 this case could be httpd if SSL/TLS is not used or some user defined
 format). In this case different templates are used depending on
 whether SSL/TLS is used or not.</P>
-<PRE>	if (sc-&gt;spocp == 0) 
-		sc-&gt;spocp = spocpc_open( 0, sc-&gt;server, 1 ) ;
-	</PRE><P>
+<PRE>        if (sc-&gt;spocp == 0) 
+                sc-&gt;spocp = spocpc_open( 0, sc-&gt;server, 1 ) ;
+        </PRE><P>
 If there is no connection open, open one. In this case don't wait
 more than 1 second before declaring that the Spocp server was not
 reachable.</P>
-<PRE>	if((rc = spocpc_send_query( spocp, 0, sexp, &amp;qres )) == SPOCPC_OK ) {
-		if (qres.rescode == SPOCP_SUCCESS ) {
-			if (qres.blob ) {</PRE><P>
+<PRE>        if((rc = spocpc_send_query( spocp, 0, sexp, &amp;qres )) == SPOCPC_OK ) {
+                if (qres.rescode == SPOCP_SUCCESS ) {
+                        if (qres.blob ) {</PRE><P>
 Send the query, if the operation went without any problems then check
 the result code that the Spocp server returned. If the result code
 indicated a success, look for the return info if any.</P>
-<PRE>	if (sc-&gt;spocp != 0 ) { /* got a connection pose the question */
-		if (pose_query( r, sc-&gt;spocp, sexp, &amp;res ) == SPOCPC_CON_ERR){
-			spocpc_reopen( sc-&gt;spocp, 1 ) ;
-			pose_query( r, sc-&gt;spocp, sexp, &amp;res ) ;
-		} </PRE><P>
+<PRE>        if (sc-&gt;spocp != 0 ) { /* got a connection pose the question */
+                if (pose_query( r, sc-&gt;spocp, sexp, &amp;res ) == SPOCPC_CON_ERR){
+                        spocpc_reopen( sc-&gt;spocp, 1 ) ;
+                        pose_query( r, sc-&gt;spocp, sexp, &amp;res ) ;
+                } </PRE><P>
 If the query failed due to connection problems ( the server wasn't
 there anymore) try to reconnect. If more than one server was defined
 in the server definition, all of them will be tried in a round-robin

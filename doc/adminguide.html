@@ -1,65 +1,104 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<html>
-<head>
-    <meta name="generator" content="HTML Tidy for Mac OS X (vers 1st September 2004), see www.w3.org">
-    <meta http-equiv="content-type" content="text/html; charset=iso-8859-1">
-    <title>SPOCP Administrators manual</title>
-    <meta name="GENERATOR" content="OpenOffice.org 1.1.0 (Linux)">
-    <meta name="CREATED" content="20040415;7592800">
-    <meta name="CHANGEDBY" content="Eva Magnusson">
-    <meta name="CHANGED" content="20040422;16565600">
-</head>
-<body lang="en-US" dir="ltr">
-    <h1>SPOCP Administrators manual</h1>
-    <p>Document Status: Project document, last updated 2004-02-23<br>
-    Authors: Roland Hedberg and Torbjörn Wiberg</p>
-    <h1>Content</h1>
-    <ol start="0">
-        <li>
-            <p style="margin-bottom: 0in"><a href="#intro">Introduction</a></p>
-        </li>
-        <li>
-            <p style="margin-bottom: 0in"><a href="#native">Configuring the SPOCP server</a></p>
-        </li>
-    </ol>
-    <h1><a name="intro" id="intro"></a>0. Introduction</h1>
-    <p>This document assumes some basic knowledge on how S-expressions are used to manage authorization. If you know very little about this you would do well to read <a href="draft-hedberg-spocp-sexp-00.html">Introduction to S-expressions</a> before you dwell deeper into this document.<br>
-    The next thing is that you will probably not be interested in all of this document since someone already have decided which authorization setup you should use. If you are still with me at this point you are definitely interested in how to set up a authorization system for you application. So after reading through <a href="rules.html">creating rules</a> you can skip to the section that deals with your specific setup.</p>
-    <p>Through out this document I will use the canonical S-expression format when describing exactly what is produced. In discussions on transformations in some case I have choosen to use the advanced format since that is easier to read.</p>
-    <p>The server loads the rules it is going to start with from a text file when starting. If you are not using the administrative interface to keep the rules updated, you have to modify the text file and then restart the server when you want to update the rule set.</p>
-    <p><em>Note:</em> If you are using a persistent data store for the rules that will be used and the rule file defined in the configuration will silently be ignored</p>
-    <h1><a name="native" id="native"></a>1. Configuring the SPOCP serve</h1>
-    <h2>1.0 Introduction</h2>
-    <p>The Spocd server can listen on Internet ports as well as unix domain sockets and as protocol it can presently only use TCP. In the future UDP might also be supported.</p>
-    <h2>1.1 Configuration file</h2>
-    <h3>1.1.0 Server part</h3>
-    <p>The server has to know a couple of things when it starts and these things are supposed to be learnt from the configuration file. If the configuration file is 'empty' it has some default values for some of the configurable things.<br>
-    The format of the configuration file is as follows:</p>
-    <pre>
-  file    = [servercnf] [dbackcnf] *plugincnf
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+	<TITLE>SPOCP Administrators manual</TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.2  (Unix)">
+	<META NAME="CREATED" CONTENT="20041208;9572200">
+	<META NAME="CHANGED" CONTENT="20041208;10095900">
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<H1>SPOCP Administrators manual</H1>
+<P>Document Status: Project document, last updated
+2004-11-18<BR>Authors: Roland Hedberg and Torbj&ouml;rn Wiberg 
+</P>
+<H1>Content</H1>
+<OL START=0>
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#intro">Introduction</A> 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#compile">Compiling spocd</A>
+		</P>
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#native">Configuring the
+	SPOCP server</A> 
+	</P>
+	<LI><P STYLE="margin-bottom: 0cm"><A HREF="#comarg">Command line
+	options</A> 
+	</P>
+	<LI><P><A HREF="#rulefile">Rule file format</A> 
+	</P>
+</OL>
+<H1><A NAME="intro"></A>0. Introduction</H1>
+<P>This document is written for someone who wants to use a SPOCP
+server either as a authorization server or as a policy engine in some
+application context. 
+</P>
+<P>The document assumes some basic knowledge on S-expressions and how
+they can be used to manage authorization. If you know very little
+about this you would do well to skim through <A HREF="draft-hedberg-spocp-sexp-00.html">Introduction
+to S-expressions</A> before you dwell deeper into this document. 
+</P>
+<P>Through out this document I will use the canonical S-expression
+format when describing exactly what is produced. In discussions on
+transformations I have chosen, in some case, to use the advanced
+format since that is easier to read. 
+</P>
+<H1><A NAME="compile"></A>1. Compiling spocd</H1>
+<P>Normally all it would take is to run 
+</P>
+<PRE>./configure
+make
+make install</PRE><P>
+<BR>This would compile the package, with all the plug ins that are
+supported by libraries already installed on your system, and then
+place the binaries and libraries in subdirectories to
+&quot;/usr/local/spocp&quot;. 
+</P>
+<P>If that standard way is not sufficient in your case, my best
+proposal is that you do 
+</P>
+<PRE STYLE="margin-bottom: 0.5cm">./configure --help</PRE><P>
+and then use the options that applies in your case. 
+</P>
+<H1><A NAME="native"></A>2. Configuring the SPOCP serve</H1>
+<H2>2.0 Introduction</H2>
+<P>The Spocd server can listen on Internet ports as well as Unix
+domain sockets and as protocol it can presently only use TCP. In the
+future UDP might also be supported. 
+</P>
+<H2>2.1 Configuration file</H2>
+<H3>2.1.1 Server part</H3>
+<P>The server has to know a couple of things when it starts and these
+things are supposed to be learned from the configuration file. If the
+configuration file is 'empty' it has some default values for some of
+the configurable things.<BR>The format of the configuration file is
+as follows: 
+</P>
+<HR>
+<PRE>  file    = [servercnf] [dbackcnf] *plugincnf
 
-  servercnf   = &ldquo;[server]&rdquo; CRLF *srvassgn
+  servercnf   = &quot;[server]&quot; CRLF *srvassgn
 
-  srvassgn   = srvkeyword *SP &ldquo;=&rdquo; *SP value CRLF
+  srvassgn   = srvkeyword *SP &quot;=&quot; *SP value CRLF
 
-  srvkeyword = "calist" / "certificate" / "dhfile"
-           / "entropyfile" / "logfile" / "passwd" / "port"
-           / "privatekey" / "rulefile" / "threads" / "timeout"
-           / "unixdomainsocket" / "sslverifydepth" / "pidfile"
+  srvkeyword = &quot;calist&quot; / &quot;certificate&quot; / &quot;dhfile&quot;
+           / &quot;entropyfile&quot; / &quot;log&quot; / &quot;passwd&quot; / &quot;port&quot;
+           / &quot;privatekey&quot; / &quot;rulefile&quot; / &quot;threads&quot; / &quot;timeout&quot;
+           / &quot;unixdomainsocket&quot; / &quot;sslverifydepth&quot; / &quot;pidfile&quot; /
+           / &quot;maxconn&quot; / &quot;clientcert&quot;
 
 
-  dbackcnf   = &ldquo;[dback]&rdquo; CRLF dbackassgn
+  dbackcnf   = &quot;[dback]&quot; CRLF dbackassgn
 
   dbackassgn = name load *assignment
 
-  name       = &ldquo;name&rdquo; *SP &ldquo;=&rdquo; *SP string CRLF
-  load       = &ldquo;load&rdquo; *SP &ldquo;=&rdquo; *SP string CRLF
-  poolsize   = &ldquo;poolsize&rdquo; *SP &ldquo;=&rdquo; *SP number CRLF
-  cachetime  = &ldquo;cachetime&rdquo; *SP &ldquo;=&rdquo; *SP number CRLF
+  name       = &quot;name&quot; *SP &quot;=&quot; *SP string CRLF
+  load       = &quot;load&quot; *SP &quot;=&quot; *SP string CRLF
+  poolsize   = &quot;poolsize&quot; *SP &quot;=&quot; *SP number CRLF
+  cachetime  = &quot;cachetime&quot; *SP &quot;=&quot; *SP number CRLF
 
-  plugincnf = "[" string "]" CRLF load [poolsize] [cachetime] *assignment
+  plugincnf = &quot;[&quot; string &quot;]&quot; CRLF load [poolsize] [cachetime] *assignment
 
-  assignment = string &ldquo;=&rdquo; 1*UTF8 CRLF
+  assignment = string &quot;=&quot; 1*UTF8 CRLF
 
   CRLF       = %x0D [ %x0A ]
 
@@ -77,68 +116,177 @@
   UTF8-3  = %xE0-EF 2UTF8-1
   UTF8-4  = %xF0-F7 3UTF8-1
   UTF8-5  = %xF8-FB 4UTF8-1
-  UTF8-6  = %xFC-FD 5UTF8-1
-</pre>
-    <dl>
-        <dt><strong>calist</strong></dt>
-        <dd style="margin-bottom: 0.2in">File of PEM-encoded Server CA Certificates that can be used to verifiy client certificates</dd>
-        <dt><strong>certificate</strong></dt>
-        <dd style="margin-bottom: 0.2in">The file that contains the signed certificate that belongs to the SPOCP server</dd>
-        <dt><strong>dhfile</strong></dt>
-        <dd style="margin-bottom: 0.2in">A Diffie-Hellman parameter file</dd>
-        <dt><strong>entropyfile</strong></dt>
-        <dd style="margin-bottom: 0.2in">A file which can be used to feed the randomness function. On a Linux system that has been running for a while this is almost never needed.</dd>
-        <dt><strong>logfile</strong></dt>
-        <dd style="margin-bottom: 0.2in">Where SPOCP should write the logfile entries</dd>
-        <dt><strong>load</strong></dt>
-        <dd style="font-weight: medium">Where the library is that should be loaded</dd>
-        <dd style="font-weight: medium"><br></dd>
-        <dt><strong>name</strong></dt>
-        <dd style="font-weight: medium">Under which name this plugin should be known.</dd>
-        <dd style="font-weight: medium"><br></dd>
-        <dt><strong>passwd</strong></dt>
-        <dd style="margin-bottom: 0.2in">The password necessary to unlock the private key of the SPOCP server. If this not provided and the private key is protected by a password then the server will ask for the password on startup. Something which might be feasible/necessary/correct in some circumstances. In others it is completely unworkable</dd>
-        <dt><strong>pidfile</strong></dt>
-        <dd style="margin-bottom: 0.2in">Where the server should write the process Id of the server</dd>
-        <dt><strong>port</strong></dt>
-        <dd style="margin-bottom: 0.2in">Which Internet port SPOCP should listen on. If this keyword is defined the keyword "unixdomainsocket" must not be defined and vice versa.</dd>
-        <dt><strong>privatekey</strong></dt>
-        <dd style="margin-bottom: 0.2in">The file that contains the privatekey that should be used by this SPOCP server, this file can be the same as the one specified for the certificate. But we strongly discourage this practice. Instead we recommend you to separate the Certificate and the Private Key</dd>
-        <dt><strong>rulefile</strong></dt>
-        <dd style="margin-bottom: 0.2in">Where the file containing the SPOCP rules are placed.</dd>
-        <dt><strong>sslverifydepth</strong></dt>
-        <dd style="margin-bottom: 0.2in">From the OpenSSL documentation: This directive sets how deeply mod_ssl should verify before deciding that the clients don't have a valid certificate.</dd>
-        <dd style="margin-bottom: 0.2in">The depth actually is the maximum number of intermediate certificate issuers, i.e. the number of CA certificates which are max allowed to be followed while verifying the client certificate. A depth of 0 means that self-signed client certificates are accepted only, the default depth of 1 means the client certificate can be self-signed or has to be signed by a CA which is directly known to the server (i.e. the CA's certificate is under). Default is 1.</dd>
-        <dt><strong>threads</strong></dt>
-        <dd style="margin-bottom: 0.2in">The number of threads the server will use to service requests. This number is static, that is it will not change over time depending on load. Default is 5.</dd>
-        <dt><strong>timeout</strong></dt>
-        <dd style="margin-bottom: 0.2in">The inactivity timeout. If a client has been silent for this long (seconds) on a connection the server will unilaterally close down the connection. If set to 0, the server will never close the connection on a client. Default is 30.</dd>
-        <dt><strong>unixdomainsocket</strong></dt>
-        <dd style="margin-bottom: 0.2in">Which unix domain socket spocp should listen on.</dd>
-    </dl>
-    <h3>1.1.2 Plugin part</h3>
-    <p>The native server handles what we call boundary conditions through the use of plugins. Plugins are dynamically loaded software modules that are loaded at startup.</p>
-    <p>Since we don't know and can't guess what kind of plugins there are going to be in the future we have only defined how to tell the server about plugins.</p>
-    <p>As with Apache plugins, the plugin library contains information about which assignments you can make and what the keywords are.</p>
-    <p>There are a couple of keys that we have defined that can be used by all plugins:</p>
-    <dl>
-        <dt><strong>load</strong></dt>
-        <dd style="margin-bottom: 0.2in">The plugin library</dd>
-        <dt><strong>cachetime</strong></dt>
-        <dd style="margin-bottom: 0.2in">Definitions of the cachetime for test results to use for different back ends.</dd>
-        <dt><strong>poolsize</strong></dt>
-        <dd style="margin-bottom: 0.2in">Every plugin can have a connection pool connected to it. It can use this pool to store open connections to information resources it uses for the future. This instead of closing and opening connections for each query. Here you can define how big the pool should be for each plugin separately. If you do not define a poolsize for a plugin, that plugin will not be able to store connections for later use</dd>
-    </dl>
-    <h3>1.1.3 Example</h3>
-    <pre>
-[server]
+  UTF8-6  = %xFC-FD 5UTF8-1</PRE>
+<HR>
+<P>Description of the configuration options: 
+</P>
+<DL>
+	<DT><B>calist</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	File of PEM-encoded Server CA Certificates that can be used to
+	verifiy client certificates 
+	</DD><DT>
+	<B>certificate</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	The file that contains the signed certificate that belongs to the
+	SPOCP server 
+	</DD><DT>
+	<B>clientcert</B> 
+	</DT><DD>
+	This maps against the openssl flags for server mode verifications of
+	certificates 
+	</DD><DL>
+		<DT>
+		<I>none</I> 
+		</DT><DD>
+		the server will not send a client certificate request to the
+		client, so the client will not send a certificate.
+		(SSL_VERIFY_NONE) 
+		</DD><DT>
+		<I>demand</I> 
+		</DT><DD>
+		the server sends a client certificate request to the client. The
+		certificate returned (if any) is checked. If the verification
+		process fails, the TLS/SSL handshake is immediately terminated with
+		an alert message containing the reason for the verification
+		failure. (SSL_VERIFY_PEER) 
+		</DD><DT>
+		<I>hard</I> - this is the default 
+		</DT><DD>
+		only request a client certificate on the initial TLS/SSL handshake.
+		Do not ask for a client certificate again in case of a
+		renegotiation (SSL_VERIFY_PEER| SSL_VERIFY_CLIENT_ONCE) 
+		</DD></DL>
+	<DT>
+	<B>dhfile</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	A Diffie-Hellman parameter file 
+	</DD><DT>
+	<B>entropyfile</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	A file which can be used to feed the randomness function. On a Linux
+	system that has been running for a while this is almost never
+	needed. 
+	</DD><DT>
+	<B>log</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	Where SPOCP should write the log file entries. The value here can be
+	one out of two cases.<BR>Either file:&lt;filename&gt; or
+	syslog:&lt;loglevel&gt;. For allowed log levels see syslog(3). 
+	</DD><DT>
+	<B>load</B></DT><DD STYLE="font-weight: medium">
+	Where the plugin-library is that should be loaded</DD><DD STYLE="font-weight: medium">
+	<BR>
+	</DD><DT>
+	<B>maxconn</B> 
+	</DT><DD>
+	The maximum number of connections that spocd will allow</DD><DD>
+	<BR>
+	</DD><DT>
+	<B>name</B></DT><DD STYLE="font-weight: medium">
+	Under which name this plug in should be known.</DD><DD STYLE="font-weight: medium">
+	<BR>
+	</DD><DT>
+	<B>passwd</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	The password necessary to unlock the private key of the SPOCP
+	server. If this not provided and the private key is protected by a
+	password then the server will ask for the password on startup.
+	Something which might be feasible/necessary/correct in some
+	circumstances. In others it is completely unworkable 
+	</DD><DT>
+	<B>pidfile</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	Where the server should write the process Id of the server. If you
+	do not want a pid file define this to be &quot;/dev/null&quot;. 
+	</DD><DT>
+	<B>port</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	Which Internet port SPOCP should listen on. If this keyword is
+	defined the keyword &quot;unixdomainsocket&quot; must not be defined
+	and vice versa. 
+	</DD><DT>
+	<B>privatekey</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	The file that contains the private key that should be used by this
+	SPOCP server, this file can be the same as the one specified for the
+	certificate. But we strongly discourage this practice. Instead we
+	recommend you to separate the Certificate and the Private Key 
+	</DD><DT>
+	<B>rulefile</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	Where the file containing the SPOCP rules are placed. 
+	</DD><DT>
+	<B>sslverifydepth</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	From the OpenSSL documentation: This directive sets how deeply
+	mod_ssl should verify before deciding that the clients don't have a
+	valid certificate. <BR>The depth actually is the maximum number of
+	intermediate certificate issuers, i.e. the number of CA certificates
+	which are max allowed to be followed while verifying the client
+	certificate. A depth of 0 means that self-signed client certificates
+	are accepted only, the default depth of 1 means the client
+	certificate can be self-signed or has to be signed by a CA which is
+	directly known to the server (i.e. the CA's certificate is under).
+	Default is 1.</DD><DT>
+	<B>threads</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	The number of threads the server will use to service requests. This
+	number is static, that is it will not change over time depending on
+	load. Default is 5.</DD><DT>
+	<B>timeout</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	The inactivity timeout. If a client has been silent for this long
+	(seconds) on a connection the server will unilaterally close down
+	the connection. If set to 0, the server will never close the
+	connection on a client. Default is 30. 
+	</DD><DT>
+	<B>unixdomainsocket</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	Which unix domain socket spocp should listen on. 
+	</DD></DL>
+<H3>
+2.1.2 Plugin part</H3>
+<P>The native server handles what we call boundary conditions through
+the use of plug ins. Plug ins are dynamically loaded software modules
+that are loaded at startup. 
+</P>
+<P>Since we don't know and can't guess what kind of plug ins there
+are going to be in the future we have only defined how to tell the
+server about plug ins. 
+</P>
+<P>As with Apache plug ins, the plug in library contains information
+about which assignments you can make and what the keywords are.</P>
+<P>There are a couple of keys that we have defined that can be used
+by all plug ins: 
+</P>
+<DL>
+	<DT><B>load</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	The plug in library</DD><DT>
+	<B>cachetime</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	Definitions of the cache time for test results to use for different
+	back ends.</DD><DT>
+	<B>poolsize</B> 
+	</DT><DD STYLE="margin-bottom: 0.51cm">
+	Every plug in can have a connection pool connected to it. It can use
+	this pool to store open connections to information resources it uses
+	for the future. This instead of closing and opening connections for
+	each query. Here you can define how big the pool should be for each
+	plug in separately. If you do not define a poolside for a plug in,
+	that plug in will not be able to store connections for later use 
+	</DD></DL>
+<H3>
+2.1.3 Example</H3>
+<PRE>[server]
 certificate = /usr/local/spocp/certs/spocpserver.pem
 privatekey  = /usr/local/spocp/certs/spocpserver.pem
 passwd      = NewKey
 calist      = /usr/local/spocp/certs/cacert.pem
 logfile     = /var/log/spocp
 port        = 3456
-rulefile    = /usr/local/spocp/pam/rules.pam
+rulefile    = /usr/local/spocp/pam/rules
 
 [strmatch]
 load    =/usr/local/spocp/lib/libstrmatchplugin.so
@@ -146,60 +294,104 @@ load    =/usr/local/spocp/lib/libstrmatchplugin.so
 [dback]
 name    =gdbm
 load    =/usr/local/spocp/lib/libdbackgdbm.so
-gdbmfile=/usr/local/spocp/db/spocp.gdbm
-</pre>
-    <h3>1.1.4 Persistent rule store</h3>
-    <p>If a dback is defined, then if the presistent store is not initialized the rules are read from the rule file. If on the other hand it is in existence the rules will be read from the persistent store and whatever is in the rule file will be ignored. During operation if rules are added or deleted the persistent store will be updated accordingly.</p>
-    <h2>1.2 Command line options</h2>
-    <p>When you start the server you probably want to tell it where to find the configuration file. The default is to look for a file named "config" in the directory where you stood when you started the program.</p>
-    <pre>
- spocd [-d num][-f file]
- num   = 1*digit
- digit = %30-39
- file  = 1*UTF8 ; filename
-</pre>
-    <p>The '-d' option allows you to decide how much should be logged. It works like this: 1-7 is the loglevel (0 = ONLY emergencies,..., 7=debug). If you have set DEBUG as the level you can get even more information by specifying which part of the code that should log debug information ( 16 = PARSE, 32 = STORE, 64 = MATCH, 128 = BOUNDARY CONDITIONS and 256 = SERVER ). So 511 should given you everything it can produce and it's quite a lot.</p>
-    <h2><a name="rulefile" id="rulefile"></a>1.3 Rulefile format</h2>
-    <p>A formal definition:</p>
-    <pre>
-  line       = ( rule / comment / "" / bconddef / include )
-  rule       = sexp [ 1*SP &ldquo;=&gt;&rdquo; 1*SP bcexp] [ 1*SP &ldquo;==&rdquo; 1*SP blob ]
-  sexp       = "(" *SP string *( 1*SP element ) *SP ")"
+gdbmfile=/usr/local/spocp/db/spocp.gdbm</PRE><H3>
+2.1.4 Persistent rule store</H3>
+<P>If a dback is defined, then if the persistent store is not
+initialized the rules are read from the rule file. If on the other
+hand it is in existence the rules will be read from the persistent
+store and whatever is in the rule file will be ignored. During
+operation if rules are added or deleted the persistent store will be
+updated accordingly.</P>
+<H2><A NAME="comarg"></A>3 Command line options</H2>
+<DL>
+	<DT>NAME 
+	</DT><DD>
+	<B>spocd</B> - The spocp server 
+	</DD><DT>
+	Synopsis 
+	</DT><DD>
+	spocd [-d debug-level][-f config-file][-D][-t] 
+	</DD><DT>
+	Description 
+	</DT><DD>
+	Spocd is the standalone SPOCP daemon. It listens for SPOCP
+	connections on Internet or Unix domain sockets, responding to
+	operations received over such connections. Spocd is typically
+	invoked at boot time, usually out of /etc/rc.local. Upon startup,
+	spocd normally forks and disassociates itself from the invoking tty.
+	The spocd process will print its process ID (see getpid(2)) to a
+	.pid file unless something else is defined in the configuration file
+	the pid file will be named &quot;spocd.pid&quot;. 
+	</DD><DT>
+	Options 
+	</DT><DL>
+		<DT>
+		-d <U>debug-level</U> 
+		</DT><DD>
+		Turn on debugging as defined by num. <U>debug-level</U> is taken as
+		a bit string, with each bit corresponding to a different kind of
+		debugging information. 
+		</DD><DT>
+		-f <U>config-file</U> 
+		</DT><DD>
+		specifies the spocd configuration. The default is &quot;config&quot;
+		in the directory where spocd is started. 
+		</DD><DT>
+		-D 
+		</DT><DD>
+		Do not daemonize. If this option is set, the spocd process will <B>not</B>
+		disassociate itself from the invoking tty. 
+		</DD><DT>
+		-t 
+		</DT><DD STYLE="margin-bottom: 0.5cm">
+		Run syntax tests for configuration files only. The program
+		immediately exits after these syntax parsing tests with either a
+		return code of 0 (Syntax OK) or return code not equal to 0 (Syntax
+		Error) 
+		</DD></DL>
+</DL>
+<H2>
+<A NAME="rulefile"></A>5 Rule file format</H2>
+<P>A formal definition: 
+</P>
+<PRE>  line       = ( rule / comment / &quot;&quot; / bconddef / include )
+  rule       = sexp [ 1*SP &quot;=&gt;&quot; 1*SP bcexp] [ 1*SP &quot;==&quot; 1*SP blob ]
+  sexp       = &quot;(&quot; *SP string *( 1*SP element ) *SP &quot;)&quot;
   element    = sexp / atom
   blob       = atom
   atom       = string / quoted-string / hex-string / base64-string
   
   string     = 1*vchar
-               ; printable except '&rdquo;', '#', '%', '(', ')', '*', '/', 
+               ; printable except '&quot;', '#', '%', '(', ')', '*', '/', 
                ; '[', '\', ']', '{', '|', '}'
   vhar       = x%21 / x%23 / x%24 / x%26 / x%27 / x%2B-%x2E / x%30-5A / x%5E-7B / x%7E
 
-  quoted-string = '&rdquo;' 1*printchar '&rdquo;'
+  quoted-string = '&quot;' 1*printchar '&quot;'
   printchar     = x%21 / x%23-7E
 
-  comment    = "#" *UTF8 CRLF ; has to be first on the line
+  comment    = &quot;#&quot; *UTF8 CRLF ; has to be first on the line
 
-  bconddef   = string *SP ":=" *SP bcond
-  bcond      = pname &ldquo;:&rdquo; *unitsel &ldquo;:&rdquo; atom
+  bconddef   = string *SP &quot;:=&quot; *SP bcond
+  bcond      = pname &quot;:&quot; *unitsel &quot;:&quot; atom
 
-  unitsel    = &ldquo;{&ldquo; 1*path unit &ldquo;}&rdquo;
-  path       = &ldquo;/&rdquo; string 
-  unit       = ( &ldquo;/*&rdquo; / 
-                 &ldquo;[&ldquo; ( num [ &ldquo;-&rdquo; [ num ]] / &ldquo;-&rdquo; num / &ldquo;last&rdquo; ) &ldquo;]&rdquo; )
+  unitsel    = &quot;{&quot; 1*path unit &quot;}&quot;
+  path       = &quot;/&quot; string 
+  unit       = ( &quot;/*&quot; / 
+                 &quot;[&quot; ( num [ &quot;-&quot; [ num ]] / &quot;-&quot; num / &quot;last&quot; ) &quot;]&quot; )
 
   SP         = %x20 / %x09                      ; space or tab
   DIGIT      = %x30-39
   num        = *DIGIT
   val        = 1*( UTF8 / pair )
 
-  include    = ";include" filename              ; reference to another rule file
+  include    = &quot;;include&quot; filename              ; reference to another rule file
 
-  hex-string = "%" 1*hexpair
+  hex-string = &quot;%&quot; 1*hexpair
   hexpair    = hexchar hexchar
-  hexchar    = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
-               / "a" / "b" / "c" / "d" / "e" / "f"
+  hexchar    = DIGIT / &quot;A&quot; / &quot;B&quot; / &quot;C&quot; / &quot;D&quot; / &quot;E&quot; / &quot;F&quot;
+               / &quot;a&quot; / &quot;b&quot; / &quot;c&quot; / &quot;d&quot; / &quot;e&quot; / &quot;f&quot;
 
-  base64-string = &ldquo;|&rdquo; 1*bchar 1*2&rdquo;=&rdquo;            ; a bit loose
+  base64-string = &quot;|&quot; 1*bchar 1*2&quot;=&quot;            ; a bit loose
   bchar         = DIGIT / %x41-5A / %x61-7A / %x2B / %x2F
 
   pname      = 1*pchar
@@ -207,15 +399,14 @@ gdbmfile=/usr/local/spocp/db/spocp.gdbm
 
   bcexp      = bcond / bcomp
   bcomp      = and / or / not / ref
-  ref        = "(&ldquo; *SP &ldquo;ref" 1*SP pname *SP ")"
-  and        = "(&ldquo; *SP &ldquo;and" 2*( 1*SP bcomp ) *SP ")"
-  or         = "(&ldquo; *SP &ldquo;or" 2*( 1*SP bcomp ) *SP ")"
-  not        = "(&ldquo; *SP &ldquo;not" 1*SP bcomp *SP ")"
-  CRLF       = %x0D [%x0A]
-</pre>
-    <p>Example of a rulefile:</p>
-    <pre>
-strcmp := "strmatch:{//to[1]}{//o[1]}:${0}:${1}"
+  ref        = &quot;(&quot; *SP &quot;ref&quot; 1*SP pname *SP &quot;)&quot;
+  and        = &quot;(&quot; *SP &quot;and&quot; 2*( 1*SP bcomp ) *SP &quot;)&quot;
+  or         = &quot;(&quot; *SP &quot;or&quot; 2*( 1*SP bcomp ) *SP &quot;)&quot;
+  not        = &quot;(&quot; *SP &quot;not&quot; 1*SP bcomp *SP &quot;)&quot;
+  CRLF       = %x0D [%x0A]</PRE><P>
+Example of a rule file: 
+</P>
+<PRE>strcmp := &quot;strmatch:{//to[1]}{//o[1]}:${0}:${1}&quot;
 ;include bconddef
 #
 (
@@ -237,12 +428,12 @@ strcmp := "strmatch:{//to[1]}{//o[1]}:${0}:${1}"
      (role s 2))
 #
 (nya AF12_read (role ah (* set 2 3 4 5)))
-        == "This is a blob, which is supposed to be turned back with a positive answer"
+        == &quot;This is a blob, which is supposed to be turned back with a positive answer&quot;
 
 (nya AF12_write (role ah (* set 4 5)))
 
 (nya AF12_writeO (role ah (* set 4 5)))
-#detta är ett randvillkorsuttryck som hör till ovanstående rad
+#This is a boundary condition that belongs to the line above
         =&gt; (ref strcmp)
 #
 (nya AF13_read (role ah (* set 2 3 4 5)))
@@ -256,12 +447,24 @@ strcmp := "strmatch:{//to[1]}{//o[1]}:${0}:${1}"
 //marcia/server/(server( ip 127.0.0.1))
 //marcia/operation/(operation STARTTLS)
 //marcia/operation/(operation QUERY 
-    (server (ip)(host)(TransportSec (vers (* set "TLSv1/SSLv3" SSLv3)))))
+    (server (ip)(host)(TransportSec (vers (* set &quot;TLSv1/SSLv3&quot; SSLv3)))))
 //marcia/operation/(operation LOGOUT 
-    (server (ip)(host)(TransportSec (vers (* set "TLSv1/SSLv3" SSLv3)))))
-</pre>
-    <p><strong>Note:</strong> Inclusion of other files are done where the reference to them appear in the text.</p>
-    <p><strong>Note:</strong> Rules can be divided into rulesets, they way to ackomplish this is to prepend the ruledefinition itself with a path name. This is normally not used for application rules but definitely for the access rules for the Spocp server itself. The default base for access rules to the Spocp server is &ldquo;/&rdquo;&lt;hostname&gt;&rdquo;/operation&rdquo; for operation access rules and &ldquo;/&rdquo;&lt;hostname&gt;&rdquo;/server&rdquo; for access to the server itself. In the example above Spocp clients with IP addresses 213.79.154/24 or 127.0.0.1 are allowed access to the Spocp server. These servers has as long as they are not using SSLv3 not access to any other command than STARTTLS. Using TLS/SSL they have access to the &ldquo;QUERY&rdquo; and &ldquo;LOGOUT&rdquo; operations.</p>
-    <hr>
-</body>
-</html>
+    (server (ip)(host)(TransportSec (vers (* set &quot;TLSv1/SSLv3&quot; SSLv3)))))</PRE><P>
+<B>Note:</B> Inclusion of other files are done where the reference to
+them appear in the text. 
+</P>
+<P><B>Note:</B> Rules can be divided into rule sets, they way to
+accomplish this is to prepends the rule definition itself with a path
+name. This is normally not used for application rules but definitely
+for the access rules for the Spocp server itself. The default base
+for access rules to the Spocp server is &quot;/&quot;&lt;hostname&gt;&quot;/operation&quot;
+for operation access rules and &quot;/&quot;&lt;hostname&gt;&quot;/server&quot;
+for access to the server itself. In the example above Spocp clients
+with IP addresses 213.79.154/24 or 127.0.0.1 are allowed access to
+the Spocp server. These servers has as long as they are not using
+SSLv3 not access to any other command than STARTTLS. Using TLS/SSL
+they have access to the &quot;QUERY&quot; and &quot;LOGOUT&quot;
+operations.</P>
+<HR>
+</BODY>
+</HTML>

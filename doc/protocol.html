@@ -7,7 +7,7 @@
 </head>
 <body>
 <h1>The SPOCP protocol</h1>
-Document Status: Project document, last updated 2003-09-22<br>
+Document Status: Project document, last updated 2004-11-19<br>
 Author: Roland Hedberg
 <h2>Content</h2>
 <ul>
@@ -24,7 +24,7 @@ Author: Roland Hedberg
     <li>2.1 <a href="#starttls">STARTTLS</a></li>
     <li>2.2 <a href="#query">QUERY</a></li>
     <li>2.3 <a href="#add">ADD</a></li>
-    <li>2.4 <a href="#aci">ACI</a></li>
+	<li>2.4 <a href="#capa">CAPA</a></li>
     <li>2.5 <a href="#delete">DELETE</a></li>
     <li>2.6 <a href="#list">LIST</a></li>
     <li>2.7 <a href="#logout">LOGOUT</a></li>
@@ -32,6 +32,9 @@ Author: Roland Hedberg
     <li>2.9 <a href="#commit">COMMIT</a></li>
     <li>2.10<a href="#rollback">ROLLBACK</a></li>
     <li>2.11<a href="#subject">SUBJECT</a></li>
+    <li>2.12<a href="#summary">SUMMARY</a></li>
+    <li>2.13<a href="#auth">AUTH</a></li>
+    <li>2.14<a href="#show">SHOW</a></li>
   </ul>
   <li>3. <a href="#EXAMPLE">Example</a><br>
   </li>
@@ -225,155 +228,149 @@ text (might be present)</b><br>
       <th>Description</th>
     </tr>
     <tr>
+      <td style="vertical-align: top;">100 </td>
+      <td style="vertical-align: top;">Working, please wait</td>
+      <td style="vertical-align: top;">Command accepted and is processed, response forthcoming</td>
+    </tr>
+    <tr>
       <td style="vertical-align: top;">200 </td>
-      <td style="vertical-align: top;"> Ok</td>
-      <td style="vertical-align: top;">Command accepted and executed </td>
+      <td style="vertical-align: top;">Ok</td>
+      <td style="vertical-align: top;">Command accepted and executed</td>
     </tr>
     <tr>
       <td style="">201</td>
-      <td style="vertical-align: top;"> <br>
-      </td>
-      <td style="vertical-align: top;">Multilline response </td>
+      <td style="vertical-align: top;"></td>
+      <td style="vertical-align: top;">Multiline response</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">202</td>
-      <td style="vertical-align: top;">Denied<br>
-      </td>
-      <td style="vertical-align: top;">Query did not match any stored
-policy </td>
+      <td style="vertical-align: top;">Denied</td>
+      <td style="vertical-align: top;">Query did not match any stored policy</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">203</td>
-      <td style="vertical-align: top;"> Bye </td>
-      <td style="vertical-align: top;">Server is closing connection </td>
+      <td style="vertical-align: top;">Bye</td>
+      <td style="vertical-align: top;">Server is closing the connection</td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">204 </td>
-      <td style="vertical-align: top;"> Transaction complete</td>
-      <td style="vertical-align: top;"> <br>
-      </td>
+      <td style="vertical-align: top;">205</td>
+      <td style="vertical-align: top;">Ready to start TLS</td>
+      <td style="vertical-align: top;"></td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">401 </td>
-      <td style="vertical-align: top;"> Service not available</td>
-      <td style="vertical-align: top;"> <br>
-      </td>
+      <td style="vertical-align: top;">300</td>
+      <td style="vertical-align: top;">Authentication in progress</td>
+      <td style="vertical-align: top;">SASL negotiation can start</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">301</td>
+      <td style="vertical-align: top;"></td>
+      <td style="vertical-align: top;">Authentication data</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">400</td>
+      <td style="vertical-align: top;">Busy</td>
+      <td style="vertical-align: top;">The maximum number of connections has been reached</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">401</td>
+      <td style="vertical-align: top;">Timeout</td>
+      <td style="vertical-align: top;">Some backend has taken to long to responed so the server has decided to end the process</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">402</td>
-      <td style="vertical-align: top;"> Information unavailable </td>
-      <td style="vertical-align: top;">When a remote service is not
-available, this is when a boundary condition can not be checked. </td>
+      <td style="vertical-align: top;">Timelimit exceeded</td>
+      <td style="vertical-align: top;">The inactivity timer has expired. If the client doesn't send a commadn within the preconfigured timeout period then the server will close down the connection to make room for other clients</td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">403</td>
+      <td style="vertical-align: top;"></td>
+      <td style="vertical-align: top;">Redirect to another Spocp server</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">500 </td>
-      <td style="vertical-align: top;"> Syntax error</td>
-      <td style="vertical-align: top;"> <br>
-      </td>
+      <td style="vertical-align: top;">Syntax error</td>
+      <td style="vertical-align: top;">The command or a argument doesn't follow the prescibed syntax</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">501</td>
-      <td style="vertical-align: top;"> Operations error </td>
-      <td style="vertical-align: top;">Permanent operations error </td>
+      <td style="vertical-align: top;">Missing argument</td>
+      <td style="vertical-align: top;">Mandatory argument missing</td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">502 </td>
-      <td style="vertical-align: top;"> Not supported</td>
-      <td style="vertical-align: top;"> <br>
-      </td>
-    </tr>
-    <tr>
-      <td style="vertical-align: top;">503</td>
-      <td style="vertical-align: top;"> Already in operation </td>
-      <td style="vertical-align: top;"> <br>
-      </td>
+      <td style="vertical-align: top;">502</td>
+      <td style="vertical-align: top;">Input error</td>
+      <td style="vertical-align: top;">Missing characters</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">504</td>
-      <td style="vertical-align: top;"> Line to long </td>
-      <td style="vertical-align: top;"> <br>
-      </td>
+      <td style="vertical-align: top;">Unknown command</td>
+      <td style="vertical-align: top;"></td>
     </tr>
     <tr>
       <td style="vertical-align: top;">505 </td>
-      <td style="vertical-align: top;"> Unkown ID</td>
-      <td style="vertical-align: top;"> <br>
-      </td>
+      <td style="vertical-align: top;">Argument error</td>
+      <td style="vertical-align: top;">Too many or wrong type of arguments</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">506</td>
-      <td style="vertical-align: top;"> Already exits</td>
-      <td style="vertical-align: top;">Rules or client specifications
-can not be overwritten </td>
+      <td style="vertical-align: top;">SSL accept error</td>
+      <td style="vertical-align: top;">The SSL handshake failed</td>
     </tr>
     <tr>
       <td style="vertical-align: top;">507</td>
-      <td style="vertical-align: top;"> Line to long </td>
-      <td style="vertical-align: top;"> <br>
-      </td>
-    </tr>
-    <tr>
-      <td style="vertical-align: top;">508<br>
-      </td>
-      <td style="vertical-align: top;"> Unknown command</td>
-      <td style="vertical-align: top;"><br>
-      </td>
-    </tr>
-    <tr>
-      <td style="vertical-align: top;">509</td>
-      <td style="vertical-align: top;"> Access denied </td>
-      <td style="vertical-align: top;"> <br>
-      </td>
-    </tr>
-    <tr>
-      <td style="vertical-align: top;">510<br>
-      </td>
-      <td style="vertical-align: top;"> Argument error</td>
-      <td style="vertical-align: top;"><br>
-      </td>
+      <td style="vertical-align: top;">Unknown range type</td>
+      <td style="vertical-align: top;"></td>
     </tr>
     <tr>
       <td style="vertical-align: top;">511</td>
-      <td style="vertical-align: top;"> Already active</td>
-      <td style="vertical-align: top;"><br>
-      </td>
+      <td style="vertical-align: top;">Sizelimit exceeded</td>
+      <td style="vertical-align: top;">The total number of bytes in the command exceeded the limit set by the server</td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">512<br>
-      </td>
-      <td style="vertical-align: top;"> Internal errror</td>
-      <td style="vertical-align: top;"><br>
-      </td>
+      <td style="vertical-align: top;">512</td>
+      <td style="vertical-align: top;">Operation error</td>
+      <td style="vertical-align: top;">Undefined error</td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">513<br>
-      </td>
-      <td style="vertical-align: top;"> Input error</td>
-      <td style="vertical-align: top;"><br>
-      </td>
+      <td style="vertical-align: top;">513</td>
+      <td style="vertical-align: top;">Service not available</td>
+      <td style="vertical-align: top;">A service some backend needed to access was not accessible</td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">514<br>
-      </td>
-      <td style="vertical-align: top;"> Timelimit exceeded</td>
-      <td style="vertical-align: top;"><br>
-      </td>
+      <td style="vertical-align: top;">515</td>
+      <td style="vertical-align: top;">Command not supported</td>
+      <td style="vertical-align: top;">Valid command but not implemented in this server</td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">515<br>
-      </td>
-      <td style="vertical-align: top;"> Sizelimit exceeded</td>
-      <td style="vertical-align: top;">The total number of bytes in the
-command exceeded the limit set by the server<br>
-      </td>
+      <td style="vertical-align: top;">516</td>
+      <td style="vertical-align: top;">SSL already active</td>
+      <td style="vertical-align: top;"></td>
     </tr>
     <tr>
-      <td style="vertical-align: top;">516<br>
-      </td>
-      <td style="vertical-align: top;"> Other</td>
-      <td style="vertical-align: top;">For example error encountered
-while using backends<br>
-      </td>
+      <td style="vertical-align: top;">517</td>
+      <td style="vertical-align: top;">Other error</td>
+      <td style="vertical-align: top;"></td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">518</td>
+      <td style="vertical-align: top;">Certificate error</td>
+      <td style="vertical-align: top;"></td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">519</td>
+      <td style="vertical-align: top;">Unwilling to perform</td>
+      <td style="vertical-align: top;"></td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">520</td>
+      <td style="vertical-align: top;">Already exists</td>
+      <td style="vertical-align: top;"></td>
+    </tr>
+    <tr>
+      <td style="vertical-align: top;">521</td>
+      <td style="vertical-align: top;">Authentication error</td>
+      <td style="vertical-align: top;"></td>
     </tr>
   </tbody>
 </table>

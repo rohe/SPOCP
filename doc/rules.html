@@ -3,522 +3,759 @@
 <HEAD>
 	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
 	<TITLE>Creating rules</TITLE>
-	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
-	<META NAME="CREATED" CONTENT="20040223;15282400">
-	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
-	<META NAME="CHANGED" CONTENT="20040223;15562900">
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.2  (Unix)">
+	<META NAME="CREATED" CONTENT="20041129;7520200">
+	<META NAME="CHANGED" CONTENT="20041208;10171000">
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
-<H1>Creating rules</H1>
-<P>Document Status: Project document, last updated
-2003-10-02<BR>Authors: Roland Hedberg and Torbj&ouml;rn Wiberg 
+<H1><FONT FACE="Helvetica, sans-serif">Creating rules</FONT></H1>
+<P><FONT FACE="Helvetica, sans-serif">Document Status: Project
+document, last updated 2004-11-19<BR>Authors: Roland Hedberg and
+Torbj&ouml;rn Wiberg </FONT>
 </P>
-<H2>Content</H2>
+<H2><FONT FACE="Helvetica, sans-serif">Content</FONT></H2>
 <UL>
-	<LI><P STYLE="margin-bottom: 0in">0. Introduction 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">0.
+	Introduction </FONT>
 	</P>
-	<LI><P STYLE="margin-bottom: 0in">1. <A HREF="#syntax">The rule
-	syntax</A> 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">1.
+	</FONT><A HREF="#syntax"><FONT FACE="Helvetica, sans-serif">The rule
+	syntax</FONT></A> 
 	</P>
-	<LI><P STYLE="margin-bottom: 0in">2. <A HREF="#meaning">The meaning
-	of a S-expression</A> 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">2.
+	</FONT><A HREF="#meaning"><FONT FACE="Helvetica, sans-serif">The
+	meaning of a S-expression</FONT></A> 
 	</P>
-	<LI><P>3. <A HREF="#apprule">How to define the rule syntax for a
-	application</A> 
+	<LI><P><FONT FACE="Helvetica, sans-serif">3. </FONT><A HREF="#apprule"><FONT FACE="Helvetica, sans-serif">How
+	to define the rule syntax for a application</FONT></A> 
 	</P>
 </UL>
-<H2><A NAME="intro"></A>0. Introduction</H2>
-<P>A cornerstone of this project, is that anything that is not
-<EM>explicitly</EM> permitted is prohibited. 
+<H2><A NAME="intro"></A><FONT FACE="Helvetica, sans-serif">0.
+Introduction</FONT></H2>
+<P><FONT FACE="Helvetica, sans-serif">A cornerstone of this project,
+is that anything that is not </FONT><EM><FONT FACE="Helvetica, sans-serif">explicitly</FONT></EM>
+<FONT FACE="Helvetica, sans-serif">permitted is prohibited. </FONT>
 </P>
-<P>Also, there is no such thing as a negative rules. If you by
-negative rules means rules that would allow you to limit the scope of
-one rule by another. Rules can only be positive; that is grant
-someone a permission. 
+<P><FONT FACE="Helvetica, sans-serif">Also, there is no such thing as
+a negative rules. If you by negative rules means rules that would
+allow you to limit the scope of one rule by another. Rules can only
+be positive; that is grant someone a permission. </FONT>
 </P>
-<P>When a query about a permission is posed to the system, the system
-will search for a rule that permits the action. If <EM>one</EM> such
-rule is found the system will stop there. It will <EM>not</EM>
-collect all the rules that permits a certain action, one is enough.
-Therefore if you have overlapping rules you can not be certain about
-which rule the system will use to grant the request. 
+<P><FONT FACE="Helvetica, sans-serif">When a query about a permission
+is posed to the system, the system will search for a rule that
+permits the action. If </FONT><EM><FONT FACE="Helvetica, sans-serif">one</FONT></EM>
+<FONT FACE="Helvetica, sans-serif">such rule is found the system will
+stop there. It will </FONT><EM><FONT FACE="Helvetica, sans-serif">not</FONT></EM>
+<FONT FACE="Helvetica, sans-serif">collect all the rules that permits
+a certain action, one is enough. Therefore if you have overlapping
+rules you can not be certain about which rule the system will use to
+grant the request. </FONT>
 </P>
-<P>It is possible to couple information to a rule, such that if a
-query is granted based on a rule and there is information coupled to
-that rule, that information will be returned to the client together
-with the positive response. If you use this feature having
-overlapping rules might be a really bad thing. 
+<P><FONT FACE="Helvetica, sans-serif">It is possible to couple
+information to a rule, such that if a query is granted based on a
+rule and there is information coupled to that rule, that information
+will be returned to the client together with the positive response.
+If you use this feature having overlapping rules might be a really
+bad thing. This because the spocp server will grab the first rule
+that matches and there is no way by which you can influence which one
+it will be. </FONT>
 </P>
-<P>When constructing a new rule syntax there are basically three
-things you have to answer: 
+<P><FONT FACE="Helvetica, sans-serif">When constructing a new rule
+syntax there are basically three things you have to answer: </FONT>
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0in">What do you want to express with
-	the rules ? 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">What
+	do you want to express with the rules ? </FONT>
 	</P>
-	<LI><P STYLE="margin-bottom: 0in">Which information does the
-	application have or can get access to when it wants to ask the Spocp
-	server ? 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">Which
+	information does the application have or can get access to when it
+	wants to ask the Spocp server ? </FONT>
 	</P>
-	<LI><P>Which information resources can the policy engine use to
-	evaluate boundary conditions ? 
+	<LI><P><FONT FACE="Helvetica, sans-serif">Which information
+	resources can the policy engine use to evaluate boundary conditions
+	? </FONT>
 	</P>
 </UL>
-<P><EM><U>Note</U></EM> throughout this document the advanced form of
-<A HREF="#s-exp">S-expressions</A> will be used since they are much
+<P><EM><U><FONT FACE="Helvetica, sans-serif">Note</FONT></U></EM>
+<FONT FACE="Helvetica, sans-serif">throughout this document the
+advanced form of </FONT><A HREF="#s-exp"><FONT FACE="Helvetica, sans-serif">S-expressions</FONT></A>
+<FONT FACE="Helvetica, sans-serif">will be used since they are much
 easier to read for a human. Be aware though that rules that is for
-server consumption <B>must</B> be in the canonical form. There exist
-a tool in the distribution that can convert from advanced to
-canonical form. 
+server consumption <B>must</B> be in the canonical form. This does
+not mean that you will ever have to write a S-expression in its
+canonical form. There are tools that will convert between the two
+formats for you. </FONT>
 </P>
-<P><EM><U>Note also</U></EM> if you have not read <A HREF="draft-hedberg-spocp-sexp-00.html">Introduction
-to S-expressions</A> yet you should definitely do so before
-continuing with this document. 
+<P><EM><U><FONT FACE="Helvetica, sans-serif">Note also</FONT></U></EM>
+<FONT FACE="Helvetica, sans-serif">if you have not read </FONT><A HREF="draft-hedberg-spocp-sexp-00.html"><FONT FACE="Helvetica, sans-serif">Introduction
+to S-expressions</FONT></A> <FONT FACE="Helvetica, sans-serif">I
+advise you to do so before continuing with this document. </FONT>
 </P>
-<H2><A NAME="syntax"></A>1. The rule syntax</H2>
-<P>The Spocp project has chosen a basic rule syntax. This doesn't
-mean that it is set in stone, you might tamper with it if you feel
-that your application would benefit from another structure. The
+<H2><A NAME="syntax"></A><FONT FACE="Helvetica, sans-serif">1. The
+rule </FONT>
+</H2>
+<P><FONT FACE="Helvetica, sans-serif">A rule within a Spocp server
+consists of one to thee elements; The first element is a
+S-expression, the second a boundary condition expression and the
+third a return value (something that is returned together with a
+positive answer).</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">Rule = S-expression [ &ldquo;=&gt;&rdquo;
+bcondexp ] [ &ldquo;==&rdquo; blob ]</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">Rule matching then involves
+matching the query S-expression against the rule S-expression and
+then if that matches and there is a boundary condition expression in
+the rule that expression is evaluated.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">The format of a boundary
+condition expression is:</FONT></P>
+<PRE>bcondexpr    = bcondor / bcondand / bcondnot / bcondref
+bcondname    = 1*dirchar
+bcondref     = &quot;(&quot; &quot;ref&quot; 1*dirchar &quot;)&quot;
+bcondand     = &quot;(&quot; &quot;and&quot; 1*bcondexpr &quot;)&quot;
+bcondor      = &quot;(&quot; &quot;or&quot; 1*bcondexpr &quot;)&quot;
+bcondnot     = &quot;(&quot; &quot;not&quot; bcondexpr &quot;)&quot;
+dirchar      = pchar / '-' / '_' / '.' 
+pchar        = %x30-39 / %x41-5A / %x61-7A</PRE><P>
+<BR><BR>
+</P>
+<P><FONT FACE="Helvetica, sans-serif">It is important to realize that
+boundary conditions might use information in the query S-expression,
+but there is no connection between a rule S-expression and a boundary
+condition.</FONT></P>
+<H2><FONT FACE="Helvetica, sans-serif">2. The syntax of the
+S-expression </FONT>
+</H2>
+<P><FONT FACE="Helvetica, sans-serif">Even though the Spocp server
+does not care how you organize your S-expression as long as they
+adhere to the syntax, you have to !</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">Different application has
+different sets of attributes and semantics and you probability want
+to map these attributes and semantics into the s-expressions used by
+a specific application in a way that is meaning full to you.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">For the rest of this document I
+have chosen a basic rule syntax. This doesn't mean that you have to
+use it for your applications, it is just there as an example. The
 policy engine as implemented will work with any type of rule syntax
 as long as it adheres to the syntax of a restricted S-expression as
-specified in the <A HREF="draft-hedberg-spocp-sexp-00.html">introduction
-to S-expressions</A> document. Still every example provided in this
-document or the companion documents will use our structure. 
+specified in the </FONT><A HREF="draft-hedberg-spocp-sexp-00.html"><FONT FACE="Helvetica, sans-serif">introduction
+to S-expressions</FONT></A> <FONT FACE="Helvetica, sans-serif">document.
+Still every example provided in this document or the companion
+documents will use the same structure. </FONT>
 </P>
-<P>The syntax chosen by the project divides the rules into three
-parts: 
+<P><FONT FACE="Helvetica, sans-serif">The syntax chosen divides the
+rules into three parts: </FONT>
 </P>
 <DL>
-	<DT STYLE="margin-bottom: 0.2in"><B>Resource</B></DT><DD STYLE="margin-bottom: 0.2in">
-	A description of the resource this rules governs access to 
-	</DD></DL>
-	<DL>
-	<DT>
-	<B>Action</B></DT><DD STYLE="margin-bottom: 0.2in">
-	The action someone/something wants to perform on the resource 
-	</DD></DL>
-	<DL><DT><B>Subject</B></DT><DD STYLE="margin-bottom: 0.2in">
-	The agent that wants to perform the action on the resource and the
-	environment the agent appears in 
+	<DT><FONT FACE="Helvetica, sans-serif"><B>Resource</B></FONT></DT><DD STYLE="margin-bottom: 0.5cm">
+	<FONT FACE="Helvetica, sans-serif">A description of the resource
+	this rules governs access to </FONT>
+	</DD><DT>
+	<FONT FACE="Helvetica, sans-serif"><B>Action</B></FONT></DT><DD STYLE="margin-bottom: 0.5cm">
+	<FONT FACE="Helvetica, sans-serif">The action someone/something
+	wants to perform on the resource </FONT>
+	</DD><DT>
+	<FONT FACE="Helvetica, sans-serif"><B>Subject</B></FONT></DT><DD STYLE="margin-bottom: 0.5cm">
+	<FONT FACE="Helvetica, sans-serif">The agent that wants to perform
+	the action on the resource and the environment the agent appears in </FONT>
 	</DD></DL>
 <P>
-It might be important at this point to stress the fact that the
-policy engine as implemented only cares about the syntax of the
-rules, it has no and should not have any idea about the semantics of
-the rules and queries. It just compares S-expressions. 
+<FONT FACE="Helvetica, sans-serif">It might be important at this
+point to stress the fact that the policy engine as implemented only
+cares about the syntax of the rules, it has no and should not have
+any idea about the semantics of the rules and queries. It just
+compares S-expressions. </FONT>
 </P>
-<P>So if you are having problems deciding where in the rule syntax a
-certain information piece should fit. Whether it should be part of
-the resource description or action description for instance. Be
-certain that it's only your feeling for aesthetics that might be
-disturbed, the policy engine could not care less. 
+<P><FONT FACE="Helvetica, sans-serif">So if you are having problems
+deciding where in the rule syntax a certain information piece should
+fit. Whether it should be part of the resource description or action
+description for instance. Be certain that it's only your feeling for
+aesthetics that might be disturbed, the policy engine could not care
+less. </FONT>
 </P>
-<P>With that out of the way, an example what a rule/query can look
-like: 
+<P><FONT FACE="Helvetica, sans-serif">With that out of the way, an
+example what a rule/query can look like: </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(spocp (resource &quot;/etc/passwd&quot;)(action write)(subject (uid 0)))</PRE><P>
-Which as a rule would mean that a user with uid 0 on a system has the
-right to write to a a file by the name &quot;/etc/passwd&quot;. And
-if this where the only rule that deals with write access to
-&quot;/etc/passwd&quot; the user with uid 0 is supposed to be the
-only one that can write to this file. Whatever 'write' might mean to
-the application that handles this resource. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">(spocp (resource &quot;/etc/passwd&quot;)(action write)(subject (uid 0)))</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Which as a rule would mean that a
+user with uid 0 on a system has the right to write to a a file by the
+name &quot;/etc/passwd&quot;. And if this where the only rule that
+deals with write access to &quot;/etc/passwd&quot; the user with uid
+0 is supposed to be the only one that can write to this file.
+Whatever 'write' might mean to the application that handles this
+resource. </FONT>
 </P>
-<H2><A NAME="meaning"></A>2. The meaning of a S-expression</H2>
-<P>As specified in <A HREF="draft-hedberg-spocp-sexp-00.html">introduction
-to S-expressions</A> a list that contains more elements than another
-is considered more specific or less permissive. 
+<H2><A NAME="meaning"></A><FONT FACE="Helvetica, sans-serif">2. The
+meaning of a S-expression</FONT></H2>
+<P><FONT FACE="Helvetica, sans-serif">As specified in </FONT><A HREF="draft-hedberg-spocp-sexp-00.html"><FONT FACE="Helvetica, sans-serif">introduction
+to S-expressions</FONT></A> <FONT FACE="Helvetica, sans-serif">a list
+that contains more elements than another is considered more specific
+or less permissive. </FONT>
 </P>
-<P>This feature make it very easy to construct rules for things that
-are hierarchically organized. 
+<P><FONT FACE="Helvetica, sans-serif">This feature make it very easy
+to construct rules for things that are hierarchically organized. </FONT>
 </P>
-<P>A file system for instance is hierarchical, therefore a file with
-the name &quot;/etc/passwd&quot; is supposed to reside in a directory
-by the name &quot;/etc&quot;.<BR>As a S-expression &quot;/etc/passwd&quot;
-could be express as &quot;(file etc passwd)&quot; and with the
-ordering of S-expressions &quot;(file etc passwd)&quot; is more
-specific than &quot;(file etc)&quot;. If one generalizes this, &quot;(file
-etc)&quot; is in fact, a shorter way of saying every file and
-directory below and including &quot;etc&quot;. 
+<P><FONT FACE="Helvetica, sans-serif">A file system for instance is
+hierarchical, therefore a file with the name &quot;/etc/passwd&quot;
+is supposed to reside in a directory by the name &quot;/etc&quot;.<BR>As
+a S-expression &quot;/etc/passwd&quot; could be express as &quot;(file
+etc passwd)&quot; and with the ordering of S-expressions &quot;(file
+etc passwd)&quot; is more specific than &quot;(file etc)&quot;. If
+one generalizes this, &quot;(file etc)&quot; is in fact, a shorter
+way of saying every file and directory below and including &quot;etc&quot;.
+</FONT>
 </P>
-<P>This is an important point; <B>rules are always inclusive</B>. 
+<P><FONT FACE="Helvetica, sans-serif">This is an important point;
+<B>rules are always inclusive</B>. </FONT>
 </P>
-<P>An example: 
+<P><FONT FACE="Helvetica, sans-serif">An example: </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(spocp (resource etc)(action read)(subject))</PRE><P>
-As a rule would mean that any subject has read access to everything
-below and including the &quot;/etc&quot; directory. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">(spocp (resource etc)(action read)(subject))</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">As a rule would mean that any
+subject has read access to everything below and including the &quot;/etc&quot;
+directory. </FONT>
 </P>
-<P>A query of the form : 
+<P><FONT FACE="Helvetica, sans-serif">A query of the form : </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(spocp (resource etc pam.d useradd)(action read)(subject (uid 501) (gid 100)))</PRE><P>
-Would therefore get the answer that that subject was permitted to
-perform the action. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">(spocp (resource etc pam.d useradd)(action read)(subject (uid 501) (gid 100)))</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Would therefore get the answer
+that that subject was permitted to perform the action. </FONT>
 </P>
-<P>If the rule instead was defined as: 
+<P><FONT FACE="Helvetica, sans-serif">If the rule instead was defined
+as: </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(spocp (resource &quot;/etc&quot;)(action read)(subject))</PRE><P>
-Then the query: 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">(spocp (resource &quot;/etc&quot;)(action read)(subject))</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Then the query: </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(spocp (resource &quot;/etc/pam.d/useradd&quot;)(action read)(subject (uid 501) (gid 100)))</PRE><P>
-Would get a negative response. The resources as specified, according
-to the way S-expressions are compared, are unequal and
-&quot;/etc/pam.d/useradd&quot; is not considered to be more specific
-than &quot;/etc&quot; . It is just different. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">(spocp (resource &quot;/etc/pam.d/useradd&quot;)(action read)(subject (uid 501) (gid 100)))</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Would get a negative response. The
+resources as specified, according to the way S-expressions are
+compared, are unequal and &quot;/etc/pam.d/useradd&quot; is not
+considered to be more specific than &quot;/etc&quot; . It is just
+different. So if you want to use the hierarchical structure of your
+information be sure to split it into its parts. </FONT>
 </P>
-<H2><A NAME="apprule"></A>3. How to define the rule syntax for a
-application 
+<H2><FONT FACE="Helvetica, sans-serif">3. Rules and boundary
+conditions</FONT></H2>
+<P><FONT FACE="Helvetica, sans-serif">A Spocp rule actually consists
+of a S-expression and zero or more references to boundary condition.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">Boundary conditions are there
+to allow you to test criteria which needs information that are not
+present neither in the query or in the rule S-expression. Examples of
+such criteria are time of day, whether a specific object is present
+in a special LDAP server or whether a certain relationship is valid
+in a RDBMS.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">Every boundary condition
+specified in the <SPAN LANG="en-US">rule set</SPAN> of a Spocp server
+has <SPAN LANG="en-US">to</SPAN> have a unique name. It only has to
+be unique within the context of the <SPAN LANG="en-US">rule sets</SPAN>
+of one Spocp server.</FONT></P>
+<H3>3.1 Format of boundary conditions specifications</H3>
+<P><FONT FACE="Helvetica, sans-serif">Boundary conditions have their
+own syntax:</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">bcond = pname &ldquo;:&rdquo;
+*unitsel &ldquo;:&rdquo; special</FONT></P>
+<UL>
+	<LI><P><FONT FACE="Helvetica, sans-serif">pname, is the name of the
+	boundary condition</FONT></P>
+	<LI><P><FONT FACE="Helvetica, sans-serif">unitsel, is a number of
+	specifications for picking information from the query S-expression</FONT></P>
+	<LI><P><FONT FACE="Helvetica, sans-serif">special, is a
+	specification of the boundary condition in a boundary condition
+	specific format</FONT></P>
+</UL>
+<H4><FONT FACE="Helvetica, sans-serif">3.1.1 Unitsel</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">This part of the boundary
+condition is for picking information from the query. Since the query
+in a parsed format is presented to the function it can implement
+whatever extraction function it needs. But since we rightly or
+wrongly assumed that most implementers wants to concentrate on the
+function that the <SPAN LANG="en-US">backed</SPAN> is going to
+provide we thought it would be a good thing to provide one <SPAN LANG="en-US">built
+in</SPAN> extraction function.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">S-expressions can be regarded
+as representing a tree structure, so the use of <A HREF="./HREF=&quot;http://www.w3.org/TR/xpath">XPATH</A>
+to pick information from a S-expression seemed reasonable. But we
+have limited our usage to a small subset of what XPATH provides; you
+can use absolute location path (/lpw/subj/id) or descendants (//id)
+to get the sublist/-s in question and then</FONT> a <FONT FACE="Helvetica, sans-serif">selection
+to get at the elements of that sublist.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">Thus, if we start with the
+query S-expression:</FONT></P>
+<PRE STYLE="margin-bottom: 0.5cm">(lpw (service Tentamen)(method skapa)(departmentNumber 64545)(uid leifj))</PRE><P>
+<FONT FACE="Helvetica, sans-serif">Then &ldquo;{//uid[1]}&rdquo; will
+pick the second element from the sublist that has &ldquo;uid&rdquo;
+as tag, the tag being the first element. In this case that is the
+string &ldquo;leifj&rdquo;.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">If the S-expression is:</FONT></P>
+<PRE STYLE="margin-bottom: 0.5cm">(spocp (resource jaccount (page 316))(action read)(subject (uid ola) (role manager)))</PRE><P>
+&ldquo;<FONT FACE="Helvetica, sans-serif">{/spocp/subject/role/*}&rdquo;
+will pick the sequence of elements from the a specific sublist with
+the tag &ldquo;role&rdquo; that starts with the second element. In
+this case that is a single element sequence that only contains the
+string &ldquo;manager&rdquo;.</FONT></P>
+<P>&ldquo;<FONT FACE="Helvetica, sans-serif">/foo*&rdquo; is
+equivalent to &ldquo;/foo[1-]&rdquo;.&lt;/P&gt;</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">As selections you can use &ldquo;*&rdquo;,
+or one of &ldquo;[n]&rdquo;, &ldquo;[n-]&rdquo;, [n-m], [-m] where n
+and m are numbers and n &lt; m. You can also instead of m use the
+string &ldquo;last&rdquo; to denote the last element in a sublist.</FONT></P>
+<P><FONT FACE="Helvetica, sans-serif">So, if the s-expression is:</FONT></P>
+<PRE STYLE="margin-bottom: 0.5cm">(http (resource gif sysinfo_en.png -)(action 0 0)(subject(ip 127.0.0.1)(host localhost))</PRE><P>
+<FONT FACE="Helvetica, sans-serif">Then:</FONT></P>
+<UL>
+	<LI><P>&ldquo;<FONT FACE="Helvetica, sans-serif">//resource/*&rdquo;
+	== ( &ldquo;gif&rdquo; &ldquo;sysinfo_en.png&rdquo; &ldquo;-&rdquo;)
+	</FONT>
+	</P>
+	<LI><P>&ldquo;<FONT FACE="Helvetica, sans-serif">//resource[1]&rdquo;
+	== &ldquo;gif&rdquo;</FONT></P>
+	<LI><P>&ldquo;<FONT FACE="Helvetica, sans-serif">//resource[last]&rdquo;
+	== &ldquo;-&rdquo;</FONT></P>
+</UL>
+<H3>3.2 Referring to Boundary conditions</H3>
+<P><BR><BR>
+</P>
+<H2><FONT FACE="Helvetica, sans-serif">4. How to define the rule
+syntax for a application </FONT>
 </H2>
-<P>In order to choose a rule syntax you have to know certain things
-about a application. Very basically you have to know: 
+<P><FONT FACE="Helvetica, sans-serif">In order to choose a rule
+syntax you have to know certain things about a application. Very
+basically you have to know: </FONT>
 </P>
 <UL>
-	<LI><P STYLE="margin-bottom: 0in">What policies do you want to be
-	able to express ? 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">What
+	policies do you want to be able to express ? </FONT>
 	</P>
-	<LI><P STYLE="margin-bottom: 0in">What kind of information does the
-	application have access to ? 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">What
+	kind of information does the application have access to ? </FONT>
 	</P>
-	<LI><P>What kind of information might the policy engine have access
-	to ? 
+	<LI><P><FONT FACE="Helvetica, sans-serif">What kind of information
+	might the policy engine have access to ? </FONT>
 	</P>
 </UL>
-<P>Exactly how you then construct the syntax depends on the answers
-to these questions. Of course you might also find out that the
-information that are present today is not enough to allow you to
-express the policies you want. In this case you have to decide where
-and how the extra information should be stored, accessed and
-maintained. 
+<P><FONT FACE="Helvetica, sans-serif">Exactly how you then construct
+the syntax depends on the answers to these questions. Of course you
+might also find out that the information that are present today is
+not enough to allow you to express the policies you want. In this
+case you have to decide where and how the extra information should be
+stored, accessed and maintained. </FONT>
 </P>
-<P>It is very hard to give guidance for rule construction without
-grounding these in real examples. So I will provide you with some
-guidance by given two examples on how to construct a rule syntax for
-a application. The syntax construction examples given below can apart
-from describing the constructions as such also be seen as examples of
-a methodology. 
+<P><FONT FACE="Helvetica, sans-serif">It is very hard to give
+guidance for rule construction without grounding these in real
+examples. So I will provide you with some guidance by given two
+examples on how to construct a rule syntax for a application. The
+syntax construction examples given below can apart from describing
+the constructions as such also be seen as examples of a methodology. </FONT>
 </P>
-<H3><A NAME="mailserver"></A>3.1 The rule syntax for a mail server</H3>
-<H4><A NAME="mailexp"></A>3.1.1 What should be expressed</H4>
-<P>As discussed in <A HREF="#rfc2476">RFC 2476</A> : 
+<H3><FONT FACE="Helvetica, sans-serif">4.1 The rule syntax for a mail
+server</FONT></H3>
+<H4><FONT FACE="Helvetica, sans-serif">4.1.1 What should be expressed</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">As discussed in </FONT><A HREF="#rfc2476"><FONT FACE="Helvetica, sans-serif">RFC
+2476</FONT></A> <FONT FACE="Helvetica, sans-serif">: </FONT>
 </P>
-<P>&quot;Message Submission Agents (MSAs) and Message Transfer Agents
-(MTAs) MAY implement message rejection rules that rely in part on
-whether the message is a submission or a relay.&quot; 
+<P><FONT FACE="Helvetica, sans-serif">&quot;Message Submission Agents
+(MSAs) and Message Transfer Agents (MTAs) MAY implement message
+rejection rules that rely in part on whether the message is a
+submission or a relay.&quot; </FONT>
 </P>
-<P>For example, some sites might configure their MTA to reject all
-RCPT TOs for messages that do not reference local users, and
-configure their MSA to reject all message submissions that do not
-come from authorized users, based on IP address, or authenticated
-identity. 
+<P><FONT FACE="Helvetica, sans-serif">For example, some sites might
+configure their MTA to reject all RCPT TOs for messages that do not
+reference local users, and configure their MSA to reject all message
+submissions that do not come from authorized users, based on IP
+address, or authenticated identity. </FONT>
 </P>
-<P>Starting with these thoughts there are a couple of things you
-would like to express: 
+<P><FONT FACE="Helvetica, sans-serif">Starting with these thoughts
+there are a couple of things you would like to express: </FONT>
 </P>
 <OL>
-	<LI><P STYLE="margin-bottom: 0in">Only allow mails from 'local
-	users' 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">Only
+	allow mails from 'local users' </FONT>
 	</P>
-	<LI><P STYLE="margin-bottom: 0in">Only allow mails to 'local users' 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">Only
+	allow mails to 'local users' </FONT>
 	</P>
-	<LI><P STYLE="margin-bottom: 0in">Restricted senders should only be
-	allowed to send to certain addresses 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">Restricted
+	senders should only be allowed to send to certain addresses </FONT>
 	</P>
-	<LI><P STYLE="margin-bottom: 0in">Restricted receivers should only
-	be allowed to receive from certain addresses 
+	<LI><P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">Restricted
+	receivers should only be allowed to receive from certain addresses </FONT>
 	</P>
-	<LI><P>Certain senders should never be allowed 
+	<LI><P><FONT FACE="Helvetica, sans-serif">Certain senders should
+	never be allowed </FONT>
 	</P>
 </OL>
-<P>I am not saying that this is the exact order that you should do
-the policy evaluation, or for that matter that this is a exhaustive
-list. Depending on the MTA implementation and the rule syntax chosen
-you might have to choose another order. The ordering is only there so
-I can reference them later in the text. 
+<P><FONT FACE="Helvetica, sans-serif">I am not saying that this is
+the exact order that you should do the policy evaluation, or for that
+matter that this is a exhaustive list. Depending on the MTA
+implementation and the rule syntax chosen you might have to choose
+another order. The ordering is only there so I can reference them
+later in the text. </FONT>
 </P>
-<H4><A NAME="mailinfo"></A>3.1.2 Information the mail server has</H4>
-<P>Through the interaction with the sending client, the mail server
-has the ipaddress of the sending machine and possibly the host name
-of it too. If <A HREF="#rfc2554">SMTP AUTH</A> has been used it will
-also have authentication information, like which mechanism that was
-used and of course if the sending MTA is among the allowed senders.
-<BR>Through the SMTP negotiation it will have information about the
-sender email address as well as the receiver/receivers. 
+<H4><FONT FACE="Helvetica, sans-serif">4.1.2 Information the mail
+server has</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">The reasoning below is based on
+how the Postfix MTA works, this since this MTA has a well defined
+<SPAN LANG="en-US">authorization</SPAN> API. </FONT>
 </P>
-<P>In case the Spocp is not used to decide which MTAs this MTA should
-talk to then the MTA will probably also have a list of MTAs it is
-allowed to talk to. Or no such list if it is free to talk to anyone. 
+<P STYLE="margin-bottom: 0cm"><FONT FACE="Helvetica, sans-serif">Cut
+from the Postfix documentation: </FONT>
 </P>
-<H4><A NAME="mailserver2"></A><A NAME="mailserver1"></A>3.1.3
-Information the policy sever could access 
+<HR>
+<P><FONT FACE="Helvetica, sans-serif">The Postfix policy delegation
+protocol is really simple. The client request is a sequence of
+name=value attributes separated by newline, and is terminated by an
+empty line. The server reply is one name=value attribute and it, too,
+is terminated by an empty line. </FONT>
+</P>
+<P><FONT FACE="Helvetica, sans-serif">Here is an example of all the
+attributes that the Postfix SMTP server sends in a delegated SMTPD
+access policy request: </FONT>
+</P>
+<PRE STYLE="margin-left: 1cm; margin-right: 1cm"><FONT FACE="Helvetica, sans-serif">request=smtpd_access_policy</FONT>
+<FONT FACE="Helvetica, sans-serif">protocol_state=RCPT</FONT>
+<FONT FACE="Helvetica, sans-serif">protocol_name=SMTP</FONT>
+<FONT FACE="Helvetica, sans-serif">helo_name=some.domain.tld</FONT>
+<FONT FACE="Helvetica, sans-serif">queue_id=8045F2AB23</FONT>
+<FONT FACE="Helvetica, sans-serif">sender=foo@bar.tld</FONT>
+<FONT FACE="Helvetica, sans-serif">recipient=bar@foo.tld</FONT>
+<FONT FACE="Helvetica, sans-serif">client_address=1.2.3.4</FONT>
+<FONT FACE="Helvetica, sans-serif">client_name=another.domain.tld</FONT>
+<FONT FACE="Helvetica, sans-serif">instance=123.456.7</FONT>
+<FONT FACE="Helvetica, sans-serif">sasl_method=plain</FONT>
+<FONT FACE="Helvetica, sans-serif">sasl_username=you</FONT>
+<FONT FACE="Helvetica, sans-serif">sasl_sender=</FONT>
+<FONT FACE="Helvetica, sans-serif">size=12345</FONT>
+<FONT FACE="Helvetica, sans-serif">[empty line]</FONT></PRE>
+<HR>
+<H4><FONT FACE="Helvetica, sans-serif">4.1.3 Information the policy
+sever could access </FONT>
 </H4>
-<P>Depending on your setup the policy server and/or the mail server
-can have access to any number of information resources like the
-Enterprise directory, Realtime Blackhole Lists (RBLs) and so on. 
+<P><FONT FACE="Helvetica, sans-serif">Depending on your setup the
+policy server and/or the mail server can have access to any number of
+information resources like the Enterprise directory, <SPAN LANG="en-US">Real
+time</SPAN> <SPAN LANG="en-US">Black hole</SPAN> Lists <SPAN LANG="en-US">(RBIs)</SPAN>
+and so on. </FONT>
 </P>
-<H4><A NAME="mailsyntax"></A>3.1.4 The syntax</H4>
-<P>A attempt at a syntax could then be: 
+<H4><FONT FACE="Helvetica, sans-serif">4.1.4 The syntax</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">A syntax that reflects the
+Postfix access control API is: </FONT>
 </P>
-<PRE>  syntax = &quot;(spocp (resource &quot; resource &quot;)(action &quot; action &quot;)(subject &quot; subject &quot;))&quot;
+<PRE><FONT FACE="Helvetica, sans-serif">syntax = (postfix </FONT>
+           <FONT FACE="Helvetica, sans-serif">(request &lt;<SPAN LANG="en-US">smtpd</SPAN>_access_policy&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(protocol_state &lt;RCPT&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(protocol_name &lt;SMTP&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif"><SPAN LANG="en-US">(helo_</SPAN>name &lt;<SPAN LANG="en-US">host name</SPAN>&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(queue_id &lt;id&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(sender &lt;FQDN&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(recipient &lt;FQDN&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(client_address &lt;ipnumber&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(client_name &lt;FQDN&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(instance &lt;id&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(sasl_method &lt;method&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(sasl_username &lt;username&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(sasl_sender &lt;&gt;)</FONT>
+           <FONT FACE="Helvetica, sans-serif">(size &lt;bytes&gt;))</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Query example: </FONT>
+</P>
+<PRE><FONT FACE="Helvetica, sans-serif">(7:postfix</FONT>
+  <FONT FACE="Helvetica, sans-serif">(7:request19:smtpd_access_policy)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(14:protocol_state4:RCPT)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(13:protocol_name4:SMTP)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(9:helo_name17:mail.catalogix.se)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(8:queue_id)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(6:sender15:gks18@tm.net.my)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(9:recipient28:25743@gultekin-teknik.com.pr)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(14:client_address14:210.186.24.209)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(11:client_name7:unknown)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(8:instance14:500.419ce3ab.0)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(4:size1:0))</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Now it is quite unpractical to
+construct mail relay rules for every allowed combination of senders
+and receivers. It might be possible if your MTA is supposed to handle
+a very small set of users. But if you are running it for even a
+medium sized organization it would definitely be a bad idea. </FONT>
+</P>
+<P><FONT FACE="Helvetica, sans-serif">So what you probably would want
+to do is to use &quot;boundary conditions&quot;; external tests that
+will tell you if a certain email address belongs to a 'local user' or
+not. <BR>If your organization has a Enterprise Directory such a test
+could be: if there is a entry in the Enterprise Directory who has the
+email address, I am interested in, as the value of the mail
+attribute, then that email address is regarded as belonging to a
+local user. </FONT>
+</P>
+<P><FONT FACE="Helvetica, sans-serif">Using the ldapset boundary
+condition this could be expressed as: </FONT>
+</P>
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">localuser = ldapset:{/postfix/sender[1]}:&lt;searchbase&gt;;&lt;ldaphost&gt;;\0$mail &amp; ${0}</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Where &quot;{/postfix/sender[1]}&quot;
+is a expression (somewhat XPATHish) that is there to select a
+specific part of the query. &lt;ldaphost&gt; is the name of the ldap
+host that has your enterprise directory, and &lt;searchbase&gt; is
+the starting point of the subtree that holds your user entries. </FONT>
+</P>
+<P><FONT FACE="Helvetica, sans-serif">For my company the boundary
+condition would be: </FONT>
+</P>
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">user = ldapset:{/postfix/sender[1]};cn=person,dc=catalogix,dc=se;ldap.catalogix.se;\0$mail &amp; ${0}</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">So now I have a way of expressing
+the first two rules in 3.1.1 namely as: &quot;Only allow mails from
+local user&quot; </FONT>
+</P>
+<PRE><FONT FACE="Helvetica, sans-serif">send = &quot;ldapset:{/postfix/sender[1]};cn=person,dc=catalogix,dc=se;ldap.catalogix.se;\0$mail &amp; ${0}&quot;</FONT>
 
-  resource = &quot;mailrelay&quot;
-  action   = &quot;rcpt (domain &quot; domain &quot;)(local &quot; localpart &quot;)&quot;
-  subject  = &quot;(from &quot; sender &quot;)(mta&quot; ipaddr &quot;)(auth&quot; meth &quot;)&quot;</PRE><P>
-Query example: 
+<FONT FACE="Helvetica, sans-serif">(postfix) =&gt; (ref send)</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">and &quot;only allow mail to local
+users&quot; </FONT>
 </P>
-<PRE>(spocp
-  (resource mailrelay)
-  (action rcpt (domain catalogix.se)(local roland))
-  (subject (from leifj@it.su.se)(mta 130.237.35.23)(auth cram-md5))
-)</PRE><P>
-Now it is quite unpractical to construct mailrelay rules for every
-allowed combination of senders and receivers. It might be possible if
-your MTA is supposed to handle a very small set of users. But we are
-dealing with even a medium sized organization it would definitely be
-a bad idea. 
+<PRE><FONT FACE="Helvetica, sans-serif">recv = &quot;ldapset:{/postfix/recipient[1]};cn=person,dc=catalogix,dc=se;ldap.catalogix.se;\0$mail &amp; ${0}&quot;</FONT>
+
+<FONT FACE="Helvetica, sans-serif">(postfix) =&gt; (ref recv)</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">One of the benefits of using
+&quot;boundary conditions&quot; like this is that you can get away
+with a very small set of rules, which are very stable, and that you
+can manage access to any number of applications by normal
+administration of the enterprise directory. In this case if a new
+person is added to the directory, the MTA will immediately start
+relaying email to and fro that persons email address. </FONT>
 </P>
-<P>So what you probably would want to do is to use &quot;boundary
-conditions&quot;; external tests that will tell you if a certain
-email address belongs to a 'local user' or not. <BR>If your
-organization has a Enterprise Directory such a test could be: if
-there is a entry in the Enterprise Directory who has the email
-address, I am interested in, as the value of the mail attribute, then
-that email address is regarded as belonging to a local user. 
+<P><FONT FACE="Helvetica, sans-serif">The last test of 4.1.1 is
+probably two tests, one against something like the Real time</FONT><A HREF="http://mail-abuse.org/rbl/"><SPAN LANG="en-US"><FONT FACE="Helvetica, sans-serif">
+Black hole List</FONT></SPAN></A> <FONT FACE="Helvetica, sans-serif">and
+another based on the sender email address. The list of email address
+that should be block could be gotten from a spam filters and/or lists
+that is maintained by your organization. How you got your hands on it
+is something I am not going to bother about, the only interesting
+thing is that you have by some means put such a list together. </FONT>
 </P>
-<P>Using the ldapset boundary condition this could be expressed as: 
+<P><FONT FACE="Helvetica, sans-serif">So if you want to use RBL the
+distribution contains a RBL back end which allows you to write tests
+like: </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(* bcond ldapset:&lt;ldaphost&gt;;&lt;userDN&gt;;\0$mail &amp; ${local}@${domain})</PRE><P>
-Where &lt;ldaphost&gt; is the name of the ldap host that has your
-enterprise directory, and &lt;userDN&gt; is the starting point of the
-subtree that holds your user entries. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">block = rbl:{/postfix/client_address}:blackholes.mail-abuse.org:${0}</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">If you want to use the publicly
+available RBL DNS service. There is nothing though that prohibits you
+from choosing another similar DNS service run by your own
+organization or some other organization by defining another domain
+name. </FONT>
 </P>
-<P>For my company the boundary condition would be: 
+<P><FONT FACE="Helvetica, sans-serif">When it comes to matching mail
+address the ldapset boundary condition is not very suited for
+handling that. The ldapset boundary condition can only use exact
+matches, and for matching email addresses you most certainly would
+like to use substring matches. </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(* bcond ldapset:ldap.catalogix.se;cn=person,dc=catalogix,dc=se;\0$mail &amp; ${local}@${domain})</PRE><P>
-So now I have a way of expressing the first two rules in 3.1.1 namely
-as: &quot;Only allow mails from local user&quot; 
+<P><FONT FACE="Helvetica, sans-serif">For the same reason GDBM is
+probably not a god choice, since key matching in GDBM is also based
+on exact matching. </FONT>
 </P>
-<PRE>(spocp
-  (resource mailrelay)
-  (action 
-    (* bcond ldapset:ldap.catalogix.se;cn=person,dc=catalogix,dc=se;\0$mail &amp; ${local}@${domain})
-  )   
-)</PRE><P>
-and &quot;only allow mail to local users&quot; 
+<P><FONT FACE="Helvetica, sans-serif">So you need a type of backend
+that allows matching on the whole address, only the domain part, only
+the top domain, the top domain plus the sub domain below that or
+something similar. </FONT>
 </P>
-<PRE>(spocp
-  (resource mailrelay)
-  (action )
-  (subject
-    (* bcond ldapset:ldap.catalogix.se;cn=person,dc=catalogix,dc=se;\0$mail &amp; ${from})
-  )   
-)</PRE><P>
-One of the benefits of using &quot;boundary conditions&quot; like
-this is that you can get away with a very small set of rules, who are
-very stable, and that you can manage access to any number of
-applications by normal administration of the enterprise directory. 
+<P><FONT FACE="Helvetica, sans-serif">Luckily the distribution has
+such a back end, the addrmatch back end: </FONT>
 </P>
-<P>The last test of 3.1.1 is probably two tests, one against
-something like the <A HREF="http://mail-abuse.org/rbl/">Realtime
-Blackhole List</A> and another based on the sender email address. The
-list of email address that should be block could be gotten from a
-spam filters and/or lists that is maintained by your organization.
-How you got your hands on it is something I am not going to bother
-about, the only interesting thing is that you have by some means put
-such a list together. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">friends = mailmatch:{/postfix/sender[0]}:&lt;filename&gt;:${0}</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">This back end allows you to match
+email address against a file which contains definitions of whole or
+parts of mail address you do not want to allow relaying from. The
+back end does what is called trailing substring matches. </FONT>
 </P>
-<P>So if you want to use RBL the distribution contains a RBL backend
-which allows you to write tests like: 
+<P><FONT FACE="Helvetica, sans-serif">This back end can also be used
+when you want to handle the restricted sender/receiver cases. My
+guess is that the set of restricted users are very limited or that
+you can group them in groups which can be dealt with as a whole. </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(* bcond rbl:blackholes.mail-abuse.org:${mta})</PRE><P>
-If you want to use the publicly available RBL DNS service. There is
-nothing though that prohibits you from choosing another similar DNS
-service run by your own organization or some other organization by
-defining another domain name. 
+<P><FONT FACE="Helvetica, sans-serif">Typical examples of restricted
+senders could be students at a university who has misbehaved and
+therefore is not allowed full access to the Internet, but they should
+still be able to fulfill there assignments as students which means
+that they must be able to send emails to their teachers. </FONT>
 </P>
-<P>When it comes to matching mail address the ldapset boundary
-condition is not very suited for handling that. The ldapset boundary
-condition can only use exact matches, and for matching email
-addresses you most certainly would like to use substring matches. 
+<P><FONT FACE="Helvetica, sans-serif">A restricted receiver could
+instead be a email address which in fact is a gateway to another
+transport system like a email to fax-/sms-/.. gateway, which since it
+possibly involves costly usage should be limited to a restricted set
+of users. </FONT>
 </P>
-<P>For the same reason GDBM is probably not a god choice, since key
-matching in GDBM is also based on exact matching. 
+<P><FONT FACE="Helvetica, sans-serif">Restrictions on a email to fax
+gateway could then be expressed as: </FONT>
 </P>
-<P>So you need a type of backend that allows matching on the whole
-address, only the domain part, only the top domain, the top domain
-plus the sub domain below that or something similar. 
+<PRE><FONT FACE="Helvetica, sans-serif">faxrecv = mailmatch:{/postfix/recipient[0]}:/etc/postfix/tcpint:${0}</FONT>
+<FONT FACE="Helvetica, sans-serif">faxsend = mailmatch:{/postfix/sender[0]}:/etc/postfix/faxusers:${0}</FONT>
+
+<FONT FACE="Helvetica, sans-serif">(postfix) =&gt; &quot;(ref (and faxrecv faxsend))&quot;</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Where &quot;tcpint&quot; would
+contain a list of the telephone numbers, in tcp.int format, that the
+gateway are allowed to contact given that the sender mail address
+matches any of the mail address specifications that exists in
+&quot;faxsenders&quot;. </FONT>
 </P>
-<P>Luckily the distribution has such a backend, the addrmatch
-backend: 
+<H4><FONT FACE="Helvetica, sans-serif">4.1.5 Return values</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">This is not something that we
+have discussed so far, but Spocd is able to return additional
+information together with a positive answer.<BR>The Postfix access
+control API has no real notion of positive or negative answers, what
+is return is: &quot;The policy server replies with any action that is
+allowed in a Postfix SMTPD access(5) table.&quot; Example: </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(* bcond addrmatch:&lt;filename&gt;:&lt;mail address&gt;)</PRE><P>
-This backend allows you to match email address against a file which
-contains definitions of whole or parts of mail address you do not
-want to allow relaying from. The backend does what is called trailing
-substring matches. 
+<PRE><FONT FACE="Helvetica, sans-serif">action=defer_if_permit Service temporarily unavailable</FONT>
+<FONT FACE="Helvetica, sans-serif">[empty line]</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">This means that you can bind
+Postfix SMTPD actions to spocp rules, like this: </FONT>
 </P>
-<P>This backend can also be used when you want to handle the
-restricted sender/receiver cases. My guess is that the set of
-restricted users are very limited or that you can group them in
-groups which can be dealt with as a whole. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">(postfix) =&gt; (ref recv) == &quot;dunno&quot; </FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Again, from the Postfix manual: <I>In
+case of success, return &quot;DUNNO&quot; instead of &quot;OK&quot;,
+so that the check_policy_service restriction can be followed by other
+restrictions.</I> </FONT>
 </P>
-<P>Typical examples of restricted senders could be students at a
-university who has misbehaved and therefore is not allowed full
-access to the Internet, but they should still be able to fulfill
-there assignments as students which means that they must be able to
-send emails to their teachers. 
+<H3><FONT FACE="Helvetica, sans-serif">4.2 The rule syntax for a PAM
+module</FONT></H3>
+<P><FONT FACE="Helvetica, sans-serif">Pluggable Authentication Module
+(PAM) is a system of libraries that handles the authentication task
+of applications on a system. The library provides a a stable general
+interface that privilege granting programs might defer to to perform
+standard authentication tasks. </FONT>
 </P>
-<P>A restricted receiver could instead be a email address which in
-fact is a gateway to another transport system like a email to
-fax-/sms-/.. gateway, which since it possibly involves costly usage
-should be limited to a restricted set of users. 
+<H4><FONT FACE="Helvetica, sans-serif">4.2.1 What should be expressed</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">The PAM module as implemented
+is supposed to handle the account aspect of a restricted service. It
+must therefore know who the user is, if it's a local or a network
+based request. And of course it has to know which service on which
+host the verification should be required for. </FONT>
 </P>
-<P>Restrictions on a email to fax gateway could then be expressed as:
-</P>
-<PRE>(spocp
-  (resource mailrelay)
-  (action rcpt (* bcond addrmatch:local_tcpint:${domain}))
-  (subject (* bcond addrmatch:faxsenders:${from}))
-)</PRE><P>
-Where &quot;local_tcpint&quot; would contain a list of the telephone
-numbers, in tcp.int format, that the gateway are allowed to contact
-given that the sender mail address matches any of the mail address
-specifications that exists in &quot;faxsenders&quot;. 
-</P>
-<H3><A NAME="mailserver4"></A><A NAME="mailserver3"></A>3.2 The rule
-syntax for a PAM module</H3>
-<P>Pluggable Authentication Module (PAM) is a system of libraries
-that handles the authentication task of applications on a system. The
-library provides a a stable general interface that privilege granting
-programs might defer to to perform standard authentication tasks. 
-</P>
-<H4><A NAME="mailexp2"></A><A NAME="mailexp1"></A>3.2.1 What should
-be expressed</H4>
-<P>The PAM module as implemented is supposed to handle the account
-aspect of a restricted service. It must therefore know who the user
-is, if it's a local or a network based request. And of course it has
-to know which service on which host the verification should be
-required for. 
-</P>
-<H4><A NAME="mailinfo2"></A><A NAME="mailinfo1"></A>3.2.2 Information
-the a process has</H4>
-<P>According to the PAM documentation, the PAM module will have
-access to the following variables: 
+<H4><FONT FACE="Helvetica, sans-serif">4.2.2 Information the a
+process has</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">According to the PAM
+documentation, the PAM module will have access to the following
+variables: </FONT>
 </P>
 <DL>
-	<DT>service 
+	<DT><FONT FACE="Helvetica, sans-serif">service </FONT>
 	</DT><DD>
-	The name of the application (service) the user wants to access 
+	<FONT FACE="Helvetica, sans-serif">The name of the application
+	(service) the user wants to access </FONT>
 	</DD><DT>
-	host 
+	<FONT FACE="Helvetica, sans-serif">host </FONT>
 	</DT><DD>
-	host address of the host where the request originated 
+	<FONT FACE="Helvetica, sans-serif">host address of the host where
+	the request originated </FONT>
 	</DD><DT>
-	uid 
+	<FONT FACE="Helvetica, sans-serif">uid </FONT>
 	</DT><DD>
-	The user id of the user who wants access 
+	<FONT FACE="Helvetica, sans-serif">The user id of the user who wants
+	access </FONT>
 	</DD><DT>
-	gid 
+	<FONT FACE="Helvetica, sans-serif">gid </FONT>
 	</DT><DD>
-	Group Id of the user 
+	<FONT FACE="Helvetica, sans-serif">Group Id of the user </FONT>
 	</DD><DT>
-	port 
-	</DT><DD STYLE="margin-bottom: 0.2in">
-	Which tty the user is connected to 
+	<FONT FACE="Helvetica, sans-serif">port </FONT>
+	</DT><DD STYLE="margin-bottom: 0.5cm">
+	<FONT FACE="Helvetica, sans-serif">Which tty the user is connected
+	to </FONT>
 	</DD></DL>
 <H4>
-<A NAME="mailserver6"></A><A NAME="mailserver5"></A>3.2.3 Information
-the policy sever could access 
+<FONT FACE="Helvetica, sans-serif">4.2.3 Information the policy sever
+could access </FONT>
 </H4>
-<P>If the policy server is running on the same machine it might have
-access to &quot;/etc/passwd&quot; and &quot;/etc/groups&quot;. If NIS
-is used it could probably get access through that interface. 
+<P><FONT FACE="Helvetica, sans-serif">If the policy server is running
+on the same machine it might have access to &quot;/etc/passwd&quot;
+and &quot;/etc/groups&quot;. If NIS is used it could probably get
+access through that interface. </FONT>
 </P>
-<H4><A NAME="mailinfo4"></A><A NAME="mailinfo3"></A>3.2.4 The PAM
-rule syntax</H4>
-<P>A proposal could be: 
+<H4><FONT FACE="Helvetica, sans-serif">4.2.4 The PAM rule syntax</FONT></H4>
+<P><FONT FACE="Helvetica, sans-serif">A proposal could be: </FONT>
 </P>
-<PRE>  syntax = &quot;(spocp (resource &quot; resource &quot;)(action &quot; action &quot;)(subject &quot; subject &quot;))&quot;
+<PRE>  <FONT FACE="Helvetica, sans-serif">syntax = &quot;(spocp (resource &quot; resource &quot;)(action &quot; action &quot;)(subject &quot; subject &quot;))&quot;</FONT>
 
-  resource = host
-  action   = service
-  subject  = &quot;(uid &quot; uid &quot;)(gid&quot; gid &quot;)(port&quot; port &quot;)&quot;</PRE><P>
-Query example: 
+  <FONT FACE="Helvetica, sans-serif">resource = host</FONT>
+  <FONT FACE="Helvetica, sans-serif">action   = service</FONT>
+  <FONT FACE="Helvetica, sans-serif">subject  = &quot;(uid &quot; uid &quot;)(gid&quot; gid &quot;)(port&quot; port &quot;)&quot;</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Query example: </FONT>
 </P>
-<PRE>(spocp
-  (resource theano.catalogix.se)
-  (action useradd)
-  (subject (uid 501)(gid 100)(port pts/2))
-)</PRE><P>
-What more could be done ? Well, you could add time constraint, say
-that the useradd command could only be run during normal working
-hours ( whatever that might be ). If normal working hours was between
-08.00 an 17.00 Monday to Fridays, one would express this with the
-time backend: 
+<PRE><FONT FACE="Helvetica, sans-serif">(spocp</FONT>
+  <FONT FACE="Helvetica, sans-serif">(resource theano.catalogix.se)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(action useradd)</FONT>
+  <FONT FACE="Helvetica, sans-serif">(subject (uid 501)(gid 100)(port pts/2))</FONT>
+<FONT FACE="Helvetica, sans-serif">)</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">What more could be done ? Well,
+you could add time constraint, say that the useradd command could
+only be run during normal working hours ( whatever that might be ).
+If normal working hours was between 08.00 an 17.00 Monday to Fridays,
+one would express this with the time back end: </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(* bcond time:;;12345;08:00:00;17:00:00)</PRE><P>
-Where you would add such a test is a matter of taste, I see two
-possibilities either directly following 'action' or in &quot;subject&quot;
-after the user sublist. 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">daytime = time:;;12345;08:00:00;17:00:00</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Now some holidays does not fall on
+Saturday and Sundays, so supposing you have a list of those you could
+have a back end ( there is none of that kind in the distribution )
+that compares the present date with dates listed as holidays. Adding
+that boundary condition would ascertain that the working day
+definition is more correct. </FONT>
 </P>
-<P>Now some holidays does not fall on Saturday and Sundays, so
-supposing you have a list of those you could have a backend ( there
-is none of that kind in the distribution ) that compares the present
-date with dates listed as holidays. Adding that boundary condition
-would ascertain that the working day definition is more correct. 
+<P><FONT FACE="Helvetica, sans-serif">If you wanted to couple the
+usage of a service to a certain role within the organization then
+you, supposing that the uid of a user on the system was stored in the
+enterprise directory, could add a ldapset boundary condition along
+these lines: </FONT>
 </P>
-<P>If you wanted to couple the usage of a service to a certain role
-within the organization then you, supposing that the uid of a user on
-the system was stored in the enterprise directory, could add a
-ldapset boundary condition along these lines: 
+<PRE STYLE="margin-bottom: 0.5cm"><FONT FACE="Helvetica, sans-serif">role0 = ldapset:{//uid[1]};&lt;ldaphost&gt;;&lt;roleEntry&gt;;&lt;personSubtree&gt;;\0/roleoccupant &amp; {\1%uid &amp; ${0}}</FONT></PRE><P>
+<FONT FACE="Helvetica, sans-serif">Where &quot;roleEntry&quot; would
+be the specific entry of object class role that represents the role
+who should be able to run use the service. </FONT>
 </P>
-<PRE STYLE="margin-bottom: 0.2in">(* bcond ldapset:&lt;ldaphost&gt;;&lt;roleEntry&gt;;&lt;personSubtree&gt;;\0/roleoccupant &amp; [\1%uid &amp; ${uid}])</PRE><P>
-Where &quot;roleEntry&quot; would be the specific entry of object
-class role that represents the role who should be able to run use the
-service. 
+<P><FONT FACE="Helvetica, sans-serif">Now, in big organizations the
+uid is probably not unique over machines for a specific user. In
+which case you either have to use the user name, which has a greater
+probability of being unique, or a combination of host name and uid. </FONT>
 </P>
-<P>Now, in big organizations the uid is probably not unique over
-machines for a specific user. In which case you either have to use
-the user name, which has a greater probability of being unique, or a
-combination of host name and uid. 
+<H3><FONT FACE="Helvetica, sans-serif">5. Summary</FONT></H3>
+<P><FONT FACE="Helvetica, sans-serif">I have only scratched on the
+surface here of what is possible to do when it comes to deciding on a
+rule syntax. What I hope has come through though is that you have to
+decided on what you want to express and what kind of information
+about the user and the her environment that is to be used to
+distinguish between different users under the prevailing
+circumstances. </FONT>
 </P>
-<H3><A NAME="ref"></A>4. Summary</H3>
-<P>I have only scratched on the surface here of what is possible to
-do when it comes to deciding on a rule syntax. What I hope has come
-through though is that you have to decided on what you want to
-express and what kind of information about the user and the her
-environment that is to be used to distinguish between different users
-under the prevailing circumstances. 
+<P><FONT FACE="Helvetica, sans-serif">I would also like to stress the
+point that using boundary conditions will allow you to manage access
+to resources by managing for instance the enterprise directory. To a
+cost to be sure, using boundary conditions always inflicts a
+performance penalty. But the ease of management might tip the scale. </FONT>
 </P>
-<P>I would also like to stress the point that using boundary
-conditions will allow you to manage access to resources by managing
-for instance the enterprise directory. To a cost to be sure, using
-boundary conditions always inflicts a performance penalty. But the
-ease of management might tip the scale. 
+<P><FONT FACE="Helvetica, sans-serif">Using boundary condition will
+also allow you to write rules that you probably never will have to
+change. </FONT>
 </P>
-<P>Using boundary condition will also allow you to write rules that
-you probably never will have to change. 
-</P>
-<H3><A NAME="ref1"></A>5. References</H3>
+<H3><FONT FACE="Helvetica, sans-serif">6. References</FONT></H3>
 <DL>
-	<DT><A NAME="rfc2476"></A>[RFC2476] 
+	<DT><A NAME="rfc2476"></A><FONT FACE="Helvetica, sans-serif">[RFC2476]
+	</FONT>
 	</DT><DD>
-	R. Gellens and J. Klensin, Message Submission, RFC 2476, December
-	1998 
+	<FONT FACE="Helvetica, sans-serif">R. Gellens and J. Klensin,
+	Message Submission, RFC 2476, December 1998 </FONT>
 	</DD><DT>
-	<A NAME="rfc2554"></A>[RFC2554] 
+	<A NAME="rfc2554"></A><FONT FACE="Helvetica, sans-serif">[RFC2554] </FONT>
 	</DT><DD>
-	J. Myers, SMTP Service Extension for Authentication, RFC 2554, March
-	1999 
+	<FONT FACE="Helvetica, sans-serif">J. Myers, SMTP Service Extension
+	for Authentication, RFC 2554, March 1999 </FONT>
 	</DD><DT>
-	<A NAME="s-exp"></A>[S-expressions] 
+	<A NAME="s-exp"></A><FONT FACE="Helvetica, sans-serif">[S-expressions]
+	</FONT>
 	</DT><DD>
-	Ron Rivest, &quot;S-Expressions&quot;, draft-rivest-sexp-00.txt, May
-	1997, &lt;http://theory.lcs.mit.edu/~rivest/sexp.txt&gt;. 
+	<FONT FACE="Helvetica, sans-serif">Ron Rivest, &quot;S-Expressions&quot;,
+	draft-rivest-sexp-00.txt, May 1997,
+	&lt;http://theory.lcs.mit.edu/~rivest/sexp.txt&gt;. </FONT>
 	</DD><DT>
-	[S-expressions code and description] 
-	</DT><DD STYLE="margin-bottom: 0.2in">
-	Ron Rivest, code and description of S-expressions,
-	&lt;http://theory.lcs.mit.edu/~rivest/sexp.html&gt;. 
+	<FONT FACE="Helvetica, sans-serif">[S-expressions code and
+	description] </FONT>
+	</DT><DD STYLE="margin-bottom: 0.5cm">
+	<FONT FACE="Helvetica, sans-serif">Ron Rivest, code and description
+	of S-expressions, &lt;http://theory.lcs.mit.edu/~rivest/sexp.html&gt;.
+	</FONT>
 	</DD></DL>
 </BODY>
 </HTML>
