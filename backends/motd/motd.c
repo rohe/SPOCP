@@ -15,13 +15,19 @@
 #include <string.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 #define DIGITS(n) ( (n) >= 100000 ? 6 : (n) >= 10000 ? 5 : (n) >= 1000 ? 4 : (n) >= 100 ? 3 : ( (n) >= 10 ? 2 : 1 ) )
+
+befunc motd_test ;
 
 char *motd = "/etc/motd" ;
 char *type = "Text/plain" ;
 
-spocp_result_t motd_test( octet_t *arg, becpool_t *b, octet_t *blob )
+spocp_result_t motd_test(
+  element_t *e, element_t *r, element_t *x, octet_t *arg, pdyn_t *b, octet_t *blob )
 {
   FILE *fp ;
   char  buf[256], *lp ;

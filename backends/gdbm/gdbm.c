@@ -18,8 +18,11 @@
 #include <string.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
-spocp_result_t gdbm_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) ;
+befunc gdbm_test ;
 
 /* ===================================================== */
 
@@ -41,73 +44,113 @@ int P_gdbm_close( void *vp )
   return 1 ;
 }
 
-spocp_result_t gdbm_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t gdbm_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
   datum          key, res ;
-  GDBM_FILE      dbf ;
+  GDBM_FILE      dbf = 0 ;
   spocp_result_t r = SPOCP_DENIED ;
-  int            i, n ;
-  octet_t      **arr ;
+  int            i, cv ;
+  octet_t       *oct, *o, cb ;
+  octarr_t      *argv ;
   char          *str = 0 ;
   becon_t       *bc = 0 ;
 
   if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  arr = oct_split( arg, ':', '\\', 0, 0, &n ) ;
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  str = oct2strdup( arr[0], '%' ) ;
+  cv = cached( dyn->cv, oct, &cb ) ;
 
-  if( bcp == 0 || ( bc = becon_get( "dbm", str, bcp )) == 0 ) { 
-    dbf = gdbm_open( str, 512, GDBM_READER, 0, 0) ;
+  if( cv ) {
+    traceLog( "ipnum: cache hit" ) ;
 
-    if( !dbf ) {
-      r = SPOCP_UNAVAILABLE ;
-      goto done ;
+    if( cv == EXPIRED ) {
+      cached_rm( dyn->cv, oct ) ;
+      cv = 0 ;
+    }
+  }
+
+  if( cv == 0 ) {
+
+    argv = oct_split( oct, ':', '\\', 0, 0 ) ;
+  
+    o = argv->arr[0] ;
+  
+    if( ( bc = becon_get( o, dyn->bcp )) == 0 ) { 
+      str = oct2strdup( oct, 0 ) ;
+      dbf = gdbm_open( str, 512, GDBM_READER, 0, 0) ;
+      free( str ) ;
+  
+      if( !dbf )  r = SPOCP_UNAVAILABLE ;
+      else if( dyn->size ) {
+        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+        bc = becon_push( oct, &P_gdbm_close, (void *) dbf, dyn->bcp ) ;
+      }
+    }
+    else dbf = ( GDBM_FILE ) bc->con ;
+  
+    if( r == SPOCP_DENIED ) { 
+
+      o = argv->arr[1] ;
+  
+      /* what happens if someone has removed the GDBM file under our feets ?? */
+  
+      switch( argv->n ) {
+        case 0: /* check if the file is there and possible to open */
+          r = SPOCP_SUCCESS ;
+          break ;
+    
+        case 1: /* Is the key in the file */
+          key.dptr = oct->val ;
+          key.dsize = oct->len ;
+    
+          r =  gdbm_exists( dbf, key ) ;
+          break ;
+    
+        default: /* have to check both key and value */
+          key.dptr = oct->val ;
+          key.dsize = oct->len ;
+    
+          res = gdbm_fetch( dbf, key);
+    
+          if( res.dptr != NULL ) {
+            for( i = 2 ; i < argv->n ; i++ ) {
+              if( memcmp( res.dptr, argv->arr[i]->val, argv->arr[i]->len ) == 0 ) {
+                r = SPOCP_SUCCESS ;
+                break ;
+              }
+            }
+    
+            free( res.dptr ) ;
+          }
+          break ;
+      }
     }
 
-    if( bcp != 0 ) bc = becon_push( "dbm", str, &P_gdbm_close, (void *) dbf, bcp ) ;
-  }
-  else { 
-    dbf = ( GDBM_FILE ) bc->con ;
-  }
+    octarr_free( argv ) ;
 
-  /* what happens if someone has removed the GDBM file under our feets ?? */
+    if( bc ) becon_return( bc ) ;
+    else if( dbf )  gdbm_close( dbf ) ;
 
-  switch( n ) {
-    case 0: /* check if the file is there and possible to open */
-      r = SPOCP_SUCCESS ;
-      break ;
-
-    case 1: /* Is the key in the file */
-      key.dptr = arr[1]->val ;
-      key.dsize = arr[1]->len ;
-
-      r =  gdbm_exists( dbf, key ) ;
-      break ;
-
-    default: /* have to check both key and value */
-      key.dptr = arr[1]->val ;
-      key.dsize = arr[1]->len ;
-
-      res = gdbm_fetch( dbf, key);
-
-      if( res.dptr != NULL ) {
-        for( i = 2 ; i < n ; i++ ) {
-          if( memcmp( res.dptr, arr[i]->val, arr[i]->len ) == 0 ) {
-            r = SPOCP_SUCCESS ;
-            break ;
-          }
-        }
-
-        free( res.dptr ) ;
-      }
-      break ;
   }
 
-done:
-  oct_freearr( arr ) ;
-  if( str) free( str ) ;
-  if( bc ) becon_return( bc ) ;
+  if( cv == (CACHED|SPOCP_SUCCESS) ) {
+    if( cb.len ) octln( blob, &cb ) ;
+    r = SPOCP_SUCCESS ;
+  }
+  else if( cv == ( CACHED|SPOCP_DENIED ) ) {
+    r = SPOCP_DENIED ;
+  }
+  else {
+    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+      time_t t ;
+      t = cachetime_set( oct, dyn->ct ) ;
+      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
+    }
+  }
+
+  if( oct != arg ) oct_free( oct ) ;
 
   return r ;
 }

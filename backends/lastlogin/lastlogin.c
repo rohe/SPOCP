@@ -19,17 +19,20 @@
 #include <time.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 /* ============================================================= */
 
-spocp_result_t lastlogin_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) ;
+befunc lastlogin_test ;
 spocp_result_t lastlogin_syntax( char *arg ) ;
 
 /* ============================================================= */
 
 /*
 
-  typespec = file ";" since ";" userid ";" ipnum
+  typespec = file ";" since ";" userid [ ";" ipnum ]
  
   first argument is filename
 
@@ -59,104 +62,159 @@ Jul 25 22:14:47 catalin pop3d: LOGOUT, user=lars, ip=[::ffff:213.67.231.206], to
 
 */
 
-spocp_result_t lastlogin_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t lastlogin_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
   spocp_result_t  r = SPOCP_DENIED ;
 
-  char      line[256] ;
-  char      *cp, test[128], date[64], *sp, *str = 0 ;
+  char       line[256], *str = 0 ;
+  char      *cp, test[512], date[64], *sp ;
   FILE      *fp = 0 ;
-  time_t    t, pt ;
-  struct tm tm ;
+  time_t     t, pt ;
+  struct tm  tm ;
   char      **hms ;
-  int       n, since = 0 ;
-  octet_t   **argv ;
-  becon_t  *bc = 0 ;
+  int        n, since = 0, cv ;
+  octarr_t  *argv ;
+  octet_t   *oct, *o, cb ;
+  becon_t   *bc = 0 ;
 
-  time(&t);
+  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  strcpy( date, "2002 " ) ;
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  argv = oct_split( arg, ';', '\\', 0, 0, &n ) ;
+  cv = cached( dyn->cv, oct, &cb ) ;
 
-  if( n < 3 ) goto done ;
+  if( cv ) {
+    traceLog( "ipnum: cache hit" ) ;
 
-  str = oct2strdup( argv[0], 0 ) ;
-
-  if( bcp == 0 || ( bc = becon_get( "file", str, bcp )) == 0 ) {
-    if(( fp = fopen( str, "r")) == 0 ) {
-      r = SPOCP_UNAVAILABLE ;
-      goto done ;
+    if( cv == EXPIRED ) {
+      cached_rm( dyn->cv, oct ) ;
+      cv = 0 ;
     }
+  }
 
-    if( bcp ) bc = becon_push( "file", str, &P_fclose, (void *) fp, bcp ) ;
+  if( cv == 0 ) {
+
+    argv = oct_split( oct, ';', '\\', 0, 0 ) ;
+  
+    if( argv->n == 4 ) {
+
+      time(&t);
+    
+      /* present year, should be done automagically */
+      strcpy( date, "2004 " ) ;
+    
+      o = argv->arr[0] ;
+    
+      if( ( bc = becon_get( o, dyn->bcp )) == 0 ) {
+        str = oct2strdup( o, 0 ) ;
+    
+        fp = fopen( str, "r") ;
+        free( str ) ;
+    
+        if( fp == 0 ) r = SPOCP_UNAVAILABLE ;
+        else if( dyn->size ) {
+          if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+          bc = becon_push( o, &P_fclose, (void *) fp, dyn->bcp ) ;
+        }
+      }
+      else {
+        fp = (FILE *) bc->con ;
+        if( fseek( fp, 0L, SEEK_SET) == -1 ) {
+          /* try to reopen */
+          str = oct2strdup( o, 0 ) ;
+          fp = fopen(str, "r") ;
+          free(str) ;
+          if( fp == 0 ) { /* not available */
+            becon_rm( dyn->bcp, bc ) ;
+            bc = 0 ;
+            r = SPOCP_UNAVAILABLE ;
+          }
+          else becon_update( bc, (void *) fp ) ;
+        }
+      }
+    
+      if( r == SPOCP_DENIED || argv->n < 3 ) {
+
+        str = oct2strdup( argv->arr[1], 0 ) ;
+        hms = line_split( str, ':', 0, 0, 0, &n ) ;
+        free( str ) ;
+      
+        if( hms[2] ) { /* hours, minutes and seconds are defined */
+          since += 3600 * atoi( hms[0] ) ;
+          since += 60 * atoi( hms[1] ) ;
+          since += atoi( hms[2] ) ;
+        }
+        else if( hms[1] ) { /* minutes and seconds are defined */
+          since += 60 * atoi( hms[0] ) ;
+          since += atoi( hms[1] ) ;
+        }
+        else { /* only seconds are defined */
+          since += atoi( hms[0] ) ;
+        }
+      
+        charmatrix_free( hms ) ;
+      
+        if( since != 0 ) {
+      
+          str = oct2strdup( argv->arr[2], 0 ) ;
+          sprintf( test, "LOGIN, user=%s, ", str ) ;
+          free( str ) ;
+      
+          if( argv->n == 4 ) str = oct2strdup( argv->arr[3], 0 ) ;
+          else str = 0 ;
+      
+          while( fgets( line, 256, fp )) {
+            if( strstr( line, test) == 0 ) continue ;
+        
+            strncpy( date+5, line, 16 ) ;
+            date[21] = 0 ;
+            strptime( date, "%Y %b %d %H:%M:%S", &tm );
+            pt = mktime(&tm);
+        
+            if( t - pt > since ) continue ;
+        
+            cp = strstr(line, "ip=[" ) ;
+            cp += 4 ;
+            if( strncmp( cp, "::ffff:", 7) == 0 ) cp += 7 ;
+        
+            sp = find_balancing( cp, '[', ']' ) ;
+            *sp = 0 ;
+        
+            if( str == 0 || strcmp( cp, str ) == 0 ) {
+              r = SPOCP_SUCCESS ;
+              break ;
+            }
+          }
+          if( str ) free( str ) ;
+        }
+      } 
+
+      if( bc ) becon_return( bc ) ; 
+      else if( fp ) fclose( fp );
+    } 
+    else r = SPOCP_OPERATIONSERROR ;
+
+    octarr_free( argv ) ;
+  }
+
+  if( cv == (CACHED|SPOCP_SUCCESS) ) {
+    if( cb.len ) octln( blob, &cb ) ;
+    r = SPOCP_SUCCESS ;
+  }
+  else if( cv == ( CACHED|SPOCP_DENIED ) ) {
+    r = SPOCP_DENIED ;
   }
   else {
-    fp = (FILE *) bc->con ;
-    if( fseek( fp,  0L, SEEK_SET) == -1 ) return SPOCP_UNAVAILABLE ;
-  }
-
-  free( str ) ;
-
-  str = oct2strdup( argv[1], 0 ) ;
-  hms = line_split( str, ':', 0, 0, 0, &n ) ;
-  free( str ) ;
-
-  if( n > 3 ) goto done ;
-
-  if( hms[2] ) { /* hours, minutes and seconds are defined */
-    since += 3600 * atoi( hms[0] ) ;
-    since += 60 * atoi( hms[1] ) ;
-    since += atoi( hms[2] ) ;
-  }
-  else if( hms[1] ) { /* minutes and seconds are defined */
-    since += 60 * atoi( hms[0] ) ;
-    since += atoi( hms[1] ) ;
-  }
-  else { /* only seconds are defined */
-    since += atoi( hms[0] ) ;
-  }
-
-  charmatrix_free( hms ) ;
-
-  if( since == 0 ) goto done ;
-
-  str = oct2strdup( argv[2], 0 ) ;
-  sprintf( test, "LOGIN, user=%s, ", str ) ;
-  free( str ) ;
-
-  str = oct2strdup( argv[3], 0 ) ;
-  while( fgets( line, 256, fp )) {
-    if( strstr( line, test) == 0 ) continue ;
-
-    strncpy( date+5, line, 16 ) ;
-    date[21] = 0 ;
-    strptime( date, "%Y %b %d %H:%M:%S", &tm );
-    pt = mktime(&tm);
-
-    if( t - pt > since ) continue ;
-
-    cp = strstr(line, "ip=[" ) ;
-    cp += 4 ;
-    if( strncmp( cp, "::ffff:", 7) == 0 ) cp += 7 ;
-
-    sp = find_balancing( cp, '[', ']' ) ;
-    *sp = 0 ;
-
-    if( strcmp( cp, str ) == 0 ) {
-      r = SPOCP_SUCCESS ;
-      break ;
+    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+      time_t t ;
+      t = cachetime_set( oct, dyn->ct ) ;
+      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
     }
   }
 
-done:
-  if( str ) free( str ) ;
-
-  if( bc ) becon_return( bc ) ; 
-  else if( fp ) fclose( fp );
-
-  oct_freearr( argv ) ;
-
+  if( oct != arg ) oct_free( oct ) ;
+  
   return r ;
 }
 

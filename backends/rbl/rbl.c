@@ -4,6 +4,11 @@
 #include <netdb.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
+
+befunc rbl_test ;
 
 /*
 Typical rbl entry in DNS
@@ -19,25 +24,41 @@ Typical rbl entry in DNS
 
 */
 
-spocp_result_t rbl_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t rbl_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *bcp, octet_t *blob )
 {
-  char    rblhost[128] ;
+  char    *rblhost ;
   char    *hostaddr, *s, *r, *c, *d ;
   int     n, l ;
-  octet_t **argv ;
+  octarr_t    *argv ;
+  octet_t     *oct, *domain, *host ;
 
-  argv = oct_split( arg, ':', 0, 0, 0, &n ) ;
+  if( arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  if( n < 1 ) return SPOCP_MISSING_ARG ;
-  if( n > 1 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
+  argv = oct_split( oct, ';', 0, 0, 0 ) ;
+
+  if( oct != arg ) oct_free( oct ) ;
+
+  if( argv->n != 2 ) {
+    octarr_free( argv ) ;
+    return SPOCP_SYNTAXERROR ;
+  }
+
+  domain = argv->arr[0] ;
+  host = argv->arr[1] ;
+
+  l = domain->len + host->len + 2  ;
+
+  rblhost = ( char * ) malloc( l * sizeof( char )) ;
   /* point to end of string */
-  s = argv[1]->val + argv[1]->len - 1 ;
+  s = host->val + host->len - 1 ;
 
   r = rblhost ;
 
   /* reverse the order */
-  hostaddr = argv[1]->val ;
+  hostaddr = host->val ;
 
   do {
     for( c = s ; *c != '.' && c >= hostaddr ; c-- ) ;
@@ -54,16 +75,16 @@ spocp_result_t rbl_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
 
   *r++ = '.' ;
 
-  c = argv[0]->val ;
+  c = domain->val ;
 
   /* add after the inverted hostaddr */
-  l = (int ) argv[0]->len ;
+  l = (int ) domain->len ;
   for( n = 0 ; n < l ; n++ ) *r++ = *c++ ;
 
-  if( r[n-1] != '.' ) {
-    *r++ = '.';
-    *r = '\0';
+  if( *r != '.' ) {
+    *++r = '.';
   }
+  *++r = '\0';
 
   if( gethostbyname(rblhost) != 0 ) return SPOCP_SUCCESS ;
   else return SPOCP_DENIED ;

@@ -20,12 +20,15 @@
 #include <time.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 #define MAXPARTS 4 
 
 /* ======================================================== */
 
-spocp_result_t time_test( octet_t *arg, becpool_t *b, octet_t *blob ) ;
+befunc time_test ;
 
 /* ======================================================== */
 
@@ -88,53 +91,60 @@ static spocp_result_t check_date( octet_t *date, time_t *pt, int flag )
 
  */
 
-spocp_result_t time_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t time_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *bcp, octet_t *blob )
 {
   spocp_result_t res = SPOCP_SUCCESS ;
   char          *sp ;
-  int            i, n ;
+  int            i ;
   time_t         pt ;
   struct tm     *ptm ;
-  octet_t      **argv ;
+  octarr_t      *argv ;
+  octet_t       *oct, *day ;
 
   if( arg == 0 ) return SPOCP_MISSING_ARG ;
+
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+
+  argv = oct_split( oct, ';', 0, 0, 0 ) ;
+
+  if( oct != arg ) oct_free( oct ) ;
 
   /* get the time */
   time(&pt);
   ptm = localtime( &pt ) ;
 
-  argv = oct_split( arg, ';', 0, 0, 0, &n ) ;
+  if( argv->n > 5 ) {
+    octarr_free( argv ) ;
+    return SPOCP_SYNTAXERROR ;
+  }
 
-  if( n < 0 ) return SPOCP_MISSING_ARG ;
-
-  if( n > 4 ) return SPOCP_SYNTAXERROR ;
-
-  switch( n ) {
+  switch( argv->n ) {
     case 4: /* time of day not later than */
-      if(( res = check_time_of_day( argv[4], &pt, 1 ) ) != SPOCP_SUCCESS ) break ;
+      if(( res = check_time_of_day( argv->arr[4], &pt, 1 ) ) != SPOCP_SUCCESS ) break ;
 
     case 3: /* time of day not earlier than */
-      if(( res = check_time_of_day( argv[3], &pt, 0 ) ) != SPOCP_SUCCESS ) break ;
+      if(( res = check_time_of_day( argv->arr[3], &pt, 0 ) ) != SPOCP_SUCCESS ) break ;
 
     case 2: /* the correct day of the week */
-      if( argv[2]->len ) {
-        for( sp = argv[2]->val, i = 0 ;
-             *sp && i < (int) argv[2]->len ; sp++, i++ )
+      day = argv->arr[2] ;
+      if( day->len ) {
+        for( sp = day->val, i = 0 ; *sp && i < (int) day->len ; sp++, i++ )
           if(( *sp - '0' ) == ptm->tm_wday ) break ;
 
-        if( i == (int) argv[2]->len ) {
+        if( i == (int) day->len ) {
           res = SPOCP_DENIED ;
           break ;
         }
       }
 
     case 1: /* before this date */
-      if(( res = check_date( argv[1], &pt, 1 )) != SPOCP_SUCCESS ) break ;
+      if(( res = check_date( argv->arr[1], &pt, 1 )) != SPOCP_SUCCESS ) break ;
 
     case 0: /* after this date */
-      if(( res = check_date( argv[0], &pt, 0 )) != SPOCP_SUCCESS ) break ;
+      if(( res = check_date( argv->arr[0], &pt, 0 )) != SPOCP_SUCCESS ) break ;
   }
 
-  oct_freearr( argv ) ;
+  octarr_free( argv ) ;
   return res ;
 }

@@ -17,8 +17,11 @@
 #include <stdlib.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
-int system_test( octet_t *arg, becpool_t *bcp, octet_t *blob );
+befunc system_test;
 /*
   type         = "system"
   typespecific = returnval ";" cmd
@@ -28,21 +31,27 @@ int system_test( octet_t *arg, becpool_t *bcp, octet_t *blob );
   returns true if returnvalue of cmd is the same as returnval.
  */
 
-int system_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) {
-  octet_t  **argv;
-  int n;
-  char *cmd;
+spocp_result_t system_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *bcp, octet_t *blob )
+{
+  octarr_t  *argv;
+  octet_t   *oct ;
+  char *cmd, tmp[64];
   int return_val;
   int temp_ret = 0;
 
+  if( arg == 0 ) return SPOCP_MISSING_ARG ;
+
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+
   /* Split into returnval and cmd parts */
-  argv = oct_split( arg, ';', 0, 0, 0, &n );
+  argv = oct_split( oct, ';', 0, 0, 0 ) ;
 
-  argv[0]->val[argv[0]->len] = 0;
-  argv[1]->val[argv[1]->len] = 0;
+  if( oct != arg ) oct_free( oct ) ;
 
-  sscanf(argv[0]->val,"%d",&return_val);
-  cmd = argv[1]->val;
+  oct2strcpy( argv->arr[0], tmp, 64, 0, 0 ) ;
+  sscanf(tmp,"%d",&return_val);
+  cmd = oct2strdup(argv->arr[1], 0 ) ;
 
 /*
   DEBUG( SPOCP_DBCOND ){
@@ -58,7 +67,8 @@ int system_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) {
   }
 */
 
-  oct_freearr( argv ) ;
+  free( cmd ) ;
+  octarr_free( argv ) ;
 
   if(WEXITSTATUS(temp_ret) == return_val) {
     return TRUE;

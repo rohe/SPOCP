@@ -59,6 +59,10 @@
 #include <ldap.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
+
 
 typedef struct _scnode {
   char *str ;
@@ -121,7 +125,7 @@ scnode_t *tree_top( scnode_t *scp ) ;
 
 vset_t   *vset_new( ) ;
 void      vset_free( vset_t *sp ) ;
-vset_t   *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t *rc ) ;
+vset_t   *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc ) ;
 vset_t   *vset_compact( vset_t *sp, LDAP *ld, spocp_result_t *rc ) ;
 
 sln_t    *get_results( LDAP *, LDAPMessage *, sln_t *, sln_t *, int, int ) ;
@@ -130,7 +134,7 @@ void     rm_children( vset_t *sp ) ;
 sln_t    *do_ldap_query( vset_t *vsetp, LDAP *ld, spocp_result_t *ret ) ;
 LDAP     *open_conn( char *server, spocp_result_t *ret ) ;
 
-spocp_result_t ldapset_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) ;
+befunc ldapset_test ;
 
 /* ========================================================== */
 
@@ -527,7 +531,7 @@ scnode_t *scnode_get( octet_t *op, spocp_result_t *rc )
  Gets the valueset definition broken down into a tree structure and
  from there assigns values to parts 
  */
-vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t *rc ) 
+vset_t *vset_get( scnode_t *scp, int type, octarr_t *oa, spocp_result_t *rc ) 
 {
   vset_t *sp = 0 ;
   char   c, *cp, *ap ;
@@ -546,7 +550,7 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
       else           sp->type = SC_OR ;
 
       if( scp->left ) {
-        sp->left = vset_get( scp->left, SC_UNDEF, arr, na, rc ) ;
+        sp->left = vset_get( scp->left, SC_UNDEF, oa, rc ) ;
 
         if( sp->left == 0 ) {
           vset_free( sp ) ;
@@ -558,7 +562,7 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
       }
 
       if( scp->right) {
-        sp->right = vset_get( scp->right, SC_UNDEF, arr, na, rc ) ;
+        sp->right = vset_get( scp->right, SC_UNDEF, oa, rc ) ;
 
         if( sp->right == 0 ) {
           vset_free( sp ) ;
@@ -610,7 +614,7 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
       else                sp->scope = SC_SUBTREE ;
 
       if( scp->left ) {
-        sp->left = vset_get( scp->left, SC_DN, arr, na, rc ) ;
+        sp->left = vset_get( scp->left, SC_DN, oa, rc ) ;
 
         if( sp->left == 0 ) {
           vset_free( sp ) ;
@@ -621,7 +625,7 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
         sp->left->up = sp ;
       }
       if( scp->right) {
-        sp->right = vset_get( scp->right, SC_ATTR, arr, na, rc ) ;
+        sp->right = vset_get( scp->right, SC_ATTR, oa, rc ) ;
 
         if( sp->right == 0 ) {
           vset_free( sp ) ;
@@ -661,7 +665,7 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
       break ;
 
     case '{' : /* str == "{}" */
-      sp = vset_get( scp->left, SC_UNDEF , arr, na, rc ) ;
+      sp = vset_get( scp->left, SC_UNDEF , oa, rc ) ;
 
       if( sp == 0 ) {
         if( !*rc ) *rc = SPOCP_SYNTAXERROR ;
@@ -672,7 +676,7 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
       break ;
 
     case '(' :
-      sp = vset_get( scp->left, SC_UNDEF, arr, na, rc ) ;
+      sp = vset_get( scp->left, SC_UNDEF, oa, rc ) ;
 
       if( sp == 0 ) {
         if( !*rc ) *rc = SPOCP_SYNTAXERROR ;
@@ -703,14 +707,18 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
 
         /* traceLog( "SC_DN:[%c][%c]", *scp->str, *dnp ) ; */
 
-        if( *scp->str != '\\' || ( *dnp < '0' || *dnp >= ('0' + na ) )) {
+        if( *scp->str != '\\' || ( *dnp < '0' || *dnp >= ('0' + oa->n ) )) {
           vset_free( sp ) ;
           *rc = SPOCP_SYNTAXERROR ;
           return 0 ;
         } 
         else {
           n = *dnp - '0' + 1 ;
-          sp->dn = sln_add( sp->dn, oct2strdup(arr[n], '\\') ) ;
+          if( n >= oa->n ) {
+            *rc = SPOCP_SYNTAXERROR ;
+            return 0 ;
+          }
+          sp->dn = sln_add( sp->dn, oct2strdup(oa->arr[n], '\\') ) ;
         }
       }
       else {
@@ -723,14 +731,18 @@ vset_t *vset_get( scnode_t *scp, int type, octet_t **arr, int na, spocp_result_t
           scp->str = 0 ;
           scp->size = 0 ;
         }
-        else if( *dnp < '0' || *dnp >= ('0' + na ) ) {
+        else if( *dnp < '0' || *dnp >= ('0' + oa->n ) ) {
           vset_free( sp ) ;
           *rc = SPOCP_SYNTAXERROR ;
           return 0 ;
         } 
         else {
           n = *dnp - '0' + 1 ;
-          sp->dn = sln_add( sp->dn, oct2strdup(arr[n], '\\') ) ;
+          if( n >= oa->n ) {
+            *rc = SPOCP_SYNTAXERROR ;
+            return 0 ;
+          }
+          sp->dn = sln_add( sp->dn, oct2strdup(oa->arr[n], '\\') ) ;
         }
       }
   }
@@ -866,7 +878,7 @@ LDAP *open_conn( char *server, spocp_result_t *ret )
  
   if(( ld = ldap_init( server, 0 )) == 0 ) {
     /* LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't initialize the LDAP server") ; */
-    *ret = SPOCP_UNAVAILABLE ;
+    *ret = SPOCP_INFO_UNAVAIL ;
     return 0 ;
   }
 
@@ -874,7 +886,7 @@ LDAP *open_conn( char *server, spocp_result_t *ret )
 
   if( ldap_set_option( ld, LDAP_OPT_PROTOCOL_VERSION, &vers ) != LDAP_SUCCESS ) {
     /* LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't set the version") ; */
-    *ret = SPOCP_UNAVAILABLE ;
+    *ret = SPOCP_INFO_UNAVAIL ;
     ldap_unbind( ld ) ;
     return 0; 
   } 
@@ -882,7 +894,7 @@ LDAP *open_conn( char *server, spocp_result_t *ret )
   /* automatic follow referrals */
   if( ldap_set_option( ld, LDAP_OPT_REFERRALS, LDAP_OPT_ON ) != LDAP_SUCCESS ) {
     /* LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't set follow referrals") ; */
-    *ret = SPOCP_UNAVAILABLE ;
+    *ret = SPOCP_INFO_UNAVAIL;
     ldap_unbind( ld ) ;
     return 0; 
   } 
@@ -890,7 +902,7 @@ LDAP *open_conn( char *server, spocp_result_t *ret )
 
   if(( rc = ldap_simple_bind_s( ld, user, passwd )) != LDAP_SUCCESS ) {
     /* LOG( SPOCP_WARNING ) traceLog( "LDAP bind failed to %s", server ) ; */
-    *ret = SPOCP_UNAVAILABLE ;
+    *ret = SPOCP_INFO_UNAVAIL;
     ldap_unbind( ld ) ;
     return 0 ;
   }
@@ -1237,78 +1249,119 @@ int P_ldapclose( void *con )
 }
 
 /*
- Input should be <ldaphost> ; 1*( searchbase ';' ) setfilter
+ Input should be <ldaphost> ";" 1*( searchbase ";" ) setfilter
  */
-spocp_result_t ldapset_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t ldapset_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
-  spocp_result_t rc = SPOCP_SUCCESS, r = SPOCP_DENIED ;
-  int            n ;
-  scnode_t      *scp ;
-  vset_t        *vset, *res ;
-  char          *ldaphost ;
-  octet_t      **arr, oct ;
-  LDAP          *ld = 0 ;
-  becon_t       *bc = 0 ;
+  spocp_result_t  r = SPOCP_DENIED, rc ;
+  scnode_t       *scp ;
+  vset_t         *vset, *res ;
+  char           *ldaphost ;
+  octet_t        *oct, *o, cb ;
+  LDAP           *ld = 0 ;
+  becon_t        *bc = 0 ;
+  octarr_t       *argv ;
+  int             cv ;
 
-  arr = oct_split( arg, ';', '\\', 0, 0, &n ) ;
+  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  /*
-  LOG( SPOCP_DEBUG) traceLog( "filter: \"%s\"", arg->val ) ;
-  */
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  oct.val = arr[n]->val ;
-  oct.len = arr[n]->len ;
+  cb.len = 0 ;
+  cv = cached( dyn->cv, oct, &cb ) ;
 
-  if(( scp = scnode_get( &oct, &rc )) == 0 )
-    return rc ;
+  if( cv ) {
+    traceLog( "ldapset: cache hit" ) ;
 
-  if(( vset = vset_get( scp, SC_UNDEF, arr, n, &rc )) == 0 )
-    return rc ;
-
-  while( vset->up) vset = vset->up ;
-
-  if( 0 ) vset_print( vset, 0 ) ; 
-
-  scnode_free( scp ) ;
-
-  ldaphost = strndup( arr[0]->val, arr[0]->len ) ;
-
-  if( bcp == 0 || ( bc = becon_get( "ldap", ldaphost, bcp )) == 0 ) {
-    if(( ld = open_conn( ldaphost, &rc )) == 0 ) {
-      rc = SPOCP_UNAVAILABLE ;
+    if( cv == EXPIRED ) {
+      cached_rm( dyn->cv, oct ) ;
+      cv = 0 ;
     }
-    else if( bcp ) bc = becon_push( "ldap", ldaphost, &P_ldapclose, (void *) ld, bcp ) ;
+  }
+
+  if( cv == 0 ) {
+  
+    argv = oct_split( oct, ';', '\\', 0, 0 ) ;
+  
+    /*
+    LOG( SPOCP_DEBUG) traceLog( "filter: \"%s\"", arg->val ) ;
+    */
+  
+    o = argv->arr[argv->n -1] ;
+  
+    if(( scp = scnode_get( o, &rc )) != 0 )  {
+      if(( vset = vset_get( scp, SC_UNDEF, argv, &rc )) != 0 ) {
+        while( vset->up) vset = vset->up ;
+  
+        if( 0 ) vset_print( vset, 0 ) ; 
+  
+        o = argv->arr[0] ;
+  
+        if( ( bc = becon_get( o, dyn->bcp )) == 0 ) {
+
+          ldaphost = oct2strdup( o, 0 ) ;
+          ld = open_conn( ldaphost, &rc ) ;
+          free( ldaphost ) ;
+      
+          if( ld == 0 ) r = SPOCP_UNAVAILABLE ;
+          else if( dyn->size ) {
+            if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+            bc = becon_push( o, &P_ldapclose, (void *) ld, dyn->bcp ) ;
+          }
+        }
+        else 
+          ld = (LDAP *) bc->con ;
+      
+        if( ld != 0 ) {
+          res = vset_compact( vset, ld, &rc ) ;
+      
+          if( res != 0 ) {
+            if( res->restype == SC_DN && res->dn ) r = SPOCP_SUCCESS ;
+            else if(( res->restype == SC_VAL || res->restype == SC_UNDEF )
+                && res->val ) r = SPOCP_SUCCESS ;
+            else r = SPOCP_DENIED ;
+ 
+            vset_free( res ) ;
+          }
+          else {
+            if( rc )  r = rc ;
+            else      r = SPOCP_DENIED ;
+          }
+
+          if( bc ) becon_return( bc ) ;
+          else    ldap_unbind_s( ld ) ;
+        }
+        else vset_free( vset ) ;
+
+      }
+      else r = rc ;
+
+      scnode_free( scp ) ;
+    }
+    else r = rc ;
+
+    octarr_free( argv ) ;
+  }
+
+  if( cv == (CACHED|SPOCP_SUCCESS) ) {
+    if( cb.len ) octln( blob, &cb ) ;
+    r = SPOCP_SUCCESS ;
+  }
+  else if( cv == ( CACHED|SPOCP_DENIED ) ) {
+    r = SPOCP_DENIED ;
   }
   else {
-    ld = (LDAP *) bc->con ;
+    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+      time_t t ;
+      t = cachetime_set( oct, dyn->ct ) ;
+      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
+    }
   }
 
-  free( ldaphost ) ;
-
-  if( ld == 0 ) {
-    vset_free( vset ) ;
-    oct_freearr( arr ) ;
-    return rc ;
-  }
-
-  res = vset_compact( vset, ld, &rc ) ;
-
-  if( bc ) becon_return( bc ) ;
-  else    ldap_unbind_s( ld ) ;
-
-  if( res == 0 ) {
-    oct_freearr( arr ) ;
-    if( rc != SPOCP_SUCCESS ) return rc ; 
-    else return SPOCP_DENIED ;
-  }
-
-  if( res->restype == SC_DN && res->dn ) r = SPOCP_SUCCESS ;
-  else if(( res->restype == SC_VAL || res->restype == SC_UNDEF )
-          && res->val ) r = SPOCP_SUCCESS ;
-
-  if( res ) vset_free( res ) ;
-
-  oct_freearr( arr ) ;
+  if( oct != arg ) oct_free( oct ) ;
+  
+  traceLog( "ldapset => %d", r ) ;
 
   return r ;
 }

@@ -39,7 +39,7 @@ X509_STORE *initCertificateCheck(char *ca_dir);
 
 spocp_result_t check_cert(X509_STORE *ctx, char *data);
 
-spocp_result_t cert_test( octet_t *arg, becpool_t *bcp, octet_t *blob );
+befunc cert_test;
 
 /*
   type         = "cert"
@@ -237,7 +237,8 @@ spocp_result_t check_cert(X509_STORE *ctx, char *data)
 
 X509_STORE *cert_ctx=NULL;
 
-spocp_result_t cert_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) 
+spocp_result_t cert_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *bcp, octet_t *blob ) 
 {
   spocp_result_t answer;
 

@@ -10,13 +10,19 @@
 
  ***************************************************************************/
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
-spocp_result_t flatfile_test( octet_t *arg, becpool_t *b, octet_t *blob ) ;
+befunc flatfile_test ;
+
+extern FILE *spocp_logf ;
 
 /* first argument is filename
    second argument is the key
@@ -36,79 +42,127 @@ spocp_result_t flatfile_test( octet_t *arg, becpool_t *b, octet_t *blob ) ;
 
 */
 
-spocp_result_t flatfile_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t flatfile_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
   spocp_result_t r = SPOCP_SUCCESS ;
 
-  char      line[256] ;
-  char      *cp, **arr, *str, *sp ;
-  octet_t   **argv ;
+  char      line[256], *str ;
+  char      *cp, **arr, *sp ;
+  octarr_t  *argv ;
+  octet_t   *oct, *o, cb ;
   FILE      *fp ;
-  int       j, i, n, ne ;
+  int       j, i, ne, cv ;
   becon_t  *bc = 0 ;
 
-  argv = oct_split( arg, ':', 0, 0, 0, &n ) ;
+  if( arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  argv[0]->val[argv[0]->len] = 0 ;
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  str = argv[0]->val ;
+  cv = cached( dyn->cv, oct, &cb ) ;
 
-  if( bcp == 0 || ( bc = becon_get( "file", str, bcp )) == 0 ) {
-    if(( fp = fopen( str, "r")) == 0 ) {
-      r = SPOCP_UNAVAILABLE ;
+  if( cv ) {
+    traceLog( "ipnum: cache hit" ) ;
+
+    if( cv == EXPIRED ) {
+      cached_rm( dyn->cv, oct ) ;
+      cv = 0 ;
     }
-    else if( bcp ) bc = becon_push( "file", str, &P_fclose, (void *) fp, bcp ) ;
-  }
-  else {
-    fp = (FILE *) bc->con ;
-    if( fseek( fp, 0L, SEEK_SET) == -1 ) r = SPOCP_UNAVAILABLE ;
   }
 
-  if( n == 0 || r != SPOCP_SUCCESS ) goto done ;
+  if( cv == 0 ) {
+    argv = oct_split( oct, ':', 0, 0, 0 ) ;
 
-  for( i = 1 ; i <= n ; i++ ) argv[i]->val[argv[i]->len] = 0 ;
+    o = argv->arr[0] ;
 
-  r = SPOCP_DENIED ;
+    if(( bc = becon_get( o, dyn->bcp )) == 0 ) {
+  
+      str = oct2strdup( argv->arr[0], 0 ) ;
+      fp = fopen( str, "r") ;
+      free( str ) ;
 
-  while( r == SPOCP_DENIED && fgets( line, 256, fp )) {
-    if( *line == '#' ) continue ;
-
-    rmcrlf( line ) ;
-
-    if(( cp = index( line, ':'))) {
-      *cp++ = 0 ;
-    }
-
-    if( oct2strcmp( argv[1], line ) == 0 ) {
-      if( n == 1 ) {
-        r = SPOCP_SUCCESS ;
-        break ;
+      if( fp == 0 ) 
+        r = SPOCP_UNAVAILABLE ;
+      else if( dyn->size ) {
+        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size , 0 ) ;
+        bc = becon_push( o, &P_fclose, (void *) fp, dyn->bcp ) ;
       }
-      else if( cp ) {
-        arr = line_split( cp, ',', '\\', 0, 0, &ne ) ;
+    }
+    else {
+      fp = (FILE *) bc->con ;
+      if( fseek( fp, 0L, SEEK_SET) == -1 ) {
+        /* try to reopen */
+        str = oct2strdup( o, 0 ) ;
+        fp = fopen(str, "r") ;
+        free( str) ;
+        if( fp == 0 ) { /* not available */
+          becon_rm( dyn->bcp, bc ) ;
+          bc = 0 ;
+          r = SPOCP_UNAVAILABLE ;
+        }
+        else becon_update( bc, (void *) fp ) ;
+      }
+    }
 
-        for( j = 0 ; j <= ne ; j++ ) {
-          sp = rmlt( arr[j] ) ;
-          for( i = 2 ; i <= n ; i++ ) {
-            if( oct2strcmp( argv[i], sp ) == 0 ) break ;
-          }
+    if( argv->n == 1 || r != SPOCP_SUCCESS ) ;
+    else {
 
-          if( i <= n ) {
+      r = SPOCP_DENIED ;
+
+      while( r == SPOCP_DENIED && fgets( line, 256, fp )) {
+        if( *line == '#' ) continue ;
+    
+        rmcrlf( line ) ;
+    
+        if(( cp = index( line, ':'))) {
+          *cp++ = 0 ;
+        }
+    
+        if( oct2strcmp( argv->arr[1], line ) == 0 ) {
+          if( argv->n == 2 ) {
             r = SPOCP_SUCCESS ;
             break ;
           }
-        }
+          else if( cp ) {
+            arr = line_split( cp, ',', '\\', 0, 0, &ne ) ;
+    
+            for( j = 0 ; j <= ne ; j++ ) {
+              sp = rmlt( arr[j] ) ;
+              for( i = 2 ; i < argv->n ; i++ ) {
+                if( oct2strcmp( argv->arr[i], sp ) == 0 ) break ;
+              }
+    
+              if( i < argv->n ) break ;
+            }
+            if( j <= ne ) r = SPOCP_SUCCESS ;
 
-        charmatrix_free( arr ) ;
+            charmatrix_free( arr ) ;
+          }
+        }
       }
+    }
+    if( bc ) becon_return( bc ) ; 
+    else if( fp ) fclose( fp );
+
+    octarr_free( argv ) ;
+  }
+
+  if( cv == (CACHED|SPOCP_SUCCESS) ) {
+    if( cb.len ) octln( blob, &cb ) ;
+    r = SPOCP_SUCCESS ;
+  }
+  else if( cv == ( CACHED|SPOCP_DENIED ) ) {
+    r = SPOCP_DENIED ;
+  }
+  else {
+    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+      time_t t ;
+      t = cachetime_set( oct, dyn->ct ) ;
+      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
     }
   }
 
-done:
-  if( bc ) becon_return( bc ) ; 
-  else if( fp ) fclose( fp );
-
-  oct_freearr( argv ) ;
+  if( oct != arg ) oct_free( oct ) ;
 
   return r ;
 }

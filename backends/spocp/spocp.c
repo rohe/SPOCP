@@ -5,7 +5,10 @@
 #include <string.h>
 
 #include <spocp.h>
-#include <spocpcli.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
+#include "spocpcli.h"
 
 /*
    arg is composed of the following parts
@@ -15,6 +18,7 @@
  */ 
 
 extern int debug ;
+befunc spocp_test ;
 
 int P_spocp_close( void *vp )
 {
@@ -29,74 +33,81 @@ int P_spocp_close( void *vp )
   return 1 ;
 }
 
-int spocp_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t spocp_test(
+  element_t *qp, element_t *rp, element_t *xp,  octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
   spocp_result_t r = SPOCP_DENIED ;
 
-  octet_t   **argv ;
-  octnode_t   on ;
+  octarr_t   *argv ;
+  octet_t    *oct ;
+  octnode_t  *on = 0 ;
   char       *path, *server, *query ;
-  int         n ;
   becon_t    *bc = 0 ;
   SPOCP      *spocp ;
 
-  argv = oct_split( arg, ';', '\\', 0, 0, &n ) ;
+  if( arg == 0 ) return SPOCP_MISSING_ARG ;
+
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+
+  argv = oct_split( oct, ';', 0, 0, 0 ) ;
+
+  if( oct != arg ) oct_free( oct ) ;
 
   debug = 0 ;
-  server = oct2strdup( argv[0], 0 ) ;
+  oct = argv->arr[0] ;
 
-  traceLog("Spocp query to %s", server ) ;
+  if(( bc = becon_get( oct, dyn->bcp )) == 0 ) {
+    server = oct2strdup( oct, 0 ) ;
+    traceLog("Spocp query to %s", server ) ;
 
-  if( bcp == 0 || ( bc = becon_get( "spocp", server, bcp )) == 0 ) {
-    if(( spocp = spocpc_open( server )) == 0 ) {
+    spocp = spocpc_open( server ) ;
+    free( server ) ;
+
+    if( spocp == 0 ) {
       traceLog("Couldn't open connection") ;
       r = SPOCP_UNAVAILABLE ;
-      goto done ;
     }
-
-    if( bcp ) bc = becon_push( "spocp", server, &P_spocp_close, (void *) spocp, bcp ) ;
+    else if( dyn->size ) {
+      if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+      bc = becon_push( oct, &P_spocp_close, (void *) spocp, dyn->bcp ) ;
+    }
   }
   else {
     spocp = (SPOCP *) bc->con ;
     /* how to check that the server is still there ?  Except sending a dummy query ? */
     if(( r = spocpc_send_query( spocp, "", "(5:XxXxX)", 0 )) == SPOCP_UNAVAILABLE ) {
-      if( spocpc_reopen( spocp  ) == FALSE ) {
-        becon_rm( bcp, bc ) ;
-        free( server ) ;
-        oct_freearr( argv ) ;
-        return r ;
+      if( spocpc_reopen( spocp  ) == FALSE ) r = SPOCP_UNAVAILABLE ;
+    }
+  }
+
+  if( r == SPOCP_DENIED ) {
+    /* means there is not actual query, just checking if the LDAP server
+       is up and running */
+    if( argv->n == 1 ) r = SPOCP_SUCCESS ;
+    else {
+      traceLog( "filedesc: %d", spocp->fd ) ;
+
+      path = oct2strdup( argv->arr[1], 0 ) ;
+      query = oct2strdup( argv->arr[2], 0 ) ;
+
+      if(( r = spocpc_send_query( spocp, path, query, &on )) == SPOCP_SUCCESS ) {
+        if( on ) {
+          octmove( blob, on->oct ) ; /* just pick the first */
+          spocpc_octnode_free( on ) ;
+        }
       }
-    }
-  }
 
-  if( n == 0 ) {
-    r = SPOCP_SUCCESS ;
-    goto done ;
-  }
-
-  traceLog( "filedesc: %d", spocp->fd ) ;
-
-  path = oct2strdup( argv[1], 0 ) ;
-  query = oct2strdup( argv[2], 0 ) ;
-  memset( &on, 0, sizeof( octnode_t )) ;
-
-  if(( r = spocpc_send_query( spocp, path, query, &on )) == SPOCP_SUCCESS ) {
-    if( on.oct.size ) {
-      octmove( blob, &on.oct ) ;
-      if( on.next ) octnode_free( on.next ) ;
-    }
-  }
-  traceLog("Spocp returned:%d", (int) r ) ;
+      traceLog("Spocp returned:%d", (int) r ) ;
  
-  free( path ) ;
-  free( query ) ;
+      free( path ) ;
+      free( query ) ;
+    }
+  }
 
-done:
   if( bc ) becon_return( bc ) ; 
   else if( spocp ) P_spocp_close( (void *) spocp );
 
-  free( server ) ;
-  oct_freearr( argv ) ;
+  octarr_free( argv ) ;
 
   return r ;
 }

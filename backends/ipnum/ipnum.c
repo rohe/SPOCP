@@ -19,10 +19,16 @@
 #include <arpa/inet.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 /* ============================================================== */
 
-spocp_result_t ipnum_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) ;
+befunc ipnum_test ;
+
+/* needed if you want to use traceLog from the backend */
+extern FILE *spocp_logf ;
 
 int            ipnumcmp( octet_t *ipnum, char *ipser ) ;
 spocp_result_t ipnum_syntax( octet_t *arg ) ;
@@ -72,7 +78,6 @@ int ipnumcmp( octet_t *ipnum, char *ipser )
 
     ia1.s_addr >>= netpart ;
     ia2.s_addr >>= netpart ;
-
   }
 
   if( ia1.s_addr == ia2.s_addr ) return 0 ;
@@ -81,82 +86,124 @@ int ipnumcmp( octet_t *ipnum, char *ipser )
 
 /* returns evaluation */
 
-spocp_result_t ipnum_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t ipnum_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
   spocp_result_t r = SPOCP_DENIED ;
 
-  octet_t  **argv ;
-  char     line[256] ;
-  char     *cp, **arr, *file, *sp ;
-  FILE     *fp ;
-  int      j, n, k, ne ;
-  becon_t *bc = 0 ;
+  octet_t  *oct = 0, cb, *o ;
+  octarr_t *argv = 0 ;
+  char      line[256] ;
+  char     *cp, **arr, *file = 0, *sp ;
+  FILE     *fp = 0 ;
+  int       j, ne, cv ;
+  becon_t  *bc = 0 ;
 
-  argv = oct_split( arg, ':', '\\', 0, 0, &n ) ;
+  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  file = oct2strdup( argv[0], 0 ) ;
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  if( bcp == 0 || ( bc = becon_get( "file", file, bcp )) == 0 ) {
+  cv = cached( dyn->cv, oct, &cb ) ;
 
-    if(( fp = fopen( file, "r")) == 0 ) {
-      r = SPOCP_UNAVAILABLE ;
-      goto done ;
+  if( cv ) {
+    traceLog( "ipnum: cache hit" ) ;
+
+    if( cv == EXPIRED ) {
+      cached_rm( dyn->cv, oct ) ;
+      cv = 0 ;
     }
-
-    if( bcp ) bc = becon_push( "file", file, &P_fclose, (void *) fp, bcp ) ;
-  }
-  else {
-    fp = (FILE *) bc->con ;
-    if( fseek( fp, 0L, SEEK_SET ) == -1 ) return SPOCP_UNAVAILABLE ;
   }
 
-  if( n == 0 ) {
-    free( file ) ;
-    oct_freearr( argv ) ;
-    return r ;
-  }
+  if( cv == 0 ) {
 
-  while( r == SPOCP_DENIED && fgets( line, 256, fp )) {
-    if( *line == '#' ) continue ;
-    if(( cp = index( line, ':')) == 0 ) continue ;
+    sp = oct2strdup( oct, 0 ) ;
+    traceLog( "ipnum[expanded arg]: \"%s\"", sp ) ;
+    free( sp ) ;
 
-    rmcrlf( cp ) ;
-
-    *cp++ = 0 ;
-
-    if( oct2strcmp( argv[1], line ) == 0 ) {
-      if( n == 1 ) {
-        r = SPOCP_SUCCESS ;
-        break ;
+    argv = oct_split( oct, ':', '\\', 0, 0 ) ;
+  
+    o = argv->arr[0] ;
+  
+    if(( bc = becon_get( o, dyn->bcp )) == 0 ) {
+      file = oct2strdup( o, 0 ) ;
+      fp = fopen( file, "r") ;
+      free( file ) ;
+      if( fp == 0 ) r = SPOCP_UNAVAILABLE ;
+      else if( dyn->size ) {
+        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+        bc = becon_push( o, &P_fclose, (void *) fp, dyn->bcp ) ;
       }
-      else {
-        arr = line_split( cp, ',', '\\', 0, 0, &ne ) ;
-
-        for( j = 0 ; j <= ne ; j++ ) {
-          sp = rmlt( arr[j] ) ;
-          k = ipnumcmp( argv[2], sp ) ;
-          if( k == 0 ) break ;
-          else if( k < 0 ) {
-            r = -1 ;
+    }
+    else {
+      fp = (FILE *) bc->con ;
+      if( fseek( fp, 0L, SEEK_SET) == -1 ) {
+        /* try to reopen */
+        file = oct2strdup( o, 0 ) ;
+        fp = fopen(file, "r") ;
+        free( file) ;
+        if( fp == 0 ) { /* not available */
+          becon_rm( dyn->bcp, bc ) ;
+          bc = 0 ;
+          r = SPOCP_UNAVAILABLE ;
+        }
+        else becon_update( bc, (void *) fp ) ;
+      }
+      traceLog("Using connection from the pool") ;
+    }
+  
+    if( argv->n >= 2 && r == SPOCP_DENIED ) {
+  
+      while( r == SPOCP_DENIED && fgets( line, 256, fp )) {
+        if( *line == '#' ) continue ;
+        if(( cp = index( line, ':')) == 0 ) continue ;
+    
+        rmcrlf( cp ) ;
+    
+        *cp++ = 0 ;
+    
+        if( oct2strcmp( argv->arr[1], line ) == 0 ) {
+          if( argv->n == 2 ) {
+            r = SPOCP_SUCCESS ;
             break ;
           }
+          else {
+            arr = line_split( cp, ',', '\\', 0, 0, &ne ) ;
+    
+            for( j = 0 ; j <= ne ; j++ ) {
+              sp = rmlt( arr[j] ) ;
+              if( ipnumcmp( argv->arr[2], sp ) == 0 ) break ;
+            }
+    
+            if( j <= ne ) r = SPOCP_SUCCESS ;
+    
+            charmatrix_free( arr ) ;
+          }
         }
-
-        if( r >= 0 && arr[j] ) {
-          r = SPOCP_SUCCESS ;
-        }
-
-        charmatrix_free( arr ) ;
       }
+    }
+
+    if( bc ) becon_return( bc ) ; 
+    else if( fp ) fclose( fp );
+
+    octarr_free( argv ) ;
+  }
+
+  if( cv == (CACHED|SPOCP_SUCCESS) ) {
+    if( cb.len ) octln( blob, &cb ) ;
+    r = SPOCP_SUCCESS ;
+  }
+  else if( cv == ( CACHED|SPOCP_DENIED ) ) {
+    r = SPOCP_DENIED ;
+  }
+  else {
+    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+      time_t t ;
+      t = cachetime_set( oct, dyn->ct ) ;
+      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
     }
   }
 
-done:
-  if( bc ) becon_return( bc ) ; 
-  else if( fp ) fclose( fp );
-
-  free( file ) ;
-  oct_freearr( argv ) ;
+  if( oct != arg ) oct_free( oct ) ;
 
   return r ;
 }

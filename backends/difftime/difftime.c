@@ -19,12 +19,15 @@
 #include <time.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 #define MAXPARTS 4 
 
 /* ======================================================== */
 
-spocp_result_t difftime_test( octet_t *arg, becpool_t *b, octet_t *blob ) ;
+befunc difftime_test ;
 
 /* ======================================================== */
 
@@ -110,56 +113,66 @@ time_t diff2seconds( octet_t *arg )
   return sec ;
 }
 
-spocp_result_t difftime_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t difftime_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *b, octet_t *blob )
 {
   spocp_result_t res = SPOCP_DENIED ;
-
-  int         n ;
   time_t      pt, gt, sec = 0 ;
   struct tm   ttm ;
-  char        tmp[30] ;
-  octet_t     **argv ;
+  char        tmp[30], *sp ;
+  octarr_t    *argv ;
+  octet_t     *oct ;
 
   if( arg == 0 ) return SPOCP_MISSING_ARG ;
+
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+
+  argv = oct_split( oct, ';', 0, 0, 0 ) ;
+
+  if( oct != arg ) oct_free( oct ) ;
 
   /* get the time */
   time(&pt);
 
-  argv = oct_split( arg, ';', 0, 0, 0, &n ) ;
+  oct = argv->arr[0] ;
+  if( argv->n < 2 || oct->len != 15 ) return res ;
 
-  if( n < 2 || argv[0]->len != 15 ) return res ;
+  sec = diff2seconds( oct ) ;
 
-  sec = diff2seconds( argv[0] ) ;
+  oct = argv->arr[1] ;
+  if( oct->len > 30 ) return SPOCP_SYNTAXERROR;
 
-  if( argv[1]->len > 30 ) return SPOCP_SYNTAXERROR;
+  if( oct2strcpy( oct, tmp, 30, 0, 0 ) < 0 ) {
+    octarr_free( argv ) ;
+    return 0 ;  
+  }
 
-  strncpy(tmp, argv[1]->val, argv[1]->len ) ;
-  tmp[ argv[1]->len ] = 0 ;
   strptime( tmp, "%Y-%m-%dT%H:%M:%S", &ttm );
 
   gt = mktime( &ttm ) ;
 
-  if( argv[2]->val[0] == '+' ) {
+  sp = argv->arr[2]->val ;
+  if( *sp == '+' ) {
     if( pt > gt ) {
-      if( argv[2]->val[1] == '+' ) {
+      if( *(sp+1) == '+' ) {
         if(( pt - gt ) > sec ) res = SPOCP_SUCCESS ;
       }
-      else if( argv[2]->val[1] == '-' ) {
+      else if( *(sp+1) == '-' ) {
         if(( pt - gt ) < sec ) res = SPOCP_SUCCESS ;
       }
     } 
   }
-  else if( argv[2]->val[0] == '-' ) {
+  else if( *sp == '-' ) {
     if( pt < gt ) {
-      if( argv[2]->val[1] == '+' ) {
+      if( *(sp+1) == '+' ) {
         if(( gt - pt ) > sec ) res = SPOCP_SUCCESS ;
       }
-      else if( argv[2]->val[1] == '-' ) {
+      else if( *(sp+1) == '-' ) {
         if( (gt - pt ) < sec ) res = SPOCP_SUCCESS ;
       }
     } 
   }
 
-  oct_freearr( argv ) ;
+  octarr_free( argv ) ;
   return res ;
 }

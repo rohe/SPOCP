@@ -5,137 +5,103 @@
 #include <netdb.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 /* 
-  argument to the call:
+  There are two valid cases:
 
-  string0:string1[:offset[:num]]
-
-  if the strings contain part separated by '\t' then we can match on a set of 
-  parts.
-
-  If only offset is given then matching us done from that part and until end of set
-  If num also is given then matching will stop when that number of parts are matched
-
-  offset can be negative !
+  1) string:string
+  2) ${...}:${...}
 
   Example:
 
-  dc=se\tdc=umu\tcn=person\tuid=benjoh01\t-:dc=se\tdc=umu\tcn=person\tuid=rolhed01\t-:0:3
-
-  returns TRUE since the tree first parts dc=se, dc=umu and cn=person is equal
-
-  dc=se\tdc=umu\tcn=person\tuid=benjoh01\t-:dc=se\tdc=umu\tcn=person\tuid=rolhed01\t-:-1
-
-  returns FALSE since uid=benjoh01 is not equal to uid=rolhed01
+  "dc=se,dc=umu,cn=person,uid=benjoh01,-":"dc=se,dc=umu,cn=person,uid=rolhed01,-"
+ 
+  ${0}:${1}
 
 */
+
+befunc strmatch_test ;
 
 #define CASE       0
 #define CASEIGNORE 1
 
-static int _strmatch_test( const octet_t *arg, int type)
+static element_t *gete( element_t *ep, octet_t *oct ) 
 {
-  char **arr1, **arr2 ;
-  char **argv, *tmp ;
-  int  i = 0, argc, r = FALSE, n = 0, n1, n2 ;
-  long l ;
+  int     rc ;
+  octet_t spec ;
 
-  /* should I check that there is only printable chars in arg->val ?? */
-  tmp = (char *) malloc ( arg->len + 1 ) ;
-  strncpy( tmp, arg->val, arg->len ) ;
-  tmp[ arg->len ] = 0 ;
+  spec.val = &oct->val[2] ;
 
-  argv = line_split( tmp, ':', 0, 0, 0, &argc ) ;
+  if( oct->val[ oct->len - 1 ] != '}' ) return 0 ;
 
-  free( tmp ) ;
+  spec.len = oct->len - 3 ;
 
-  switch( argc ) {
-    case 0 :
-      r = FALSE ;
-      break ;
+  return element_eval( &spec, ep, &rc ) ;
+}
 
-    case 1 :
-      if( type == CASE && strcmp( argv[0], argv[1] ) == 0 ) r = TRUE ;
-      else if( type == CASEIGNORE && strcasecmp( argv[0], argv[1] ) == 0 ) r = TRUE ;
-      break ;
+spocp_result_t strmatch_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+{
+  octarr_t  *argv = 0 ;
+  element_t *ce[2], *cen[2] ;
+  int        i, r = SPOCP_DENIED, n ;
+  octet_t   *oct = 0, *var0 = 0, *var1 = 0 ;
 
-    case 2 :
-      arr1 = line_split( argv[0], '\t', 0, 0, 0, &n1 ) ;
-      arr2 = line_split( argv[1], '\t', 0, 0, 0, &n2 ) ;
+  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
+  oct = element_atom_sub( arg, xp ) ;
 
-      r = TRUE ;
-      if( numstr( argv[2], &l ) == FALSE ) r = FALSE ; 
-      else {
-        if( l < 0 ) {
-          l = n1 + 1 + l ;
+  if( oct ) { /* simple substitutions was OK */
 
-          if( l < 0 ) return FALSE ;
+    argv = oct_split( oct, ':', 0, 0, 0 ) ;
+
+    if( argv->n >= 2 ) {
+      if( octcmp( argv->arr[0], argv->arr[1] ) == 0 ) r = SPOCP_SUCCESS ;
+    }
+    else r = SPOCP_MISSING_ARG ;
+
+    octarr_free( argv ) ;
+
+    if( oct != arg ) oct_free( oct ) ;
+
+  }
+  else { 
+    ce[0] = element_nth( xp, 0 ) ;
+    ce[1] = element_nth( xp, 1 ) ;
+
+    if(( n = element_size( ce[0] )) == element_size( ce[1] ) ) {
+      for( i = 0 ; i < n ; i++ ) {
+        cen[0] = element_nth( ce[0], i ) ;
+        cen[1] = element_nth( ce[1], i ) ;
+
+        if( element_type(cen[0]) == SPOC_ATOM && element_type( cen[1] ) == SPOC_ATOM ) {
+          var0 = element_data( cen[0] ) ;
+          var1 = element_data( cen[1] ) ;
+          if( octcmp( var0, var1 ) != 0 ) break ;
         }
- 
-        if( type == CASE ) {
-          for( i = (int) l ; r == TRUE && i <= n1 && i <= n2 ; i++ ) {
-            if( strcmp( arr1[i], arr2[i] ) != 0 ) 
-              r = FALSE ;
-          }
-        }
-        else { /* CASEIGNORE */
-          for( i = (int) l ; r == TRUE && i <= n1 && i <= n2 ; i++ ) {
-            if( strcasecmp( arr1[i], arr2[i] ) != 0 ) 
-              r = FALSE ;
-          }
-        }
-      }
-      if( r == TRUE && ( i <= n1 || i <= n2 ) ) r = FALSE ;
-      break ;
-
-    case 3 :
-      arr1 = line_split( argv[0], '\t', 0, 0, 0, &n1 ) ;
-      arr2 = line_split( argv[1], '\t', 0, 0, 0, &n1 ) ;
-      r = TRUE ;
-      if( numstr( argv[3], &l ) == FALSE ) r = FALSE ; 
-      else {
-
-        if( l < 0 ) {
-          n = n1 + 1 + (int) l ;
-          if( n < 0 ) return FALSE ;
-        }
- 
-        if( numstr( argv[2], &l ) == FALSE ) r = FALSE ; 
-        else {
-          if( type == CASE ) {
-            for( i = (int) l ; n && r == TRUE && i <= n1 && i <= n2 ; i++, n-- ) {
-              if( strcmp( arr1[i], arr2[i] ) != 0 ) 
-                r = FALSE ;
-            }
-          }
-          else {
-            for( i = (int) l ; n && r == TRUE && i <= n1 && i <= n2 ; i++, n-- ) {
-              if( strcasecmp( arr1[i], arr2[i] ) != 0 ) 
-                r = FALSE ;
-            }
-          }
-        }
-      }
-
-      if( r == TRUE && n && ( i <= n1 || i <= n2 ) ) r = FALSE ;
-      break ;
-  
+        else break ; 
+      } 
+      if( i == n ) r = SPOCP_SUCCESS ;
+    } 
   }
 
   return r ;
 }
 
-spocp_result_t strmatch_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+/*
+spocp_result_t
+strmatch_test( element_t *ep, octet_t *arg, becpool_t *bcp, octet_t *blob )
 {
-  if( _strmatch_test( arg, CASE ) == TRUE ) return SPOCP_SUCCESS ;
-  else return SPOCP_DENIED ;
+  return( _strmatch_test( ep, arg, CASE )) ;
 }
 
-spocp_result_t strcasematch_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t
+strcasematch_test( element_t *ep, octet_t *arg, becpool_t *bcp, octet_t *blob )
 {
-  if(_strmatch_test( arg, CASEIGNORE ) == TRUE ) return SPOCP_SUCCESS ;
-  else return SPOCP_DENIED ;
+  return( _strmatch_test( ep, arg, CASEIGNORE )) ;
 }
+*/
 

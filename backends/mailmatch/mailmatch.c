@@ -16,9 +16,11 @@
 #include <string.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
-
-spocp_result_t addrmatch_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) ;
+befunc mailmatch ;
 
 /*
    The format of arg is:
@@ -36,51 +38,107 @@ spocp_result_t addrmatch_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) ;
    addr-spec and domain as defined by RFC 822
 */
 
-spocp_result_t addrmatch_test( octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t addrmatch_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
   spocp_result_t r = SPOCP_DENIED ;
 
   char     line[512] ;
   char     *filename = 0 ;
   FILE     *fp = 0 ;
-  int      len, n ;
-  octet_t  **argv ;
-  becon_t *bc = 0 ;
+  int      len, n, cv ;
+  octarr_t *argv ;
+  octet_t  *oct, *o, cb ;
+  becon_t  *bc = 0 ;
 
-  argv = oct_split( arg, ':', '\\', 0, 0, &n ) ;
+  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  filename = oct2strdup( argv[0], 0 ) ;
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  if( bcp == 0 || ( bc = becon_get( "file", filename, bcp )) == 0 ) {
-    if(( fp = fopen(filename, "r")) == 0 ) {
-      r = SPOCP_UNAVAILABLE ;
-      goto done ;
+  cv = cached( dyn->cv, oct, &cb ) ;
+
+  if( cv ) {
+    traceLog( "ipnum: cache hit" ) ;
+
+    if( cv == EXPIRED ) {
+      cached_rm( dyn->cv, oct ) ;
+      cv = 0 ;
     }
-    else if( bcp ) bc = becon_push( "file", filename, &P_fclose, (void *) fp, bcp ) ;
+  }
+
+  if( cv == 0 ) {
+
+    argv = oct_split( oct, ':', '\\', 0, 0 ) ;
+  
+    o = argv->arr[0] ;
+  
+    if( ( bc = becon_get( o, dyn->bcp )) == 0 ) {
+      filename = oct2strdup( o, 0 ) ;
+      fp = fopen(filename, "r") ;
+      free( filename) ;
+  
+      if( fp == 0 ) {
+        r = SPOCP_UNAVAILABLE ;
+      }
+      else if( dyn->size ) {
+        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+        bc = becon_push( o, &P_fclose, (void *) fp, dyn->bcp ) ;
+      }
+    }
+    else {
+      fp = (FILE *) bc->con ;
+      if( fseek( fp, 0L, SEEK_SET) == -1 ) {
+        /* try to reopen */
+        filename = oct2strdup( o, 0 ) ;
+        fp = fopen(filename, "r") ;
+        free( filename) ;
+        if( fp == 0 ) { /* not available */
+          becon_rm( dyn->bcp, bc ) ;
+          bc = 0 ;
+          r = SPOCP_UNAVAILABLE ;
+        }
+        else becon_update( bc, (void *) fp ) ;
+      }
+    }
+  
+    if( r == SPOCP_DENIED && argv->n > 1 ) {
+      o = argv->arr[1] ;
+  
+      while( r == SPOCP_DENIED && fgets( line, 512, fp )) {
+        if( *line == '#' ) continue ;
+  
+        rmcrlf( line ) ;
+        len = strlen( line ) ;
+     
+        if(( n = o->len - len) <= 0  ) continue ;
+       
+        if( strncasecmp( &o->val[n], line, len ) == 0 ) r = SPOCP_SUCCESS ;
+      }
+    }
+  
+    if( bc ) becon_return( bc ) ; 
+    else if( fp ) fclose( fp );
+  
+    octarr_free( argv ) ;
+  }
+
+  if( cv == (CACHED|SPOCP_SUCCESS) ) {
+    if( cb.len ) octln( blob, &cb ) ;
+    r = SPOCP_SUCCESS ;
+  }
+  else if( cv == ( CACHED|SPOCP_DENIED ) ) {
+    r = SPOCP_DENIED ;
   }
   else {
-    fp = (FILE *) bc->con ;
-    if( fseek( fp, 0L, SEEK_SET) == -1 ) r = SPOCP_UNAVAILABLE ;
+    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+      time_t t ;
+      t = cachetime_set( oct, dyn->ct ) ;
+      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
+    }
   }
 
-  while( r == SPOCP_DENIED && fgets( line, 512, fp )) {
-    if( *line == '#' ) continue ;
-
-    rmcrlf( line ) ;
-    len = strlen( line ) ;
-   
-    if(( n =  argv[1]->len - len) <= 0  ) continue ;
-     
-    if( strncasecmp( &argv[1]->val[n], line, len ) == 0 ) r = SPOCP_SUCCESS ;
-  }
-
-done:
-  if( filename ) free( filename ) ;
-
-  if( bc ) becon_return( bc ) ; 
-  else if( fp ) fclose( fp );
-
-  oct_freearr( argv ) ;
+  if( oct != arg ) oct_free( oct ) ;
+  
 
   return r ;
 }

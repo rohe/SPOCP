@@ -11,6 +11,7 @@
  ***************************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <stdarg.h>
@@ -18,8 +19,11 @@
 #include <regex.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
-int regexp_test( octet_t *arg, becpool_t *bcp, octet_t *blob );
+befunc regexp_test;
 /*
   type         = "regexp"
   typespecific = flags ";" regexp ";" string
@@ -30,27 +34,32 @@ int regexp_test( octet_t *arg, becpool_t *bcp, octet_t *blob );
   returns true if the regexp matches the string.
  */
 
-int regexp_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) {
-  octet_t  **argv;
+spocp_result_t regexp_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *d, octet_t *blob )
+{
+  octarr_t *argv;
+  octet_t  *oct ;
   char *flags;
   char *regexp;
   char *string;
   int icase = FALSE;
   int the_flags;
   regex_t *preg;
-  int i,n;
+  int i;
   int answ;
 
+  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
+
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+
   /* Split into returnval and cmd parts */
-  argv = oct_split( arg, ';', 0, 0, 0, &n );
+  argv = oct_split( oct, ':', 0, 0, 0 ) ;
 
-  argv[0]->val[argv[0]->len] = 0;
-  argv[1]->val[argv[1]->len] = 0;
-  argv[2]->val[argv[2]->len] = 0;
+  if( oct != arg ) oct_free( oct ) ;
 
-  flags = argv[0]->val;
-  regexp = argv[1]->val;
-  string = argv[2]->val;
+  flags = oct2strdup(argv->arr[0], 0 );
+  regexp = oct2strdup(argv->arr[1], 0);
+  string = oct2strdup(argv->arr[2], 0);
 
 /*
   DEBUG( SPOCP_DBCOND ){
@@ -62,7 +71,7 @@ int regexp_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) {
   }
 */
 
-  if(argv[0]->len > 0) {
+  if(argv->arr[0]->len > 0) {
     for(i = 0;flags[i];i++) {
       switch(flags[i]) {
       case 'i':
@@ -97,7 +106,10 @@ int regexp_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) {
     }
 */
     regfree(preg);
-    oct_freearr( argv ) ;
+    free(flags);
+    free(regexp);
+    free(string);
+    octarr_free( argv ) ;
     return FALSE;
   }
 
@@ -110,7 +122,10 @@ int regexp_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) {
 */
 
   regfree(preg);
-  oct_freearr( argv ) ;
+  free(flags);
+  free(regexp);
+  free(string);
+  octarr_free( argv ) ;
 
   if(answ != 0) {
 /*
