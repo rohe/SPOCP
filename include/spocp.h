@@ -195,6 +195,19 @@ typedef struct {
 	char	*sexp_subject;
 } spocp_req_info_t;
 
+typedef struct _chunk {
+	octet_t        *val;
+	struct _chunk  *next;
+	struct _chunk  *prev;
+} spocp_chunk_t;
+
+typedef struct _char_buffert {
+	char           *str;
+	char           *start;
+	int             size;
+	FILE           *fp;
+} spocp_charbuf_t;
+
 /*
  * =============================================================================== 
  */
@@ -266,6 +279,19 @@ void		traceLog(const char *fmt, ...);
 void		print_elapsed(char *s, struct timeval start,
 				struct timeval end);
 void		timestamp(char *s);
+
+/*
+ * =============================================================================== 
+ */
+
+void		chunk_free(spocp_chunk_t *);
+char		charbuf_peek( spocp_charbuf_t *cb );
+char		*get_more(spocp_charbuf_t *);
+octet_t		*chunk2sexp(spocp_chunk_t *);
+spocp_chunk_t	*get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp );
+spocp_chunk_t	*get_chunk(spocp_charbuf_t * io);
+spocp_chunk_t	*chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np );
+
 
 /*
  * =============================================================================== 
