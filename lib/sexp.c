@@ -1,4 +1,8 @@
-
+/*
+ *!
+ * \file lib/sexp.c
+ * \author Roland Hedberg <roland@catalogix.se>
+ */
 /***************************************************************************
                           string.c  -  description
                              -------------------
@@ -24,6 +28,12 @@
 #include <spocp.h>
 #include <macros.h>
 
+/*
+ *!
+ * \brief Grabs the length field from a S-expression
+ * \param o A octet struct containing the remaining part of the S-expression
+ * \return The length of the following atom or -1 if something went wrong.
+ */
 int
 get_len(octet_t * op)
 {
@@ -60,6 +70,15 @@ get_len(octet_t * op)
 	return (int) l;
 }
 
+/*
+ *!
+ * \breif Removes a atom from the S-expression that is parsed. The format
+ *  of the arom is <len>":"<atom>
+ * \param so A octet struct containing the S-expression from which
+ *   the atom should be removed.
+ * \param ro Pointer to a octet struct where the octet is placed
+ * \return A spocp result code.
+ */
 spocp_result_t
 get_str(octet_t * so, octet_t * ro)
 {
@@ -115,7 +134,9 @@ get_str(octet_t * so, octet_t * ro)
 
 
 /*
- * -1 if no proper s-exp 0 if missing chars otherwise the number of
+ * \brief Finds the length of a S-expression
+ * \param sexp A pointer to a octet struct containing the S-expression.
+ * \return -1 if no proper s-exp 0 if missing chars otherwise the number of
  * characters 
  */
 
@@ -172,6 +193,30 @@ sexp_len(octet_t * sexp)
 
 /*--------------------------------------------------------------------------------*/
 
+/*
+ *!
+ * \brief Constructs a octet string given a format specification and a
+ *    array of void pointers to arguments.
+ * \param sexp A memory area where the result will be placed
+ * \param size A poiinter to a integer containing the size of the memory area.
+ *   this integer will be updated to reflect the size of the memory area that
+ *   was not used.
+ * \param format The format specification, the allowed characters are '(',
+ *   ')', 'o' (octet struct), 'O' (null terminated array of octet structs),
+ *   'x' (octarr struct), 'a' (null terminated string), 'A' ( null terminated
+ *   array of null terminated strings), 'l' (a null teminated string that
+ *   is written verbatim), 'L' (a null terminated array of null terminated
+ *   strings that are written verbatim), 'u' (a octet that is added
+ *   verbatim to the target string) and 'U' (a octarr which octet values
+ *   are added verbatim).
+ *   When 'o','O','a' or 'A' strings are added they are preceeded by a
+ *   length specification.
+ *   Characters outside the range specified above are just ignored.
+ * \param argv A array of void pointers that should be at least as big as
+ *    the number of format characters in the format string.
+ * \return A pointer to the resulting string, or NULL if the memory
+ *    area is not big enough.
+ */
 char           *
 sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 {
@@ -351,6 +396,29 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 
 /*--------------------------------------------------------------------------------*/
 
+/*
+ *!
+ * \brief Constructs a octet string given a format specification and a
+ *    varianble amount of arguments.
+ * \param sexp A memory area where the result will be placed
+ * \param size A poiinter to a integer containing the size of the memory area.
+ *   this integer will be updated to reflect the size of the memory area that
+ *   was not used.
+ * \param format The format specification, the allowed characters are '(',
+ *   ')', 'o' (octet struct), 'O' (null terminated array of octet structs),
+ *   'x' (octarr struct), 'a' (null terminated string), 'A' ( null terminated
+ *   array of null terminated strings), 'l' (a null teminated string that
+ *   is written verbatim), 'L' (a null terminated array of null terminated
+ *   strings that are written verbatim), 'u' (a octet that is added
+ *   verbatim to the target string) and 'U' (a octarr which octet values
+ *   are added verbatim).
+ *   When 'o','O','a' or 'A' strings are added they are preceeded by a
+ *   length specification.
+ *   Characters outside the range specified above are just ignored.
+ * \param ... A varying number of arguments of varying types.
+ * \return A pointer to the resulting string, or NULL if the memory area is
+ *   not big enough.
+ */
 char           *
 sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 {

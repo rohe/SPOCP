@@ -1,4 +1,8 @@
-
+/*
+ *!
+ * \file lib/log.c
+ * \author Roland Hedberg <roland@catalogix.se
+ */
 /***************************************************************************
                           log.c  -  description
                              -------------------
@@ -51,6 +55,13 @@ pthread_mutex_t loglock;
 
 void            traceLog(const char *fmt, ...);
 
+/*
+ *!
+ * \brief Opens a file to which logging information is to be written
+ * \param file The name of the file to be open 
+ * \param level The level at which the logging should be made
+ * \return A spocp result code
+ */
 spocp_result_t
 spocp_open_log(char *file, int level)
 {
@@ -138,6 +149,12 @@ tracelog_doit(const char *fmt, va_list ap)
 	return;
 }
 
+/*
+ *!
+ * \brief Logs information to a logfile if one is opened otherwise to stderr
+ * \param fmt A format specifier
+ * \param ... A variable amount of arguments of varying type
+ */
 void
 traceLog(const char *fmt, ...)
 {
@@ -152,6 +169,13 @@ traceLog(const char *fmt, ...)
 	return;
 }
 
+/*
+ *!
+ * \brief Log a fatal error to the logfile
+ * \param msg A message format string 
+ * \param s A string 
+ * \param i and a integer
+ */
 void
 FatalError(char *msg, char *s, int i)
 {
@@ -161,6 +185,13 @@ FatalError(char *msg, char *s, int i)
 	exit(1);
 }
 
+/*
+ *!
+ * \brief calculates and prints the elapsed time between a start and end timepoint
+ * \param s A string to be written before the elapsed time
+ * \param start The start time
+ * \param end The endpoint
+ */
 void
 print_elapsed(char *s, struct timeval start, struct timeval end)
 {
@@ -180,6 +211,11 @@ print_elapsed(char *s, struct timeval start, struct timeval end)
 			end.tv_usec);
 }
 
+/*
+ *!
+ * \brief Prints a timestamp in the logfile
+ * \param A text to write after the time
+ */
 void
 timestamp(char *txt)
 {

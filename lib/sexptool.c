@@ -1,13 +1,39 @@
+i/*
+ *!
+ * \file lib/sexptool.c
+ * \author Roland Hedberg <roland@catalogix.se>
+ */
+/***************************************************************************
+                          sexptool.c  -  description
+                             -------------------
+    begin                : Mon Apr 19 2004
+    copyright            : (C) 2004 by Stockholm university, Sweden
+    email                : roland@catalogix.se
+
+   COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in tdup level directory
+   of this package for details.
+
+ ***************************************************************************/
+
+
 #include <sexptool.h>
 #include <string.h>
 #include <func.h>
 #include <wrappers.h>
 
 /*
- * format is typically (3:foo%{var}) which is then split into three parts
- * "(3:foo", %{var} and ")" var is looked up in the table of known variables
- * and if it exists the function connected to that variable is included in the 
- * list 
+ *!
+ * \brief Farses a string that contains a description of the format of Spocp
+ *   queries.  format is typically (3:foo%{var}) which is then split into three parts
+ *   "(3:foo", %{var} and ")" var is looked up in the table of known variables
+ *   and if it exists the function connected to that variable is included in the 
+ *   list.
+ * \param format The format specification
+ * \param transf A pointer to a array of sexparg structs that contains pointers
+ *   to functions that can be run to get specific pieces of information.
+ * \param ntransf The size of the sexparg struct array.
+ * \return A pointer to a newly created array of sexparg struct that is placed 
+ *   in the right order to be able to produce a Spocp query with the right format.
  */
 
 sexparg_t  **
@@ -96,6 +122,15 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 	return arg;
 }
 
+/*
+ *!
+ * \brief Constructs a Spocp query given a format specification and a pointer
+ *   to input data.
+ * \param comarg A pointer to input information.
+ * \param ap An aray of sexparr structs that specifies the format of the
+ *   Spocp query.
+ * \return A string containing the Spocp query
+ */
 char    *
 sexp_constr( void *comarg, sexparg_t ** ap )
 {
@@ -141,6 +176,11 @@ sexp_constr( void *comarg, sexparg_t ** ap )
 	return res;
 }
 
+/*
+ *!
+ * \brief Frees a sexparg struct array
+ * \param sa A pointer to the array
+ */
 void sexparg_free( sexparg_t **sa)
 {
 	int i;
