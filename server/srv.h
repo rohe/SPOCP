@@ -454,6 +454,10 @@ int THREAD_cleanup( void ) ;
 
 #endif 
 
+/* -------------------------------------------*/
+
+int lutil_pair( int sds[2] ) ;
+
 /* ------------ GLOBALS ------------------ */
 
 int            spocp_err ;
