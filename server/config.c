@@ -51,40 +51,7 @@ char *keyword[] = {
 
 extern char *pidfile ;
 
-/*------------------------------------------------------------------ *
-
-other_t *find_other( other_t *other, char *key )
-{
-  other_t *co ;
-
-  for( co = other ; co ; co = co->next ) {
-    if( strcmp( co->key, key ) == 0 ) break ;
-  }
-
-  return co ;
-}
-
-*------------------------------------------------------------------
-
-other_t *add_another( other_t *other, char *key, char *value )
-{
-  other_t *co ;
-
-  co = find_other( other, key ) ;
-
-  if( !co ) {
-    co = ( other_t *) malloc ( sizeof( other )) ;
-    co->key = strdup( key ) ;
-    co->arr = strarr_new( 4 ) ;
-  }
-
-  strarr_add( co->arr, value ) ;
-
-  if( other == 0 ) return co ;
-  else return other ; 
-}
-
-*------------------------------------------------------------------ */
+/*------------------------------------------------------------------ */
 
 void conf_clear( srv_t *srv )
 {
