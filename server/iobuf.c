@@ -10,20 +10,9 @@
 
  **************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "locl.h"
+RCSID("$Id$");
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-
-#include <wrappers.h>
-#include <proto.h>
 #include <macros.h>
 #include <struct.h>
 #include <spocp.h>

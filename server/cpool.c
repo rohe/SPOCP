@@ -1,8 +1,5 @@
-#include <string.h>
-
-#include "func.h"
-#include "srv.h"
-#include "wrappers.h"
+#include "locl.h"
+RCSID("$Id$");
 
 #define MAX_NUMBER_OF_CONNECTIONS 64
 

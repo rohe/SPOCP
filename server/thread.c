@@ -10,30 +10,7 @@
 
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <netdb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/utsname.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/un.h>
-
-#include <pthread.h>
-#include <string.h>
-
-#ifdef HAVE_LIBWRAP
-#include <tcpd.h>
-#endif
-
-#include <func.h>
-#include <spocp.h>
-#include <srv.h>
-#include <wrappers.h>
-#include <macros.h>
+#include "locl.h"
 
 void print_io_buffer( char *s, spocp_iobuf_t *io ) ;
 

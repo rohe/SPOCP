@@ -10,25 +10,9 @@
 
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "locl.h"
 
 #ifdef HAVE_LIBSSL
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <string.h>
-#include <limits.h>
-
-#include <struct.h>
-#include <macros.h>
-#include <func.h>
-#include <spocp.h>
-#include <wrappers.h>
-
-#include <srv.h>
 
 #include <openssl/lhash.h>
 #include <openssl/ssl.h>

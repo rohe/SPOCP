@@ -10,39 +10,8 @@
 
  ***************************************************************************/
 
-#include <config.h>
-
-#include <arpa/inet.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <netinet/in.h>  
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <strings.h>
-#include <sys/errno.h>
-#include <sys/stat.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/un.h>
-#include <syslog.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/utsname.h>
-
-#include <pthread.h>
-
-#ifdef HAVE_LIBSSL
-#include <openssl/ssl.h>
-#endif
-
-#include <srv.h>
-#include <spocp.h>
-#include <func.h>
-#include <macros.h>
-#include <wrappers.h>
+#include "locl.h"
+RCSID("$Id$");
 
 /* development thread :-) */
 #define NTHREADS        5

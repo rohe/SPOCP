@@ -6,16 +6,7 @@
     email                : roland@catalogix.se
  ***************************************************************************/
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <string.h>
-#include <pthread.h>
-
-#include <func.h>
-#include <srv.h>
-#include <wrappers.h>
+#include "locl.h"
 
 void *tpool_thread(void *);
 

@@ -1,24 +1,6 @@
 #ifndef __SRV_H
 #define __SRV_H
 
-#include <config.h>
-
-#include <pthread.h>
-#include <sys/utsname.h>
-#include <sys/types.h>
-#include <regex.h>
-
-#ifdef HAVE_LIBSSL
-#include <openssl/ssl.h>
-#endif
-
-#include <struct.h>
-#include <db0.h>
-#include <spocp.h>
-#include <pthread.h>
-#include "srvconf.h"
-#include <dback.h>
-
 /* -------------------------------------- */
 
 #define SPOCP_BUFSIZE  4096

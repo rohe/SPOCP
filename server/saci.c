@@ -1,11 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include <func.h>
-#include <spocp.h>
-#include <wrappers.h>
-#include "srv.h"
+#include "locl.h"
 
 typedef char *(argfunc)( conn_t *r ) ;
 

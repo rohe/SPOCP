@@ -10,21 +10,7 @@
 
  **************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <pthread.h>
-#include <string.h>
-
-#include <struct.h>
-#include <spocp.h>
-#include <func.h>
-#include <proto.h>
-#include <macros.h>
-#include <wrappers.h>
-
-#include <srv.h>
+#include "locl.h"
 
 char *rc_working              = "3:10020:Working, please wait" ;
 

@@ -1,8 +1,5 @@
-#include <string.h>
-
-#include <func.h>
-#include "srv.h"
-#include "wrappers.h"
+#include "locl.h"
+RCSID("$Id$");
 
 static pool_t *pool_new( void )
 {

@@ -10,27 +10,8 @@
 
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <ctype.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <limits.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <unistd.h>
-
-#include <srv.h>
-#include <srvconf.h>
-
-#include <spocp.h>
-#include <func.h>
-#include <wrappers.h>
+#include "locl.h"
+RCSID("$Id$");
 
 char *keyword[] = {
   "__querty__", "rulefile", "port", "unixdomainsocket", "certificate",

@@ -1,12 +1,5 @@
-#include <string.h>
-
-#include <spocp.h>
-#include <struct.h>
-#include <wrappers.h>
-#include <macros.h>
-#include <func.h>
-
-#include <srv.h>
+#include "locl.h"
+RCSID("$Id$");
 
 typedef struct _ptree {
   int list ;

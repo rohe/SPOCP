@@ -10,26 +10,7 @@
 
  ***************************************************************************/
 
-#include <config.h>
-
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <errno.h>
-#include <signal.h>
-#include <string.h>
-#include <stdlib.h>
-#include <netinet/tcp.h>
-
-#include <spocp.h>
-#include <struct.h>
-#include <macros.h>
-#include <func.h>
-#include <srv.h>
+#include "locl.h"
 
 int  spocp_stream_socket( int lport ) ;
 int  spocp_unix_domain_socket( char *uds ) ;

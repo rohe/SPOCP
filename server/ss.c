@@ -13,18 +13,7 @@
 
  ***************************************************************************/
 
-#include <stdlib.h>
-#include <config.h>
-#include <string.h>
-
-#include <macros.h>
-#include <struct.h>
-#include <func.h>
-#include <spocp.h>
-#include <wrappers.h>
-#include <proto.h>
-
-#include <srv.h>
+#include "locl.h"
 
 int ruleset_print( ruleset_t *rs )  ;
 

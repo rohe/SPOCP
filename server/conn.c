@@ -10,26 +10,8 @@
 
  **************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
-
-#include <wrappers.h>
-#include <proto.h>
-#include <macros.h>
-#include <struct.h>
-#include <spocp.h>
-#include <func.h>
-
-#include <srv.h>
+#include "locl.h"
+RCSID("$Id$");
 
 int conn_readn( conn_t *ct, char *str, size_t max ) ;
 int conn_writen( conn_t *ct, char *str, size_t n ) ;

@@ -1,29 +1,5 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <time.h>
-#include <pthread.h>
-#include <signal.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <sys/select.h>
-#include <netdb.h>
-#include <fcntl.h>
-
-#ifdef HAVE_LIBWRAP
-#include <tcpd.h>
-#endif
-
-#include "srv.h"
-#include <spocp.h>
-#include <func.h>
-#include <macros.h>
-#include <wrappers.h>
+#include "locl.h"
+RCSID("$Id$");
 
 /* Todo: 
  * o Timeouts and limits on how long connections should be kept when not

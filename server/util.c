@@ -1,8 +1,5 @@
-#include <stdlib.h>
-#include <wrappers.h>
-#include <func.h>
-#include <spocp.h>
-#include <string.h>
+#include "locl.h"
+RCSID("$Id$");
 
 /* Making two arrays och octet string into one.
    No checking for similar strings are made */

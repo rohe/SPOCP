@@ -1,15 +1,5 @@
-#include <string.h>
-
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
-#include <spocp.h>
-#include <func.h>
-#include <struct.h>
-#include <db0.h>
-#include <wrappers.h>
-
-#include <srv.h>
+#include "locl.h"
+RCSID("$Id$");
 
 /* 
    The following two routines are based on 
