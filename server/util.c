@@ -3,7 +3,7 @@ RCSID("$Id$");
 
 /* Making two arrays och octet string into one.
    No checking for similar strings are made */
-octet_t **join_octarr( octet_t **arr0, octet_t **arr1 )
+__attribute__((unused)) static octet_t **join_octarr( octet_t **arr0, octet_t **arr1 )
 {
   int  i, j, n, m ;
   octet_t **res ;

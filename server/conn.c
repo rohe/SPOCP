@@ -168,7 +168,7 @@ int spocp_send_results( conn_t *conn )
 }
 
 /* this is only used when reading from stdin */
-conn_t *spocp_conn_open( int fd, srv_t *srv )
+__attribute__((unused)) static conn_t *spocp_conn_open( int fd, srv_t *srv )
 {
   conn_t *con ;
   pool_item_t *pi ;
@@ -291,7 +291,7 @@ int conn_readn( conn_t *ct, char *str, size_t max )
 /* ---------------------------------------------------------------------- */
 
 /* times out if it doesn't receive any bytes in 15 seconds */
-void spocp_read_and_drop( conn_t *conn, unsigned int num )
+__attribute__((unused)) static void spocp_read_and_drop( conn_t *conn, unsigned int num )
 {
   char buf[4096] ;
   int n, lc = 0 ;
