@@ -27,6 +27,8 @@
 #define ETC_GROUP "/etc/group"
 
 befunc localgroup_test ;
+spocp_result_t localgroup_init( confgetfn *cgf, void *conf, becpool_t *bcp );
+
 
 static int _ismember(octet_t *member,char *grp)
 {
