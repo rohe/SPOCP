@@ -20,6 +20,11 @@
 #include <string.h>
 #include <stdarg.h>
 
+#ifdef HAVE_LIBIDN
+#include <locale.h>
+#include <stringprep.h>
+#endif
+
 #include <wrappers.h>
 #include <spocp.h>
 #include <macros.h>
@@ -195,5 +200,47 @@ void charmatrix_free( char **m )
 		}
 		free(m);
 	}
+}
+
+
+/*
+ * --------------------------------------------------------------------
+ */
+/*!
+ * \brief if necessary libraries are present this function converts the input 
+ * to utf8 and normalizes it.
+ * \param s The input string
+ * \return Returns a newly allocated zero-terminated string.
+ */
+char *normalize( char *s )
+{
+	char *buf;
+#ifdef HAVE_LIBIDN
+	int	bufsize, rc;
+	char	*utf8;
+
+
+	traceLog(LOG_INFO,"Doing stringprep on %s", s);
+	/* stringprep_locale_charset(); */
+	utf8 = stringprep_locale_to_utf8(s);
+
+	bufsize = strlen(utf8) * 2;
+	buf = (char *) malloc ( bufsize * sizeof( char ) );
+	strcpy(buf,utf8);
+
+	rc = stringprep (buf, bufsize, 0, stringprep_nameprep);
+	if (rc != STRINGPREP_OK) {
+		traceLog(LOG_INFO,"Stringprep failed with rc %d", rc);
+		free(buf);
+		buf = utf8;
+	} else 
+		free(utf8);
+	
+	traceLog(LOG_INFO,"result %s", buf);
+#else
+	buf = strdup(s);
+#endif
+
+	return buf;
 }
 

@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(spocd, 2.1.5, roland@catalogix.se)
+AC_INIT(spocd, 2.1.6, roland@catalogix.se)
 AM_INIT_AUTOMAKE([foreign no-dependencies 1.7])
 AC_CONFIG_SRCDIR(include/wrappers.h)
 AM_CONFIG_HEADER(include/config.h)
@@ -65,6 +65,7 @@ dnl *************************************************
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [res_query])
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
+AC_CHECK_LIB([idn], [stringprep])
 
 dnl * dynamic modules?
 have_modules=no

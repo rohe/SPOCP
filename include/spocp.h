@@ -271,6 +271,7 @@ void		rmcrlf(char *s);
 char		*rmlt(char *s);
 char		*find_balancing(char *p, char left, char right);
 void		charmatrix_free( char **m );
+char		*normalize(char *);
 /*
  * ===============================================================================
  */

@@ -100,8 +100,10 @@ typedef struct {
  */
 
 /*! \brief Prototype for functions that handle configuration directives */
-typedef         spocp_result_t(conf_args) (void **conf, void *cmd_data,
+typedef	spocp_result_t(conf_args) (void **conf, void *cmd_data,
 					   int argc, char **argv);
+
+typedef	spocp_result_t(conf_free) (void **conf);
 
 /*! \brief The struct that plugins MUST use to document their capabilities */
 typedef struct {
@@ -174,7 +176,7 @@ typedef struct plugin_t {
 	 * directives appear in the configuration file */
 	conf_com_t	*ccmds;
 	/*! For the backend to release all it's private configuration */
-	conf_args	*free;
+	conf_free	*free;
 } plugin_t;
 
 /*! The Spocp library major version number */
