@@ -228,6 +228,17 @@ int main( int  argc, char **argv )
     /* ---------------------------------------------------------- */
 #endif
 
+#ifdef HAVE_SASL
+    {
+       int r = sasl_server_init(NULL,"spocp");
+       if (r != SASL_OK)
+          {
+             traceLog("Unable to initialized SASL library: %s",sasl_errstring(r,NULL,NULL));
+	     return FALSE;
+	  }
+    }
+#endif
+
     saci_init() ;
 #ifdef HAVE_DAEMON
     if( daemon( 1, 1 ) < 0 ) {

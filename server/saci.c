@@ -16,10 +16,12 @@ static char * get_ip( conn_t *r ) ;
 static char * get_host( conn_t *r ) ;
 static char * get_inv_host( conn_t *r ) ;
 static char * get_subject( conn_t *r ) ;
+#ifdef HAVE_SSL
 static char * get_ssl_vers( conn_t *c ) ;
 static char * get_ssl_cipher( conn_t *c ) ;
 static char * get_ssl_subject( conn_t *c ) ;
 static char * get_ssl_issuer( conn_t *c ) ;
+#endif
 static char * get_transpsec( conn_t *r ) ;
 
 #define TPSEC_X509 0
@@ -60,10 +62,12 @@ arg_t transf[] = {
   { "operation", get_action, 'l', TRUE },
   { "arguments", get_arguments, 'l', TRUE },
   { "path", get_path, 'l', TRUE },
+#ifdef HAVE_SSL
   { "ssl_vers", get_ssl_vers, 'a', FALSE },
   { "ssl_cipher", get_ssl_cipher, 'a', FALSE },
   { "ssl_subject", get_ssl_subject, 'a', FALSE },
   { "ssl_issuer", get_ssl_issuer, 'a', FALSE },
+#endif
   { "transportsec", get_transpsec, 'l', FALSE },
   { NULL, NULL, 0, FALSE }
 } ;
@@ -214,6 +218,7 @@ static char *get_arguments( conn_t *conn )
   return rp ;
 }
 
+#ifdef HAVE_SSL
 static char * get_ssl_vers( conn_t *c ) 
 {
   return( c->ssl_vers ) ;
@@ -233,6 +238,7 @@ static char * get_ssl_issuer( conn_t *c )
 {
   return( c->issuerDN ) ;
 }
+#endif
 
 /* ---------------------------------------------------------------------- */
 
@@ -273,12 +279,17 @@ static char *sexp_constr( conn_t *conn, arg_t **ap )
 
 static char *get_transpsec( conn_t *conn )
 {
-  if( conn->tls > 0  ) {
+/* XXX fixa SPOCP_LAYER-jox här */
+#ifdef HAVE_SSL
+  if( conn->ssl != NULL  ) {
     if( conn->transpsec == 0 ) conn->transpsec = sexp_constr( conn, tpsec_X509 ) ;
 
     return conn->transpsec ;
   }
-  else return "" ;
+  else 
+#endif
+    return "" ;
+
 }
 
 /* ---------------------------------------------------------------------- */

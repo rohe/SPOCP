@@ -581,7 +581,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   char       *sid_ctx = "spocp" ;
   SSL_CIPHER *cipher ;
 
-  if( conn->tls > 0 )  {
+  if( conn->ssl != NULL )  {
     tls_error( SPOCP_WARNING, conn, "STARTTLS received on already encrypted connection" );
     return SPOCP_SSLCON_EXIST ;
   } 
@@ -638,8 +638,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   conn->close = tls_close ;
 
   conn->ssl = (void *) ssl ;
-  conn->ssf = SSL_CIPHER_get_bits( cipher , &maxbits ) ;
-  conn->tls = conn->fd ;
+  conn->tls_ssf = SSL_CIPHER_get_bits( cipher , &maxbits ) ;
 
   return SPOCP_SUCCESS ;
 }

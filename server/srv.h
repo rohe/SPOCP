@@ -178,7 +178,10 @@ typedef struct _conn {
   int              con_type ;
   int              ops_pending ;
   int              stop ;       /* Set (!= 0) if this connection is to be closed */
-  int              tls ;        /* Is TLS/SSL in force ? -1 if not, otherwise a filedescriptor */
+  int              layer;
+#define SPOCP_LAYER_NONE 0x0
+#define SPOCP_LAYER_CONF 0x1
+#define SPOCP_LAYER_INT  0x2
   time_t           last_event ; /* The last time anything happend on this connection */
 
   ruleset_t        *rs ;   /* rule database for this connection */
@@ -204,12 +207,21 @@ typedef struct _conn {
 
 #ifdef HAVE_SSL
   void             *ssl;
-  int              ssf ;      /* security strength factor, placeholder */
+  int              tls_ssf ;      /* security strength factor, placeholder */
 #endif
+#ifdef HAVE_SASL
+  sasl_conn_t      *sasl;
+  int               sasl_tls;
+#endif
+
+#ifdef HAVE_SSL
   char             *subjectDN ;
   char             *issuerDN ;
   char             *cipher ; 
   char             *ssl_vers ;
+#endif
+#ifdef HAVE_SASL
+#endif
   char             *transpsec ;
 
   /* pointers to functions that is used for reading, writing and closing from

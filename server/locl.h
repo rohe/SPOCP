@@ -49,6 +49,10 @@
 #include <openssl/ssl.h>
 #endif
 
+#ifdef HAVE_SASL
+#include <sasl/sasl.h>
+#endif
+
 #ifdef HAVE_LIBWRAP
 #include <tcpd.h>
 #endif

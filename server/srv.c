@@ -190,7 +190,7 @@ spocp_result_t com_starttls( conn_t *conn )
 
 #else
 
-  if( conn->tls > 0) {
+  if( conn->ssl != NULL) {
     LOG( SPOCP_ERR ) traceLog("SSL already in operation") ;
     iobuf_add( out, rc_in_operation ) ;
   }
@@ -218,7 +218,6 @@ spocp_result_t com_starttls( conn_t *conn )
       r = SPOCP_CLOSE ;
       conn->stop = 1 ;
     }
-    /* conn->tls is set by tls_start */
   }
 #endif
 

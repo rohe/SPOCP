@@ -24,15 +24,12 @@ void conn_iobuf_clear( conn_t *con ) ;
 void conn_init( conn_t *conn )
 {
   /* traceLog("Init Connection") ; */
-
   conn->in = iobuf_new( SPOCP_IOBUFSIZE ) ;
   conn->out = iobuf_new( SPOCP_IOBUFSIZE ) ;
 
   conn->readn = conn_readn;
   conn->writen = conn_writen;
   conn->close = conn_close;
-
-  conn->tls = 0 ;
 }
 
 conn_t *conn_new( void )
@@ -60,6 +57,7 @@ int conn_close( conn_t *conn )
 static void conn_env_reset( conn_t *con ) 
 {
   if( con ) {
+#ifndef HAVE_SSL
     if( con->subjectDN ) {
       free( con->subjectDN ) ;
       con->subjectDN = 0 ;
@@ -80,6 +78,7 @@ static void conn_env_reset( conn_t *con )
       free( con->transpsec ) ;
       con->transpsec = 0 ;
     }
+#endif
   }
 }
 
@@ -119,8 +118,16 @@ int conn_setup( conn_t *conn, srv_t *srv, int fd, char *host )
   conn->sri.hostaddr = Strdup(host);
 
   conn->rs = srv->root ;
-  conn->tls = 0 ;
+  conn->layer = SPOCP_LAYER_NONE;
   conn->stop = 0 ;
+#ifdef HAVE_SSL
+  conn->ssl = NULL;
+#endif
+#ifdef HAVE_SASL
+  if (conn->sasl)
+     sasl_dispose(&conn->sasl);
+  conn->sasl = NULL;
+#endif
 
   time( &conn->last_event ) ;
 
