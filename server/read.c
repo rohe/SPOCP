@@ -138,6 +138,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	spocp_charbuf_t	*buf;
 	spocp_chunk_t	*chunk = 0, *ck;
 	spocp_ruledef_t	rdef;
+	struct stat	statbuf;
 
 	if ((fp = fopen(file, "r")) == 0) {
 		LOG(SPOCP_EMERG) traceLog(LOG_ERR,"couldn't open rule file \"%s\"",
@@ -149,6 +150,10 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 		return -1;
 	}
 
+	stat( file, &statbuf);
+
+	srv->mtime = statbuf.st_mtime;
+ 
 	/*
 	 * The default ruleset should already be set 
 	 */

@@ -1099,6 +1099,29 @@ db_new()
 	return db;
 }
 
+void
+db_clr( db_t *db)
+{
+	if (db) {
+		junc_free( db->jp );
+		ruleinfo_free( db->ri );
+		bcdef_free( db->bcdef );
+		/* keep the plugins */
+	}
+}
+void
+db_free( db_t *db)
+{
+	if (db) {
+		junc_free( db->jp );
+		ruleinfo_free( db->ri );
+		bcdef_free( db->bcdef );
+		plugin_unload_all( db->plugins );
+
+		free(db);
+	}
+}
+
 /************************************************************
 *    Add a rightdescription to the rules database           *
 ************************************************************/

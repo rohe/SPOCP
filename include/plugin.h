@@ -201,6 +201,7 @@ typedef struct plugin_t {
 time_t          cachetime_set(octet_t * str, cachetime_t * ct);
 cachetime_t    *cachetime_new(octet_t * s);
 void            cachetime_free(cachetime_t * s);
+void		cache_free( cache_t *cp );
 
 /*
  * ---------------------------------------------------------------------- 
@@ -208,6 +209,9 @@ void            cachetime_free(cachetime_t * s);
 
 pdyn_t         *pdyn_new(int size);
 void            pdyn_free(pdyn_t * pdp);
+
+void		plugin_unload( plugin_t * );
+void		plugin_unload_all( plugin_t * );
 
 /*
  * ---------------------------------------------------------------------- 

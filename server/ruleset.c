@@ -114,6 +114,9 @@ ruleset_free(ruleset_t * rs)
 		if (rs->right)
 			ruleset_free(rs->right);
 
+		if (rs->db) 
+			db_free( rs->db );
+
 		free(rs);
 	}
 }

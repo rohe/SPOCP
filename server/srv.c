@@ -260,6 +260,12 @@ postop( conn_t *conn, spocp_result_t rc, const char *msg)
 	return rc;
 }
 
+spocp_result_t
+return_busy( conn_t *conn )
+{
+	return postop( conn, SPOCP_BUSY, NULL );
+}
+
 /* ---------------------------------------------------------------------- */
 
 spocp_result_t
@@ -952,6 +958,74 @@ com_summary(conn_t * conn)
 }
 
 /*
+ * format of SHOW
+ * 
+ * show = "SHOW" l-path ruleid
+ * 
+ */
+spocp_result_t
+com_show(conn_t * conn)
+{
+	spocp_result_t	r = SPOCP_SUCCESS;
+	ruleset_t	*rs = conn->rs;
+	ruleinst_t	*ri = 0;
+	char		*uid;
+
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SHOW requested ");
+
+	/* possible pathspecification but apart from that exactly one argument */
+	if ((r = opinitial(conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS){
+		/*
+		 * get write lock, do operation and release lock 
+		 */
+		uid = oct2strdup( conn->oparg->arr[0], 0);
+		pthread_rdwr_wlock(&rs->rw_lock);
+		ri = ruleinst_find_by_uid(rs->db->ri->rules, uid);
+		pthread_rdwr_wunlock(&rs->rw_lock);
+		free(uid);
+
+		if ( ri ){	
+			r = add_response_blob(conn->out, SPOCP_MULTI, ri->rule);
+		}
+	}
+
+	return postop( conn, r, 0);
+}
+
+/*
+ * --------------------------------------------------------------------------------- 
+ */
+
+spocp_result_t
+do_reread_rulefile(conn_t *conn)
+{
+	ruleset_t	*rs = conn->rs;
+	srv_t		*srv = conn->srv;
+	spocp_result_t	rc;
+
+	pthread_rdwr_wlock(&rs->rw_lock);
+
+	/* get rid of all child databases */
+	if (rs->down)
+		ruleset_free(rs->down);
+	if (rs->left)
+		ruleset_free(rs->left);
+	if (rs->right)
+		ruleset_free(rs->right);
+
+	/* reset the main database */
+	db_clr( rs->db );
+
+	rc = get_rules( srv );
+
+	pthread_rdwr_wunlock(&rs->rw_lock);
+
+	conn_free( conn );
+
+	return rc;
+}
+
+/*
  * --------------------------------------------------------------------------------- 
  */
 
@@ -1099,6 +1173,8 @@ get_operation(conn_t * conn, proto_op ** oper)
 			*oper = &com_auth;
 		} else if (strncasecmp(op.val, "CAPA", 4) == 0) {
 			*oper = &com_capa;
+		} else if (strncasecmp(op.val, "SHOW", 4) == 0) {
+			*oper = &com_show;
 		}
 		break;
 

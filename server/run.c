@@ -469,12 +469,12 @@ spocp_srv_run(srv_t * srv)
 
 				if (XYZ)
 					timestamp("add work item");
-				/*
-				 * this will not happen until the for loop is
-				 * done 
-				 */
-				tpool_add_work(srv->work, operation,
-					       (void *) conn);
+
+				if( tpool_add_work(srv->work, operation,
+					       (void *) conn) == 0 ) {
+					return_busy( conn );
+					continue;
+				}
 			}
 
 			if ((n = iobuf_content(conn->out))) {

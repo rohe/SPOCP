@@ -246,7 +246,7 @@ typedef struct _ruleinfo {
 typedef struct _db {
 	junc_t		*jp;
 	ruleinfo_t	*ri;
-	junc_t		*acit;
+	/* junc_t		*acit; */
 	plugin_t	*plugins;
 	bcdef_t		*bcdef;
 	dback_t		*dback;

@@ -51,7 +51,7 @@ spocp_list(SPOCP * spocp, char *file)
 	if (file == 0)
 		fp = stdout;
 	else if ((fp = fopen(file, "w")) == NULL) {
-		traceLog("Couldn't open %s for writing", file);
+		traceLog(LOG_ERR, "Couldn't open %s for writing", file);
 		return 0;
 	}
 #ifdef HAVE_SSL

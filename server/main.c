@@ -27,6 +27,9 @@ typedef void    Sigfunc(int);
 void            sig_pipe(int signo);
 void            sig_chld(int signo);
 int 		received_sigterm = 0;
+int		reread_rulefile = 1;
+
+srv_t           srv;
 
 /*
  * used by libwrap if it's there 
@@ -86,17 +89,89 @@ sig_term( int signo )
 	wake_listener(1);
 }
 
+static void
+sig_usr1( int signo )
+{
+	struct stat	statbuf;
+	conn_t		*con;
+
+	traceLog(LOG_NOTICE, "Received SIGUSR1");
+	stat( srv.rulefile, &statbuf );
+	if (statbuf.st_mtime != srv.mtime ) {
+		con = conn_new();
+		con->srv = &srv;
+		con->rs = srv.root;
+		reread_rulefile = 1;
+		tpool_add_work( srv.work, &do_reread_rulefile, (void *) &con);
+	}
+}
+
+spocp_result_t 
+get_rules( srv_t *srv )
+{
+	spocp_result_t  rc = SPOCP_SUCCESS;
+	int		nrules = 0, r;
+	dbcmd_t         dbc;
+	struct timeval  start, end;
+
+	if (srv->dback) {
+		dbc.handle = 0;
+		dbc.dback = srv->dback;
+		/*
+		 * does the persistent database store need any initialization
+		 * ?? * if( srv.dback->init ) srv.dback->init( dbcmd_t *dbc )
+		 * ; 
+		 */
+
+		if ((nrules = dback_read_rules(&dbc, srv, &rc)) < 0)
+			return rc;
+	}
+
+	if (nrules == 0) {
+		if (srv->rulefile) {
+			LOG(SPOCP_INFO)
+				traceLog(LOG_INFO, "Opening rules file \"%s\"",
+				    srv->rulefile);
+
+			if (0)
+				gettimeofday(&start, NULL);
+
+			dbc.dback = srv->dback;
+			dbc.handle = 0;
+
+			r = read_rules(srv, srv->rulefile, &dbc) ;
+			if( r == -1 ) {
+	 			LOG(SPOCP_ERR)
+					traceLog(LOG_ERR,"Error while reading rules");
+				rc = SPOCP_OPERATIONSERROR;
+			}
+			if (0) {
+				gettimeofday(&end, NULL);
+				print_elapsed("readrule time:", start, end);
+			}
+		}
+		else
+			LOG(SPOCP_INFO)
+				traceLog(LOG_INFO, "No rule file to start with");
+	} else {
+		LOG(SPOCP_INFO)
+		    traceLog(LOG_INFO,
+			"Got the rules from the persistent store, will not read the rulefile");
+	}
+
+	return rc;
+}
+
 int
 main(int argc, char **argv)
 {
 	int             debug = 0, conftest = 0, nodaemon = 0;
-	int             i = 0, nrules = 0, r;
+	int             i = 0;
 	unsigned int    clilen;
 	struct sockaddr_in cliaddr;
 	struct timeval  start, end;
 	char           *cnfg =
 	    "config", localhost[MAXNAMLEN + 1], path[MAXNAMLEN + 1];
-	srv_t           srv;
 	FILE           *pidfp;
 	octet_t         oct;
 	ruleset_t      *rs;
@@ -215,55 +290,9 @@ main(int argc, char **argv)
 	if (srv.plugin) {
 		run_plugin_init(&srv);
 	}
-	if (srv.dback) {
-		dbcmd_t         dbc;
-		spocp_result_t  rc;
 
-		dbc.handle = 0;
-		dbc.dback = srv.dback;
-		/*
-		 * does the persistent database store need any initialization
-		 * ?? * if( srv.dback->init ) srv.dback->init( dbcmd_t *dbc )
-		 * ; 
-		 */
-
-		if ((nrules = dback_read_rules(&dbc, &srv, &rc)) < 0)
-			exit(1);
-	}
-
-	if (nrules == 0) {
-		dbcmd_t         dbc;
-
-		if (srv.rulefile == 0) {
-			LOG(SPOCP_INFO) traceLog(LOG_INFO, "No rule file to start with");
-		} else {
-			LOG(SPOCP_INFO) traceLog(LOG_INFO, "Opening rules file \"%s\"",
-						 srv.rulefile);
-		}
-
-		if (0)
-			gettimeofday(&start, NULL);
-
-		dbc.dback = srv.dback;
-		dbc.handle = 0;
-
-		if (srv.rulefile) {
-			r = read_rules(&srv, srv.rulefile, &dbc) ;
-			if( r == -1 ) {
-	 			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error while reading rules");
-				exit(1);
-			}
-		}
-
-		if (0) {
-			gettimeofday(&end, NULL);
-			print_elapsed("readrule time:", start, end);
-		}
-	} else {
-		LOG(SPOCP_INFO)
-		    traceLog(LOG_INFO,
-			"Got the rules from the persistent store, will not read the rulefile");
-	}
+	if ( get_rules( &srv ) != SPOCP_SUCCESS ) 
+		exit(1);
 
 	/* If only testing configuration and rulefile this is as far as I go */
 	if (conftest) {
@@ -376,6 +405,7 @@ main(int argc, char **argv)
 		signal(SIGCHLD, sig_chld);
 		signal(SIGPIPE, sig_pipe);
 		signal(SIGTERM, sig_term);
+		signal(SIGUSR1, sig_usr1);
 
 		clilen = sizeof(cliaddr);
 

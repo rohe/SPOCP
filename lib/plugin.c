@@ -50,6 +50,11 @@ pdyn_free(pdyn_t * pdp)
 	if (pdp) {
 		if (pdp->ct)
 			cachetime_free(pdp->ct);
+		if (pdp->bcp) 
+			becpool_rm( pdp->bcp, 1 );
+		if (pdp->cv)
+			cache_free( pdp->cv);
+		
 		free(pdp);
 	}
 }
@@ -198,6 +203,32 @@ plugin_load(plugin_t * top, char *name, char *load)
 	}
 
 	return top;
+}
+
+void
+plugin_unload( plugin_t *pl )
+{
+	if (pl) {
+		if( pl->dyn )
+			pdyn_free( pl->dyn );
+		if (pl->conf);
+			/* how do I remove this */
+		if (pl->name) 
+			free( pl->name );
+
+		free(pl);
+	}
+}
+
+void
+plugin_unload_all( plugin_t *top )
+{
+	plugin_t *pl, *next ;
+
+	for (pl = top; pl; pl = next) {
+		next = pl->next;
+		plugin_unload(pl);
+	}
 }
 
 /*!

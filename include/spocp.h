@@ -97,7 +97,7 @@ typedef enum {
 	SPOCP_AUTHINPROGRESS,
 	/*! The server is overloaded and would like you to come back later */
 	SPOCP_BUSY,
-	/*! */
+	/*! Occupied, resend the operation later */
 	SPOCP_UNAVAILABLE,
 	/*! The server is unwilling to perform a operation */
 	SPOCP_UNWILLING,

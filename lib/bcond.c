@@ -153,7 +153,7 @@ bcexp_free(bcexp_t * bce)
  * ---------------------------------------------------------------------- 
  */
 
-static void
+void
 bcdef_free(bcdef_t * bcd)
 {
 	bcexp_t        *bce;

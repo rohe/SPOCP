@@ -171,7 +171,7 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 		 * and this caller doesn't want to wait 
 		 */
 		if (tpool->do_not_block_when_full) {
-			return -1;
+			return 0;
 		}
 
 		/*
@@ -204,7 +204,7 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 						 tpool->cur_queue_size);
 		} else {	/* shouldn't happen */
 			traceLog(LOG_NOTICE,"Reached the max_queue_size");
-			return -1;
+			return 0;
 		}
 	}
 
@@ -358,10 +358,6 @@ tpool_thread(void *arg)
 		/*
 		 * Handle waiting destroyer threads * if( afpool_active_items( 
 		 * afp ) == 0 && afpool_cond_signal_empty( afp )) ; 
-		 */
-
-		/*
-		 * traceLog(LOG_DEBUG, "Doing some work" ) ; 
 		 */
 
 		/*

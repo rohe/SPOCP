@@ -165,7 +165,8 @@ typedef struct _server
 	int		threads ;
 
 	int		timeout ;
-	int		nconn ;	 /* max simultaneous connections */
+	int		nconn ;		/* max simultaneous connections */
+	time_t		mtime;		/* time of last modification */
 	char		*certificateFile ;
 	char		*privateKey ;
 	char		*caList ;
@@ -315,6 +316,10 @@ typedef struct _tpool {
 
 /************* functions ********************/
 
+/* main.c */
+spocp_result_t get_rules( srv_t *srv );
+
+/*  */
 void	wake_listener( int ) ;
 void	daemon_init( char *procname, int facility ) ;
 int	spocp_stream_socket( int port ) ;
@@ -435,6 +440,10 @@ spocp_result_t	com_summary( conn_t *conn ) ;
 spocp_result_t	com_show( conn_t *conn ) ;
 
 spocp_result_t	get_operation( conn_t *conn, proto_op **oper ) ;
+
+spocp_result_t	do_reread_rulefile( conn_t *conn );
+
+spocp_result_t	return_busy( conn_t *conn );
 
 /* run.c */
 

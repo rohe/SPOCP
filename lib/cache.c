@@ -63,6 +63,7 @@ static void
 cacheval_free(cacheval_t * cvp)
 {
 	if (cvp) {
+		octclr( &cvp->blob );
 		free(cvp);
 	}
 }
@@ -127,13 +128,27 @@ cache_del(cache_t * c, cacheval_t * cvp)
 	cacheval_free(cvp);
 }
 
-static void
+static int
 cache_fifo_rm(cache_t * cp)
 {
 	cacheval_t     *cv;
 
 	cv = (cacheval_t *) varr_fifo_pop(cp->va);
-	cacheval_free(cv);
+	if( cv ) { 
+		cacheval_free(cv);
+		return 1;
+	}
+	else
+		return 0;
+}
+
+void
+cache_free( cache_t *cp )
+{
+	if (cp) {
+		while( cache_fifo_rm( cp ));
+		free( cp );
+	}
 }
 
 /*

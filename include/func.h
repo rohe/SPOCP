@@ -155,6 +155,9 @@ void            bucket_rm(phash_t * ht, buck_t * bp);
 junc_t         *junc_new(void);
 junc_t         *junc_dup(junc_t * jp, ruleinfo_t * ri);
 db_t           *db_new(void);
+void		db_clr( db_t *db);
+void		db_free( db_t *db);
+
 
 junc_t         *branch_add(junc_t * ap, branch_t * dbp);
 branch_t       *brancharr_find(junc_t * arr, int type);
@@ -388,13 +391,13 @@ ruleinst_t     *varr_ruleinst_nth(varr_t * va, int n);
  */
 
 int             bcspec_is(octet_t * spec);
-bcdef_t        *bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * n,
-			  octet_t * d);
+
+bcdef_t        *bcdef_add(db_t *, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
 spocp_result_t  bcdef_del(db_t * db, dbcmd_t * dbc, octet_t * name);
-spocp_result_t  bcdef_replace(db_t *, plugin_t *, dbcmd_t *, octet_t *,
-			      octet_t *);
-bcdef_t        *bcdef_get(db_t *, plugin_t *, dbcmd_t *, octet_t *,
-			  spocp_result_t *);
+spocp_result_t  bcdef_replace(db_t *, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
+bcdef_t        *bcdef_get(db_t *, plugin_t *, dbcmd_t *, octet_t *, spocp_result_t *);
+void		bcdef_free(bcdef_t * bcd);
+
 
 spocp_result_t	bcexp_eval(element_t *, element_t *, bcexp_t *, octarr_t **);
 spocp_result_t  bcond_check(element_t *, index_t *, octarr_t **);
