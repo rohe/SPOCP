@@ -1112,14 +1112,19 @@ static spocp_result_t
 store_right(db_t * db, element_t * ep, ruleinst_t * rt)
 {
 	int             r;
+	element_t	*ec;
 
 	if (db->jp == 0)
 		db->jp = junc_new();
 
+	ec = element_dup( ep, NULL );
+
 	if (element_add(db->plugins, db->jp, ep, rt, 1) == 0)
 		r = SPOCP_OPERATIONSERROR;
-	else
+	else {
+		rt->ep = ec;
 		r = SPOCP_SUCCESS;
+	}
 
 	return r;
 }
