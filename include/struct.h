@@ -82,6 +82,8 @@
 /*! IPv6 number */
 #define SPOC_IPV6      5
 
+#define RTYPE		0x0F
+
 /*! number of data types for s-expression ranges */
 #define DATATYPES      6
 
@@ -91,6 +93,8 @@
 #define GLE         0x20
 /*! Greater then */
 #define GT          0x40
+
+#define BTYPE 		0xF0
 
 /*! The cache result has expired */
 #define EXPIRED     1
