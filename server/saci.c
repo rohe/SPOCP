@@ -332,6 +332,11 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 	element_t      *ep = 0;
 	comparam_t      comp;
 
+	/* If I'm running on a unix domain socket I implicitly trust
+	 * processes on that machine
+	 */
+	if (con->srv->uds) return SPOCP_SUCCESS;
+
 	/*
 	 * no ruleset or rules means everything is allowed 
 	 */
@@ -379,7 +384,7 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 		return res;
 	}
 
-	if (oct.len) {		/* shouldn't be */
+	if (oct.len) {		/* shouldn't be anything left*/
 		free(sexp);
 		element_free(ep);
 		return SPOCP_DENIED;
