@@ -222,7 +222,11 @@ ruleset_t *ruleset_create( octet_t *name, ruleset_t **root )
       return ruleset_new( 0 ) ;
   }
 
-  octln( &loc, name ) ;
+  if( name ) octln( &loc, name ) ;
+  else {
+    loc.len = loc.size = 0 ;
+    loc.val = 0 ;
+  }
 
   res = *root ;
   if( ruleset_find( &loc, &res ) == 1 ) return res ;
@@ -275,7 +279,7 @@ ruleset_t *ruleset_create( octet_t *name, ruleset_t **root )
    string = 1*( %x30-39 / %x61-7A / %x41-5A / %x2E )
  */
 
-spocp_result_t get_rs_name( octet_t *orig, octet_t *rsn )
+spocp_result_t ruleset_name( octet_t *orig, octet_t *rsn )
 {
   char   *cp ;
   size_t l ;
@@ -302,7 +306,7 @@ spocp_result_t get_rs_name( octet_t *orig, octet_t *rsn )
   return SPOCP_SUCCESS ;
 }
 
-spocp_result_t get_pathname( ruleset_t *rs, char *buf, int buflen ) 
+spocp_result_t pathname_get( ruleset_t *rs, char *buf, int buflen ) 
 {
   int       len = 0 ;
   ruleset_t *rp ;
@@ -338,7 +342,7 @@ spocp_result_t treeList( ruleset_t *rs, conn_t *conn, octarr_t *oa, int recurs )
     }
   }
   else {
-    if(( rc = get_pathname( rs, pathname, BUFSIZ  )) != SPOCP_SUCCESS ) return rc ;
+    if(( rc = pathname_get( rs, pathname, BUFSIZ  )) != SPOCP_SUCCESS ) return rc ;
 
     if( rs->db ) {
       /* get read lock, do the query and release lock */
