@@ -709,14 +709,12 @@ chunk2sexp( spocp_chunk_t *c )
 	 * the last one is I don't know at this point
 	 */
 	if( oct2strcmp( ck->val, "(" ) != 0 ) { 
-		chunk_free(c);
 		return 0;
 	}
 
 	/* calculate the length of the resulting S-expression */
 	do {
 		if ( ck == 0 ) {
-			chunk_free(c);
 			return 0;
 		}
 
@@ -755,7 +753,6 @@ chunk2sexp( spocp_chunk_t *c )
 		ck = ck->next ;
 	} while( p ) ;
  
-	chunk_free(c);
 
 	*sp = '\0';
 	res->len = sp - res->val;
@@ -802,12 +799,24 @@ get_sexp_from_oct( octet_t *o)
 octet_t *
 sexp_normalize_oct( octet_t *o )
 {
-	return chunk2sexp( get_sexp_from_oct( o ) );
+	octet_t         *oc;
+	spocp_chunk_t   *c;
+	
+	c = get_sexp_from_oct( o );
+	oc = chunk2sexp( c );
+	chunk_free( c );
+	return oc;
 }
 
 octet_t *
 sexp_normalize( char *s )
 {
-	return chunk2sexp( get_sexp_from_str( s ) );
+	octet_t         *o;
+	spocp_chunk_t   *c;
+
+	c = get_sexp_from_str( s );
+	o = chunk2sexp( c );
+	chunk_free( c );
+	return o;
 }
 

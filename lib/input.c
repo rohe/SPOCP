@@ -789,7 +789,9 @@ element_get(octet_t * op, element_t ** epp)
 	spocp_result_t  r = SPOCP_SUCCESS;
 	element_t      *ep = 0;
 
+#ifdef AVLUSNING
 	traceLog(LOG_DEBUG,"element_get()");
+#endif
 
 	if (op->len == 0)
 		return SPOCP_SYNTAXERROR;
