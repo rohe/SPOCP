@@ -391,7 +391,8 @@ spocp_result_t  bcdef_replace(db_t *, plugin_t *, dbcmd_t *, octet_t *,
 bcdef_t        *bcdef_get(db_t *, plugin_t *, dbcmd_t *, octet_t *,
 			  spocp_result_t *);
 
-spocp_result_t  bcond_check(element_t * qp, index_t * id, octarr_t ** on);
+spocp_result_t	bcexp_eval(element_t *, element_t *, bcexp_t *, octarr_t **);
+spocp_result_t  bcond_check(element_t *, index_t *, octarr_t **);
 varr_t         *bcond_users(db_t *, octet_t *);
 
 /*

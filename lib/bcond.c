@@ -25,6 +25,9 @@ typedef struct _stree {
 	struct _stree  *part;
 } stree_t;
 
+bcexp_t *
+transv_stree(plugin_t * plt, stree_t * st, bcdef_t * list, bcdef_t * parent);
+
 /*
  * ====================================================================== *
  * LOCAL FUNCTIONS
@@ -49,8 +52,10 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 	oct.val = spec->val + n + 1;
 	spec->len = n;
 
-	if ((p = plugin_match(plt, spec)) == 0)
+	if ((p = plugin_match(plt, spec)) == 0) {
+		traceLog("Doesn't match any known plugin");
 		return 0;
+	}
 
 	bcs = (bcspec_t *) Malloc(sizeof(bcspec_t));
 
@@ -352,7 +357,7 @@ parse_bcexp(octet_t * sexp)
  * ---------------------------------------------------------------------- 
  */
 
-static bcexp_t *
+bcexp_t *
 transv_stree(plugin_t * plt, stree_t * st, bcdef_t * list, bcdef_t * parent)
 {
 	bcexp_t        *bce, *tmp;
@@ -361,7 +366,7 @@ transv_stree(plugin_t * plt, stree_t * st, bcdef_t * list, bcdef_t * parent)
 
 	if (!st->list) {
 		if (!st->next) {	/* should be a bcond spec */
-			if ((bcs = bcspec_new(plt, &st->val)) == 0)
+			if (plt == 0 || (bcs = bcspec_new(plt, &st->val)) == 0)
 				return 0;
 			bce = bcexp_new();
 			bce->type = SPEC;
@@ -579,7 +584,7 @@ bcond_eval(element_t * qp, element_t * rp, bcspec_t * bcond, octet_t * oct)
  * ---------------------------------------------------------------------- 
  */
 
-static spocp_result_t
+spocp_result_t
 bcexp_eval(element_t * qp, element_t * rp, bcexp_t * bce, octarr_t ** oa)
 {
 	int             n, i;
@@ -741,8 +746,8 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 	stree_t        *st;
 	octet_t         tmp;
 
-	if (db == 0) {
-	}
+	if (db == 0) 
+		return NULL;
 
 	if (*data->val == '(') {
 		if ((st = parse_bcexp(data)) == 0)
@@ -780,7 +785,7 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 		 * create a bcond name that MUST differ from rule ids Since
 		 * rule ids are SHA1 hashes, it consists of lower case letters 
 		 * a-f and numbers. So making the bcond name in the persistent 
-		 * store start with "BCOND:" will make it absolutely diffrent. 
+		 * store start with "BCOND:" will make it absolutely different. 
 		 */
 
 		oct_assign(&tmp, bcd->name);

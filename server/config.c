@@ -64,6 +64,11 @@ extern char	*pidfile;
 static char	*err_msg = "Error in configuration file, line %d: %s";
 
 /* ------------------------------------------------------------------ */
+/* Chops up a string into serveral pieces, the divider between pieces
+ * are white spsce characters. If white space characters are positioned
+ * somewhere between two '"' they are protected and there will not be
+ * any splitting at that position. 
+ */
 
 static char **strchop( char *s, int *argc)
 {
@@ -229,9 +234,10 @@ read_config(char *file, srv_t * srv)
 
 	/*
 	 * should never be necessary 
-	 */
+
 	if (!srv->root)
 		srv->root = ruleset_new(0);
+	 */
 
 	if (!srv->root->db)
 		srv->root->db = db_new();
@@ -280,8 +286,9 @@ read_config(char *file, srv_t * srv)
 		}
 
 		/*
-		 * Within a section The directives are of the form: key *SP
-		 * "=" *SP val *SP val val = 1*nonspacechar / '"' char '"' 
+		 * Within a section The directives are of the form: 
+		 * key *SP * "=" *SP val *(*SP val)
+		 * val = 1*nonspacechar / '"' char '"' 
 		 */
 
 		rm_lt_sp(s, 1);	/* remove leading and trailing blanks */
