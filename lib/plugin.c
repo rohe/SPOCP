@@ -149,6 +149,8 @@ plugin_t *plugin_add_cachedef( plugin_t *top, char *pname, char *s )
   plugin_t    *pl ;
   octet_t      oct ;
 
+  if( s == 0 || *s == '\0' ) return top ;
+
   pl = plugin_get( top, pname ) ;
 
   oct.val = s ;
@@ -171,6 +173,8 @@ plugin_t *plugin_add_cachedef( plugin_t *top, char *pname, char *s )
 
 plugin_t *plugin_add_conf( plugin_t *top, char *pname, char *key, char *val )
 {
+  if( key == 0 || *key == '\0' ) return 0 ;
+
   if( strcmp( key, "cachetime" ) == 0 )
     return plugin_add_cachedef( top, pname, val ) ;
   else 
