@@ -59,6 +59,8 @@ atom_t         *atom_new( octet_t *op ) ;
 void            hms2int( octet_t *op, long int *li ) ;
 void            to_gmt( octet_t *s, octet_t *t ) ;
 
+void		set_memberof( varr_t *va, element_t *group ) ;
+
 /* io.c */
 
 size_t  Writen( int fd, size_t n, char *str ) ;
@@ -212,6 +214,7 @@ junc_t *ssn_delete( ssn_t **top, char *sp, int direction ) ;
 ssn_t  *ssn_dup( ssn_t *, ruleinfo_t *ri ) ;
 varr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, varr_t *res ) ;
 varr_t *get_all_ssn_followers( branch_t *bp, int type, varr_t *pa ) ;
+junc_t *ssn_free( ssn_t * );
 
 /* parr.c */
 
@@ -340,6 +343,31 @@ bcdef_t        *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc ) ;
 spocp_result_t	bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
 varr_t *        bcond_users( db_t *, octet_t * );
 
-/* ----- */
+/* --- sllist.c ---  */
+
+slnode_t *sl_new( boundary_t *item, int n, slnode_t *tail );
+void sl_free_node( slnode_t *slp );
+void sl_free_slist( slist_t *slp );
+int sl_rand( slist_t *slp );
+void sl_rec_insert( slnode_t *old, slnode_t *new, int n );
+slnode_t *sl_rec_delete( slnode_t *node, boundary_t *item, int n );
+slnode_t *sl_rec_find( slnode_t *node, boundary_t *item, int n, int *flag );
+slnode_t *sl_delete( slist_t *slp, boundary_t *item );
+void sl_print( slist_t *slp );
+slnode_t *sl_insert( slist_t *slp, boundary_t *item ) ;
+slnode_t *sln_dup( slnode_t *old );
+
+/* ll.c */
+
+ll_t *ll_new( cmpfn *cf, ffunc *ff, dfunc *df, pfunc *pf ) ;
+void ll_free( ll_t *lp ) ;
+node_t *node_new( void *vp ) ;
+ll_t *ll_push( ll_t *lp, void *vp, int nodup );
+void *ll_pop( ll_t *lp );
+node_t *ll_first( ll_t *lp );
+node_t *ll_next( ll_t *lp, node_t *np );
+void *ll_first_p( ll_t *lp );
+void *ll_next_p( ll_t *lp, void *prev );
+void ll_rm_link( ll_t *lp, node_t *np );
 
 #endif
