@@ -31,14 +31,46 @@
  * returns 
  */
 
+spocp_result_t 
+parse_canonsexp( octet_t *sexp, element_t **target)
+{
+	spocp_result_t	res = SPOCP_SUCCESS;
+	char		*str;
+	octet_t		oct;
+
+	DEBUG(SPOCP_DPARSE) {
+		str = oct2strdup(sexp, '%');
+		traceLog("Parsing the S-expression \"%s\"", str);
+		free(str);
+
+		octln( &oct, sexp ) ;
+	}
+
+
+	if ((res = element_get(sexp, target)) != SPOCP_SUCCESS) {
+		str = oct2strdup(sexp, '%');
+		traceLog("The S-expression \"%s\" didn't parse OK", str);
+		free(str);
+	}
+	else {
+		DEBUG(SPOCP_DPARSE) {
+			oct.len -= sexp->len ;
+	
+			str = oct2strdup(&oct, '%');
+			traceLog("Query: \"%s\"", str);
+			free(str);
+		}
+	}
+
+	return res;
+}
+
 spocp_result_t
 dbapi_allowed(db_t * db, octet_t * sexp, octarr_t ** on)
 {
-	element_t      *ep = 0;
-	octet_t         oct;
-	char           *str;
-	spocp_result_t  res = SPOCP_SUCCESS;
-	comparam_t      comp;
+	element_t	*ep = 0;
+	spocp_result_t	res = SPOCP_SUCCESS;
+	comparam_t	comp;
 
 	if (db == 0 || sexp == 0 || sexp->len == 0) {
 		if (db == 0) {
@@ -52,37 +84,16 @@ dbapi_allowed(db_t * db, octet_t * sexp, octarr_t ** on)
 		return res;
 	}
 
-	DEBUG(SPOCP_DPARSE) {
-		char           *str;
-		str = oct2strdup(sexp, '%');
-		traceLog("Parsing the S-expression \"%s\"", str);
-		free(str);
+	if ((res = parse_canonsexp( sexp, &ep )) == SPOCP_SUCCESS) {
+
+		comp.rc = SPOCP_SUCCESS;
+		comp.head = ep;
+		comp.blob = on;
+
+		res = allowed(db->jp, &comp);
+
+		element_free(ep);
 	}
-
-	octln(&oct, sexp);
-
-	if ((res = element_get(sexp, &ep)) != SPOCP_SUCCESS) {
-		str = oct2strdup(sexp, '%');
-		traceLog("The S-expression \"%s\" didn't parse OK", str);
-		free(str);
-
-		return res;
-	}
-
-	oct.len -= sexp->len;
-	DEBUG(SPOCP_DPARSE) {
-		str = oct2strdup(&oct, '%');
-		traceLog("Query: \"%s\"", str);
-		free(str);
-	}
-
-	comp.rc = SPOCP_SUCCESS;
-	comp.head = ep;
-	comp.blob = on;
-
-	res = allowed(db->jp, &comp);
-
-	element_free(ep);
 
 	return res;
 }

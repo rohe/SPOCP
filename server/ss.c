@@ -74,15 +74,9 @@ skip_sexp(octet_t * sexp)
 {
 	spocp_result_t  r;
 	element_t      *ep = 0;
-	char           *str;
 
-	if ((r = element_get(sexp, &ep)) != SPOCP_SUCCESS) {
-		str = oct2strdup(sexp, '%');
-		traceLog("The S-expression \"%s\" didn't parse OK", str);
-		free(str);
-	}
-
-	element_free(ep);
+	if ((r = parse_canonsexp(sexp,&ep)) == SPOCP_SUCCESS)
+		element_free(ep);
 
 	return r;
 }
@@ -96,8 +90,7 @@ ss_allow(ruleset_t * rs, octet_t * sexp, octarr_t ** on, int scope)
 {
 	spocp_result_t  res = SPOCP_DENIED;	/* this is the default */
 	element_t      *ep = 0;
-	octet_t         oct, dec;
-	char           *str;
+	octet_t         dec;
 
 	if (rs == 0 || sexp == 0 || sexp->len == 0) {
 		if (rs == 0) {
@@ -119,36 +112,12 @@ ss_allow(ruleset_t * rs, octet_t * sexp, octarr_t ** on, int scope)
 		return SPOCP_DENIED;
 	}
 
-	DEBUG(SPOCP_DPARSE) {
-		char           *str;
-		str = oct2strdup(sexp, '\\');
-		traceLog("Parsing the S-expression \"%s\"", str);
-		free(str);
-	}
-
-	octln(&oct, sexp);
 	octln(&dec, sexp);
 
-	if ((res = element_get(&dec, &ep)) != SPOCP_SUCCESS) {
-		str = oct2strdup(&oct, '\\');
-		traceLog("The S-expression \"%s\" didn't parse OK", str);
-		free(str);
-
-		return res;
+	if ((res = parse_canonsexp( &dec, &ep)) == SPOCP_SUCCESS) {
+		res = rec_allow(rs, ep, scope, on);
+		element_free(ep);
 	}
-
-	/*
-	 * just ignore extra bytes 
-	 */
-	oct.len -= dec.len;
-	str = oct2strdup(&oct, '\\');
-	if (0)
-		traceLog("Query: \"%s\" in \"%s\"", str, rs->name);
-	free(str);
-
-	res = rec_allow(rs, ep, scope, on);
-
-	element_free(ep);
 
 	return res;
 }
