@@ -1,17 +1,24 @@
-#define PLUGIN           0
-#define RULEFILE         1
-#define PORT             2
-#define UNIXDOMAINSOCKET 3
-#define CERTIFICATE      4
-#define PRIVATEKEY       5
-#define CALIST           6
-#define DHFILE           7
-#define ENTROPYFILE      8
-#define PASSWD           9
-#define NTHREADS        10
-#define TIMEOUT         11
-#define LOGFILE         12
-#define CLIENTS         13
-#define SSLVERIFYDEPTH  14
-#define PIDFILE         15
-#define MAXCONN         16
+#ifndef __SRVCONF_H
+#define __SRVCONF_H
+
+typedef enum { 
+PLUGIN,
+RULEFILE,
+PORT,
+UNIXDOMAINSOCKET,
+CERTIFICATE,
+PRIVATEKEY,
+CALIST,
+DHFILE,
+ENTROPYFILE,
+PASSWD,
+NTHREADS,
+TIMEOUT,
+LOGFILE,
+SSLVERIFYDEPTH,
+PIDFILE,
+MAXCONN
+} infotype_t ;
+
+#endif
+
