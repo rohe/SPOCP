@@ -507,7 +507,7 @@ SSL_CTX *tls_init( srv_t *srv )
 ************************************************/
 
 /* Check that the common name matches the host name*/
-static int check_cert_chain(SSL *ssl, ruleset_t *rs)
+static int check_cert_chain( conn_t *conn, SSL *ssl, ruleset_t *rs)
 {
   X509                   *peer;
   X509_NAME              *xn ;
@@ -557,20 +557,9 @@ static int check_cert_chain(SSL *ssl, ruleset_t *rs)
 
         for( j = 0 ; r == FALSE && i < sk_CONF_VALUE_num( val) ; j++ ) {
           nval = sk_CONF_VALUE_value( val, j ) ;
-          if( strcmp( nval->name, "DNS" ) == 0 ) {
-            /* check allowed client certs, all the way to the top */
-            while( rs ) {
-              for( aci = rs->aci ; aci ; aci = aci->next ) {
-                if( aci->cert == 0 ||
-                    regexec( &aci->cert->preg, subject, 0, 0, 0 ) >= 0 ) {
-                  r = TRUE ;
-                  break ;
-                }
-              }
-              if( r == TRUE ) break ;
-          
-              rs = rs->up ;
-            }
+          if( strcasecmp( nval->name, "DNS" ) == 0 &&
+              strcasecmp( nval->value, conn->sri.hostname )) {
+            r = TRUE ;
           } 
         }
       }
@@ -580,20 +569,17 @@ static int check_cert_chain(SSL *ssl, ruleset_t *rs)
   if( r == FALSE ) {
     /* Check the subject name */
     xn = X509_get_subject_name( peer ) ;
-    X509_NAME_oneline (X509_get_subject_name(peer), subject, sizeof(subject)) ; 
+    X509_NAME_get_text_by_NID( xn, NID_commonName, subject, 1024 ) ;
+    subject[1023] = '\0' ;
 
-    /* check allowed client certs, all the way to the top */
-    while( rs ) {
-      for( aci = rs->aci ; aci ; aci = aci->next ) {
-        if( aci->cert == 0 || regexec( &aci->cert->preg, subject, 0, 0, 0 ) >= 0 ) {
-          r = TRUE ;
-          break ;
-        }
-      }
-      if( r == TRUE ) break ;
-
-      rs = rs->up ;
+    if( strcasecmp( subject, conn->sri.hostname ) == 0 ) {
+      r = TRUE ;
     }
+  }
+
+  if( r == TRUE ) {
+    conn->subjectDN = X509_NAME_oneline(X509_get_subject_name(peer),NULL,0);
+    conn->issuerDN = X509_NAME_oneline(X509_get_issuer_name(peer),NULL,0);
   }
 
   X509_free( peer ) ;
@@ -613,7 +599,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   SSL_CTX    *ctx = (SSL_CTX *) conn->srv->ctx ;
   int        maxbits, pri ;
   char       *sid_ctx = "spocp" ;
-  const char *cipher ;
+  SSL_CIPHER *cipher ;
 
   if( conn->tls >= 0 )  {
     /*tls_error( SPOCP_WARNING, conn, "STARTTLS received on already encrypted connection" ) ;*/
@@ -624,9 +610,6 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
     /* tls_error( SPOCP_ERR, conn, "Error allocation SSL") ; */
     return SPOCP_OPERATIONSERROR ;
   }
-
-  for( pri = 0 ; ( cipher = SSL_get_cipher_list(ssl, pri)) ; pri++ )
-    LOG( SPOCP_DEBUG ) traceLog( "cipher[%d]: %s", pri, cipher ) ;
 
   /* do these never fail ?? */
 
@@ -646,8 +629,23 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   LOG( SPOCP_DEBUG) traceLog("SSL accept done") ;
   LOG( SPOCP_DEBUG) traceLog("Checking client certificate") ;
 
-  if (!check_cert_chain( ssl, rs )) {
+  if (!check_cert_chain( conn, ssl, rs )) {
     SSL_free( ssl ) ;
+    return SPOCP_CERT_ERR ;
+  }
+
+  /* So the cert is OK and the hostname is in the DN, but do I want to
+     talk to this guy ?? */
+
+  cipher = SSL_get_current_cipher( ssl ) ;
+
+  conn->cipher = strdup(SSL_CIPHER_get_name(cipher));
+
+  conn->ssl_vers = strdup(SSL_CIPHER_get_version(cipher));
+
+  if( server_access( conn ) == 0 ) {
+    SSL_free( ssl ) ;
+
     return SPOCP_CERT_ERR ;
   }
 
@@ -660,7 +658,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   conn->close = tls_close ;
 
   conn->ssl = (void *) ssl ;
-  conn->ssf = SSL_CIPHER_get_bits( SSL_get_current_cipher( ssl ), &maxbits ) ;
+  conn->ssf = SSL_CIPHER_get_bits( cipher , &maxbits ) ;
   conn->tls = conn->fd ;
 
   return SPOCP_SUCCESS ;
