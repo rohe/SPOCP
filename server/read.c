@@ -353,7 +353,7 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
     }
 
     if( *sp == '/' ) {
-      if( get_rs_name( &oct, &rsn ) != SPOCP_SUCCESS ) {
+      if( ruleset_name( &oct, &rsn ) != SPOCP_SUCCESS ) {
         LOG( SPOCP_EMERG ) traceLog( "Strange line \"%s\"", oct.val ) ;
         if( exp ) oct_free( exp ) ;
         octclr( &prev ) ;
