@@ -1,3 +1,4 @@
+
 /***************************************************************************
                           wrappers.c  -  description
                              -------------------
@@ -18,216 +19,249 @@
 #include <wrappers.h>
 #include <func.h>
 
-void *Malloc( size_t size )
+void           *
+Malloc(size_t size)
 {
-  void *vp = malloc( size ) ;
+	void           *vp = malloc(size);
 
-  if( vp == 0 ) FatalError("Out of memory",0,0) ;
+	if (vp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return vp ;
+	return vp;
 }
 
 
-void *Calloc( size_t n, size_t size )
+void           *
+Calloc(size_t n, size_t size)
 {
-  void *vp = calloc ( n, size ) ;
+	void           *vp = calloc(n, size);
 
-  if( vp == 0 ) FatalError("Out of memory",0,0) ;
+	if (vp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return vp ;
+	return vp;
 }
 
 
-void *Recalloc( void *vp, size_t n, size_t size )
+void           *
+Recalloc(void *vp, size_t n, size_t size)
 {
-  void *nvp = realloc ( vp, n*size ) ;
+	void           *nvp = realloc(vp, n * size);
 
-  if( nvp == 0 ) FatalError("Out of memory",0,0) ;
+	if (nvp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return nvp ;
+	return nvp;
 }
 
 
-void *Realloc( void *vp, size_t n )
+void           *
+Realloc(void *vp, size_t n)
 {
-  void *nvp = realloc ( vp, n ) ;
+	void           *nvp = realloc(vp, n);
 
-  if( nvp == 0 ) FatalError("Out of memory",0,0) ;
+	if (nvp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return nvp ;
+	return nvp;
 }
 
-char *Strdup( char *s )
+char           *
+Strdup(char *s)
 {
-  char *sp = strdup( s ) ;
+	char           *sp = strdup(s);
 
-  if( s == 0 ) return 0 ;
+	if (s == 0)
+		return 0;
 
-  sp = strdup( s ) ;
+	sp = strdup(s);
 
-  if( sp == 0 ) FatalError("Out of memory",0,0) ;
+	if (sp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return sp ;
+	return sp;
 }
 
-char *Strcat( char *dest, char *src, int *size )
+char           *
+Strcat(char *dest, char *src, int *size)
 {
-  char *tmp ;
-  int  dl, sl ;
+	char           *tmp;
+	int             dl, sl;
 
-  if( src == 0 || *size <= 0 ) return 0 ;
+	if (src == 0 || *size <= 0)
+		return 0;
 
-  dl = strlen(dest) ;
-  sl = strlen(src) ;
+	dl = strlen(dest);
+	sl = strlen(src);
 
-  if( sl + dl  > *size ) {
-    *size = sl + dl + 32 ;
-    tmp = Realloc( dest, *size ) ;
-    dest = tmp ;
-  }
+	if (sl + dl > *size) {
+		*size = sl + dl + 32;
+		tmp = Realloc(dest, *size);
+		dest = tmp;
+	}
 
-  strcat( dest, src ) ;
+	strcat(dest, src);
 
-  return dest ;
+	return dest;
 }
 
 #ifndef HAVE_STRNLEN
-size_t strnlen( const char *s, size_t len );
+size_t          strnlen(const char *s, size_t len);
 
-size_t strnlen( const char *s, size_t len )
+size_t
+strnlen(const char *s, size_t len)
 {
-  size_t i ;
+	size_t          i;
 
-  for( i = 0 ; i < len && s[i] ; i++ ) ;
+	for (i = 0; i < len && s[i]; i++);
 
-  return i ;
+	return i;
 }
 #endif
 
 #ifndef HAVE_STRNDUP
-char *strndup( const char *old, size_t sz ) ;
+char           *strndup(const char *old, size_t sz);
 
-char *strndup( const char *old, size_t sz ) 
+char           *
+strndup(const char *old, size_t sz)
 {
-  size_t len = strnlen( old, sz ) ;
-  char   *t  = malloc( len + 1 ) ;
+	size_t          len = strnlen(old, sz);
+	char           *t = malloc(len + 1);
 
-  if( t != NULL ) {
-    memcpy( t, old, len ) ;
-    t[len] = '\0' ;
-  }
+	if (t != NULL) {
+		memcpy(t, old, len);
+		t[len] = '\0';
+	}
 
-  return t ;
+	return t;
 }
 #endif
 
-char *Strndup( char *s, size_t n )
+char           *
+Strndup(char *s, size_t n)
 {
-  char *sp = strndup( s, n ) ;
+	char           *sp = strndup(s, n);
 
-  if( sp == 0 ) FatalError("Out of memory",0,0) ;
+	if (sp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return sp ;
+	return sp;
 }
 
-/* -------------- special debugging helps ------------ */
+/*
+ * -------------- special debugging helps ------------ 
+ */
 
-void xFree( void *vp )
+void
+xFree(void *vp)
 {
-  traceLog("%p-free\n", vp ) ;
-  free( vp ) ;
+	traceLog("%p-free\n", vp);
+	free(vp);
 }
 
-void *xMalloc( size_t size )
+void           *
+xMalloc(size_t size)
 {
-  void *vp = malloc( size ) ;
+	void           *vp = malloc(size);
 
-  traceLog("%p(%d)-malloc\n", vp, size ) ;
+	traceLog("%p(%d)-malloc\n", vp, size);
 
-  if( vp == 0 ) FatalError("Out of memory",0,0) ;
+	if (vp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return vp ;
-}
-
-
-void *xCalloc( size_t n, size_t size )
-{
-  void *vp = calloc ( n, size ) ;
-
-  traceLog("%p(%d,%d)-calloc\n", vp, n, size ) ;
-
-  if( vp == 0 ) FatalError("Out of memory",0,0) ;
-
-  return vp ;
+	return vp;
 }
 
 
-void *xRecalloc( void *vp, size_t n, size_t size )
+void           *
+xCalloc(size_t n, size_t size)
 {
-  void *nvp = realloc ( vp, n*size ) ;
+	void           *vp = calloc(n, size);
 
-  traceLog("%p->%p(%d)-recalloc\n", vp, nvp, n*size ) ;
+	traceLog("%p(%d,%d)-calloc\n", vp, n, size);
 
-  if( nvp == 0 ) FatalError("Out of memory",0,0) ;
+	if (vp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return nvp ;
+	return vp;
 }
 
 
-void *xRealloc( void *vp, size_t n )
+void           *
+xRecalloc(void *vp, size_t n, size_t size)
 {
-  void *nvp = realloc ( vp, n ) ;
+	void           *nvp = realloc(vp, n * size);
 
-  traceLog("%p->%p(%d)-realloc\n", vp, nvp, n) ;
+	traceLog("%p->%p(%d)-recalloc\n", vp, nvp, n * size);
 
-  if( nvp == 0 ) FatalError("Out of memory",0,0) ;
+	if (nvp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return nvp ;
+	return nvp;
 }
 
-char *xStrdup( char *s )
+
+void           *
+xRealloc(void *vp, size_t n)
 {
-  char *sp = strdup( s ) ;
+	void           *nvp = realloc(vp, n);
 
-  traceLog("%p(%d)-strdup\n", sp, strlen(s) ) ;
+	traceLog("%p->%p(%d)-realloc\n", vp, nvp, n);
 
-  if( sp == 0 ) FatalError("Out of memory",0,0) ;
+	if (nvp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  return sp ;
+	return nvp;
 }
 
-char *xStrcat( char *dest, char *src, int *size )
+char           *
+xStrdup(char *s)
 {
-  char *tmp ;
-  int  dl, sl ;
+	char           *sp = strdup(s);
 
-  dl = strlen(dest) ;
-  sl = strlen(src) ;
+	traceLog("%p(%d)-strdup\n", sp, strlen(s));
 
-  if( sl + dl  > *size ) {
-    *size = sl + dl + 32 ;
-    tmp = xRealloc( dest, *size ) ;
-    dest = tmp ;
-  }
+	if (sp == 0)
+		FatalError("Out of memory", 0, 0);
 
-  strcat( dest, src ) ;
-
-  return dest ;
+	return sp;
 }
 
-char *xStrndup( char *s, size_t n )
+char           *
+xStrcat(char *dest, char *src, int *size)
 {
-  char *sp = strndup( s, n ) ;
+	char           *tmp;
+	int             dl, sl;
 
-  traceLog("%p(%d)-strndup\n", sp, n ) ;
+	dl = strlen(dest);
+	sl = strlen(src);
 
-  if( sp == 0 ) FatalError("Out of memory",0,0) ;
+	if (sl + dl > *size) {
+		*size = sl + dl + 32;
+		tmp = xRealloc(dest, *size);
+		dest = tmp;
+	}
 
-  return sp ;
+	strcat(dest, src);
+
+	return dest;
 }
 
-int P_fclose( void *vp )
+char           *
+xStrndup(char *s, size_t n)
 {
-  return fclose( (FILE *) vp ) ;
+	char           *sp = strndup(s, n);
+
+	traceLog("%p(%d)-strndup\n", sp, n);
+
+	if (sp == 0)
+		FatalError("Out of memory", 0, 0);
+
+	return sp;
 }
 
+int
+P_fclose(void *vp)
+{
+	return fclose((FILE *) vp);
+}

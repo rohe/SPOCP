@@ -1,3 +1,4 @@
+
 /***************************************************************************
                           io.c  -  description
                              -------------------
@@ -24,83 +25,93 @@
 #include <func.h>
 #include <spocp.h>
 
-size_t Writen( int fd, size_t n, char *str )
+size_t
+Writen(int fd, size_t n, char *str)
 {
-  size_t nleft, nwritten ;
-  char *sp ;
-  fd_set wset ;
-  int retval ;
-  struct timeval to ;
+	size_t          nleft, nwritten;
+	char           *sp;
+	fd_set          wset;
+	int             retval;
+	struct timeval  to;
 
-  /*
-  if( spocp_loglevel == SPOCP_DEBUG ) gettimeofday( &start, NULL ) ;
-  */
+	/*
+	 * if( spocp_loglevel == SPOCP_DEBUG ) gettimeofday( &start, NULL ) ; 
+	 */
 
-  /* wait max 3 seconds */
-  to.tv_sec = 3 ;
-  to.tv_usec = 0 ;
+	/*
+	 * wait max 3 seconds 
+	 */
+	to.tv_sec = 3;
+	to.tv_usec = 0;
 
-  sp = str ;
-  nleft = n ;
-  FD_ZERO(&wset) ;
+	sp = str;
+	nleft = n;
+	FD_ZERO(&wset);
 
-  while( nleft > 0 ) {
-    FD_SET(fd,&wset) ;
-    retval = select(fd+1,NULL,&wset,NULL,&to) ;
+	while (nleft > 0) {
+		FD_SET(fd, &wset);
+		retval = select(fd + 1, NULL, &wset, NULL, &to);
 
-    if( retval ) {
-      if(( nwritten = write(fd, sp, nleft)) <= 0 ) { ;
-        if( errno == EINTR ) nwritten = 0  ;
-        else return -1 ;
-      }
+		if (retval) {
+			if ((nwritten = write(fd, sp, nleft)) <= 0) {;
+				if (errno == EINTR)
+					nwritten = 0;
+				else
+					return -1;
+			}
 
-      nleft -= nwritten ;
-      sp += nwritten ;
-    }
-    else { /* timed out */
-      break ;
-    }
-  }
+			nleft -= nwritten;
+			sp += nwritten;
+		} else {	/* timed out */
+			break;
+		}
+	}
 
-  fdatasync(fd) ;
+	fdatasync(fd);
 
-  /*
-  if( spocp_loglevel == SPOCP_DEBUG ) {
-    gettimeofday( &stop, NULL ) ;
-    printElapsed( "WRITE", start, stop ) ;
-  }
-  */
+	/*
+	 * if( spocp_loglevel == SPOCP_DEBUG ) { gettimeofday( &stop, NULL ) ;
+	 * printElapsed( "WRITE", start, stop ) ; } 
+	 */
 
-  return( n - nleft ) ;
+	return (n - nleft);
 }
 
-/* read returns ssize_t which normally is an int */
+/*
+ * read returns ssize_t which normally is an int 
+ */
 
-ssize_t Readn( int fd, size_t max, char *str )
+ssize_t
+Readn(int fd, size_t max, char *str)
 {
-  fd_set         rset ;
-  int            retval ;
-  ssize_t         n = 0 ;
-  struct timeval to ;
+	fd_set          rset;
+	int             retval;
+	ssize_t         n = 0;
+	struct timeval  to;
 
-  /* wait max 2 seconds */
-  to.tv_sec = 1 ;
-  to.tv_usec = 0 ;
+	/*
+	 * wait max 2 seconds 
+	 */
+	to.tv_sec = 1;
+	to.tv_usec = 0;
 
-  FD_ZERO(&rset) ;
+	FD_ZERO(&rset);
 
-  FD_SET(fd,&rset) ;
-  retval = select(fd+1, &rset, NULL, NULL, &to) ;
+	FD_SET(fd, &rset);
+	retval = select(fd + 1, &rset, NULL, NULL, &to);
 
-  if( retval ) {
-    if(( n = read(fd, str, max)) <= 0 ) {
-      if( errno == EINTR ) n = 0 ;
-      else return -1 ;
-    }
-  }
-  else { /* timed out */
-    /* traceLog( "Timed out waiting for intput") ; */
-  }
+	if (retval) {
+		if ((n = read(fd, str, max)) <= 0) {
+			if (errno == EINTR)
+				n = 0;
+			else
+				return -1;
+		}
+	} else {		/* timed out */
+		/*
+		 * traceLog( "Timed out waiting for intput") ; 
+		 */
+	}
 
-  return( n ) ;
+	return (n);
 }

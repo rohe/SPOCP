@@ -1,3 +1,4 @@
+
 /***************************************************************************
                              ll.c  -  description
                              -------------------
@@ -17,262 +18,308 @@
 #include <wrappers.h>
 #include <func.h>
 
-ll_t *ll_new( cmpfn *cf, ffunc *ff, dfunc *df, pfunc *pf ) 
+ll_t           *
+ll_new(cmpfn * cf, ffunc * ff, dfunc * df, pfunc * pf)
 {
-  ll_t *lp ;
+	ll_t           *lp;
 
-  lp = ( ll_t * ) Calloc ( 1, sizeof( ll_t ) ) ;
+	lp = (ll_t *) Calloc(1, sizeof(ll_t));
 
-  /* lp->head = lp->tail = 0 ; */
+	/*
+	 * lp->head = lp->tail = 0 ; 
+	 */
 
-  lp->cf = cf ;
-  lp->ff = ff ;
-  lp->df = df ;
-  lp->pf = pf ;
+	lp->cf = cf;
+	lp->ff = ff;
+	lp->df = df;
+	lp->pf = pf;
 
-  return lp ;
+	return lp;
 }
 
-void ll_free( ll_t *lp ) 
+void
+ll_free(ll_t * lp)
 {
-  node_t *np,*pp ;
+	node_t         *np, *pp;
 
-  if( lp ) {
-    for( np = lp->head ; np ; np = pp ) {
-      if( lp->ff ) lp->ff( np->payload ) ;
-      pp = np->next ;
-      free( np ) ;
-    }
-    free( lp ) ;
-  }
+	if (lp) {
+		for (np = lp->head; np; np = pp) {
+			if (lp->ff)
+				lp->ff(np->payload);
+			pp = np->next;
+			free(np);
+		}
+		free(lp);
+	}
 }
 
-node_t *node_new( void *vp ) 
+node_t         *
+node_new(void *vp)
 {
-  node_t *np ;
+	node_t         *np;
 
-  np = ( node_t * ) Calloc (1, sizeof( node_t )) ;
-  np->payload = vp ;
-  np->next = np->prev = 0 ;
+	np = (node_t *) Calloc(1, sizeof(node_t));
+	np->payload = vp;
+	np->next = np->prev = 0;
 
-  return np ;
+	return np;
 }
 
-ll_t *ll_push( ll_t *lp, void *vp, int nodup )
+ll_t           *
+ll_push(ll_t * lp, void *vp, int nodup)
 {
-  node_t *np ;
+	node_t         *np;
 
-  if( lp == NULL ) return 0 ;
+	if (lp == NULL)
+		return 0;
 
-  if( lp->head == NULL ) { /* empty list */
-    lp->tail = lp->head = node_new( vp ) ;
-    lp->n = 1 ;
-  }
-  else {
-    if( nodup ) {
-      /* should I let anyone know I don't want to add this ? */
-      if(( np = ll_find( lp, vp )) != 0 ){
-        traceLog( "Attempting to add already present rule" ) ;
-        return lp ;
-      }
-    }
-    np = node_new( vp ) ;
-    lp->tail->next = np ;
-    np->prev = lp->tail ;
-    lp->tail = np ;
-    lp->n++ ;
-  }
+	if (lp->head == NULL) {	/* empty list */
+		lp->tail = lp->head = node_new(vp);
+		lp->n = 1;
+	} else {
+		if (nodup) {
+			/*
+			 * should I let anyone know I don't want to add this ? 
+			 */
+			if ((np = ll_find(lp, vp)) != 0) {
+				traceLog
+				    ("Attempting to add already present rule");
+				return lp;
+			}
+		}
+		np = node_new(vp);
+		lp->tail->next = np;
+		np->prev = lp->tail;
+		lp->tail = np;
+		lp->n++;
+	}
 
-  return lp ;
+	return lp;
 }
 
-void *ll_pop( ll_t *lp )
+void           *
+ll_pop(ll_t * lp)
 {
-  void   *vp ;
-  node_t *np ;
+	void           *vp;
+	node_t         *np;
 
-  if( lp == 0 || lp->n == 0 ) return NULL ; /* empty list */
-  else {
-    np = lp->head ;
-    lp->head = np->next ;
-    lp->head->prev = 0 ;
-    vp = np->payload ;
-    free( np ) ;
-    lp->n-- ;
+	if (lp == 0 || lp->n == 0)
+		return NULL;	/* empty list */
+	else {
+		np = lp->head;
+		lp->head = np->next;
+		lp->head->prev = 0;
+		vp = np->payload;
+		free(np);
+		lp->n--;
 
-    return vp ;
-  }
+		return vp;
+	}
 }
 
-/* ------------------------------------------------------------- */
+/*
+ * ------------------------------------------------------------- 
+ */
 
-node_t *ll_first( ll_t *lp )
+node_t         *
+ll_first(ll_t * lp)
 {
-  return lp->head ;
+	return lp->head;
 }
 
-node_t *ll_next( ll_t *lp, node_t *np )
+node_t         *
+ll_next(ll_t * lp, node_t * np)
 {
-  if( np == lp->tail ) return 0 ;
-  else return np->next ;
+	if (np == lp->tail)
+		return 0;
+	else
+		return np->next;
 }
 
-void *ll_first_p( ll_t *lp )
+void           *
+ll_first_p(ll_t * lp)
 {
-  return lp->head ;
+	return lp->head;
 }
 
-void *ll_next_p( ll_t *lp, void *prev )
+void           *
+ll_next_p(ll_t * lp, void *prev)
 {
-  node_t *np ;
+	node_t         *np;
 
-  for( np = lp->head ; np ; np = np->next ) {
-    if( np->payload == prev ) return np->next ;
-  }
+	for (np = lp->head; np; np = np->next) {
+		if (np->payload == prev)
+			return np->next;
+	}
 
-  return 0 ;
+	return 0;
 }
 
-/* ------------------------------------------------------------- */
+/*
+ * ------------------------------------------------------------- 
+ */
 
-void *ll_find( ll_t *lp, void *pattern )
+void           *
+ll_find(ll_t * lp, void *pattern)
 {
-  node_t *np ;
+	node_t         *np;
 
-  /* no compare function, then nothing match */
- 
-  if( lp->cf == 0 ) return 0 ;
+	/*
+	 * no compare function, then nothing match 
+	 */
 
-  for( np = lp->head ; np ; np = np->next ) {
-    if( lp->cf( np->payload, pattern ) == 0 ) return np->payload ;
-  }
+	if (lp->cf == 0)
+		return 0;
 
-  return 0 ;
+	for (np = lp->head; np; np = np->next) {
+		if (lp->cf(np->payload, pattern) == 0)
+			return np->payload;
+	}
+
+	return 0;
 }
 
-void ll_rm_link( ll_t *lp, node_t *np )
+void
+ll_rm_link(ll_t * lp, node_t * np)
 {
-  node_t *tmp ;
+	node_t         *tmp;
 
-  if( np == lp->head && np == lp->tail ) {
-    lp->head = lp->tail = 0 ;
-  }
-  else if( np == lp->head ) {
-    tmp = np->next ;
-    lp->head = tmp ;
-    tmp->prev = 0 ;
-  } 
-  else if( np == lp->tail ) {
-    lp->tail = np->prev ;
-    np->prev->next = 0 ;
-  } 
-  else {
-    np->prev->next = np->next ; 
-    np->next->prev = np->prev ;
-  }
+	if (np == lp->head && np == lp->tail) {
+		lp->head = lp->tail = 0;
+	} else if (np == lp->head) {
+		tmp = np->next;
+		lp->head = tmp;
+		tmp->prev = 0;
+	} else if (np == lp->tail) {
+		lp->tail = np->prev;
+		np->prev->next = 0;
+	} else {
+		np->prev->next = np->next;
+		np->next->prev = np->prev;
+	}
 }
 
-/* if all != 0, remove all instances that match otherwise just the 
-   first one */
+/*
+ * if all != 0, remove all instances that match otherwise just the first one 
+ */
 
-int ll_rm_item( ll_t *lp, void *pattern, int all )
+int
+ll_rm_item(ll_t * lp, void *pattern, int all)
 {
-  int    n = 0 ;
-  node_t *np, *next ;
+	int             n = 0;
+	node_t         *np, *next;
 
-  /* no compare function == no matches */
-  if( lp->cf == 0 ) return 0 ;
+	/*
+	 * no compare function == no matches 
+	 */
+	if (lp->cf == 0)
+		return 0;
 
-  for( np = lp->head ; np ;  ) {
-    if( lp->cf( np->payload, pattern ) == 0 ) {
+	for (np = lp->head; np;) {
+		if (lp->cf(np->payload, pattern) == 0) {
 
-      next = np->next ;
+			next = np->next;
 
-      ll_rm_link( lp, np ) ;
+			ll_rm_link(lp, np);
 
-      lp->ff( np->payload ) ;
-      free( np ) ;
+			lp->ff(np->payload);
+			free(np);
 
-      lp->n-- ;
-      n++ ;
+			lp->n--;
+			n++;
 
-      if( !all ) break ;
+			if (!all)
+				break;
 
-      np = next ;
-    } 
-    else np = np->next ;
-  }
+			np = next;
+		} else
+			np = np->next;
+	}
 
-  return n ;
+	return n;
 }
 
-void ll_rm_payload( ll_t *lp, void *pl )
+void
+ll_rm_payload(ll_t * lp, void *pl)
 {
-  node_t *np ;
+	node_t         *np;
 
-  for( np = lp->head ; np ;  ) {
-    if( np->payload == pl ) {
-      ll_rm_link( lp, np ) ;
-      break ;
-    }
-  }
+	for (np = lp->head; np;) {
+		if (np->payload == pl) {
+			ll_rm_link(lp, np);
+			break;
+		}
+	}
 }
 
-ll_t *ll_dup( ll_t *old ) 
+ll_t           *
+ll_dup(ll_t * old)
 {
-  ll_t   *new ;
-  node_t *on, *pn, *nn ;
-  void   *pl ;
+	ll_t           *new;
+	node_t         *on, *pn, *nn;
+	void           *pl;
 
-  if( old == 0 ) return 0 ;
+	if (old == 0)
+		return 0;
 
-  new = ll_new( old->cf, old->ff, old->df, old->pf ) ;
+	new = ll_new(old->cf, old->ff, old->df, old->pf);
 
-  if( old->df ) pl = old->df( old->head->payload, 0 ) ;
-  else pl = old->head->payload ;
+	if (old->df)
+		pl = old->df(old->head->payload, 0);
+	else
+		pl = old->head->payload;
 
-  new->head = pn = node_new( pl ) ;
+	new->head = pn = node_new(pl);
 
-  new->n = 1 ;
+	new->n = 1;
 
-  for( on = old->head->next ; on != 0 ; on = on->next ) {
-    if( old->df ) pl = old->df( on->payload, 0 ) ;
-    else          pl = on->payload ;
+	for (on = old->head->next; on != 0; on = on->next) {
+		if (old->df)
+			pl = old->df(on->payload, 0);
+		else
+			pl = on->payload;
 
-    nn = node_new( pl ) ;
-    pn->next = nn ;
-    pn = nn ;
-    new->n++ ;
-  }
+		nn = node_new(pl);
+		pn->next = nn;
+		pn = nn;
+		new->n++;
+	}
 
-  new->tail = pn ;
+	new->tail = pn;
 
-  return new ;
+	return new;
 }
 
-/* ---------------------------------------------------------- */
+/*
+ * ---------------------------------------------------------- 
+ */
 
-ll_t *parr2ll( parr_t *pp )
+ll_t           *
+parr2ll(parr_t * pp)
 {
-  ll_t *ll = 0 ;
-  int  i ;
+	ll_t           *ll = 0;
+	int             i;
 
-  for( i = 0 ; i < pp->n ; i++ ) 
-    ll = ll_push( ll, pp->vect[i], 0 ) ;
+	for (i = 0; i < pp->n; i++)
+		ll = ll_push(ll, pp->vect[i], 0);
 
-  return ll ;
+	return ll;
 }
 
-/* ---------------------------------------------------------- */
+/*
+ * ---------------------------------------------------------- 
+ */
 
-int ll_print( ll_t *ll ) 
+int
+ll_print(ll_t * ll)
 {
-  node_t *np ;
+	node_t         *np;
 
-  if( ll->pf == 0 ) return -1 ;
+	if (ll->pf == 0)
+		return -1;
 
-  for( np = ll->head ; np ; np = np->next ) 
-    ll->pf( np->payload ) ;
+	for (np = ll->head; np; np = np->next)
+		ll->pf(np->payload);
 
-  return 0 ;
+	return 0;
 }

@@ -1,3 +1,4 @@
+
 /***************************************************************************
                           proto.h  -  description
                              -------------------
@@ -20,8 +21,9 @@
 #define WHITESPACE(c)    ( (c) == ' ' || (c) == '\n' || (c) == '\t' || (c) == '\v' || (c) == '\r' || (c) == '\f' )
 #define TCHAR(c)         ( (c) == '-' || (c) == '.' || (c) ==  '/' || (c) ==  '_' || (c) ==  ':' || (c) ==  '*' || (c) ==  '+' || (c) ==  '=' )
 /*
-#define TOKENCHAR(c)     ( TCHAR(c) || ASCII_LOWER(c) || ASCII_UPPER(c) || DIGIT(c) ) 
-*/
+ * #define TOKENCHAR(c) ( TCHAR(c) || ASCII_LOWER(c) || ASCII_UPPER(c) ||
+ * DIGIT(c) ) 
+ */
 #define LISTDELIM(c)     ( (c) == '(' || (c) == ')' )
 #define TOKENCHAR(c)     ( !WHITESPACE(c) && !LISTDELIM(c) )
 #define CONTROLCHAR(c)   ( ((c) >= 0x00 && (c) <= 0x06) || ((c) >= 0x0e && (c) <= 0x1f ))
@@ -35,7 +37,7 @@
 #define MIN(a,b) ((a) < (b) ? a : b)
 #endif
 
-#define COMMENTSTART  0x23 /* # */
-#define LF            0x0A /* linefeed */
+#define COMMENTSTART  0x23	/* # */
+#define LF            0x0A	/* linefeed */
 
 #endif

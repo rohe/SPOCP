@@ -9,84 +9,98 @@
 #include <plugin.h>
 #include <rvapi.h>
 
-befunc rbl_test ;
+befunc          rbl_test;
 
 /*
-Typical rbl entry in DNS
-1.5.5.192.blackholes.mail-abuse.org. IN A 127.0.0.2
-*/
-/* 
-  argument to the call:
+ * Typical rbl entry in DNS 1.5.5.192.blackholes.mail-abuse.org. IN A
+ * 127.0.0.2 
+ */
+/*
+ * argument to the call:
+ * 
+ * rbldomain:hostaddr
+ * 
+ * can for instance be blackholes.mail-abuse.org:192.5.5.1
+ * 
+ */
 
-  rbldomain:hostaddr
-
-  can for instance be
-  blackholes.mail-abuse.org:192.5.5.1
-
-*/
-
-spocp_result_t rbl_test( cmd_param_t *cpp, octet_t *blob )
+spocp_result_t
+rbl_test(cmd_param_t * cpp, octet_t * blob)
 {
-  char      *rblhost ;
-  char      *hostaddr, *s, *r, *c, *d ;
-  int        n, l ;
-  octarr_t  *argv ;
-  octet_t   *oct, *domain, *host ;
+	char           *rblhost;
+	char           *hostaddr, *s, *r, *c, *d;
+	int             n, l;
+	octarr_t       *argv;
+	octet_t        *oct, *domain, *host;
 
-  if( cpp->arg == 0 ) return SPOCP_MISSING_ARG ;
+	if (cpp->arg == 0)
+		return SPOCP_MISSING_ARG;
 
-  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
+	if ((oct = element_atom_sub(cpp->arg, cpp->x)) == 0)
+		return SPOCP_SYNTAXERROR;
 
-  argv = oct_split( oct, ';', 0, 0, 0 ) ;
+	argv = oct_split(oct, ';', 0, 0, 0);
 
-  if( oct != cpp->arg ) oct_free( oct ) ;
+	if (oct != cpp->arg)
+		oct_free(oct);
 
-  if( argv->n != 2 ) {
-    octarr_free( argv ) ;
-    return SPOCP_SYNTAXERROR ;
-  }
+	if (argv->n != 2) {
+		octarr_free(argv);
+		return SPOCP_SYNTAXERROR;
+	}
 
-  domain = argv->arr[0] ;
-  host = argv->arr[1] ;
+	domain = argv->arr[0];
+	host = argv->arr[1];
 
-  l = domain->len + host->len + 2  ;
+	l = domain->len + host->len + 2;
 
-  rblhost = ( char * ) malloc( l * sizeof( char )) ;
-  /* point to end of string */
-  s = host->val + host->len - 1 ;
+	rblhost = (char *) malloc(l * sizeof(char));
+	/*
+	 * point to end of string 
+	 */
+	s = host->val + host->len - 1;
 
-  r = rblhost ;
+	r = rblhost;
 
-  /* reverse the order */
-  hostaddr = host->val ;
+	/*
+	 * reverse the order 
+	 */
+	hostaddr = host->val;
 
-  do {
-    for( c = s ; *c != '.' && c >= hostaddr ; c-- ) ;
-    if( *c == '.' ) d = c ;
-    else d = 0 ;
-    
-    for( c++ ; c <= s ; ) *r++ = *c++ ;
+	do {
+		for (c = s; *c != '.' && c >= hostaddr; c--);
+		if (*c == '.')
+			d = c;
+		else
+			d = 0;
 
-    if( d ) {
-      *r++ = '.' ;
-      s = d - 1 ;
-    }
-  } while( d ) ;
+		for (c++; c <= s;)
+			*r++ = *c++;
 
-  *r++ = '.' ;
+		if (d) {
+			*r++ = '.';
+			s = d - 1;
+		}
+	} while (d);
 
-  c = domain->val ;
+	*r++ = '.';
 
-  /* add after the inverted hostaddr */
-  l = (int ) domain->len ;
-  for( n = 0 ; n < l ; n++ ) *r++ = *c++ ;
+	c = domain->val;
 
-  if( *r != '.' ) {
-    *++r = '.';
-  }
-  *++r = '\0';
+	/*
+	 * add after the inverted hostaddr 
+	 */
+	l = (int) domain->len;
+	for (n = 0; n < l; n++)
+		*r++ = *c++;
 
-  if( gethostbyname(rblhost) != 0 ) return SPOCP_SUCCESS ;
-  else return SPOCP_DENIED ;
+	if (*r != '.') {
+		*++r = '.';
+	}
+	*++r = '\0';
+
+	if (gethostbyname(rblhost) != 0)
+		return SPOCP_SUCCESS;
+	else
+		return SPOCP_DENIED;
 }
-

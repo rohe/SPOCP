@@ -1,3 +1,4 @@
+
 /***************************************************************************
                            locl.h  -  description
                              -------------------
@@ -10,7 +11,9 @@
 
  ***************************************************************************/
 
-/* $Id$ */
+/*
+ * $Id$ 
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -26,7 +29,7 @@
 #include <sys/wait.h>
 #include <sys/utsname.h>
 
-#include <netinet/in.h>  
+#include <netinet/in.h>
 #include <netinet/tcp.h>
 
 #include <arpa/inet.h>
@@ -58,8 +61,8 @@
 #endif
 
 /*
-#include "srvconf.h"
-*/
+ * #include "srvconf.h" 
+ */
 
 #include <spocp.h>
 #include <func.h>

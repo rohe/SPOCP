@@ -1,3 +1,4 @@
+
 /***************************************************************************
                           be_cert.c  -  description
                              -------------------
@@ -33,303 +34,317 @@
 #include <openssl/pem.h>
 
 
-int cb(int ok, X509_STORE_CTX *ctx);
-void decode_base64(char *,char *);
-X509_STORE *initCertificateCheck(char *ca_dir);
+int             cb(int ok, X509_STORE_CTX * ctx);
+void            decode_base64(char *, char *);
+X509_STORE     *initCertificateCheck(char *ca_dir);
 
-spocp_result_t check_cert(X509_STORE *ctx, char *data);
+spocp_result_t  check_cert(X509_STORE * ctx, char *data);
 
-befunc cert_test;
+befunc          cert_test;
 
 /*
-  type         = "cert"
-  typespecific = base64pemcert
-  
-  returns true if the certificate is issued by someone we believe in. this is determined by a 
-  directory with pem certificates of our trusted CA's. At the moment, this dir is hardcoded to
-  /usr/local/spocp/conf/cert ... but I have to find a better way of doing this.
-
-  The inputline should be in base64 WITHOUT newlines.
+ * type = "cert" typespecific = base64pemcert
+ * 
+ * returns true if the certificate is issued by someone we believe in. this is 
+ * determined by a directory with pem certificates of our trusted CA's. At
+ * the moment, this dir is hardcoded to /usr/local/spocp/conf/cert ... but I
+ * have to find a better way of doing this.
+ * 
+ * The inputline should be in base64 WITHOUT newlines. 
  */
 
-void decode_base64(char *inbuf,char *outbuf) {
-  BIO *bio, *b64;
-  int inlen;
-  
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Creating base64-filter");
-  }
-  b64 = BIO_new(BIO_f_base64());
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Setting flags");
-  }
-  BIO_set_flags(b64,BIO_FLAGS_BASE64_NO_NL);
-
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Creating memory buffer");
-  }
-  bio = BIO_new_mem_buf(inbuf, -1);
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Pushing base64-filter");
-  }
-  bio = BIO_push(b64, bio);
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Reading into outbuffer");
-  }
-  while((inlen = BIO_read(bio, outbuf, 65000)) > 0) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Have read %d bytes",inlen);
-    }
-  }
-
-  
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Freeing all.");
-  }
-  BIO_free_all(bio);
-}
-
-
-X509_STORE *initCertificateCheck(char *ca_dir) {
-  X509_STORE *cert_ctx = NULL;
-  X509_LOOKUP *lookup=NULL;
-  int i;
-
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Creating the cert context");
-  }
-
-  cert_ctx = X509_STORE_new();
-
-  if (cert_ctx == NULL) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Couldn't init cert_ctx");
-    }
-    return NULL;
-  }
-
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Setting the callback function");
-  }
-  X509_STORE_set_verify_cb_func(cert_ctx,cb);
-
-  /*
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Adding lookup of file");
-  }
-  lookup=X509_STORE_add_lookup(cert_ctx,X509_LOOKUP_file());
-  if (lookup == NULL) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Couldn't init lookup_file");
-    }
-    return NULL;
-  }
-  X509_LOOKUP_load_file(lookup,NULL,X509_FILETYPE_DEFAULT);
-  */
-
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Adding lookup of dir");
-  }
-  lookup=X509_STORE_add_lookup(cert_ctx,X509_LOOKUP_hash_dir());
-  if (lookup == NULL) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Couldn't init lookup_dir");
-    }
-    return NULL;
-  }
-  i=X509_LOOKUP_add_dir(lookup,ca_dir,X509_FILETYPE_PEM);
-  if(!i) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Couldn't add ca_dir to lookup");
-    }
-    return NULL;
-  }
-
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Clearing errors.");
-  }
-  ERR_clear_error();
-
-  return cert_ctx;
-}
-
-int cb(int ok, X509_STORE_CTX *ctx) {
-  if (!ok) {
-    if (ctx->error != X509_V_ERR_CERT_SIGNATURE_FAILURE) {
-      DEBUG( SPOCP_DBCOND ){
-	traceLog("Got error: %d",ctx->error);
-      }
-    }
-    if (ctx->error == X509_V_ERR_PATH_LENGTH_EXCEEDED) ok=1;
-    if (ctx->error == X509_V_ERR_INVALID_PURPOSE) ok=1;
-    if (ctx->error == X509_V_ERR_CERT_SIGNATURE_FAILURE) ok=1;
-  }
-  return(ok);
-}
-
-spocp_result_t check_cert(X509_STORE *ctx, char *data) 
+void
+decode_base64(char *inbuf, char *outbuf)
 {
-  X509 *x=NULL;
-  BIO *in=NULL;
-  X509_STORE_CTX *csc;
+	BIO            *bio, *b64;
+	int             inlen;
 
-  int i=0 ;
-  spocp_result_t ret ;
-  
-  in = BIO_new_mem_buf(data, -1);
-  if (in == NULL) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Problem with opening buffer with data");
-    }
-    /*
-    if (x != NULL) {
-      X509_free(x);
-    }
-    if (in != NULL) {
-      BIO_free(in);
-    }
-    */
-    return SPOCP_OPERATIONSERROR ;
-  }
-  
-  x=PEM_read_bio_X509(in,NULL,NULL,NULL);
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Creating base64-filter");
+	}
+	b64 = BIO_new(BIO_f_base64());
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Setting flags");
+	}
+	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
 
-  if (x == NULL) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Problem with reading X509 certificate");
-    }
-    /*
-    if (x != NULL) {
-      X509_free(x);
-    }
-    if (in != NULL) {
-    */
-      BIO_free(in);
-    /*
-    }
-    */
-    return SPOCP_OPERATIONSERROR ;
-  }
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Creating memory buffer");
+	}
+	bio = BIO_new_mem_buf(inbuf, -1);
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Pushing base64-filter");
+	}
+	bio = BIO_push(b64, bio);
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Reading into outbuffer");
+	}
+	while ((inlen = BIO_read(bio, outbuf, 65000)) > 0) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Have read %d bytes", inlen);
+		}
+	}
 
-  csc = X509_STORE_CTX_new();
-  if (csc == NULL) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Problem with creating new X509_STORE_CTX");
-    }
-    if (x != NULL) {
-      X509_free(x);
-    }
-    if (in != NULL) {
-      BIO_free(in);
-    }
-    return SPOCP_OPERATIONSERROR ;
-  }
 
-  X509_STORE_CTX_init(csc,ctx,x,NULL);
-  i=X509_verify_cert(csc);
-  X509_STORE_CTX_free(csc);
-
-  if (i) ret = SPOCP_SUCCESS ;
-  else   ret = SPOCP_DENIED ;
-
-  return(ret);
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Freeing all.");
+	}
+	BIO_free_all(bio);
 }
 
-X509_STORE *cert_ctx=NULL;
 
-spocp_result_t cert_test( cmd_param_t *cpp, octet_t *blob ) 
+X509_STORE     *
+initCertificateCheck(char *ca_dir)
 {
-  spocp_result_t answer;
+	X509_STORE     *cert_ctx = NULL;
+	X509_LOOKUP    *lookup = NULL;
+	int             i;
 
-  char *cert_b64 = "";
-  char *decoded_cert = "";
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Creating the cert context");
+	}
 
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Entering cert_test");
-  }
+	cert_ctx = X509_STORE_new();
 
-  cert_b64 = cpp->arg->val;
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Allocating memory for decoded part. Memory needed: %d",cpp->arg->len);
-  }
+	if (cert_ctx == NULL) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Couldn't init cert_ctx");
+		}
+		return NULL;
+	}
 
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Decoding base64.");
-  }
-  decoded_cert = (char *)Malloc(arg->len * sizeof(char));
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Setting the callback function");
+	}
+	X509_STORE_set_verify_cb_func(cert_ctx, cb);
 
-  decode_base64(cert_b64,decoded_cert);
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Checking certificate.");
-  }
+	/*
+	 * DEBUG( SPOCP_DBCOND ){ traceLog("Adding lookup of file"); }
+	 * lookup=X509_STORE_add_lookup(cert_ctx,X509_LOOKUP_file()); if
+	 * (lookup == NULL) { DEBUG( SPOCP_DBCOND ){ traceLog("Couldn't init
+	 * lookup_file"); } return NULL; }
+	 * X509_LOOKUP_load_file(lookup,NULL,X509_FILETYPE_DEFAULT); 
+	 */
 
-  answer = check_cert(cert_ctx,decoded_cert);
-  
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Answer from check: %d.",answer);
-  }
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Adding lookup of dir");
+	}
+	lookup = X509_STORE_add_lookup(cert_ctx, X509_LOOKUP_hash_dir());
+	if (lookup == NULL) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Couldn't init lookup_dir");
+		}
+		return NULL;
+	}
+	i = X509_LOOKUP_add_dir(lookup, ca_dir, X509_FILETYPE_PEM);
+	if (!i) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Couldn't add ca_dir to lookup");
+		}
+		return NULL;
+	}
 
-  if (cert_ctx != NULL) X509_STORE_free(cert_ctx);
-  free(decoded_cert);
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Clearing errors.");
+	}
+	ERR_clear_error();
 
-  return answer;
+	return cert_ctx;
 }
 
-spocp_result_t cert_syntax( char *arg)
+int
+cb(int ok, X509_STORE_CTX * ctx)
 {
-  return SPOCP_SUCCESS ;
+	if (!ok) {
+		if (ctx->error != X509_V_ERR_CERT_SIGNATURE_FAILURE) {
+			DEBUG(SPOCP_DBCOND) {
+				traceLog("Got error: %d", ctx->error);
+			}
+		}
+		if (ctx->error == X509_V_ERR_PATH_LENGTH_EXCEEDED)
+			ok = 1;
+		if (ctx->error == X509_V_ERR_INVALID_PURPOSE)
+			ok = 1;
+		if (ctx->error == X509_V_ERR_CERT_SIGNATURE_FAILURE)
+			ok = 1;
+	}
+	return (ok);
+}
+
+spocp_result_t
+check_cert(X509_STORE * ctx, char *data)
+{
+	X509           *x = NULL;
+	BIO            *in = NULL;
+	X509_STORE_CTX *csc;
+
+	int             i = 0;
+	spocp_result_t  ret;
+
+	in = BIO_new_mem_buf(data, -1);
+	if (in == NULL) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Problem with opening buffer with data");
+		}
+		/*
+		 * if (x != NULL) { X509_free(x); } if (in != NULL) {
+		 * BIO_free(in); } 
+		 */
+		return SPOCP_OPERATIONSERROR;
+	}
+
+	x = PEM_read_bio_X509(in, NULL, NULL, NULL);
+
+	if (x == NULL) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Problem with reading X509 certificate");
+		}
+		/*
+		 * if (x != NULL) { X509_free(x); } if (in != NULL) { 
+		 */
+		BIO_free(in);
+		/*
+		 * } 
+		 */
+		return SPOCP_OPERATIONSERROR;
+	}
+
+	csc = X509_STORE_CTX_new();
+	if (csc == NULL) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Problem with creating new X509_STORE_CTX");
+		}
+		if (x != NULL) {
+			X509_free(x);
+		}
+		if (in != NULL) {
+			BIO_free(in);
+		}
+		return SPOCP_OPERATIONSERROR;
+	}
+
+	X509_STORE_CTX_init(csc, ctx, x, NULL);
+	i = X509_verify_cert(csc);
+	X509_STORE_CTX_free(csc);
+
+	if (i)
+		ret = SPOCP_SUCCESS;
+	else
+		ret = SPOCP_DENIED;
+
+	return (ret);
+}
+
+X509_STORE     *cert_ctx = NULL;
+
+spocp_result_t
+cert_test(cmd_param_t * cpp, octet_t * blob)
+{
+	spocp_result_t  answer;
+
+	char           *cert_b64 = "";
+	char           *decoded_cert = "";
+
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Entering cert_test");
+	}
+
+	cert_b64 = cpp->arg->val;
+	DEBUG(SPOCP_DBCOND) {
+		traceLog
+		    ("Allocating memory for decoded part. Memory needed: %d",
+		     cpp->arg->len);
+	}
+
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Decoding base64.");
+	}
+	decoded_cert = (char *) Malloc(arg->len * sizeof(char));
+
+	decode_base64(cert_b64, decoded_cert);
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Checking certificate.");
+	}
+
+	answer = check_cert(cert_ctx, decoded_cert);
+
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Answer from check: %d.", answer);
+	}
+
+	if (cert_ctx != NULL)
+		X509_STORE_free(cert_ctx);
+	free(decoded_cert);
+
+	return answer;
+}
+
+spocp_result_t
+cert_syntax(char *arg)
+{
+	return SPOCP_SUCCESS;
 }
 
 
-spocp_result_t cert_init( void **conf, pdyn_t *pdp ) {
-  octarr_t   *oa = 0 ;
-  void       *vp = 0;
-  char       *path = "/usr/local/spocp/conf/cert";
-  struct stat sts;
-  int         i ;
+spocp_result_t
+cert_init(void **conf, pdyn_t * pdp)
+{
+	octarr_t       *oa = 0;
+	void           *vp = 0;
+	char           *path = "/usr/local/spocp/conf/cert";
+	struct stat     sts;
+	int             i;
 
-  LOG( SPOCP_DEBUG) traceLog( "cert_init" ) ;
+	LOG(SPOCP_DEBUG) traceLog("cert_init");
 
-  /* If you are loking up a plugin configuration attribute, cfg will always
-     returns a pointer to a octarr struct */
-  /* using vp to avoid warnings about type-punned pointers */
-  cgf( conf, PLUGIN, "cert", "cadir", &vp ) ;
-  if( vp ) on = ( octnode_t *) vp ;
-  
-  for( i ; i < oa->n ; i ) {
-    path = oa->arr[i]->val ;
-    if (stat(path, &sts) == -1 && errno == ENOENT) {
-      DEBUG( SPOCP_DBCOND ){
-        traceLog("The path specified: [%s] does not exist.",path);
-      }
-    }
-    else break ; 
-  }
+	/*
+	 * If you are loking up a plugin configuration attribute, cfg will
+	 * always returns a pointer to a octarr struct 
+	 */
+	/*
+	 * using vp to avoid warnings about type-punned pointers 
+	 */
+	cgf(conf, PLUGIN, "cert", "cadir", &vp);
+	if (vp)
+		on = (octnode_t *) vp;
 
-  if( vp && i == oa->n ) return SPOCP_UNAVAILABLE ;
+	for (i; i < oa->n; i) {
+		path = oa->arr[i]->val;
+		if (stat(path, &sts) == -1 && errno == ENOENT) {
+			DEBUG(SPOCP_DBCOND) {
+				traceLog
+				    ("The path specified: [%s] does not exist.",
+				     path);
+			}
+		} else
+			break;
+	}
 
-  cert_ctx = initCertificateCheck(path);
+	if (vp && i == oa->n)
+		return SPOCP_UNAVAILABLE;
 
-  if(cert_ctx == NULL) {
-    DEBUG( SPOCP_DBCOND ){
-      traceLog("Cert_ctx is NULL");
-    }
-    return SPOCP_UNAVAILABLE ;
-  }
-  DEBUG( SPOCP_DBCOND ){
-    traceLog("Have inited certificate check with dir [%s].",path);
-  }
+	cert_ctx = initCertificateCheck(path);
 
-  return SPOCP_SUCCESS ;
+	if (cert_ctx == NULL) {
+		DEBUG(SPOCP_DBCOND) {
+			traceLog("Cert_ctx is NULL");
+		}
+		return SPOCP_UNAVAILABLE;
+	}
+	DEBUG(SPOCP_DBCOND) {
+		traceLog("Have inited certificate check with dir [%s].", path);
+	}
+
+	return SPOCP_SUCCESS;
 }
 
-plugin_t cert_module = {
-  SPOCP20_PLUGIN_STUFF ,
-  cert_test,
-  cert_init,
-  NULL
-} ;
+plugin_t        cert_module = {
+	SPOCP20_PLUGIN_STUFF,
+	cert_test,
+	cert_init,
+	NULL
+};
 
 #else
-int spocp_no_ssl ;
+int             spocp_no_ssl;
 #endif

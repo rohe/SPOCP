@@ -1,507 +1,569 @@
 #include "locl.h"
-/* RCSID("$Id$"); */
+/*
+ * RCSID("$Id$"); 
+ */
 
 typedef struct _ptree {
-  int list ;
-  octet_t val ;
-  struct _ptree *next ;
-  struct _ptree *part ;
-} ptree_t ;
+	int             list;
+	octet_t         val;
+	struct _ptree  *next;
+	struct _ptree  *part;
+} ptree_t;
 
 
-/* ----------------------------------------------------------------------------- */
+/*
+ * ----------------------------------------------------------------------------- 
+ */
 
-static void ptree_free( ptree_t *ptp )
+static void
+ptree_free(ptree_t * ptp)
 {
-  if( ptp ) {
-    if( ptp->part ) ptree_free( ptp->part ) ;
-    if( ptp->next ) ptree_free( ptp->next ) ;
-    if( ptp->val.size ) free( ptp->val.val ) ;
-    free( ptp ) ;
-  }
+	if (ptp) {
+		if (ptp->part)
+			ptree_free(ptp->part);
+		if (ptp->next)
+			ptree_free(ptp->next);
+		if (ptp->val.size)
+			free(ptp->val.val);
+		free(ptp);
+	}
 }
-/* ----------------------------------------------------------------------------- */
+/*
+ * ----------------------------------------------------------------------------- 
+ */
 
-static ptree_t *parse_sexp( octet_t *sexp , keyval_t **globals )
+static ptree_t *
+parse_sexp(octet_t * sexp, keyval_t ** globals)
 {
-  ptree_t *ptp, *ntp = 0, *ptr ;
-  octet_t  oct ;
+	ptree_t        *ptp, *ntp = 0, *ptr;
+	octet_t         oct;
 
-  if( *sexp->val == '(' ) {
-    ptp = ( ptree_t * ) calloc ( 1, sizeof( ptree_t )) ;
-    ptp->list = 1 ;
-    sexp->val++ ;
-    sexp->len-- ;
-    while( sexp->len && *sexp->val != ')' ) {
-      if(( ptr = parse_sexp( sexp, globals )) == 0 ) {
-        ptree_free( ptp ) ;
-        return 0;
-      }
+	if (*sexp->val == '(') {
+		ptp = (ptree_t *) calloc(1, sizeof(ptree_t));
+		ptp->list = 1;
+		sexp->val++;
+		sexp->len--;
+		while (sexp->len && *sexp->val != ')') {
+			if ((ptr = parse_sexp(sexp, globals)) == 0) {
+				ptree_free(ptp);
+				return 0;
+			}
 
-      if( ptp->part == 0 ) ntp = ptp->part = ptr ;
-      else {
-        ntp->next = ptr ;
-        ntp = ntp->next ;
-      }
-    }
-    if( *sexp->val == ')' ) {
-      sexp->val++ ;
-      sexp->len-- ;
-    }
-    else { /* error */
-      ptree_free( ptp ) ;
-      return 0 ;
-    }
-  }
-  else if( strncmp( sexp->val, "$$(", 3 ) == 0 ) {
-    if( oct_expand( sexp, *globals, 1 ) != SPOCP_SUCCESS ) {
-      return 0 ;
-    }
-    ptp = parse_sexp( sexp, globals ) ;    
-  }
-  else {
-    ptp = ( ptree_t * ) calloc ( 1, sizeof( ptree_t )) ;
-    if( get_str( sexp, &ptp->val ) != SPOCP_SUCCESS ) {
-      ptree_free( ptp ) ;
-      return 0 ;
-    }
-    if( octstr( &ptp->val, "$$(" ) >= 0 ) {
-      oct.size = 0 ;
-      octcpy( &oct, &ptp->val ) ;
-      if( oct_expand( &oct, *globals, 1 ) != SPOCP_SUCCESS ) {
-        ptree_free( ptp ) ;
-        return 0 ;
-      }
-      ptp->val.val = oct.val ;
-      ptp->val.size = oct.size ;
-      ptp->val.len = oct.len ;
-    }
-  }
-    
-  return ptp ;
-}
+			if (ptp->part == 0)
+				ntp = ptp->part = ptr;
+			else {
+				ntp->next = ptr;
+				ntp = ntp->next;
+			}
+		}
+		if (*sexp->val == ')') {
+			sexp->val++;
+			sexp->len--;
+		} else {	/* error */
+			ptree_free(ptp);
+			return 0;
+		}
+	} else if (strncmp(sexp->val, "$$(", 3) == 0) {
+		if (oct_expand(sexp, *globals, 1) != SPOCP_SUCCESS) {
+			return 0;
+		}
+		ptp = parse_sexp(sexp, globals);
+	} else {
+		ptp = (ptree_t *) calloc(1, sizeof(ptree_t));
+		if (get_str(sexp, &ptp->val) != SPOCP_SUCCESS) {
+			ptree_free(ptp);
+			return 0;
+		}
+		if (octstr(&ptp->val, "$$(") >= 0) {
+			oct.size = 0;
+			octcpy(&oct, &ptp->val);
+			if (oct_expand(&oct, *globals, 1) != SPOCP_SUCCESS) {
+				ptree_free(ptp);
+				return 0;
+			}
+			ptp->val.val = oct.val;
+			ptp->val.size = oct.size;
+			ptp->val.len = oct.len;
+		}
+	}
 
-static int length_sexp ( ptree_t *ptp )
-{
-  int len = 0 ;
-  ptree_t *pt ;
-
-  if( ptp->list ) {
-    len = 2 ;
-    for( pt = ptp->part ; pt ; pt = pt->next ) len += length_sexp( pt ) ;
-  }
-  else {
-    len = DIGITS( ptp->val.len ) ;
-    len++ ;
-    len += ptp->val.len ;
-  }
-
-  return len ;
+	return ptp;
 }
 
-static void recreate_sexp ( octet_t *o, ptree_t *ptp ) 
+static int
+length_sexp(ptree_t * ptp)
 {
-  ptree_t *pt ;
-  int     len = 0 ;
+	int             len = 0;
+	ptree_t        *pt;
 
-  if( ptp->list ) {
-    *o->val++ = '(' ;
-    o->len++ ;
-    for( pt = ptp->part ; pt ; pt = pt->next ) recreate_sexp( o, pt ) ;
-    *o->val++ = ')' ;
-    o->len++ ;
-  }
-  else {
-    sprintf( o->val, "%d:", ptp->val.len ) ;
-    len = DIGITS( ptp->val.len ) ;
-    len++ ;
-    o->len += len ;
-    o->val += len ;
-    strncpy( o->val, ptp->val.val, ptp->val.len ) ;
-    o->len += ptp->val.len; 
-    o->val += ptp->val.len; 
-  }
+	if (ptp->list) {
+		len = 2;
+		for (pt = ptp->part; pt; pt = pt->next)
+			len += length_sexp(pt);
+	} else {
+		len = DIGITS(ptp->val.len);
+		len++;
+		len += ptp->val.len;
+	}
+
+	return len;
+}
+
+static void
+recreate_sexp(octet_t * o, ptree_t * ptp)
+{
+	ptree_t        *pt;
+	int             len = 0;
+
+	if (ptp->list) {
+		*o->val++ = '(';
+		o->len++;
+		for (pt = ptp->part; pt; pt = pt->next)
+			recreate_sexp(o, pt);
+		*o->val++ = ')';
+		o->len++;
+	} else {
+		sprintf(o->val, "%d:", ptp->val.len);
+		len = DIGITS(ptp->val.len);
+		len++;
+		o->len += len;
+		o->val += len;
+		strncpy(o->val, ptp->val.val, ptp->val.len);
+		o->len += ptp->val.len;
+		o->val += ptp->val.len;
+	}
 }
 
 /*
-static octet_t *expand_sexp( octet_t *sexp, keyval_t **globals )
-{
-  int len ;
-  ptree_t *ptp ;
-  octet_t *oct ;
-  char    *str ;
-
-  if(( ptp = parse_sexp( sexp, globals )) == 0 ) return 0 ;
-  len = length_sexp( ptp ) ;
-
-  oct = ( octet_t * ) malloc ( sizeof( octet_t )) ;
-  oct->val = str = ( char * ) calloc ( len, sizeof( char )) ;
-  oct->size = len ;
-  oct->len = 0 ;
-
-  recreate_sexp( oct, ptp ) ;
-
-  oct->val = str ;
-  oct->size = 0 ;
-  oct->len = strlen(str) ;
-
-  ptree_free( ptp ) ;
-
-  return oct ;
-}
-*/
-
-/* ----------------------------------------------------------------------------- */
-
-static int spocp_add_global( keyval_t **kvpp, octet_t *key, octet_t *val ) 
-{
-  keyval_t *kvp ;
-
-  if( key == 0 || key->len == 0 ) return 0 ;
-
-  if( *kvpp == 0 ) {
-    kvp = ( keyval_t *) Malloc( sizeof( keyval_t )) ;
-    kvp->next = 0 ;
-    *kvpp = kvp ;
-  }
-  else {
-    for( kvp = *kvpp ; kvp->next ; kvp = kvp->next ) {
-      if( octcmp( kvp->key, key ) == 0 ) return -1 ;
-    }
-
-    /* last check */
-    if( octcmp( kvp->key, key ) == 0 ) {
-      if( kvp->val ) oct_free( kvp->val ) ;  
-      if( val ) kvp->val = octdup( val ) ;
-      return 1 ;
-    }
-
-    kvp->next = ( keyval_t *) Malloc( sizeof( keyval_t )) ;
-    kvp = kvp->next ;
-  }
-
-  kvp->key = octdup( key ) ;
-
-  if( val && val->len != 0 ) kvp->val = octdup( val ) ;
-  else kvp->val = 0 ;
-
-  kvp->next = 0 ;
-
-  return 1 ;
-}
-
-/* The format of the rule file
-
-  spec       = line *( BSLASH CR line ) CR
-  line       = ( rule / comment / "" / definition / bconddef / include ) 
-  rule       = [ path ] sexp [ bcond [ blob ]]
-  element    = sexp / atom / variable
-  sexp       = "(" atom *element ")"
-  blob       = atom 
-  atom       = len ":" val
-  variable   = "$$(" key ")"
-  key        = 1*(%x2A-7E)
-  comment    = "#" *UTF8  
-  definition = key *SP "=" *SP 1*( sexp )
-  bconddef   = key *SP ":=" *SP 1*( sexp )
-  SP         = %x20 / %x09                      ; space or tab
-  DIGIT      = %x30-39
-  len        = %x31-39 *( DIGIT )
-  val        = 1*( UTF8 / pair )
-  include    = ";include" filename              ; reference to another rule file
-
-  pair       = "\" ( "\" / hexpair )
-  hexpair    = hexchar hexchar
-  hexchar    = DIGIT / "A" / "B" / "C" / "D" / "E" / "F"
-               / "a" / "b" / "c" / "d" / "e" / "f"
-
-  path       = "/" *( dir "/" ) ;
-  dir        = 1*pchar 
-  pchar      = DIGIT / 0x41-5A / 0x61-7A / %x2E
-
-  bcond      = bcexp / bcomp
-  bcomp      = and / or / not / ref
-  ref        = "(3:ref" bcname ")"
-  and        = "(3:and" 2*( bcomp ) ")"
-  or         = "(2:or" 2*( bcomp ) ")"
-  not        = "(3:not" bcomp ")"
-  CR         = %x0D
-  BSLASH     = %x5C         
+ * static octet_t *expand_sexp( octet_t *sexp, keyval_t **globals ) { int len
+ * ; ptree_t *ptp ; octet_t *oct ; char *str ;
+ * 
+ * if(( ptp = parse_sexp( sexp, globals )) == 0 ) return 0 ; len =
+ * length_sexp( ptp ) ;
+ * 
+ * oct = ( octet_t * ) malloc ( sizeof( octet_t )) ; oct->val = str = ( char * 
+ * ) calloc ( len, sizeof( char )) ; oct->size = len ; oct->len = 0 ;
+ * 
+ * recreate_sexp( oct, ptp ) ;
+ * 
+ * oct->val = str ; oct->size = 0 ; oct->len = strlen(str) ;
+ * 
+ * ptree_free( ptp ) ;
+ * 
+ * return oct ; } 
  */
 
-int read_rules( srv_t *srv, char *file, dbcmd_t *dbc, keyval_t **globals )
+/*
+ * ----------------------------------------------------------------------------- 
+ */
+
+static int
+spocp_add_global(keyval_t ** kvpp, octet_t * key, octet_t * val)
 {
-  FILE        *fp ;
-  char        *sp, *cp, *tmp, buf[ BUFSIZ ] ;
-  int         n = 0, f = 0, r, ln = 0, g ;
-  size_t      l ;
-  octet_t     oct, key, val, rsn, blob, bcond, *exp = 0, prev ;
-  octarr_t    *oa = 0;
-  ruleset_t   *rs = 0, *trs ;
-  bcdef_t     *bcd = 0 ;
-  spocp_result_t rc = SPOCP_SUCCESS ;
+	keyval_t       *kvp;
 
-  if(( fp = fopen( file, "r" )) == 0 ) {
-    LOG(SPOCP_EMERG) traceLog( "couldn't open rule file \"%s\"", file) ;
-    sp = getcwd( oct.val, oct.size ) ;
-    LOG(SPOCP_EMERG) traceLog("I'm in \"%s\"", sp ) ;
-    free( oct.val ) ;
-    return -1 ;
-  }
+	if (key == 0 || key->len == 0)
+		return 0;
 
-  /* The default ruleset should already be set */
+	if (*kvpp == 0) {
+		kvp = (keyval_t *) Malloc(sizeof(keyval_t));
+		kvp->next = 0;
+		*kvpp = kvp;
+	} else {
+		for (kvp = *kvpp; kvp->next; kvp = kvp->next) {
+			if (octcmp(kvp->key, key) == 0)
+				return -1;
+		}
 
-  if( srv->root == 0 ) {
-    srv->root = rs = ruleset_new( 0 ) ;
-  }
-  else rs = srv->root ;
+		/*
+		 * last check 
+		 */
+		if (octcmp(kvp->key, key) == 0) {
+			if (kvp->val)
+				oct_free(kvp->val);
+			if (val)
+				kvp->val = octdup(val);
+			return 1;
+		}
 
-  if( rs->db == 0 ) rs->db = db_new() ;
+		kvp->next = (keyval_t *) Malloc(sizeof(keyval_t));
+		kvp = kvp->next;
+	}
 
-  prev.len = prev.size = 0 ;
-  prev.val = 0 ;
+	kvp->key = octdup(key);
 
-  /* have to escape CR since fgets stops reading when it hits a newline
-     NUL also has to be escaped since I have problem otherwise finding 
-     the length of the 'string'.
-     '\' hex hex is probably going to be the choice
-   */
-  while( fgets( buf, BUFSIZ, fp ) ) {
-    exp = 0 ;
-    oct_assign( &oct, buf ) ;
+	if (val && val->len != 0)
+		kvp->val = octdup(val);
+	else
+		kvp->val = 0;
 
-    sp = oct.val ;
+	kvp->next = 0;
 
-    ln++ ;
+	return 1;
+}
 
-    if( *sp == '#' ) continue ; /* comment */ 
-    for( cp = sp + oct.len - 1 ; *cp == '\r' || *cp == '\n' ; cp-- ) {
-      oct.len-- ;
-      if( oct.len == 0 ) break ;
-    }
+/*
+ * The format of the rule file
+ * 
+ * spec = line *( BSLASH CR line ) CR line = ( rule / comment / "" /
+ * definition / bconddef / include ) rule = [ path ] sexp [ bcond [ blob ]]
+ * element = sexp / atom / variable sexp = "(" atom *element ")" blob = atom
+ * atom = len ":" val variable = "$$(" key ")" key = 1*(%x2A-7E) comment = "#" 
+ * *UTF8 definition = key *SP "=" *SP 1*( sexp ) bconddef = key *SP ":=" *SP
+ * 1*( sexp ) SP = %x20 / %x09 ; space or tab DIGIT = %x30-39 len = %x31-39 *( 
+ * DIGIT ) val = 1*( UTF8 / pair ) include = ";include" filename ; reference
+ * to another rule file
+ * 
+ * pair = "\" ( "\" / hexpair ) hexpair = hexchar hexchar hexchar = DIGIT /
+ * "A" / "B" / "C" / "D" / "E" / "F" / "a" / "b" / "c" / "d" / "e" / "f"
+ * 
+ * path = "/" *( dir "/" ) ; dir = 1*pchar pchar = DIGIT / 0x41-5A / 0x61-7A
+ * / %x2E
+ * 
+ * bcond = bcexp / bcomp bcomp = and / or / not / ref ref = "(3:ref" bcname
+ * ")" and = "(3:and" 2*( bcomp ) ")" or = "(2:or" 2*( bcomp ) ")" not =
+ * "(3:not" bcomp ")" CR = %x0D BSLASH = %x5C 
+ */
 
-    if( oct.len == 0 ) continue ;
+int
+read_rules(srv_t * srv, char *file, dbcmd_t * dbc, keyval_t ** globals)
+{
+	FILE           *fp;
+	char           *sp, *cp, *tmp, buf[BUFSIZ];
+	int             n = 0, f = 0, r, ln = 0, g;
+	size_t          l;
+	octet_t         oct, key, val, rsn, blob, bcond, *exp = 0, prev;
+	octarr_t       *oa = 0;
+	ruleset_t      *rs = 0, *trs;
+	bcdef_t        *bcd = 0;
+	spocp_result_t  rc = SPOCP_SUCCESS;
 
-    if( oct.val[ oct.len - 1 ] == '\\' ) {
-      oct.len-- ;
-      if( prev.size == 0 ) octcpy( &prev, &oct ) ;
-      else octcat( &prev, oct.val, oct.len ) ;
-      continue ;
-    }
+	if ((fp = fopen(file, "r")) == 0) {
+		LOG(SPOCP_EMERG) traceLog("couldn't open rule file \"%s\"",
+					  file);
+		sp = getcwd(oct.val, oct.size);
+		LOG(SPOCP_EMERG) traceLog("I'm in \"%s\"", sp);
+		free(oct.val);
+		return -1;
+	}
 
-    if( prev.size ) {
-      octcat( &prev, oct.val, oct.len ) ;
-      octln( &oct, &prev ) ;
-      sp = oct.val ;
-    }
+	/*
+	 * The default ruleset should already be set 
+	 */
 
-    LOG( SPOCP_DEBUG ) {
-      tmp = oct2strdup( &oct, '%' ) ;
-      traceLog( "line(%d): \"%s\"", ln, tmp ) ;
-      free( tmp ) ;
-    }
+	if (srv->root == 0) {
+		srv->root = rs = ruleset_new(0);
+	} else
+		rs = srv->root;
 
-    if( oct_de_escape( &oct ) < 0 ) {
-      traceLog( "Error in escape sequence" ) ;
-      f++ ;
-      octclr( &prev ) ;
-      continue ;
-    }
-    oct.val[oct.len] = 0 ;
+	if (rs->db == 0)
+		rs->db = db_new();
 
-    if( oct2strncmp( &oct, ";include ", 9 ) == 0 ) { /* include file */
-      LOG(SPOCP_DEBUG) traceLog( "include directive \"%s\"", sp+9) ;
-      if(( rc = read_rules( srv, sp+9, dbc, globals )) < 0 ) {
-        traceLog( "Include problem")  ;
-      }
-      octclr( &prev ) ;
-      continue ;
-    }
+	prev.len = prev.size = 0;
+	prev.val = 0;
 
-    if(( g = octstr( &oct, "$$(" )) >= 0 ) { 
-      /* expand if possible */
-      if( *globals ) {
-        exp = octdup( &oct ) ;
-        if( oct_expand( exp, *globals, 0 ) == SPOCP_SUCCESS ) {
-          exp->val[exp->len] = 0 ;
-          LOG( SPOCP_DEBUG ) traceLog("Expanded to: \"%s\"", exp->val ) ;
-        }
-        else  {
-          LOG( SPOCP_WARNING ) traceLog("Failed to expand: \"%s\"", exp->val ) ;
-          oct_free( exp ) ;
-          f++ ;
-          octclr( &prev ) ;
-          continue ;
-        }
-        octln( &oct, exp ) ;
-        sp = oct.val ;
-      }
-      else { /* check if expansion was needed */
-        key.val = oct.val + g ;
-        key.len = oct.len - g ;
-        if( octchr( &key, ')' ) >= 0 ) {
-          LOG( SPOCP_WARNING ) traceLog("Failed to expand: \"%s\"", oct.val ) ;
-          f++ ;
-          octclr( &prev ) ;
-          continue ;
-        }
-      }
-    }
+	/*
+	 * have to escape CR since fgets stops reading when it hits a newline
+	 * NUL also has to be escaped since I have problem otherwise finding
+	 * the length of the 'string'. '\' hex hex is probably going to be the 
+	 * choice 
+	 */
+	while (fgets(buf, BUFSIZ, fp)) {
+		exp = 0;
+		oct_assign(&oct, buf);
 
-    if( *sp == '/' ) {
-      if( ruleset_name( &oct, &rsn ) != SPOCP_SUCCESS ) {
-        LOG( SPOCP_EMERG ) traceLog( "Strange line \"%s\"", oct.val ) ;
-        if( exp ) oct_free( exp ) ;
-        octclr( &prev ) ;
-        return -1;
-      }
+		sp = oct.val;
 
-      trs = rs ;
-      if( ruleset_find( &rsn, &trs ) == 0 ) {
-        ruleset_create( &rsn, &rs ) ;
-        LOG( SPOCP_DEBUG ) traceLog( "ruleset name: \"%s\"", trs->name ) ;
-        ruleset_find( &rsn, &trs ) ;
-        trs->db = db_new() ;
-      }
-      /* this is after the ruleset specification */
-      sp = oct.val ;
-    }
-    else trs = rs ;
+		ln++;
 
-    while( *sp == ' ' || *sp == '\t' ) sp++ ;
+		if (*sp == '#')
+			continue;	/* comment */
+		for (cp = sp + oct.len - 1; *cp == '\r' || *cp == '\n'; cp--) {
+			oct.len--;
+			if (oct.len == 0)
+				break;
+		}
 
-    if( *sp == '(' ) {
-      LOG(SPOCP_DEBUG) traceLog( "rule: \"%s\"", sp) ;
+		if (oct.len == 0)
+			continue;
 
-      if(( l = sexp_len( &oct )) == 0 ) {
-        traceLog( "Error in the rulefile" ) ;
-        if( exp ) oct_free( exp ) ;
-        octclr( &prev ) ;
-        return -1;
-      } 
+		if (oct.val[oct.len - 1] == '\\') {
+			oct.len--;
+			if (prev.size == 0)
+				octcpy(&prev, &oct);
+			else
+				octcat(&prev, oct.val, oct.len);
+			continue;
+		}
 
-      val.len = l ;
-      val.val = oct.val ;
-      oa = octarr_add( oa, octdup(&val)) ;
+		if (prev.size) {
+			octcat(&prev, oct.val, oct.len);
+			octln(&oct, &prev);
+			sp = oct.val;
+		}
 
-      if( oct.len > l ) { /* bcond ref and or blob too */
-        for( sp = oct.val+l ; *sp == ' ' || *sp == '\t' ; sp++, l++ ) ; 
-        bcond.val = oct.val + l ;
-        bcond.len = oct.len - l ; 
-        bcond.size = 0 ; 
-        
-	if( oct2strcmp( &bcond, "NULL") == 0 ) bcd = 0 ;
-        else {
-          unsigned int bl, d ;
+		LOG(SPOCP_DEBUG) {
+			tmp = oct2strdup(&oct, '%');
+			traceLog("line(%d): \"%s\"", ln, tmp);
+			free(tmp);
+		}
 
-          if(( bl = sexp_len( &bcond )) == 0 ) {
-            traceLog( "Error in the boundarycondition definition" ) ;
-            if( exp ) oct_free( exp ) ;
-            octclr( &prev ) ;
-            return -1;
-          } 
+		if (oct_de_escape(&oct) < 0) {
+			traceLog("Error in escape sequence");
+			f++;
+			octclr(&prev);
+			continue;
+		}
+		oct.val[oct.len] = 0;
 
-          if( bcond.len > bl ) { /* blob too */
-            d = bcond.len - bl ;
-            bcond.len = bl ;
-            for( sp = bcond.val+bl ; *sp == ' ' || *sp == '\t' ; sp++, bl++ ) d-- ; 
-            blob.val = bcond.val + bl ;
-            blob.len = bcond.len - d ; 
-            blob.size = 0 ; 
-        
-            oa = octarr_add( oa, octdup( &bcond )) ;
-            oa = octarr_add( oa, octdup( &blob )) ;
-          }
-          else 
-            oa = octarr_add( oa, octdup( &bcond )) ;
+		if (oct2strncmp(&oct, ";include ", 9) == 0) {	/* include
+								 * file */
+			LOG(SPOCP_DEBUG) traceLog("include directive \"%s\"",
+						  sp + 9);
+			if ((rc = read_rules(srv, sp + 9, dbc, globals)) < 0) {
+				traceLog("Include problem");
+			}
+			octclr(&prev);
+			continue;
+		}
 
-        }
-      }
+		if ((g = octstr(&oct, "$$(")) >= 0) {
+			/*
+			 * expand if possible 
+			 */
+			if (*globals) {
+				exp = octdup(&oct);
+				if (oct_expand(exp, *globals, 0) ==
+				    SPOCP_SUCCESS) {
+					exp->val[exp->len] = 0;
+					LOG(SPOCP_DEBUG)
+					    traceLog("Expanded to: \"%s\"",
+						     exp->val);
+				} else {
+					LOG(SPOCP_WARNING)
+					    traceLog
+					    ("Failed to expand: \"%s\"",
+					     exp->val);
+					oct_free(exp);
+					f++;
+					octclr(&prev);
+					continue;
+				}
+				octln(&oct, exp);
+				sp = oct.val;
+			} else {	/* check if expansion was needed */
+				key.val = oct.val + g;
+				key.len = oct.len - g;
+				if (octchr(&key, ')') >= 0) {
+					LOG(SPOCP_WARNING)
+					    traceLog
+					    ("Failed to expand: \"%s\"",
+					     oct.val);
+					f++;
+					octclr(&prev);
+					continue;
+				}
+			}
+		}
 
-      r = dbapi_rule_add( &(trs->db), srv->plugin, dbc, oa ) ;
-      if( r == SPOCP_SUCCESS ) n++ ;
-      else {
-        LOG( SPOCP_WARNING ) traceLog("Failed to add rule: \"%s\"", oct.val ) ;
-        f++ ;
-      }
+		if (*sp == '/') {
+			if (ruleset_name(&oct, &rsn) != SPOCP_SUCCESS) {
+				LOG(SPOCP_EMERG)
+				    traceLog("Strange line \"%s\"", oct.val);
+				if (exp)
+					oct_free(exp);
+				octclr(&prev);
+				return -1;
+			}
 
-      octarr_free( oa ) ;
-      oa = 0 ;
-    }
-    else { /* ought to be a global or bcond def */
-      int l, d ;
+			trs = rs;
+			if (ruleset_find(&rsn, &trs) == 0) {
+				ruleset_create(&rsn, &rs);
+				LOG(SPOCP_DEBUG)
+				    traceLog("ruleset name: \"%s\"",
+					     trs->name);
+				ruleset_find(&rsn, &trs);
+				trs->db = db_new();
+			}
+			/*
+			 * this is after the ruleset specification 
+			 */
+			sp = oct.val;
+		} else
+			trs = rs;
 
-      octln( &key, &oct ) ;
+		while (*sp == ' ' || *sp == '\t')
+			sp++;
 
-      l = octchr( &key, '=' ) ;
+		if (*sp == '(') {
+			LOG(SPOCP_DEBUG) traceLog("rule: \"%s\"", sp);
 
-      if( l < 0 ) {
-        LOG( SPOCP_WARNING) { traceLog("Mysterious line: \"%s\"", oct.val ) ; }
-        if( exp ) oct_free( exp ) ;
-        octclr( &prev ) ;
-        continue ; /* skip it */
-      }
+			if ((l = sexp_len(&oct)) == 0) {
+				traceLog("Error in the rulefile");
+				if (exp)
+					oct_free(exp);
+				octclr(&prev);
+				return -1;
+			}
 
-      d = 1 ;
+			val.len = l;
+			val.val = oct.val;
+			oa = octarr_add(oa, octdup(&val));
 
-      if( key.val[l-1] == ':' ) { /* bconddef */
-        d++ ;
-        --l ;
-      } 
+			if (oct.len > l) {	/* bcond ref and or blob too */
+				for (sp = oct.val + l;
+				     *sp == ' ' || *sp == '\t'; sp++, l++);
+				bcond.val = oct.val + l;
+				bcond.len = oct.len - l;
+				bcond.size = 0;
 
-      key.len = ( unsigned int ) l ;
-      val.val = key.val + key.len + d ;
-      val.len = oct.len - key.len - d ;
+				if (oct2strcmp(&bcond, "NULL") == 0)
+					bcd = 0;
+				else {
+					unsigned int    bl, d;
 
-      /* spaces both before and after the '=' is allowed, I have to get
-       rid of them now */
-      for( cp = key.val + key.len - 1 ; *cp == ' ' || *cp == '\t' ; cp-- ) {
-        key.len-- ;
-        if( key.len == 0 ) break ;
-      }
+					if ((bl = sexp_len(&bcond)) == 0) {
+						traceLog
+						    ("Error in the boundarycondition definition");
+						if (exp)
+							oct_free(exp);
+						octclr(&prev);
+						return -1;
+					}
 
-      if( key.len == 0 ) {
-        LOG( SPOCP_WARNING) { traceLog("Mysterious line: \"%s\"", oct.val ) ; }
-        if( exp ) oct_free( exp ) ;
-        octclr( &prev ) ;
-        continue ;
-      }
+					if (bcond.len > bl) {	/* blob too */
+						d = bcond.len - bl;
+						bcond.len = bl;
+						for (sp = bcond.val + bl;
+						     *sp == ' ' || *sp == '\t';
+						     sp++, bl++)
+							d--;
+						blob.val = bcond.val + bl;
+						blob.len = bcond.len - d;
+						blob.size = 0;
 
-      for( cp = val.val ; *cp == ' ' || *cp == '\t' ; cp++ ) {
-        val.len-- ;
-        val.val++ ;
-        if( val.len == 0 ) break ;
-      }
+						oa = octarr_add(oa,
+								octdup
+								(&bcond));
+						oa = octarr_add(oa,
+								octdup(&blob));
+					} else
+						oa = octarr_add(oa,
+								octdup
+								(&bcond));
 
-      if( val.len == 0 ) {
-        LOG( SPOCP_WARNING) { traceLog("Mysterious line: \"%s\"", oct.val ) ; }
-        if( exp ) oct_free( exp ) ;
-        octclr( &prev ) ;
-        continue ;
-      }
-        
-      if( d == 1 ) {
-        if( spocp_add_global( globals, &key, &val ) == -1 ) {
-          LOG( SPOCP_WARNING) {
-            tmp = oct2strdup( &key, 0 ) ;
-            traceLog("Attempt to redefine the constant: \"%s\"", tmp) ;
-            free( tmp ) ;
-          }
-        }
-      }
-      else bcdef_add( rs->db, srv->plugin, dbc, &key, &val ) ;
-    }
+				}
+			}
 
-    if( exp ) oct_free( exp ) ;
-    octclr( &prev ) ;
-  }
+			r = dbapi_rule_add(&(trs->db), srv->plugin, dbc, oa);
+			if (r == SPOCP_SUCCESS)
+				n++;
+			else {
+				LOG(SPOCP_WARNING)
+				    traceLog("Failed to add rule: \"%s\"",
+					     oct.val);
+				f++;
+			}
 
-  if( rc != SPOCP_SUCCESS ) return -1 ;
-  else {
-    LOG(SPOCP_INFO) traceLog("Stored %d rules, failed %d", n, f ) ;
+			octarr_free(oa);
+			oa = 0;
+		} else {	/* ought to be a global or bcond def */
+			int             l, d;
 
-    return n ;
-  }
+			octln(&key, &oct);
+
+			l = octchr(&key, '=');
+
+			if (l < 0) {
+				LOG(SPOCP_WARNING) {
+					traceLog("Mysterious line: \"%s\"",
+						 oct.val);
+				}
+				if (exp)
+					oct_free(exp);
+				octclr(&prev);
+				continue;	/* skip it */
+			}
+
+			d = 1;
+
+			if (key.val[l - 1] == ':') {	/* bconddef */
+				d++;
+				--l;
+			}
+
+			key.len = (unsigned int) l;
+			val.val = key.val + key.len + d;
+			val.len = oct.len - key.len - d;
+
+			/*
+			 * spaces both before and after the '=' is allowed, I
+			 * have to get rid of them now 
+			 */
+			for (cp = key.val + key.len - 1;
+			     *cp == ' ' || *cp == '\t'; cp--) {
+				key.len--;
+				if (key.len == 0)
+					break;
+			}
+
+			if (key.len == 0) {
+				LOG(SPOCP_WARNING) {
+					traceLog("Mysterious line: \"%s\"",
+						 oct.val);
+				}
+				if (exp)
+					oct_free(exp);
+				octclr(&prev);
+				continue;
+			}
+
+			for (cp = val.val; *cp == ' ' || *cp == '\t'; cp++) {
+				val.len--;
+				val.val++;
+				if (val.len == 0)
+					break;
+			}
+
+			if (val.len == 0) {
+				LOG(SPOCP_WARNING) {
+					traceLog("Mysterious line: \"%s\"",
+						 oct.val);
+				}
+				if (exp)
+					oct_free(exp);
+				octclr(&prev);
+				continue;
+			}
+
+			if (d == 1) {
+				if (spocp_add_global(globals, &key, &val) ==
+				    -1) {
+					LOG(SPOCP_WARNING) {
+						tmp = oct2strdup(&key, 0);
+						traceLog
+						    ("Attempt to redefine the constant: \"%s\"",
+						     tmp);
+						free(tmp);
+					}
+				}
+			} else
+				bcdef_add(rs->db, srv->plugin, dbc, &key,
+					  &val);
+		}
+
+		if (exp)
+			oct_free(exp);
+		octclr(&prev);
+	}
+
+	if (rc != SPOCP_SUCCESS)
+		return -1;
+	else {
+		LOG(SPOCP_INFO) traceLog("Stored %d rules, failed %d", n, f);
+
+		return n;
+	}
 }
 
 /***************************************************************
@@ -517,114 +579,141 @@ int read_rules( srv_t *srv, char *file, dbcmd_t *dbc, keyval_t **globals )
 
  ***************************************************************/
 
-static octet_t *bcref_create( char *bcname )
+static octet_t *
+bcref_create(char *bcname)
 {
-  octet_t *ref ;
-  size_t   size, l = strlen( bcname ) ; ;
+	octet_t        *ref;
+	size_t          size, l = strlen(bcname);;
 
-  size = l + DIGITS( l ) + 1 ;
-  size += 8 ;
+	size = l + DIGITS(l) + 1;
+	size += 8;
 
-  ref = oct_new( size, 0 ) ;
-  sexp_printv( ref->val, &size, "(aa)", "ref", bcname ) ;
-  ref->len = ref->size - size ;
- 
-  return ref ;
+	ref = oct_new(size, 0);
+	sexp_printv(ref->val, &size, "(aa)", "ref", bcname);
+	ref->len = ref->size - size;
+
+	return ref;
 }
 
-/* ---------------------------------------------------------------------- */
+/*
+ * ---------------------------------------------------------------------- 
+ */
 
-int dback_read_rules( dbcmd_t *dbc, srv_t *srv, spocp_result_t *rc )
+int
+dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 {
-  octarr_t       *oa = 0, *roa = 0 ;
-  spocp_result_t  r ;
-  int             i, f = 0, n = 0 ;
-  octet_t         dat0, dat1, *bcond, name;
-  char           *bcname = 0, *tmp ;
-  ruleset_t      *rs ;
+	octarr_t       *oa = 0, *roa = 0;
+	spocp_result_t  r;
+	int             i, f = 0, n = 0;
+	octet_t         dat0, dat1, *bcond, name;
+	char           *bcname = 0, *tmp;
+	ruleset_t      *rs;
 
-  oa = dback_all_keys( dbc, &r ) ;
+	oa = dback_all_keys(dbc, &r);
 
-  memset( &dat0, 0, sizeof( octet_t )) ;
-  memset( &dat1, 0, sizeof( octet_t )) ;
+	memset(&dat0, 0, sizeof(octet_t));
+	memset(&dat1, 0, sizeof(octet_t));
 
-  if( r == SPOCP_SUCCESS && oa && oa->n ) {
+	if (r == SPOCP_SUCCESS && oa && oa->n) {
 
-    if( srv->root == 0 ) srv->root = ruleset_new( 0 ) ;
+		if (srv->root == 0)
+			srv->root = ruleset_new(0);
 
-    rs = srv->root ;
+		rs = srv->root;
 
-    if( rs->db == 0 ) rs->db = db_new() ;
+		if (rs->db == 0)
+			rs->db = db_new();
 
-    /* three passes, the first for simple bconds */
-    for( i = 0 ; i < oa->n ; i++ ) {
-      if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) != 0 ) continue ;
+		/*
+		 * three passes, the first for simple bconds 
+		 */
+		for (i = 0; i < oa->n; i++) {
+			if (strncmp(oa->arr[i]->val, "BCOND:", 6) != 0)
+				continue;
 
-      if( bcspec_is( oa->arr[i] ) == TRUE ) {
-        tmp = lstrndup( oa->arr[i]->val + 6, oa->arr[i]->len - 6 ) ;
+			if (bcspec_is(oa->arr[i]) == TRUE) {
+				tmp =
+				    lstrndup(oa->arr[i]->val + 6,
+					     oa->arr[i]->len - 6);
 
-        r = dback_read( dbc, tmp, &dat0, &dat1, &bcname ) ;
+				r = dback_read(dbc, tmp, &dat0, &dat1,
+					       &bcname);
 
-        if( dat0.len ) {
-          oct_assign( &name, tmp ) ;
-          bcdef_add( rs->db, srv->plugin, dbc, &name, &dat0) ;
-          octclr( &dat0 ) ;
-        }
-        free( tmp ) ;
-      }
-    } 
-    /* the second for compound bconds */
-    for( i = 0 ; i < oa->n ; i++ ) {
-      if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) != 0 ) continue ;
+				if (dat0.len) {
+					oct_assign(&name, tmp);
+					bcdef_add(rs->db, srv->plugin, dbc,
+						  &name, &dat0);
+					octclr(&dat0);
+				}
+				free(tmp);
+			}
+		}
+		/*
+		 * the second for compound bconds 
+		 */
+		for (i = 0; i < oa->n; i++) {
+			if (strncmp(oa->arr[i]->val, "BCOND:", 6) != 0)
+				continue;
 
-      if( bcspec_is( oa->arr[i] ) == FALSE ) {
-        tmp = lstrndup( oa->arr[i]->val + 6, oa->arr[i]->len - 6 ) ;
+			if (bcspec_is(oa->arr[i]) == FALSE) {
+				tmp =
+				    lstrndup(oa->arr[i]->val + 6,
+					     oa->arr[i]->len - 6);
 
-        r = dback_read( dbc, tmp, &dat0, &dat1, &bcname ) ;
+				r = dback_read(dbc, tmp, &dat0, &dat1,
+					       &bcname);
 
-        if( dat0.len ) {
-          oct_assign( &name, tmp ) ;
-          bcdef_add( rs->db, srv->plugin, dbc, &name, &dat0) ;
-          octclr( &dat0 ) ;
-        }
+				if (dat0.len) {
+					oct_assign(&name, tmp);
+					bcdef_add(rs->db, srv->plugin, dbc,
+						  &name, &dat0);
+					octclr(&dat0);
+				}
 
-        free( tmp ) ;
-      }
-    } 
-    /* and the third for rules */
-    for( i = 0 ; i < oa->n ; i++ ) {
-      if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) == 0 ) continue ;
-      tmp = oct2strdup( oa->arr[i], 0 ) ;
-      r = dback_read( dbc, tmp, &dat0, &dat1, &bcname ) ;
-      free( tmp ) ;
+				free(tmp);
+			}
+		}
+		/*
+		 * and the third for rules 
+		 */
+		for (i = 0; i < oa->n; i++) {
+			if (strncmp(oa->arr[i]->val, "BCOND:", 6) == 0)
+				continue;
+			tmp = oct2strdup(oa->arr[i], 0);
+			r = dback_read(dbc, tmp, &dat0, &dat1, &bcname);
+			free(tmp);
 
-      roa = octarr_add( roa, octdup(&dat0) ) ;
-      octclr( &dat0 ) ;
+			roa = octarr_add(roa, octdup(&dat0));
+			octclr(&dat0);
 
-      if( bcname ) {
-        bcond = bcref_create( bcname ) ;
-        octarr_add( roa, bcond ) ;
-        bcname = 0 ;
-      }
+			if (bcname) {
+				bcond = bcref_create(bcname);
+				octarr_add(roa, bcond);
+				bcname = 0;
+			}
 
-      if( dat1.len ) {
-        octarr_add( roa, octdup(&dat1) ) ;
-        octclr( &dat1 ) ;
-      }
+			if (dat1.len) {
+				octarr_add(roa, octdup(&dat1));
+				octclr(&dat1);
+			}
 
-      if(( r = spocp_add_rule( (void **) &(rs->db), roa )) == SPOCP_SUCCESS ) n++ ;
-      else {
-        LOG( SPOCP_WARNING ) traceLog("Failed to add rule: \"%s\"", dat0.val ) ;
-        f++ ;
-      }
-      octarr_free( roa ) ;
+			if ((r =
+			     spocp_add_rule((void **) &(rs->db),
+					    roa)) == SPOCP_SUCCESS)
+				n++;
+			else {
+				LOG(SPOCP_WARNING)
+				    traceLog("Failed to add rule: \"%s\"",
+					     dat0.val);
+				f++;
+			}
+			octarr_free(roa);
 
-      roa = 0 ;
-    } 
+			roa = 0;
+		}
 
-    octarr_free( oa ) ;
-  }
+		octarr_free(oa);
+	}
 
-  return n ;
+	return n;
 }
-

@@ -1,3 +1,4 @@
+
 /***************************************************************************
 
                 dbapi.c  -  contains the internal database interface 
@@ -27,166 +28,191 @@
 #include <plugin.h>
 
 /*
-   returns
+ * returns 
  */
 
-spocp_result_t dbapi_allowed( db_t *db, octet_t *sexp, octarr_t **on )
+spocp_result_t
+dbapi_allowed(db_t * db, octet_t * sexp, octarr_t ** on)
 {
-  element_t  *ep = 0 ;
-  octet_t    oct ;
-  char       *str ;
-  spocp_result_t res = SPOCP_SUCCESS ;
-  comparam_t comp ;
+	element_t      *ep = 0;
+	octet_t         oct;
+	char           *str;
+	spocp_result_t  res = SPOCP_SUCCESS;
+	comparam_t      comp;
 
-  if( db == 0 || sexp == 0 || sexp->len == 0 ) {
-    if( db == 0 ) { LOG(SPOCP_EMERG) traceLog("Ain't got no rule database") ; }
-    else { LOG(SPOCP_ERR) traceLog("Blamey no S-expression to check, oh well") ; }
-    return res ;
-  }
+	if (db == 0 || sexp == 0 || sexp->len == 0) {
+		if (db == 0) {
+			LOG(SPOCP_EMERG)
+			    traceLog("Ain't got no rule database");
+		} else {
+			LOG(SPOCP_ERR)
+			    traceLog
+			    ("Blamey no S-expression to check, oh well");
+		}
+		return res;
+	}
 
-  DEBUG(SPOCP_DPARSE) {
-    char *str ;
-    str = oct2strdup( sexp, '%' ) ;
-    traceLog( "Parsing the S-expression \"%s\"", str ) ;
-    free( str ) ;
-  }
+	DEBUG(SPOCP_DPARSE) {
+		char           *str;
+		str = oct2strdup(sexp, '%');
+		traceLog("Parsing the S-expression \"%s\"", str);
+		free(str);
+	}
 
-  octln( &oct, sexp ) ;
+	octln(&oct, sexp);
 
-  if(( res = element_get( sexp, &ep )) != SPOCP_SUCCESS ) {
-    str = oct2strdup( sexp, '%' ) ;
-    traceLog("The S-expression \"%s\" didn't parse OK", str ) ;
-    free( str ) ;
-    
-    return res ;
-  }
+	if ((res = element_get(sexp, &ep)) != SPOCP_SUCCESS) {
+		str = oct2strdup(sexp, '%');
+		traceLog("The S-expression \"%s\" didn't parse OK", str);
+		free(str);
 
-  oct.len -= sexp->len ;
-  DEBUG(SPOCP_DPARSE) {
-    str = oct2strdup( &oct, '%' ) ;
-    traceLog("Query: \"%s\"", str) ;
-    free( str ) ;
-  }
+		return res;
+	}
 
-  comp.rc = SPOCP_SUCCESS ;
-  comp.head = ep ;
-  comp.blob = on ;
+	oct.len -= sexp->len;
+	DEBUG(SPOCP_DPARSE) {
+		str = oct2strdup(&oct, '%');
+		traceLog("Query: \"%s\"", str);
+		free(str);
+	}
 
-  res = allowed( db->jp, &comp ) ;
+	comp.rc = SPOCP_SUCCESS;
+	comp.head = ep;
+	comp.blob = on;
 
-  element_free( ep ) ;
+	res = allowed(db->jp, &comp);
 
-  return res ;
+	element_free(ep);
+
+	return res;
 }
 
-void dbapi_db_del( db_t *db, dbcmd_t *dbc )
+void
+dbapi_db_del(db_t * db, dbcmd_t * dbc)
 {
-  free_all_rules( db->ri ) ;
-  junc_free( db->jp ) ;
-  free( db ) ;
+	free_all_rules(db->ri);
+	junc_free(db->jp);
+	free(db);
 }
 
-spocp_result_t dbapi_rule_rm( db_t *db, dbcmd_t *dbc, octet_t *op )
+spocp_result_t
+dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op)
 {
-  int            n ;
-  ruleinst_t     *rt ;
-  char           uid[41], *sp ;
-  spocp_result_t rc ;
+	int             n;
+	ruleinst_t     *rt;
+	char            uid[41], *sp;
+	spocp_result_t  rc;
 
-  if( op->len < 40 ) return SPOCP_SYNTAXERROR ;
+	if (op->len < 40)
+		return SPOCP_SYNTAXERROR;
 
-  for( n = 0, sp = op->val ; HEX(*sp) ; sp++, n++ ) ; 
+	for (n = 0, sp = op->val; HEX(*sp); sp++, n++);
 
-  if( n != 40 ) return SPOCP_SYNTAXERROR ;
+	if (n != 40)
+		return SPOCP_SYNTAXERROR;
 
-  memcpy( uid, op->val, 40 ) ;
-  uid[40] = '\0' ;
+	memcpy(uid, op->val, 40);
+	uid[40] = '\0';
 
-  traceLog( "Attempt to delete rule: \"%s\"", uid ) ;
+	traceLog("Attempt to delete rule: \"%s\"", uid);
 
-  op->val += 40 ;
-  op->len -= 40 ;
+	op->val += 40;
+	op->len -= 40;
 
-  /* first check that the rule is there */
+	/*
+	 * first check that the rule is there 
+	 */
 
-  if(( rt = get_rule( db->ri, uid )) == 0 ) {
-    traceLog( "Deleting rule \"%s\" impossible since it doesn't exist", uid ) ;
-    
-    return SPOCP_SYNTAXERROR ;
-  }       
+	if ((rt = get_rule(db->ri, uid)) == 0) {
+		traceLog
+		    ("Deleting rule \"%s\" impossible since it doesn't exist",
+		     uid);
 
-  if( dbc ) dback_delete( dbc, uid ) ;
+		return SPOCP_SYNTAXERROR;
+	}
 
-  rc = rule_rm( db->jp, rt->rule, rt ) ;
+	if (dbc)
+		dback_delete(dbc, uid);
 
-  free_rule( db->ri, uid ) ;
+	rc = rule_rm(db->jp, rt->rule, rt);
 
-  if( rc == SPOCP_SUCCESS ) traceLog( "Rule successfully deleted" ) ;
+	free_rule(db->ri, uid);
 
-  return rc ;
+	if (rc == SPOCP_SUCCESS)
+		traceLog("Rule successfully deleted");
+
+	return rc;
 }
 
-spocp_result_t dbapi_rules_list(
-  db_t *db, dbcmd_t *dbc, octarr_t *pattern, octarr_t *oa, char *rs ) 
+spocp_result_t
+dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
+		 char *rs)
 {
-  if( pattern->n == 0 ) { /* get all */
-    return get_all_rules( db, oa, rs );
-  }
-  else
-    return get_matching_rules( db, pattern, oa, rs ) ;
+	if (pattern->n == 0) {	/* get all */
+		return get_all_rules(db, oa, rs);
+	} else
+		return get_matching_rules(db, pattern, oa, rs);
 }
 
-spocp_result_t dbapi_rule_add( db_t **dpp, plugin_t *p, dbcmd_t *dbc, octarr_t *oa )
+spocp_result_t
+dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa)
 {
-  spocp_result_t r ;
-  ruleinst_t    *ri = 0 ;
-  bcdef_t       *bcd = 0 ;
-  octet_t       *o ;
-  db_t          *db ;
+	spocp_result_t  r;
+	ruleinst_t     *ri = 0;
+	bcdef_t        *bcd = 0;
+	octet_t        *o;
+	db_t           *db;
 
-  LOG( SPOCP_INFO ) traceLog( "spocp_add_rule" ) ; 
+	LOG(SPOCP_INFO) traceLog("spocp_add_rule");
 
-  if( !oa || oa->n == 0 ) return SPOCP_MISSING_ARG ;
+	if (!oa || oa->n == 0)
+		return SPOCP_MISSING_ARG;
 
-  if( dpp ) db = *dpp ;
-  else return SPOCP_UNWILLING ;
+	if (dpp)
+		db = *dpp;
+	else
+		return SPOCP_UNWILLING;
 
-  if( db == 0 ) db = db_new( ) ;
+	if (db == 0)
+		db = db_new();
 
-  if( oa->n > 1 ) {
-    /* pick out the second ( = index 1 ) octet */
-    o = octarr_rm( oa, 1 ) ;
+	if (oa->n > 1) {
+		/*
+		 * pick out the second ( = index 1 ) octet 
+		 */
+		o = octarr_rm(oa, 1);
 
-    bcd = bcdef_get( db, p, dbc, o, &r ) ;
-  }
+		bcd = bcdef_get(db, p, dbc, o, &r);
+	}
 
-  if(( r = add_right( &db, dbc, oa, &ri, bcd ))) 
-  
-  *dpp = db ;
- 
-  return r;
+	if ((r = add_right(&db, dbc, oa, &ri, bcd)))
+
+		*dpp = db;
+
+	return r;
 }
 
-void *dbapi_db_dup( db_t *db, spocp_result_t *r ) 
+void           *
+dbapi_db_dup(db_t * db, spocp_result_t * r)
 {
-  db_t *new ;
+	db_t           *new;
 
-  *r = SPOCP_SUCCESS ;
+	*r = SPOCP_SUCCESS;
 
-  if( db == 0 ) {
-    return 0 ;
-  }
+	if (db == 0) {
+		return 0;
+	}
 
-  new = (db_t *) calloc ( 1, sizeof( db_t * )) ;
+	new = (db_t *) calloc(1, sizeof(db_t *));
 
-  if( new == 0 ) {
-    LOG( SPOCP_ERR ) traceLog( "Memory allocation problem" ) ;
-    *r = SPOCP_NO_MEMORY ;
-    return 0 ;
-  }
+	if (new == 0) {
+		LOG(SPOCP_ERR) traceLog("Memory allocation problem");
+		*r = SPOCP_NO_MEMORY;
+		return 0;
+	}
 
-  new->ri = ruleinfo_dup( db->ri ) ;
-  new->jp = junc_dup( db->jp, new->ri ) ;
-  
-  return new ;
+	new->ri = ruleinfo_dup(db->ri);
+	new->jp = junc_dup(db->jp, new->ri);
+
+	return new;
 }

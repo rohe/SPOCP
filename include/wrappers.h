@@ -1,3 +1,4 @@
+
 /***************************************************************************
                           wrappers.h  -  description
                              -------------------
@@ -16,38 +17,38 @@
 
 #include <stdlib.h>
 
-void *Malloc( size_t size ) ;
+void           *Malloc(size_t size);
 
-void *Calloc( size_t n, size_t size ) ;
+void           *Calloc(size_t n, size_t size);
 
-void *Recalloc( void *vp, size_t n, size_t size ) ;
+void           *Recalloc(void *vp, size_t n, size_t size);
 
-void *Realloc( void *vp, size_t n ) ;
+void           *Realloc(void *vp, size_t n);
 
-char *Strdup( char *s ) ;
+char           *Strdup(char *s);
 
-char *Strcat( char *dest, char *src, int *size ) ;
+char           *Strcat(char *dest, char *src, int *size);
 
-char *Strndup( char *s, size_t n ) ;
+char           *Strndup(char *s, size_t n);
 
 /*================================================*/
 
-void *xMalloc( size_t size ) ;
+void           *xMalloc(size_t size);
 
-void *xCalloc( size_t n, size_t size ) ;
+void           *xCalloc(size_t n, size_t size);
 
-void *xRecalloc( void *vp, size_t n, size_t size ) ;
+void           *xRecalloc(void *vp, size_t n, size_t size);
 
-void *xRealloc( void *vp, size_t n ) ;
+void           *xRealloc(void *vp, size_t n);
 
-char *xStrdup( char *s ) ;
+char           *xStrdup(char *s);
 
-char *xStrcat( char *dest, char *src, int *size ) ;
+char           *xStrcat(char *dest, char *src, int *size);
 
-char *xStrndup( char *s, size_t n ) ;
+char           *xStrndup(char *s, size_t n);
 
-void xFree( void *vp ) ;
+void            xFree(void *vp);
 
-int P_fclose( void *v ) ;
+int             P_fclose(void *v);
 
 #endif
