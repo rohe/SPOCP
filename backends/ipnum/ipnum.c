@@ -58,7 +58,7 @@ int ipnumcmp( octet_t *ipnum, char *ipser )
   int            netpart ;
   struct in_addr ia1, ia2 ;
 
-  strncpy( h1, ipnum->val, ipnum->len ) ;
+  oct2strcpy( ipnum, h1, 16, 0, 0 ) ;
   if( inet_aton( h1, &ia1 ) == 0 ) return -1 ;
 
   if( strlen( ipser ) > 18 ) return -1 ;
