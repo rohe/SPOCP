@@ -237,8 +237,8 @@ main(int argc, char **argv)
 
 	gettimeofday(&end, NULL);
 
-	printf("[%d] %d queries in ", (int) pid, n);
-	print_elapsed("", start, end);
+	print_elapsed("Elapsed time", start, end);
+	printf("[%d] %d queries\n", (int) pid, n);
 
 	memset(&qres, 0, sizeof(queres_t));
 	spocpc_send_logout(spocp);

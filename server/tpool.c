@@ -369,6 +369,7 @@ tpool_thread(void *arg)
 		 */
 		res = (*(my_workp->routine)) (my_workp->conn);
 
+		/* DEBUG( SPOCP_DSRV ) traceLog(LOG_DEBUG, "Wake listener" ) ; */
 		wake_listener(1);
 
 		/*

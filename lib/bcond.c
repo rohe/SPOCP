@@ -1006,6 +1006,7 @@ bcond_check(element_t * ep, index_t * id, octarr_t ** oa)
 			traceLog(LOG_INFO,"boundary condition \"%s\" returned %d\n",
 				 ri->bcond->name, r);
 		}
+
 		if (r == SPOCP_SUCCESS) {
 			if (ri->blob)
 				*oa = octarr_add(*oa, octdup(ri->blob));

@@ -102,7 +102,6 @@ strarr_t       *strarr_add(strarr_t * sa, char *value);
 void            strarr_free(strarr_t * sa);
 
 void            oct_assign(octet_t * oct, char *s);
-void            octln(octet_t * a, octet_t * b);
 
 char           *lstrndup(char *s, int len);
 
