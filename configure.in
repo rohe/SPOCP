@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 AC_INIT(spocd, 2.0.0b, roland@catalogix.se)
-AM_INIT_AUTOMAKE( spocd, 2.0.0b )
+AM_INIT_AUTOMAKE([foreign no-dependencies 1.7])
 AC_CONFIG_SRCDIR([include/wrappers.h])
 AM_CONFIG_HEADER([include/config.h])
 AM_MAINTAINER_MODE
