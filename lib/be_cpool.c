@@ -1,9 +1,11 @@
-/* */
+#ifndef __BE_CPOOL_H
+#define __BE_CPOOL_H
 
 #include <string.h>
 #include <pthread.h>
 
 #include <spocp.h>
+#include <be.h>
 #include <wrappers.h>
 #include <macros.h>
 
@@ -27,8 +29,7 @@ becon_t *becon_dup( becon_t *old )
 {
   becon_t *new = becon_new( 1 ) ;
 
-  new->type    = Strdup( old->type ) ;
-  new->arg     = Strdup( old->arg ) ;
+  new->arg     = octdup( old->arg ) ;
   new->close   = old->close ;
   new->last    = old->last ;
   new->con     = old->con ;
@@ -55,8 +56,7 @@ void becon_free( becon_t *bc, int close )
       free( bc->c_lock ) ;
     }
 
-    if( bc->type ) free( bc->type ) ;
-    if( bc->arg ) free( bc->arg ) ;
+    if( bc->arg ) oct_free( bc->arg ) ;
 
 
     free( bc ) ;
@@ -129,15 +129,13 @@ void becpool_rm( becpool_t *bcp, int close )
 
 /* ------------------------------------------------------------------- */
 
-becon_t *
-becon_push( char *type, char *arg, closefn *close, void *con, becpool_t *bcp )
+becon_t *becon_push( octet_t *arg, closefn *close, void *con, becpool_t *bcp )
 {
   becon_t *bc, *old = 0 ;
  
   bc = becon_new( 0 ) ;
   
-  bc->type = Strdup( type ) ;
-  bc->arg = Strdup( arg ) ;
+  bc->arg = octdup( arg ) ;
   bc->close = close ;
   bc->con = con ;
   bc->status = CON_ACTIVE ;
@@ -183,15 +181,16 @@ becon_push( char *type, char *arg, closefn *close, void *con, becpool_t *bcp )
 
 /* returns bc if there is a usefull connection, otherwise 0 */
 
-becon_t *becon_get( char *type, char *arg, becpool_t *bcp ) 
+becon_t *becon_get( octet_t *arg, becpool_t *bcp ) 
 {
   becon_t *bc ;
+
+  if( bcp == 0 ) return 0 ;
 
   pthread_mutex_lock( bcp->lock ) ;
 
   for( bc = bcp->head ; bc ; bc = bc->next ) {
-    if( strcmp( bc->type, type ) == 0 && 
-        strcmp( bc->arg, arg ) == 0 ) {
+    if( octcmp( bc->arg, arg ) == 0 ) {
 
       if( bc->status == CON_ACTIVE ) continue ;
 
@@ -271,4 +270,11 @@ void becon_rm( becpool_t *bcp, becon_t *bc )
   pthread_mutex_unlock( bcp->lock ) ;
 
 }
+
+void becon_update( becon_t *bc, void *con )
+{
+  bc->con = con ;
+}
+
+#endif
 
