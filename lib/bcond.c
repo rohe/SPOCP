@@ -589,6 +589,8 @@ int bcspec_is( octet_t *spec )
 /*!
  * \brief Adds a boundary condition definition to the list of others
  * \param db A link to the internal database 
+ * \param p  Pointer to the linked list of registered plugins
+ * \param dbc Command parameters connected to the persistent store
  * \param name The name of the boundary condition specification
  * \param data The boundary condition specification
  * \return A pointer to the internal representation of the boundary condition 
@@ -668,6 +670,7 @@ bcdef_t *bcdef_add( db_t *db, plugin_t *p, dbcmd_t *dbc, octet_t *name, octet_t 
  * \brief Remove a boundary condition from the internal database. 
  * A boundary condition can not be removed if there is rules that uses it!
  * \param db A pointer to the internal database
+ * \param dbc Command parameters connected to the persistent store
  * \param name The name of the boundary condition
  * \return A result code, SPOCP_SUCCESS on success
  */
@@ -701,6 +704,8 @@ spocp_result_t bcdef_del( db_t *db, dbcmd_t *dbc, octet_t *name )
 /*!
  * \brief Replaces on boundary condition with another without changing the name.
  * \param db A pointer to the internal database
+ * \param p  Pointer to the set of plugins that is present
+ * \param dbc Command parameters connected to the persistent store
  * \param name The name of the boundary condition
  * \param data The new specification for the boundary condition
  * \return An appropriate result code
@@ -752,6 +757,7 @@ spocp_result_t bcdef_replace( db_t *db, plugin_t *p, dbcmd_t *dbc, octet_t *name
  * \param db A pointer to the internal database
  * \param o  The boundary conditions specification
  * \param p  Pointer to the set of plugins that is present
+ * \param dbc Command parameters connected to the persistent store
  * \param rc Where the result code of the operation should be stored
  * \return  A pointer to the internal representation or NULL if it does not 
  *          exist, is faulty  or references unknown boundary conditions.

@@ -35,9 +35,9 @@
  * \brief Looking for a specific bytevalue, under the assumption that it appears
  *   in pairs and that if a 'left' byte has been found a balancing 'right' byte
  *   has to be found before the search for another 'right' byte can be done.
- * \param The 'string' to be searched
- * \param The byte representing the leftmost byte of the pair
- * \param The byte representing the rightmost byte of the pair.
+ * \param o The 'string' to be searched
+ * \param left The byte representing the leftmost byte of the pair
+ * \param right The byte representing the rightmost byte of the pair.
  * \return The length in number of bytes from the start the first 'right' byte
  *    that was not part of a pair was found.
  */
@@ -443,7 +443,7 @@ void oct_free( octet_t *o )
 }
 
 /* ---------------------------------------------------------------------- */
-/*
+/*!
  * \brief Frees an array of octet string structs, the array has to be NULL terminated
  * \param oa The array of octet string structs
  */

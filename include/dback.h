@@ -62,9 +62,9 @@ octet_t        *dback_first_key( dback_t *, void *h, spocp_result_t * ) ;
 octet_t        *dback_next_key( dback_t *, void *h, octet_t *, spocp_result_t * ) ;
 */
 
-spocp_result_t  dback_begin( dback_t *dback, dbcmd_t * ) ;
-spocp_result_t  dback_end( dback_t *dback, dbcmd_t * ) ;
-spocp_result_t  dback_commit( dback_t *dback, dbcmd_t * ) ;
-spocp_result_t  dback_rollback( dback_t *dback, dbcmd_t * ) ;
+spocp_result_t  dback_begin( dbcmd_t *d ) ;
+spocp_result_t  dback_end( dbcmd_t *d ) ;
+spocp_result_t  dback_commit( dbcmd_t * ) ;
+spocp_result_t  dback_rollback( dbcmd_t * ) ;
 #endif
 

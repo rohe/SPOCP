@@ -49,8 +49,7 @@ ruleinst_t *allowing_rule( junc_t *ap )
  * The function which is the starting point for access control, that is matching
    the query * against a specific ruleset. 
  * \param ap A pointer to the start of the ruletree
- * \param ep A pointer to the parsed query s-expression
- * \param on  A handle that should be used when blobs are to be returned
+ * \param comp A set of command parameters
  * \return SPOCP_SUCCESS on success otherwise an appropriate error code
  */
 spocp_result_t allowed( junc_t *ap, comparam_t *comp )
