@@ -44,11 +44,7 @@ typedef struct _be_cpool {
   
 /* function prototypes */
 
-becon_t   *becon_new( int copy ) ;
-becon_t   *becon_dup( becon_t *old ) ;
-void       becon_free( becon_t *bc, int close ) ;
-
-becpool_t *becpool_new( size_t max, int copy ) ;
+becpool_t *becpool_new( size_t max ) ;
 becpool_t *becpool_dup( becpool_t *bcp ) ;
 void       becpool_rm( becpool_t *bcp, int close ) ;
 
@@ -58,10 +54,9 @@ void       becon_return( becon_t *bc ) ;
 void       becon_rm( becpool_t *bcp, becon_t *bc ) ;
 void       becon_update( becon_t *bc, void *con ) ;
 
-
 /* ------------------------------------- */
 /* configuration callback function */
 
-typedef spocp_result_t (confgetfn)( void *conf, int arg, char *, void **value ) ;
+typedef spocp_result_t (confgetfn)( void *conf, int arg, char *, char *, void **value ) ;
 
 #endif
