@@ -783,10 +783,7 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 		if ((st = parse_bcexp(data)) == 0)
 			return 0;
 	} else {
-		st = (stree_t *) Malloc(sizeof(stree_t));
-		st->list = 0;
-		st->next = st->part = 0;
-		st->val.size = 0;	/* otherwise octcpy might core dump */
+		st = (stree_t *) Calloc(1,sizeof(stree_t));
 		octcpy(&st->val, data);
 	}
 
