@@ -41,25 +41,6 @@ Arguments:
 Returns:
 */
 
-__attribute__((unused)) static junc_t *branchindex_rm( junc_t *ap, branch_t *bp )
-{
-  if( ap ) {
-    ap->item[bp->type] = 0 ;
-  }
-
-  return ap ;
-}
-
-/************************************************************
-*                                                           *
-************************************************************/
-/*
-
-Arguments:
-
-Returns:
-*/
-
 static int junction_index( junc_t *jp )
 {
   int i, r ;
