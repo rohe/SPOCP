@@ -11,7 +11,7 @@ static octnode_t *octnode_new( void )
   return (octnode_t *) Calloc( 1, sizeof( octnode_t )) ;
 }
 
-octnode_t *octnode_add( octnode_t *on, octet_t *oct )
+octnode_t *octnode_add( octnode_t *on, octet_t *oct, int link )
 {
   octnode_t *non ;
 
@@ -26,11 +26,13 @@ octnode_t *octnode_add( octnode_t *on, octet_t *oct )
 
   non->oct.len = oct->len ;
   non->oct.val = oct->val ;
-  non->oct.size = oct->size ;
+  if( link ) non->oct.size = 0 ;
+  else non->oct.size = oct->size ;
 
   return on ;
 }
 
+/* flag != 0 if values should be freed */
 void octnode_free( octnode_t *on )
 {
   if( on ) {
