@@ -46,6 +46,8 @@ char *keyword[] = {
 
 #define LINEBUF         1024
 
+#define SYSTEM 32
+
 /* roughly */
 #define YEAR  31536000
 
@@ -166,7 +168,7 @@ spocp_result_t conf_get( void *vp, int arg, char *plk, void **res )
 int read_config( char *file, srv_t *srv )
 {
   FILE            *fp ;
-  char            s[LINEBUF], *cp, *sp, plugin[256], *key = 0 ;
+  char            s[LINEBUF], *cp, *sp, plugin[256] ;
   char            section = 0 ;
   unsigned int    n = 0 ;
   long            lval ;
@@ -204,17 +206,10 @@ int read_config( char *file, srv_t *srv )
       *cp = 0 ;
       sp = s+1 ;
 
-      for( i = 1 ; keyword[i] ; i++ )
-        if( strcasecmp( keyword[i] , sp ) == 0 ) break ;
-
-      if( keyword[i] == 0 ) {
+      if( strcasecmp( sp, "system" ) == 0 ) section = SYSTEM ;
+      else {
         section = PLUGIN ;
         strcpy( plugin, sp ) ;
-        key = index( plugin, ':' ) ;
-        if( key ) *key++ = '\0' ;
-      }
-      else {
-        section = i ;
       }
 
       continue ;
@@ -226,147 +221,163 @@ int read_config( char *file, srv_t *srv )
 
     if( *s == 0 || *s == '#' ) continue ;
 
-    switch( section )
-    {
+    cp = strchr( s, '=' ) ;
+    sp = cp ;
+    for( *cp++ = '\0' ; *cp && ( *cp == ' ' || *cp == '\t' ) ; cp++ ) *cp = '\0' ;
+    while( *sp == ' ' || *sp == '\t' ) *sp-- = '\0' ;
+  
+    switch( section ) {
+      case SYSTEM:
+        for( i = 1 ; keyword[i] ; i++ )
+          if( strcasecmp( keyword[i] , s ) == 0 ) break ;
+
+        if( keyword[i] == 0 ) {
+           fprintf(stderr, "Unknown keyword \"%s\"\n", s ) ;
+           continue ;
+        } 
+
+        switch( i ) {
+          case RULEFILE :
+            fprintf( stderr, "rulefile: \"%s\"\n", cp ) ;
+            if ( srv->rulefile ) free( srv->rulefile ) ;
+            srv->rulefile = Strdup( cp ) ;
+            break ;
+    
+          case CERTIFICATE :
+            if ( srv->certificateFile ) free( srv->certificateFile ) ;
+            srv->certificateFile = Strdup( cp ) ;
+            break ;
+    
+          case PRIVATEKEY :
+            if ( srv->privateKey ) free( srv->privateKey ) ;
+            srv->privateKey = Strdup( cp ) ;
+            break ;
+    
+          case CALIST :
+            if ( srv->caList ) free( srv->caList ) ;
+            srv->caList = Strdup( cp ) ;
+            break ;
+    
+          case DHFILE :
+            if ( srv->dhFile ) free( srv->dhFile ) ;
+            srv->dhFile = Strdup( cp ) ;
+            break ;
+    
+          case ENTROPYFILE :
+            if ( srv->SslEntropyFile ) free( srv->SslEntropyFile ) ;
+            srv->SslEntropyFile = Strdup( cp ) ;
+            break ;
+    
+          case PASSWD :
+            if ( srv->passwd ) free( srv->passwd ) ;
+            srv->passwd = Strdup( cp ) ;
+            break ;
+    
+          case LOGFILE :
+            if ( srv->logfile ) free( srv->logfile ) ;
+            srv->logfile = Strdup( cp ) ;
+            break ;
+    
+          case TIMEOUT  :
+            if( numstr( cp, &lval ) == SPOCP_SUCCESS )
+            {
+              if( lval >= 0 && lval <= YEAR )
+                srv->timeout = ( unsigned int ) lval ;
+              else {
+                fprintf(stderr,"[timeout] value, out of range, setting default (%d)\n",
+                        DEFAULT_TIMEOUT ) ;
+                srv->timeout = DEFAULT_TIMEOUT ;
+              }
+            }
+            else
+            {
+              fprintf(stderr,"[timeout] Non numeric value given, setting default (%d)\n",
+                      DEFAULT_TIMEOUT ) ;
+              srv->timeout = DEFAULT_TIMEOUT ;
+            }
+    
+            break ;
+    
+          case UNIXDOMAINSOCKET:
+            if( srv->uds ) free( srv->uds ) ;
+            srv->uds = Strdup( cp ) ;
+            break ;
+    
+          case PORT     :
+            if( numstr( cp, &lval ) == SPOCP_SUCCESS ) {
+              if( lval > 0L && lval < 65536 ) {
+                srv->port = ( unsigned int ) lval ;
+              }
+              else {
+                fprintf(stderr,"[port] number out of range\n") ;
+                srv->port = DEFAULT_PORT ;
+              }
+            }
+            else {
+              fprintf(stderr,"[port] Non numeric value given for port\n" ) ;
+            }
+            break ;
+    
+          case NTHREADS:
+            if( numstr( cp, &lval ) == SPOCP_SUCCESS ) {
+              if( lval <= 0 ) {
+                fprintf(stderr,"[threads] Error in specification, has to be > 0 \n" );
+                return 0 ;
+              }
+              else {
+                int level = ( int ) lval ;
+    
+                srv->threads = level ;
+              }
+            }
+            else {
+              fprintf( stderr, "[threads] Non numeric specification, not accepted\n" ) ;
+              return 0 ;
+            }
+            break ;
+    
+          case SSLVERIFYDEPTH     :
+            if( numstr( cp, &lval ) == SPOCP_SUCCESS ) {
+              if( lval > 0L ) {
+                srv->sslverifydepth = ( unsigned int ) lval ;
+              }
+              else {
+                fprintf(stderr,"[sslverifydepth] number out of range\n") ;
+                srv->sslverifydepth = 0 ;
+              }
+            }
+            else {
+              fprintf(stderr,"[sslverifydepth] Non numeric value given for port\n" ) ;
+            }
+            break ;
+    
+          case PIDFILE :
+            if ( srv->pidfile ) free( srv->pidfile ) ;
+            srv->pidfile = Strdup( cp ) ;
+            break ;
+    
+          case MAXCONN :
+            if( numstr( cp, &lval ) == SPOCP_SUCCESS ) {
+              if( lval > 0L ) {
+                srv->nconn = ( unsigned int ) lval ;
+              }
+              else {
+                fprintf(stderr,"[nconn] number out of range\n") ;
+                srv->sslverifydepth = 0 ;
+              }
+            }
+            else {
+              fprintf(stderr,"[nconn] Non numeric value given for port\n" ) ;
+            }
+            break ;
+        }
+        break ;
+ 
       case PLUGIN:
-        pl = plugin_add_conf( plugins, plugin, key, s ) ;
+        pl = plugin_add_conf( plugins, plugin, s, cp ) ;
         if( !pl ) fprintf( stderr, "Error i rulefile, line %d\n", n ) ;
         else {
           if( !plugins ) plugins = pl ;
-        }
-        break ;
-
-      case RULEFILE :
-        fprintf( stderr, "rulefile: \"%s\"\n", s ) ;
-        if ( srv->rulefile ) free( srv->rulefile ) ;
-        srv->rulefile = Strdup( s ) ;
-        break ;
-
-      case CERTIFICATE :
-        if ( srv->certificateFile ) free( srv->certificateFile ) ;
-        srv->certificateFile = Strdup( s ) ;
-        break ;
-
-      case PRIVATEKEY :
-        if ( srv->privateKey ) free( srv->privateKey ) ;
-        srv->privateKey = Strdup( s ) ;
-        break ;
-
-      case CALIST :
-        if ( srv->caList ) free( srv->caList ) ;
-        srv->caList = Strdup( s ) ;
-        break ;
-
-      case DHFILE :
-        if ( srv->dhFile ) free( srv->dhFile ) ;
-        srv->dhFile = Strdup( s ) ;
-        break ;
-
-      case ENTROPYFILE :
-        if ( srv->SslEntropyFile ) free( srv->SslEntropyFile ) ;
-        srv->SslEntropyFile = Strdup( s ) ;
-        break ;
-
-      case PASSWD :
-        if ( srv->passwd ) free( srv->passwd ) ;
-        srv->passwd = Strdup( s ) ;
-        break ;
-
-      case LOGFILE :
-        if ( srv->logfile ) free( srv->logfile ) ;
-        srv->logfile = Strdup( s ) ;
-        break ;
-
-      case TIMEOUT  :
-        if( numstr( s, &lval ) == SPOCP_SUCCESS )
-        {
-          if( lval >= 0 && lval <= YEAR )
-            srv->timeout = ( unsigned int ) lval ;
-          else {
-            fprintf(stderr,"[timeout] value, out of range, setting default (%d)\n",
-                    DEFAULT_TIMEOUT ) ;
-            srv->timeout = DEFAULT_TIMEOUT ;
-          }
-        }
-        else
-        {
-          fprintf(stderr,"[timeout] Non numeric value given, setting default (%d)\n",
-                  DEFAULT_TIMEOUT ) ;
-          srv->timeout = DEFAULT_TIMEOUT ;
-        }
-
-        break ;
-
-      case UNIXDOMAINSOCKET:
-        if( srv->uds ) free( srv->uds ) ;
-        srv->uds = Strdup(s) ;
-        break ;
-
-      case PORT     :
-        if( numstr( s, &lval ) == SPOCP_SUCCESS ) {
-          if( lval > 0L && lval < 65536 ) {
-            srv->port = ( unsigned int ) lval ;
-          }
-          else {
-            fprintf(stderr,"[port] number out of range\n") ;
-            srv->port = DEFAULT_PORT ;
-          }
-        }
-        else {
-          fprintf(stderr,"[port] Non numeric value given for port\n" ) ;
-        }
-        break ;
-
-      case NTHREADS:
-        if( numstr( s, &lval ) == SPOCP_SUCCESS ) {
-          if( lval <= 0 ) {
-            fprintf(stderr,"[threads] Error in specification, has to be > 0 \n" );
-            return 0 ;
-          }
-          else {
-            int level = ( int ) lval ;
-
-            srv->threads = level ;
-          }
-        }
-        else {
-          fprintf( stderr, "[threads] Non numeric specification, not accepted\n" ) ;
-          return 0 ;
-        }
-        break ;
-
-      case SSLVERIFYDEPTH     :
-        if( numstr( s, &lval ) == SPOCP_SUCCESS ) {
-          if( lval > 0L ) {
-            srv->sslverifydepth = ( unsigned int ) lval ;
-          }
-          else {
-            fprintf(stderr,"[sslverifydepth] number out of range\n") ;
-            srv->sslverifydepth = 0 ;
-          }
-        }
-        else {
-          fprintf(stderr,"[sslverifydepth] Non numeric value given for port\n" ) ;
-        }
-        break ;
-
-      case PIDFILE :
-        if ( srv->pidfile ) free( srv->pidfile ) ;
-        srv->pidfile = Strdup( s ) ;
-        break ;
-
-      case MAXCONN :
-        if( numstr( s, &lval ) == SPOCP_SUCCESS ) {
-          if( lval > 0L ) {
-            srv->nconn = ( unsigned int ) lval ;
-          }
-          else {
-            fprintf(stderr,"[nconn] number out of range\n") ;
-            srv->sslverifydepth = 0 ;
-          }
-        }
-        else {
-          fprintf(stderr,"[nconn] Non numeric value given for port\n" ) ;
         }
         break ;
 
