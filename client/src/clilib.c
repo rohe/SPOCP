@@ -36,6 +36,7 @@
 #include <sys/un.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -49,6 +50,11 @@
 /*! The max size of a FQDN */
 #define MAXHOSTNAMELEN 256
 #endif
+
+/*! If nothing else is specified this is how long I will wait on a Spocp server to answer
+ * my call
+ */
+#define SPOCP_DEFAULT_CONN_WAIT		5
 
 /*! Should not have to define this here */
 char	*strndup(const char *old, size_t sz);
@@ -440,13 +446,13 @@ spocpc_start_tls(SPOCP * spocp)
 		return 0;
 	}
 
-	if (*(*spocp->srv) == '/' || strcmp(*spocp->srv, "localhost") == 0) {
+	if (*spocp->cursrv == '/' || strcmp(spocp->cursrv, "localhost") == 0) {
 		gethostname(sslhost, MAXHOSTNAMELEN);
 		if (check_cert_chain(spocp->ssl, sslhost) == 0) {
 			SSL_free(spocp->ssl);
 			return 0;
 		}
-	} else if (check_cert_chain(spocp->ssl, *spocp->srv) == 0) {
+	} else if (check_cert_chain(spocp->ssl, spocp->cursrv) == 0) {
 		SSL_free(spocp->ssl);
 		return 0;
 	}
@@ -479,6 +485,47 @@ ssl_socket_writen(SSL * ssl, char *buf, size_t len)
 
 /*=================================================================================*/
 
+SPOCP *spocpc_cpy( SPOCP *copy, SPOCP *old )
+{
+	if( old == 0 )
+		return 0;
+
+	copy->contype = 0;
+	copy->srv = old->srv;
+	copy->cursrv = 0;
+	copy->com_timeout = old->com_timeout;
+	copy->rc = 0;
+
+#ifdef HAVE_SSL
+	copy->servercert = old->servercert;
+	copy->verify_ok = old->verify_ok;
+	copy->tls = old->tls;
+	copy->ctx = old->ctx;
+	copy->ssl = 0;
+#endif
+
+	copy->sslEntropyFile = old->sslEntropyFile;
+	copy->certificate = old->certificate;
+	copy->privatekey = old->privatekey;
+	copy->calist = old->calist;
+	copy->passwd = old->passwd;
+
+	copy->copy = 1;
+
+	return copy;
+}
+
+SPOCP *spocpc_dup( SPOCP *old )
+{
+	SPOCP *copy;
+
+	copy = (SPOCP *) Calloc(1, sizeof( SPOCP));
+
+	return spocpc_cpy( copy, old );
+}
+
+/*=================================================================================*/
+
 /*!
  * Closes the connection to a SPOCP server
  * If it is a SSL/TLS protected connection SSL/TLS is shutdown before the 
@@ -496,8 +543,6 @@ spocpc_close(SPOCP * spocp)
 	if (spocp->contype == SSL_TLS) {
 		SSL_shutdown(spocp->ssl);
 		spocp->ssl = 0;
-		SSL_CTX_free(spocp->ctx);
-		spocp->ctx = 0;
 	}
 #endif
 
@@ -513,10 +558,17 @@ static void
 spocpc_clr(SPOCP * s)
 {
 	if (s) {
-		if (s->srv)
-			free(s->srv);
+		if (s->srv) {
+			octarr_free(s->srv);
+		}
 
+		if (s->com_timeout)
+			free( s->com_timeout );
 #ifdef HAVE_SSL
+		if (s->copy == 0) {
+			SSL_CTX_free(s->ctx);
+			s->ctx = 0;
+		}
 		if (s->sslEntropyFile)
 			free(s->sslEntropyFile);
 		if (s->certificate)
@@ -540,7 +592,8 @@ void
 free_spocp(SPOCP * s)
 {
 	if (s) {
-		spocpc_clr(s);
+		if (s->copy == 0) 
+			spocpc_clr(s);
 		free(s);
 	}
 }
@@ -728,7 +781,7 @@ static int
 spocpc_connect(char *srv, int nsec)
 {
 	int port, res = 0, sockfd = 0, val;
-	struct sockaddr_un sun_addr;
+	struct sockaddr_un serv_addr;
 	struct sockaddr_in sin;
 	struct in_addr **pptr;
 	struct hostent *hp;
@@ -739,19 +792,21 @@ spocpc_connect(char *srv, int nsec)
 
 	if (*srv == '/') {	/* unix domain socket */
 
-		sockfd = socket(AF_LOCAL, SOCK_STREAM, 0);
+		if(( sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) {
+			traceLog(LOG_ERR,"Couldn't open socket\n");
+			return 0;
+		}
 
-		memset(&sun_addr, 0, sizeof(sun_addr));
-		sun_addr.sun_family = AF_LOCAL;
+		memset(&serv_addr, 0, sizeof(serv_addr));
+		serv_addr.sun_family = AF_UNIX;
+		strcpy(serv_addr.sun_path, srv);
 
-		strcpy(sun_addr.sun_path, srv);
+		res = connect(sockfd, (SA *) &serv_addr, sizeof(serv_addr));
 
-		res = connect(sockfd, (SA *) & sun_addr, sizeof(sun_addr));
-
-		if (res != 0) {
+		if (res < 0) {
 			traceLog(LOG_ERR,"connect error [%s] \"%s\"\n", srv,
 #ifdef sun
-			    strerror(errno);
+			    strerror(errno));
 #else
 			    strerror_r(errno, buf, 256));
 #endif
@@ -840,7 +895,13 @@ spocpc_connect(char *srv, int nsec)
 			FD_ZERO(&rset);
 			FD_SET(sockfd, &rset);
 			wset = rset;
-			tv.tv_sec = nsec;
+
+			/* Never wait forever */
+			if (!nsec)
+				tv.tv_sec= SPOCP_DEFAULT_CONN_WAIT;
+			else
+				tv.tv_sec = nsec;
+
 			tv.tv_usec = 0;
 
 			if ((res =
@@ -871,6 +932,30 @@ spocpc_connect(char *srv, int nsec)
 /* ============================================================================== */
 
 /*!
+ * \brief Sets the timeout for responses from a Spocp server
+ * \param spocp The spocp session
+ * \param sec The number of seconds to wait
+ * \param usec The number of microseconds to wait
+ * 
+ */
+
+SPOCP *
+spocpc_set_timeout( SPOCP *spocp, long sec, long usec)
+{
+	if (spocp == 0 && ( sec != 0L || usec != 0L ))
+		spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
+		
+	if (sec == 0L && usec == 0L)
+		return spocp;
+
+	spocp->com_timeout = (struct timeval *) Malloc (sizeof(struct timeval));
+	spocp->com_timeout->tv_sec = sec;
+	spocp->com_timeout->tv_usec = usec;
+
+	return spocp;
+}
+
+/*!
  * \brief Initializes a Spocp session, that is creates a Spocp struct but does not
  *   connect to any server.
  * \param hosts Where the servers is to be found, space separated list of servers
@@ -879,28 +964,90 @@ spocpc_connect(char *srv, int nsec)
  * \return A Spocp connection struct
  */
 SPOCP *
-spocpc_init(char *hosts, long tv_sec, long tv_usec)
+spocpc_init(char *hosts, long sec, long usec)
 {
+	char	**arr, **tmp;
 	SPOCP	*spocp;
 	int	n;
+	octet_t	*op;
+
+	if( hosts == 0 || *hosts == '\0' ) 
+		return 0;
 
 	spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
-	spocp->srv = line_split( hosts, ' ', '\\', 0, 0, &n) ;
-	spocp->cursrv = spocp->srv;
-	if ( tv_sec != 0L && tv_usec != 0L) {
-		spocp->com_timeout = (struct timeval *) Malloc (sizeof(struct timeval));
-		spocp->com_timeout->tv_sec = tv_sec;
-		spocp->com_timeout->tv_usec = tv_usec;
+	arr = line_split( hosts, ' ', '\\', 0, 0, &n) ;
+
+	for( tmp = arr; *tmp; tmp++) { 
+		op = str2oct( *tmp, 1 );
+		spocp->srv = octarr_add( spocp->srv, op);
 	}
+	free(arr);
+
+	spocp->cursrv = 0;
+
+	if ( sec != 0L || usec != 0L) 
+		spocpc_set_timeout( spocp, sec, usec);
 
 	return spocp;
+}
+
+/*!
+ * \brief Adds another spocp server to the list of servers that can be used in
+ * this context
+ * \param spocp The spocp session to which the server should be added
+ * \param host The server to be added
+ * \return Pointer to the spocp session struct
+ */
+
+SPOCP *
+spocpc_add_server( SPOCP *spocp, char *host)
+{
+	if( host == 0 || *host == '\0' )
+		return spocp;
+
+	if (spocp == 0)
+		spocp = (SPOCP *) calloc(1, sizeof( SPOCP));
+
+	spocp->srv = octarr_add( spocp->srv, str2oct( Strdup(host), 1));	
+
+	return spocp;
+}
+
+/* ---------------------------------------------------------------------- */
+
+static int 
+spocpc_round_robin_check( SPOCP *spocp, int cur, int nsec)
+{
+	int		fd = 0, j;
+	octarr_t	*oa;
+	char		*srv;
+
+	if ( spocp && spocp->srv && spocp->srv->n > 1) {
+		oa = spocp->srv;
+		for( j = cur+1; j != cur ; j++) {
+			if (j == oa->n) {
+				j = 0;
+				if( j == cur ) break;
+			}
+
+			srv = oa->arr[j]->val;
+			if(( fd = spocpc_connect(srv, nsec)) > 0 ) {
+				spocp->cursrv = j;
+				break;
+			}
+		}
+
+		if (j == cur) spocp->cursrv = 0;
+	}
+
+	return fd;
 }
 
 /*!
  * Opens a new Spocp session. Inlcudes not just creating the session structure but
  * also opening a non-SSL connection to the Spocp server of choice
  * \param spocp A spocp session struct gotten from spocpc_init() or NULL
- * \param srv The spocp server definition, either a host:port specification or a 
+ * \param srv One spocp server definition, either a host:port specification or a 
  *            filename representing a unix domain socket .
  * \param nsec The number of seconds that should pass before giving up on a server
  * \return A Spocp session pointer or NULL on failure
@@ -909,37 +1056,27 @@ spocpc_init(char *hosts, long tv_sec, long tv_usec)
 SPOCP *
 spocpc_open(SPOCP * spocp, char *srv, int nsec)
 {
-	int fd = 0;
-	char **srvs;
+	int		fd = 0, i = 0;
+	octarr_t	*oa;
+	char		*cur;
+
+	if (spocp == 0 && srv == 0) 
+		return 0;
 
 	if (srv) {
-		if ((fd = spocpc_connect(srv, nsec)) > 0 ) {
-			if (spocp == 0)
-				spocp = spocpc_init(srv, 0L, 0L) ;
-			else {
-				char	**arr;
-				int	n;
-
-				for( arr = spocp->srv, n = 0; arr; arr++) n++;
-
-				arr = Realloc( spocp->srv, n+2 * sizeof(char *));
-				arr[n+1] = 0;
-				arr[n] = strdup(srv);
-				spocp->srv = arr;
-				spocp->cursrv = spocp->srv+n;
-			}
-		}
+	 	spocp =	spocpc_add_server( spocp, srv);
+		oa = spocp->srv;
+		i = oa->n - 1; /* The latest addition */
+		fd = spocpc_connect(srv, nsec);
+	}
+	else {
+		spocp->cursrv = 0;
+		cur = spocp->srv->arr[0]->val;
+		fd = spocpc_connect(cur, nsec);
 	}
 
-	if (fd <= 0 && spocp && spocp->srv) {
-		for( srvs = spocp->cursrv ; *srvs ; srvs++) {
-			if(( fd = spocpc_connect(*srvs, nsec)) >0 ) {
-				spocp->cursrv = srvs;
-				break;
-			}
-		}
-		if (srvs == 0) spocp->cursrv = spocp->srv;
-	}
+	if (fd <= 0 )
+		fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
 
 	if (fd == 0)
 		return NULL;
@@ -969,30 +1106,23 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 int
 spocpc_reopen(SPOCP * spocp, int nsec)
 {
-	char **arr;
+	int		fd;
+	char		*cur;
+	octarr_t	*oa = spocp->srv;
 
 	close(spocp->fd);	/* necessary if other side has already closed ? */
 
-	arr = spocp->cursrv;	/* Retry the same first */
+	cur = oa->arr[spocp->cursrv]->val;	/* Retry the same first */
 
-	while( arr ) {
-		spocp->fd = spocpc_connect(*arr, nsec);
-		if (spocp->fd <= 0) spocp->cursrv++;
-	}
-	if (arr == 0) {
-		arr = spocp->srv;
-		while( arr != spocp->cursrv ) {
-			spocp->fd = spocpc_connect(*arr, nsec);
-			if (spocp->fd <= 0) spocp->cursrv++;
-		}
-	}
+	fd = spocpc_connect( cur, nsec );
+
+	if (spocp->fd <= 0 )
+		spocp->fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
 
 	if (spocp->fd <= 0)
 		return FALSE;
-	else {
-		spocp->cursrv = arr;
+	else
 		return TRUE;
-	}
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1118,7 +1248,7 @@ spocpc_get_result_code(octet_t * rc)
 			return spocp_rescode[i].code;
 	}
 
-	return SPOCPC_OTHER;
+	return SPOCPC_UNKNOWN_RESCODE;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1223,9 +1353,9 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 static int
 spocpc_protocol_op(octarr_t *oa, octet_t *prot)
 {
-	char *op, *sp;
-	int i, l, la, tot;
-	size_t n;
+	char		*op, *sp;
+	int		i, l, la, tot;
+	unsigned int	n;
 
 	for (i = 0, l = 0; i < oa->n ; i++) {
 		if (oa->arr[i]->len == 0)
@@ -1296,8 +1426,12 @@ spocpc_get_result(SPOCP * spocp, queres_t * qr)
 	char	resp[BUFSIZ];
 	int	ret, n;
 
-	if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0)
-		return SPOCPC_OTHER;
+	if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0) {
+		if (!spocp->rc)
+			return SPOCPC_OTHER;
+		else
+			return spocp->rc;
+	}
 	else if (n == 0 && spocp->rc)
 		return spocp->rc;
 
