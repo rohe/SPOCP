@@ -68,7 +68,7 @@ sexparg_t         **tpsec_X509_wcc;
 char           *srvquery =
     "(6:server(2:ip%{ip})(4:host%{host})%{transportsec})";
 char           *operquery =
-    "(9:operation%{operation}(4:path%{path})(6:server(2:ip%{ip})(4:host%{host})%{transportsec}))";
+    "(9:operation%{operation}(6:server(2:ip%{ip})(4:host%{host})%{transportsec}))";
 
 sexparg_t         **srvq;
 sexparg_t         **operq;
