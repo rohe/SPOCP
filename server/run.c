@@ -124,6 +124,29 @@ wake_listener(int w)
  * ---------------------------------------------------------------------- 
  */
 
+static void
+run_stop( srv_t *srv, conn_t *conn, pool_item_t *pi )
+{
+	int err;
+
+	if (XYZ)
+		timestamp("removing connection");
+
+	conn->close(conn);
+	conn_reset(conn);
+	/*
+	 * unlocks the conn struct as a side effect 
+	 */
+	item_return(srv->connections, pi);
+
+	/*
+	 * release lock 
+	 */
+	if ((err = pthread_mutex_unlock(&conn->clock)) != 0)
+		traceLog("Panic: unable to release lock on connection: %s",
+		    strerror(err));
+
+}
 
 void
 spocp_srv_run(srv_t * srv)
@@ -187,28 +210,11 @@ spocp_srv_run(srv_t * srv)
 			 */
 			next = pi->next;
 
-			if (conn->stop && conn->ops_pending <= 0) {
-				if (XYZ)
-					timestamp("removing connection");
-				conn->close(conn);
-				conn_reset(conn);
-				/*
-				 * unlocks the conn struct as a side effect 
-				 */
-				item_return(srv->connections, pi);
-
-				/*
-				 * release lock 
-				 */
-				if ((err =
-				     pthread_mutex_unlock(&conn->clock)) != 0)
-					traceLog
-					    ("Panic: unable to release lock on connection: %s",
-					     strerror(err));
-
+			/* only close if output queue is empty */
+			if (conn->stop && conn->ops_pending <= 0 && 
+			    iobuf_content(conn->out) == 0 ) {
+				run_stop( srv, conn, pi);
 				pe--;
-				if (XYZ)
-					traceLog("Next is %p", next);
 			} else {
 				if (!conn->stop) {
 					if (conn->status == CNST_WRITE){
@@ -396,7 +402,7 @@ spocp_srv_run(srv_t * srv)
 		 */
 
 	      fdloop:
-		for (pi = afpool_first(srv->connections); pi; pi = pi->next) {
+		for (pi = afpool_first(srv->connections); pi; pi = next) {
 			spocp_result_t  res;
 			proto_op       *operation = 0;
 			/*
@@ -404,6 +410,7 @@ spocp_srv_run(srv_t * srv)
 			 */
 
 			conn = (conn_t *) pi->info;
+			next = pi->next;
 
 			if (conn->status == CNST_SSL_NEG)
 				continue;
@@ -483,8 +490,14 @@ spocp_srv_run(srv_t * srv)
 					traceLog
 					    ("Error in writing to %d",
 					     conn->fd);
-				else if (iobuf_content(conn->out) == 0)
-					conn->status = CNST_ACTIVE;
+				else if (iobuf_content(conn->out) == 0) {
+					if (conn->stop) {
+						run_stop( srv, conn, pi);
+						pe--;
+					}
+					else
+						conn->status = CNST_ACTIVE;
+				}
 			}
 
 			/*

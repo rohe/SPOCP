@@ -497,9 +497,12 @@ com_logout(conn_t * conn)
 	if (conn->transaction)
 		opstack_free( conn->ops );
 
+	/* place response in write queue before marking connection for closing */
+	r = postop( conn, r, 0);
+
 	conn->stop = 1;
 
-	return postop( conn, r, 0);
+	return r;
 }
 
 /*
