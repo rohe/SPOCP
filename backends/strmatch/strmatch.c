@@ -28,31 +28,16 @@ befunc strmatch_test ;
 #define CASE       0
 #define CASEIGNORE 1
 
-__attribute__((unused)) static element_t *gete( element_t *ep, octet_t *oct ) 
-{
-  int     rc ;
-  octet_t spec ;
-
-  spec.val = &oct->val[2] ;
-
-  if( oct->val[ oct->len - 1 ] != '}' ) return 0 ;
-
-  spec.len = oct->len - 3 ;
-
-  return element_eval( &spec, ep, &rc ) ;
-}
-
-spocp_result_t strmatch_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t strmatch_test( cmd_param_t *cpp, octet_t *blob )
 {
   octarr_t  *argv = 0 ;
   element_t *ce[2], *cen[2] ;
   int        i, r = SPOCP_DENIED, n ;
   octet_t   *oct = 0, *var0 = 0, *var1 = 0 ;
 
-  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 || cpp->arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  oct = element_atom_sub( arg, xp ) ;
+  oct = element_atom_sub( cpp->arg, cpp->x ) ;
 
   if( oct ) { /* simple substitutions was OK */
 
@@ -65,12 +50,12 @@ spocp_result_t strmatch_test(
 
     octarr_free( argv ) ;
 
-    if( oct != arg ) oct_free( oct ) ;
+    if( oct != cpp->arg ) oct_free( oct ) ;
 
   }
   else { 
-    ce[0] = element_nth( xp, 0 ) ;
-    ce[1] = element_nth( xp, 1 ) ;
+    ce[0] = element_nth( cpp->x, 0 ) ;
+    ce[1] = element_nth( cpp->x, 1 ) ;
 
     if(( n = element_size( ce[0] )) == element_size( ce[1] ) ) {
       for( i = 0 ; i < n ; i++ ) {
@@ -91,17 +76,9 @@ spocp_result_t strmatch_test(
   return r ;
 }
 
-/*
-spocp_result_t
-strmatch_test( element_t *ep, octet_t *arg, becpool_t *bcp, octet_t *blob )
-{
-  return( _strmatch_test( ep, arg, CASE )) ;
-}
-
-spocp_result_t
-strcasematch_test( element_t *ep, octet_t *arg, becpool_t *bcp, octet_t *blob )
-{
-  return( _strmatch_test( ep, arg, CASEIGNORE )) ;
-}
-*/
-
+plugin_t strmatch_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  strmatch_test,
+  NULL,
+  NULL
+} ;

@@ -1252,10 +1252,8 @@ static int P_ldapclose( void *con )
 }
 
 /*
- Input should be <ldaphost> ";" 1*( searchbase ";" ) setfilter
  */
-spocp_result_t ldapset_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t ldapset_test( cmd_param_t *cpp, octet_t *blob )
 {
   spocp_result_t  r = SPOCP_DENIED, rc ;
   scnode_t       *scp ;
@@ -1266,10 +1264,11 @@ spocp_result_t ldapset_test(
   becon_t        *bc = 0 ;
   octarr_t       *argv ;
   int             cv ;
+  pdyn_t         *dyn = cpp->pd ;
 
-  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 || cpp->arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
   cb.len = 0 ;
   cv = cached( dyn->cv, oct, &cb ) ;
@@ -1362,10 +1361,16 @@ spocp_result_t ldapset_test(
     }
   }
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
   
   traceLog( "ldapset => %d", r ) ;
 
   return r ;
 }
 
+plugin_t ldapset_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  ldapset_test,
+  NULL,
+  NULL
+} ;

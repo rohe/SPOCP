@@ -1123,7 +1123,7 @@ octet_t *element_atom_sub( octet_t *val, element_t *xp )
       return 0 ;
     }
 
-    if( oct2strcpy( element_data( vs ), tmp, 256, 0, 0 ) < 0 ) {
+    if( oct2strcpy( element_data( vs ), tmp, 256, 0 ) < 0 ) {
       oct_free( res ) ;
       return 0 ;
     }

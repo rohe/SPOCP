@@ -16,6 +16,8 @@
 #include <db0.h>
 #include <spocp.h>
 #include <varr.h>
+#include <plugin.h>
+#include <dback.h>
 
 /* server.c */
 
@@ -40,8 +42,7 @@ void      *do_extref( erset_t *erp, element_t *ep ) ;
 junc_t    *do_branches( parr_t *avp, element_t *ep ) ;
 */
 
-junc_t *
-  element_match_r( junc_t *, element_t *, spocp_result_t *, element_t *h, octarr_t ** ) ;
+junc_t * element_match_r( junc_t *, element_t *, comparam_t * ) ;
 
 /* input.c */
 
@@ -146,7 +147,8 @@ int        free_rule( ruleinfo_t *ri, char *uid ) ;
 void       free_all_rules( ruleinfo_t *ri ) ;
 
 
-spocp_result_t  add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd ) ;
+spocp_result_t 
+  add_right( db_t **db, dbcmd_t *dbc, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd ) ;
 
 octet_t        *rulename_print(  ruleinst_t *r, char *rs ) ;
 octet_t        *get_blob( ruleinst_t *ri ) ;
@@ -164,8 +166,6 @@ void	    ruleinfo_free( ruleinfo_t * ) ;
 ruleinfo_t *ruleinfo_dup( ruleinfo_t *old ) ;
 int        ruleinfo_print( ruleinfo_t *r ) ;
 ruleinst_t *ruleinst_find_by_uid( rbt_t *rules, char *uid ) ;
-
-void       *read_rules( void *vp, char *file, int *rc, keyval_t **globals ) ;
 
 element_t  *element_dup( element_t *ep, element_t *memberof ) ; 
 
@@ -267,7 +267,7 @@ void    spocp_print( junc_t *dv, int level, int indent ) ;
 /* del.c */
 
 /*junc_t *element_rm( junc_t *ap, element_t *ep, int id ) ;*/
-spocp_result_t rm_rule( junc_t *ap, octet_t *rule, ruleinst_t *rt ) ;
+spocp_result_t rule_rm( junc_t *ap, octet_t *rule, ruleinst_t *rt ) ;
 
 /* slist.c */
 
@@ -315,7 +315,7 @@ ll_t  *parr2ll( parr_t *pp ) ;
 /* aci.c */
 
 ruleinst_t *allowing_rule( junc_t *ap ) ;
-spocp_result_t allowed( junc_t *ap, element_t *ep, octarr_t **on ) ;
+spocp_result_t allowed( junc_t *ap, comparam_t *comp ) ;
 
 /* -- varr.c --- */
 
@@ -334,10 +334,10 @@ ruleinst_t *varr_ruleinst_nth( varr_t *va, int n ) ;
 /* ----- */
 
 int		bcspec_is( octet_t *spec ) ;
-bcdef_t        *bcdef_add( db_t *db, octet_t *n, octet_t *d ) ;
-spocp_result_t  bcdef_del( db_t *db, octet_t *name ) ;
-spocp_result_t  bcdef_replace( db_t *db, octet_t *n, octet_t *d ) ;
-bcdef_t        *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc ) ;
+bcdef_t        *bcdef_add( db_t *db, plugin_t *p, dbcmd_t *dbc, octet_t *n, octet_t *d ) ;
+spocp_result_t  bcdef_del( db_t *db, dbcmd_t *dbc, octet_t *name ) ;
+spocp_result_t  bcdef_replace( db_t *, plugin_t *, dbcmd_t *, octet_t *, octet_t * ) ;
+bcdef_t        *bcdef_get( db_t *, plugin_t *, dbcmd_t *, octet_t *, spocp_result_t * ) ;
 
 spocp_result_t	bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
 varr_t *        bcond_users( db_t *, octet_t * );
@@ -345,28 +345,28 @@ varr_t *        bcond_users( db_t *, octet_t * );
 /* --- sllist.c ---  */
 
 slnode_t *sl_new( boundary_t *item, int n, slnode_t *tail );
-void sl_free_node( slnode_t *slp );
-void sl_free_slist( slist_t *slp );
-int sl_rand( slist_t *slp );
-void sl_rec_insert( slnode_t *old, slnode_t *new, int n );
+void      sl_free_node( slnode_t *slp );
+void      sl_free_slist( slist_t *slp );
+int       sl_rand( slist_t *slp );
+void      sl_rec_insert( slnode_t *old, slnode_t *new, int n );
 slnode_t *sl_rec_delete( slnode_t *node, boundary_t *item, int n );
 slnode_t *sl_rec_find( slnode_t *node, boundary_t *item, int n, int *flag );
 slnode_t *sl_delete( slist_t *slp, boundary_t *item );
-void sl_print( slist_t *slp );
+void      sl_print( slist_t *slp );
 slnode_t *sl_insert( slist_t *slp, boundary_t *item ) ;
 slnode_t *sln_dup( slnode_t *old );
 
 /* ll.c */
 
-ll_t *ll_new( cmpfn *cf, ffunc *ff, dfunc *df, pfunc *pf ) ;
-void ll_free( ll_t *lp ) ;
 node_t *node_new( void *vp ) ;
-ll_t *ll_push( ll_t *lp, void *vp, int nodup );
-void *ll_pop( ll_t *lp );
+ll_t   *ll_new( cmpfn *cf, ffunc *ff, dfunc *df, pfunc *pf ) ;
+void    ll_free( ll_t *lp ) ;
+ll_t   *ll_push( ll_t *lp, void *vp, int nodup );
+void   *ll_pop( ll_t *lp );
 node_t *ll_first( ll_t *lp );
 node_t *ll_next( ll_t *lp, node_t *np );
-void *ll_first_p( ll_t *lp );
-void *ll_next_p( ll_t *lp, void *prev );
-void ll_rm_link( ll_t *lp, node_t *np );
+void   *ll_first_p( ll_t *lp );
+void   *ll_next_p( ll_t *lp, void *prev );
+void    ll_rm_link( ll_t *lp, node_t *np );
 
 #endif

@@ -113,8 +113,7 @@ static time_t diff2seconds( octet_t *arg )
   return sec ;
 }
 
-spocp_result_t difftime_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *b, octet_t *blob )
+spocp_result_t difftime_test( cmd_param_t *cpp, octet_t *blob ) 
 {
   spocp_result_t res = SPOCP_DENIED ;
   time_t      pt, gt, sec = 0 ;
@@ -123,13 +122,13 @@ spocp_result_t difftime_test(
   octarr_t    *argv ;
   octet_t     *oct ;
 
-  if( arg == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
   argv = oct_split( oct, ';', 0, 0, 0 ) ;
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
 
   /* get the time */
   time(&pt);
@@ -142,7 +141,7 @@ spocp_result_t difftime_test(
   oct = argv->arr[1] ;
   if( oct->len > 30 ) return SPOCP_SYNTAXERROR;
 
-  if( oct2strcpy( oct, tmp, 30, 0, 0 ) < 0 ) {
+  if( oct2strcpy( oct, tmp, 30, 0 ) < 0 ) {
     octarr_free( argv ) ;
     return 0 ;  
   }
@@ -176,3 +175,10 @@ spocp_result_t difftime_test(
   octarr_free( argv ) ;
   return res ;
 }
+
+plugin_t difftime_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  difftime_test,
+  NULL,
+  NULL
+} ;

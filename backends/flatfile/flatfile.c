@@ -42,8 +42,7 @@ extern FILE *spocp_logf ;
 
 */
 
-spocp_result_t flatfile_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t flatfile_test( cmd_param_t *cpp, octet_t *blob )
 {
   spocp_result_t r = SPOCP_SUCCESS ;
 
@@ -55,17 +54,17 @@ spocp_result_t flatfile_test(
   int       j, i, ne, cv ;
   becon_t  *bc = 0 ;
 
-  if( arg == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  cv = cached( dyn->cv, oct, &cb ) ;
+  cv = cached( cpp->pd->cv, oct, &cb ) ;
 
   if( cv ) {
     traceLog( "ipnum: cache hit" ) ;
 
     if( cv == EXPIRED ) {
-      cached_rm( dyn->cv, oct ) ;
+      cached_rm( cpp->pd->cv, oct ) ;
       cv = 0 ;
     }
   }
@@ -75,7 +74,7 @@ spocp_result_t flatfile_test(
 
     o = argv->arr[0] ;
 
-    if(( bc = becon_get( o, dyn->bcp )) == 0 ) {
+    if(( bc = becon_get( o, cpp->pd->bcp )) == 0 ) {
   
       str = oct2strdup( argv->arr[0], 0 ) ;
       fp = fopen( str, "r") ;
@@ -83,9 +82,9 @@ spocp_result_t flatfile_test(
 
       if( fp == 0 ) 
         r = SPOCP_UNAVAILABLE ;
-      else if( dyn->size ) {
-        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size ) ;
-        bc = becon_push( o, &P_fclose, (void *) fp, dyn->bcp ) ;
+      else if( cpp->pd->size ) {
+        if( !cpp->pd->bcp ) cpp->pd->bcp = becpool_new( cpp->pd->size ) ;
+        bc = becon_push( o, &P_fclose, (void *) fp, cpp->pd->bcp ) ;
       }
     }
     else {
@@ -96,7 +95,7 @@ spocp_result_t flatfile_test(
         fp = fopen(str, "r") ;
         free( str) ;
         if( fp == 0 ) { /* not available */
-          becon_rm( dyn->bcp, bc ) ;
+          becon_rm( cpp->pd->bcp, bc ) ;
           bc = 0 ;
           r = SPOCP_UNAVAILABLE ;
         }
@@ -155,15 +154,21 @@ spocp_result_t flatfile_test(
     r = SPOCP_DENIED ;
   }
   else {
-    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+    if( cpp->pd->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
       time_t t ;
-      t = cachetime_set( oct, dyn->ct ) ;
-      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
+      t = cachetime_set( oct, cpp->pd->ct ) ;
+      cpp->pd->cv = cache_value( cpp->pd->cv, oct, t, (r|CACHED) , 0 ) ;
     }
   }
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
 
   return r ;
 }
 
+plugin_t flatfile_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  flatfile_test,
+  NULL,
+  NULL
+} ;

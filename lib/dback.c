@@ -21,18 +21,15 @@
 
 #include <spocp.h>
 #include <dback.h>
+#include <plugin.h>
 #include <wrappers.h>
 #include <func.h>
 #include <macros.h>
 #include <proto.h>
 
-static char *necessary_function[] = { "get", "put", "delete", "allkeys",  0 } ;
-static char *optional_function[] = { "init", "firstkey", "nextkey", "open", "close", 0 } ;
+/* ---------------------------------------------------------------------- */
 
-static dback_t *dback_new( void ) 
-{
-  return ( dback_t * ) Calloc (1, sizeof( dback_t )) ;
-}
+dback_t *dback_load( char *name, char *load ) ;
 
 /* ---------------------------------------------------------------------- */
 /*!
@@ -45,122 +42,32 @@ static dback_t *dback_new( void )
  *   plugin is handle in the same way as the backend plugins in this regard.
  * \return A pointer to a dback_t struct with all the values filled in.
  */
-dback_t *init_dback( plugin_t *pl )
+dback_t *dback_load( char *name, char *load )
 {
   dback_t   *dback = 0 ;
-  dbackfn   *dbf ;
-  octarr_t  *oa ;
-  char      *error ;
-  int        i, j ;
-  
-  oa = pconf_get_keys_by_plugin( pl, "dback" ) ;
-  if( !oa ) {
-    traceLog( "No dback definition" ) ;
-    return 0 ;
-  }
-   
-  for( j = 0 ; necessary_function[j] ; j++ ) 
-    for( i = 0 ; i < oa->n ; i++ ) {
-      if( strcmp( necessary_function[j], oa->arr[i]->val ) == 0 ) break ;
+  void      *handle ;
+  char      *modulename ;
 
-    if( i == oa->n ) {
-      traceLog( "Necessary dback function \"%s\" missing", necessary_function[j] ) ;
-      octarr_free( oa ) ;
-      return 0 ; 
-    }
-  }
+  handle = dlopen( load, RTLD_LAZY ) ;
 
-  octarr_free( oa ) ;
-  oa = 0 ;
-
-  oa = pconf_get_keyval_by_plugin( pl, "dback", "filename" ) ;
-
-  if( !oa ) {
-    traceLog( "No link to the db backend library") ;
-    return 0 ;
-  }
-
-  dback = dback_new() ;
-
-  /* should only be one, disregard the other */
-  dback->handle = dlopen( oa->arr[0]->val, RTLD_LAZY ) ;
-  if( !dback->handle ) {
-    traceLog( "Unable to open %s library: [%s]", oa->arr[0]->val,  dlerror() ) ;
-    free( dback ) ;
+  if( !handle ) {
+    traceLog( "Unable to open %s library: [%s]", load,  dlerror() ) ;
     return 0 ;
   }  
 
-  octarr_free( oa ) ;
-  oa = 0 ;
+  modulename = ( char * ) Malloc( strlen( name ) + strlen( "_dback" ) + 1 ) ;
+  sprintf( modulename, "%s_dback", name ) ;
 
-  /* ------------------------------------------------------------ *
-     The necessary functions 
-   * ------------------------------------------------------------ */
 
-  for( i = 0 ; necessary_function[i] ; i++ ) {
-    oa = pconf_get_keyval_by_plugin( pl, "dback", necessary_function[i] ) ;
-
-    if( oa->n > 1 ) { /* */
-      traceLog( "Should only be one %s db backend function defined", necessary_function[i] ) ;
-    }
-
-    dbf = ( dbackfn * ) dlsym( dback->handle, oa->arr[0]->val ) ;
-    if(( error = dlerror()) != NULL ) {
-      traceLog("Couldn't link the %s db backend function", oa->arr[0]->val ) ;
-      free( dback ) ;
-      return 0 ;
-    }
-
-    octarr_free( oa ) ;
-    oa = 0 ;
-
-    switch( i ) {
-      case 0:
-        dback->get = dbf ;
-        break ;
-
-      case 1:
-        dback->put = dbf ;
-        break ;
-
-      case 2:
-        dback->delete = dbf ;
-        break ;
-
-      case 3:
-        dback->allkeys = dbf ;
-        break ;
-    }
+  dback = (dback_t * ) dlsym( handle, modulename ) ;
+  if( dback == 0 || dback->magic != MODULE_MAGIC_COOKIE ) {
+    traceLog( "%s: Not a proper dback_struct", name ) ;
+    dlclose( handle ) ;
+    return 0 ;
   }
 
-  /* ------------------------------------------------------------ *
-     The optional functions 
-   * ------------------------------------------------------------ */
-
-  for( i = 0 ; optional_function[i] ; i++ ) {
-    oa = pconf_get_keyval_by_plugin( pl, "dback", optional_function[i] ) ;
-
-    if( !oa ) continue ;
-
-    if( oa->n > 1 ) { /* */
-      traceLog( "Should only be one %st dback function defined", optional_function[i] ) ;
-    }
-
-    dbf = ( dbackfn * ) dlsym( dback->handle, oa->arr[0]->val ) ;
-    if(( error = dlerror()) != NULL ) {
-      traceLog("Couldn't link the %s dback function", oa->arr[0]->val ) ;
-      continue ;
-    }
-
-    octarr_free( oa ) ;
-    oa = 0 ;
-
-    switch( i ) {
-      case 0:
-        dback->init = dbf ;
-        break ;
-    }
-  }
+  dback->handle = handle ;
+  dback->name = Strdup( name ) ;
 
   return dback ;
 }
@@ -250,11 +157,12 @@ static spocp_result_t datum_parse( octet_t *arg, octet_t *rule, octet_t *blob, c
  * \return SPOCP_SUCCESS on success otherwise an appropriate error code
  */
 
-spocp_result_t dback_init( dback_t *dback, void *cfg, void *conf )
+spocp_result_t dback_init( dbcmd_t *dbc )
 {
   spocp_result_t r = SPOCP_UNAVAILABLE ;
 
-  if( dback && dback->init ) dback->init( cfg, conf, 0, &r ) ;
+  if( dbc && dbc->dback && dbc && dbc->dback->init ) 
+    dbc->dback->init( dbc, dbc->dback->conf, 0, &r ) ;
 
   return r ;
 }
@@ -268,17 +176,16 @@ spocp_result_t dback_init( dback_t *dback, void *cfg, void *conf )
  * \param oct0, oct1, str Pieces of the information to be stored
  * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
  */
-spocp_result_t
- dback_save( dback_t *dback, void *handle, char *key, octet_t *oct0, octet_t *oct1, char *str ) 
+spocp_result_t dback_save( dbcmd_t *dbc, char *k, octet_t *o0, octet_t *o1, char *s ) 
 {
   octet_t        *datum ;
   spocp_result_t  r ;
 
-  if( dback == 0 ) return SPOCP_SUCCESS ;
+  if( dbc == 0 || dbc->dback == 0 ) return SPOCP_SUCCESS ;
 
-  datum = datum_make( oct0, oct1, str) ;
+  datum = datum_make( o0, o1, s) ;
 
-  dback->put( handle, (void *) key, (void *) datum, &r ) ; 
+  dbc->dback->put( dbc, (void *) k, (void *) datum, &r ) ; 
 
   oct_free( datum ) ;
 
@@ -294,17 +201,16 @@ spocp_result_t
  * \param oct0, oct1, s Pieces of the information to be stored
  * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
  */
-spocp_result_t
- dback_replace( dback_t *dback, void *handle, char *key, octet_t *oct0, octet_t *oct1, char *s ) 
+spocp_result_t dback_replace( dbcmd_t *dbc, char *k, octet_t *o0, octet_t *o1, char *s ) 
 {
   octet_t        *datum ;
   spocp_result_t  r ;
 
-  if( dback == 0 ) return SPOCP_SUCCESS ;
+  if( dbc == 0 || dbc->dback == 0 ) return SPOCP_SUCCESS ;
 
-  datum = datum_make( oct0, oct1, s ) ;
+  datum = datum_make( o0, o1, s ) ;
 
-  dback->replace( handle, (void *) key, (void *) datum, &r ) ; 
+  dbc->dback->replace( dbc, (void *) k, (void *) datum, &r ) ; 
 
   oct_free( datum ) ;
 
@@ -316,25 +222,24 @@ spocp_result_t
 /*!
  * Reads stored information from the persistent storage
  * \param dback A link to the backend information
- * \param handle The connection handle cast as a (void *)
+ * \param dbc The connection handle cast as a (void *)
  * \param key The key under which the information should be stored.
  * \param oct0, oct1, str The information from the persistent storage split into its 
  *   original pieces.
  * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code
  */
-spocp_result_t
- dback_read( dback_t *dback, void *handle, char *key, octet_t *oct0, octet_t *oct1, char **str ) 
+spocp_result_t dback_read( dbcmd_t *dbc, char *key, octet_t *o0, octet_t *o1, char **s ) 
 {
   octet_t        *datum = 0 ;
   spocp_result_t  r ;
 
-  if( dback == 0 ) return SPOCP_UNAVAILABLE;
+  if( dbc == 0 || dbc->dback == 0 ) return SPOCP_UNAVAILABLE;
 
-  if(( datum = dback->get( handle, (void *) key, 0, &r )) == 0 ) {
+  if(( datum = dbc->dback->get( dbc, (void *) key, 0, &r )) == 0 ) {
     return SPOCP_UNAVAILABLE ; 
   }
   else 
-    return datum_parse( datum, oct0, oct1, str ) ;
+    return datum_parse( datum, o0, o1, s ) ;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -347,13 +252,13 @@ spocp_result_t
  * \return An appropriate result code
  */
 
-spocp_result_t dback_delete( dback_t *dback, void *handle, char *key )
+spocp_result_t dback_delete( dbcmd_t *dbc, char *key )
 {
   spocp_result_t r ;
 
-  if( dback == 0 ) return SPOCP_SUCCESS ;
+  if( dbc == 0 || dbc->dback == 0 ) return SPOCP_SUCCESS ;
 
-  dback->delete( handle, (void *) key, 0, &r ) ;
+  dbc->dback->delete( dbc, (void *) key, 0, &r ) ;
 
   return r ;
 }
@@ -367,19 +272,19 @@ spocp_result_t dback_delete( dback_t *dback, void *handle, char *key )
  * \param r     A pointer to a int where the resultcode is placed
  * \return A void pointer to a handle the database backend has return as a
  *  connection token.
- */
+ *
 void *dback_open( dback_t *dback, spocp_result_t *r )
 {
   return dback->open( 0, 0, 0, r ) ;
 }
 
-/* ---------------------------------------------------------------------- */
-/*!
+ * ---------------------------------------------------------------------- * 
+ *!
  * Closes the connection to the persistent store.
  * \param dback A link to the backend information
  * \param handle The connection handle cast as a (void *)
  * \return The result code
- */
+ * 
 spocp_result_t dback_close( dback_t *dback, void *handle )
 {
   spocp_result_t r ;
@@ -389,9 +294,9 @@ spocp_result_t dback_close( dback_t *dback, void *handle )
   return r ;
 }
 
-/* ---------------------------------------------------------------------- */
+ * ---------------------------------------------------------------------- *
 
-/*!
+ *!
  * Gets the key to the first (in some sense) information pieces in the 
  * persistent store. One can not make any assumptions that it is the 
  * oldest, newest or anything like that. The only valid assumption is that
@@ -402,28 +307,28 @@ spocp_result_t dback_close( dback_t *dback, void *handle )
  * \param handle A connection handle to the storage facility.
  * \param r A pointer to an int where the result code can be placed.
  * \return The key expressed as a octet_t struct.
- */
+ * 
 octet_t *dback_first_key( dback_t *dback, void *handle, spocp_result_t *r )
 {
   return (octet_t *) dback->firstkey( handle, 0, 0, r ) ;
 }
 
-/* ---------------------------------------------------------------------- */
+ * ---------------------------------------------------------------------- * 
 
-/*!
+ *!
  * Gets the next ( according to some definition ) key from the persistent store.
  * \param dback A link to the backend information
  * \param handle A connection handle to the storage facility
  * \param key The previous key.
  * \param r A pointer to an int where the result code can be placed.
  * \return The next key expressed as a octet_t struct.
- */
+ * 
 octet_t *dback_next_key( dback_t *dback, void *handle, octet_t *key, spocp_result_t *r )
 {
   return (octet_t *) dback->nextkey( handle, (void *) key, 0, r ) ; 
 }
 
-/* ---------------------------------------------------------------------- */
+ * ---------------------------------------------------------------------- */
 /*!
  * Gets all keys from the persistent storage
  * This is dback_open(), dback_first_key(), dback_next_key(), dback_close rolled into
@@ -434,11 +339,11 @@ octet_t *dback_next_key( dback_t *dback, void *handle, octet_t *key, spocp_resul
  * \return A octetarr struct containing all the keys as octet_t structs
  */
 
-octarr_t *dback_all_keys( dback_t *dback, void *handle, spocp_result_t *r )
+octarr_t *dback_all_keys( dbcmd_t *dbc, spocp_result_t *r )
 {
-  if( dback == 0 ) return 0 ;
+  if( dbc && dbc->dback == 0 ) return 0 ;
 
-  return (octarr_t *) dback->allkeys( handle, 0, 0, r ) ; 
+  return (octarr_t *) dbc->dback->allkeys( dbc->handle, 0, 0, r ) ; 
 }
 
 /* ---------------------------------------------------------------------- */
@@ -451,13 +356,16 @@ octarr_t *dback_all_keys( dback_t *dback, void *handle, spocp_result_t *r )
  *   within this transaction, as a (void *)
  */
 
-void *dback_begin( dback_t *dback, void *handle, spocp_result_t *r )
+spocp_result_t dback_begin( dback_t *dback, dbcmd_t *dbc )
 {
-  if( dback->begin ) return dback->begin( handle, 0, 0, r ) ;
-  else {
-    *r = SPOCP_NOT_SUPPORTED ;
-    return NULL ;
+  void          *handle ;
+  spocp_result_t r = SPOCP_SUCCESS ;
+
+  if( dback->begin ) {
+    if(( handle = dback->begin( dbc, 0, 0, &r )) != 0 )  dbc->handle = handle ;
+    return r ;
   }
+  else return SPOCP_NOT_SUPPORTED ;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -468,11 +376,11 @@ void *dback_begin( dback_t *dback, void *handle, spocp_result_t *r )
  * \return The result code
  */
 
-spocp_result_t dback_end( dback_t *dback, void *transhandle )
+spocp_result_t dback_end( dback_t *dback, dbcmd_t *dbc)
 {
   spocp_result_t r = SPOCP_NOT_SUPPORTED ;
 
-  if( dback->end ) dback->end( transhandle, 0, 0, &r ) ;
+  if( dback->end ) dback->end( dbc, 0, 0, &r ) ;
 
   return r ;
 }
@@ -485,11 +393,11 @@ spocp_result_t dback_end( dback_t *dback, void *transhandle )
  * \return The result code
  */
 
-spocp_result_t dback_commit( dback_t *dback, void *transhandle )
+spocp_result_t dback_commit( dback_t *dback, dbcmd_t *dbc)
 {
   spocp_result_t r = SPOCP_NOT_SUPPORTED ;
 
-  if( dback->commit ) dback->commit( transhandle, 0, 0, &r ) ;
+  if( dback->commit ) dback->commit( dbc, 0, 0, &r ) ;
   
   return r ;
 }
@@ -503,11 +411,11 @@ spocp_result_t dback_commit( dback_t *dback, void *transhandle )
  * \return The result code
  */
 
-spocp_result_t dback_rollback( dback_t *dback, void *transhandle )
+spocp_result_t dback_rollback( dback_t *dback, dbcmd_t *dbc)
 {
   spocp_result_t r = SPOCP_NOT_SUPPORTED ;
 
-  if( dback->rollback ) dback->rollback( transhandle, 0, 0, &r ) ;
+  if( dback->rollback ) dback->rollback( dbc, 0, 0, &r ) ;
   
   return r ;
 }

@@ -494,7 +494,7 @@ int element_rm( junc_t *jp, element_t *ep, ruleinst_t *rt )
   return 1 ;
 }
 
-spocp_result_t rm_rule( junc_t *jp, octet_t *rule, ruleinst_t *rt )
+spocp_result_t rule_rm( junc_t *jp, octet_t *rule, ruleinst_t *rt )
 {
   element_t *ep = 0 ;
   int        r = 1 ; /* default SUCCESS? well sort of */
@@ -516,7 +516,9 @@ spocp_result_t rm_rule( junc_t *jp, octet_t *rule, ruleinst_t *rt )
 
   DEBUG( SPOCP_DSTORE ) traceLog("---") ;
 
-  if( ep ) r = element_rm( jp, ep, rt ) ;
+  if( ep ) {
+    r = element_rm( jp, ep, rt ) ;
+  }
 
   if( r == 1 ) return SPOCP_SUCCESS ;
   else         return SPOCP_OPERATIONSERROR ;

@@ -835,7 +835,8 @@ void free_all_rules( ruleinfo_t *ri )
   ruleinfo_free( ri ) ;
 }
 
-static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcondname )
+static ruleinst_t *
+  save_rule( db_t *db, dbcmd_t *dbc, octet_t *rule, octet_t *blob, char *bcondname )
 {
   ruleinfo_t  *ri ;
   ruleinst_t  *rt ;
@@ -855,8 +856,9 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
     }
   }
 
-  if( db->dback )
-    dback_save( db->dback, db->dback->conhandle, rt->uid, rule, blob, bcondname ) ; 
+  if( db->dback ) {
+    dback_save( db->dback, dbc,  rt->uid, rule, blob, bcondname ) ; 
+  }
 
   rbt_insert( ri->rules, (item_t) rt ) ;
 
@@ -1026,7 +1028,8 @@ Arguments:
 Returns:	TRUE if OK
 */
 
-spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd )
+spocp_result_t
+  add_right( db_t **db, dbcmd_t *dbc,  octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd )
 {
   element_t      *ep ;
   octet_t        rule, blob, oct ;
@@ -1059,7 +1062,7 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd
       rule.len -= oct.len ; 
     }
 
-    if(( rt = save_rule( *db, &rule, &blob, bcd ? bcd->name : NULL )) == 0 ) {
+    if(( rt = save_rule( *db, dbc, &rule, &blob, bcd ? bcd->name : NULL )) == 0 ) {
       element_free( ep ) ;
       return SPOCP_EXISTS ;
     }

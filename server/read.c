@@ -229,7 +229,7 @@ static int spocp_add_global( keyval_t **kvpp, octet_t *key, octet_t *val )
   BSLASH     = %x5C         
  */
 
-void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
+int read_rules( srv_t *srv, char *file, dbcmd_t *dbc, keyval_t **globals )
 {
   FILE        *fp ;
   char        *sp, *cp, *tmp, buf[ BUFSIZ ] ;
@@ -239,23 +239,22 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
   octarr_t    *oa = 0;
   ruleset_t   *rs = 0, *trs ;
   bcdef_t     *bcd = 0 ;
+  spocp_result_t rc = SPOCP_SUCCESS ;
 
   if(( fp = fopen( file, "r" )) == 0 ) {
     LOG(SPOCP_EMERG) traceLog( "couldn't open rule file \"%s\"", file) ;
     sp = getcwd( oct.val, oct.size ) ;
     LOG(SPOCP_EMERG) traceLog("I'm in \"%s\"", sp ) ;
-    *rc = -1 ;
     free( oct.val ) ;
-    return vp ;
+    return -1 ;
   }
 
   /* The default ruleset should already be set */
 
-  if( vp == 0 ) {
-    rs = ruleset_new( 0 ) ;
-    vp = ( void * ) rs ;
+  if( srv->root == 0 ) {
+    srv->root = rs = ruleset_new( 0 ) ;
   }
-  else rs = (ruleset_t * ) vp ;
+  else rs = srv->root ;
 
   if( rs->db == 0 ) rs->db = db_new() ;
 
@@ -312,7 +311,9 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
 
     if( oct2strncmp( &oct, ";include ", 9 ) == 0 ) { /* include file */
       LOG(SPOCP_DEBUG) traceLog( "include directive \"%s\"", sp+9) ;
-      vp = read_rules( vp, sp+9, rc, globals ) ;
+      if(( rc = read_rules( srv, sp+9, dbc, globals )) < 0 ) {
+        traceLog( "Include problem")  ;
+      }
       octclr( &prev ) ;
       continue ;
     }
@@ -352,7 +353,7 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
         LOG( SPOCP_EMERG ) traceLog( "Strange line \"%s\"", oct.val ) ;
         if( exp ) oct_free( exp ) ;
         octclr( &prev ) ;
-        return 0 ;
+        return -1;
       }
 
       trs = ruleset_create( &rsn, &rs ) ;
@@ -368,10 +369,9 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
 
       if(( l = sexp_len( &oct )) == 0 ) {
         traceLog( "Error in the rulefile" ) ;
-        ruleset_free( vp ) ;
         if( exp ) oct_free( exp ) ;
         octclr( &prev ) ;
-        return 0 ;
+        return -1;
       } 
 
       val.len = l ;
@@ -390,10 +390,9 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
 
           if(( bl = sexp_len( &bcond )) == 0 ) {
             traceLog( "Error in the boundarycondition definition" ) ;
-            ruleset_free( vp ) ;
             if( exp ) oct_free( exp ) ;
             octclr( &prev ) ;
-            return 0 ;
+            return -1;
           } 
 
           if( bcond.len > bl ) { /* blob too */
@@ -413,7 +412,8 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
         }
       }
 
-      if(( r = spocp_add_rule( (void **) &(rs->db), oa )) == SPOCP_SUCCESS ) n++ ;
+      r = dbapi_rule_add( &(rs->db), srv->plugin, dbc, oa ) ;
+      if( r == SPOCP_SUCCESS ) n++ ;
       else {
         LOG( SPOCP_WARNING ) traceLog("Failed to add rule: \"%s\"", oct.val ) ;
         f++ ;
@@ -483,18 +483,19 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
           }
         }
       }
-      else bcdef_add( rs->db, &key, &val ) ;
+      else bcdef_add( rs->db, srv->plugin, dbc, &key, &val ) ;
     }
 
     if( exp ) oct_free( exp ) ;
     octclr( &prev ) ;
   }
 
-  *rc = n ;
+  if( rc != SPOCP_SUCCESS ) return -1 ;
+  else {
+    LOG(SPOCP_INFO) traceLog("Stored %d rules, failed %d", n, f ) ;
 
-  LOG(SPOCP_INFO) traceLog("Stored %d rules, failed %d", n, f ) ;
-
-  return vp ;
+    return n ;
+  }
 }
 
 /***************************************************************
@@ -527,7 +528,7 @@ static octet_t *bcref_create( char *bcname )
 
 /* ---------------------------------------------------------------------- */
 
-int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
+int dback_read_rules( dbcmd_t *dbc, srv_t *srv, spocp_result_t *rc )
 {
   octarr_t       *oa = 0, *roa = 0 ;
   spocp_result_t  r ;
@@ -536,17 +537,16 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
   char           *bcname = 0, *tmp ;
   ruleset_t      *rs ;
 
-  oa = dback_all_keys( dback, dback->conhandle, &r ) ;
+  oa = dback_all_keys( dbc, &r ) ;
 
   memset( &dat0, 0, sizeof( octet_t )) ;
   memset( &dat1, 0, sizeof( octet_t )) ;
 
   if( r == SPOCP_SUCCESS && oa && oa->n ) {
-    if( *rspp == 0 ) {
-      *rspp = ruleset_new( 0 ) ;
-    }
 
-    rs = *rspp ;
+    if( srv->root == 0 ) srv->root = ruleset_new( 0 ) ;
+
+    rs = srv->root ;
 
     if( rs->db == 0 ) rs->db = db_new() ;
 
@@ -557,11 +557,11 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
       if( bcspec_is( oa->arr[i] ) == TRUE ) {
         tmp = lstrndup( oa->arr[i]->val + 6, oa->arr[i]->len - 6 ) ;
 
-        r = dback_read( dback, dback->conhandle, tmp, &dat0, &dat1, &bcname ) ;
+        r = dback_read( dbc, tmp, &dat0, &dat1, &bcname ) ;
 
         if( dat0.len ) {
           oct_assign( &name, tmp ) ;
-          bcdef_add( rs->db, &name, &dat0) ;
+          bcdef_add( rs->db, srv->plugin, dbc, &name, &dat0) ;
           octclr( &dat0 ) ;
         }
         free( tmp ) ;
@@ -574,11 +574,11 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
       if( bcspec_is( oa->arr[i] ) == FALSE ) {
         tmp = lstrndup( oa->arr[i]->val + 6, oa->arr[i]->len - 6 ) ;
 
-        r = dback_read( dback, dback->conhandle, tmp, &dat0, &dat1, &bcname ) ;
+        r = dback_read( dbc, tmp, &dat0, &dat1, &bcname ) ;
 
         if( dat0.len ) {
           oct_assign( &name, tmp ) ;
-          bcdef_add( rs->db, &name, &dat0) ;
+          bcdef_add( rs->db, srv->plugin, dbc, &name, &dat0) ;
           octclr( &dat0 ) ;
         }
 
@@ -589,7 +589,7 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
     for( i = 0 ; i < oa->n ; i++ ) {
       if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) == 0 ) continue ;
       tmp = oct2strdup( oa->arr[i], 0 ) ;
-      r = dback_read( dback, dback->conhandle, tmp, &dat0, &dat1, &bcname ) ;
+      r = dback_read( dbc, tmp, &dat0, &dat1, &bcname ) ;
       free( tmp ) ;
 
       roa = octarr_add( roa, octdup(&dat0) ) ;

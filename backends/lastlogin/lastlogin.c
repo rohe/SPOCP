@@ -62,25 +62,24 @@ Jul 25 22:14:47 catalin pop3d: LOGOUT, user=lars, ip=[::ffff:213.67.231.206], to
 
 */
 
-spocp_result_t lastlogin_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t lastlogin_test( cmd_param_t *cpp, octet_t *blob )
 {
   spocp_result_t  r = SPOCP_DENIED ;
+  pdyn_t         *dyn = cpp->pd ;
+  char            line[256], *str = 0 ;
+  char           *cp, test[512], date[64], *sp ;
+  FILE           *fp = 0 ;
+  time_t          t, pt ;
+  struct tm       tm ;
+  char          **hms ;
+  int             n, since = 0, cv ;
+  octarr_t       *argv ;
+  octet_t        *oct, *o, cb ;
+  becon_t        *bc = 0 ;
 
-  char       line[256], *str = 0 ;
-  char      *cp, test[512], date[64], *sp ;
-  FILE      *fp = 0 ;
-  time_t     t, pt ;
-  struct tm  tm ;
-  char      **hms ;
-  int        n, since = 0, cv ;
-  octarr_t  *argv ;
-  octet_t   *oct, *o, cb ;
-  becon_t   *bc = 0 ;
+  if( cpp->arg == 0 || cpp->arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
-
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
   cv = cached( dyn->cv, oct, &cb ) ;
 
@@ -213,8 +212,14 @@ spocp_result_t lastlogin_test(
     }
   }
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
   
   return r ;
 }
 
+plugin_t lastlogin_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  lastlogin_test,
+  NULL,
+  NULL
+} ;

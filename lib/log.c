@@ -106,7 +106,8 @@ static void tracelog_doit( const char *fmt, va_list ap)
   pthread_mutex_lock(&loglock) ;
 #endif
 
-  fprintf(spocp_logf, "%s\n", buf ) ;
+  if( spocp_logf ) fprintf(spocp_logf, "%s\n", buf ) ;
+  else fprintf( stderr, "%s\n", buf ) ;
 
 #ifdef HAVE_LIBPTHREAD
   pthread_mutex_unlock(&loglock) ;

@@ -49,8 +49,7 @@ befunc sql_test ;
   Which means returns true if not the amount of rows is 0.
  */
 
-spocp_result_t sql_test( 
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *bcp, octet_t *blob )
+spocp_result_t sql_test(  cmd_param_t *cpp, octet_t *blob )
 {
   octet_t  **argv;
   octet_t  **argv_ident;
@@ -70,7 +69,7 @@ spocp_result_t sql_test(
   SQLLEN  nRows	= 0;
 
   /* Split into sqlserver and vset parts */
-  argv = oct_split( arg, ';', 0, 0, 0, &n );
+  argv = oct_split( cpp->arg, ';', 0, 0, 0, &n );
   argv[0]->val[argv[0]->len] = 0;
   /* Get the dsn and ident parts */
   argv_ident = oct_split( argv[0], '@', 0, 0, 0, &n_ident );
@@ -236,6 +235,12 @@ spocp_result_t sql_test(
   return SPOCP_SUCCESS ;
 }
 
+plugin_t sql_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  sql_test,
+  NULL,
+  NULL
+} ;
 #else
 int spocp_no_odbc ;
 #endif

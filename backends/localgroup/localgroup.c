@@ -59,8 +59,7 @@ static int _ismember(octet_t *member,char *grp)
 
 */
 
-spocp_result_t localgroup_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t localgroup_test( cmd_param_t *cpp, octet_t *blob )
 {
   spocp_result_t rc = SPOCP_DENIED ;
 
@@ -71,10 +70,11 @@ spocp_result_t localgroup_test(
   int       done, cv ;
   char      buf[BUFSIZ] ;
   becon_t   *bc = 0 ;
+  pdyn_t    *dyn = cpp->pd ;
 
-  if( arg == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
   cv = cached( dyn->cv, oct, &cb ) ;
 
@@ -172,45 +172,14 @@ spocp_result_t localgroup_test(
     }
   }
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
   
   return rc;
 }
 
-/* The callbacks to get configuration information is just there as examples */
-
-spocp_result_t localgroup_init( confgetfn *cgf, void *conf, becpool_t *bcp )
-{
-  char      *value = 0 ;
-  int       *num = 0, i ;
-  octarr_t  *on = 0 ;
-  void      *vp ;
-
-  /* using vp to avoid warnings about type-punned pointers */
-  cgf( conf, PLUGIN, "localgroup", 0,  &vp ) ;
-  if( vp ) on = ( octarr_t *) vp ;
-
-  LOG( SPOCP_DEBUG ) {
-    for( i = 0 ; i < on->n ; i++ ) {
-      traceLog( "localgroup key[%d] : [%s]", i, on->arr[i]->val ) ;
-    }
-  }
-  octarr_free( on ) ;
-
-  cgf( conf, TIMEOUT, 0, 0, &vp ) ;
-  if( vp ) num = ( int *) vp ;
-
-/*
-  traceLog( "TIMEOUT: [%d]", *num ) ;
-*/
-  
-  cgf( conf, CALIST, 0, 0, &vp ) ;
-  if( vp ) value = ( char *) vp ;
-
-/*
-  if( value ) traceLog( "CALIST: [%s]", value ) ;
-*/
-
-  return SPOCP_SUCCESS ;
-}
-
+plugin_t localgroup_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  localgroup_test,
+  NULL,
+  NULL
+} ;

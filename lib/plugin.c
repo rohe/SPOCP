@@ -15,6 +15,26 @@ plugin_t *plugin_get( plugin_t *top, char *name )  ;
 
 /* ------------------------------------------------------------------------------------ */
 
+pdyn_t *pdyn_new( int size )
+{
+  pdyn_t *pp ;
+  
+  pp = ( pdyn_t * ) Calloc(1, sizeof( pdyn_t )) ;
+  pp->size = size ;
+
+  return pp ;
+}
+
+void pdyn_free( pdyn_t *pdp )
+{
+  if( pdp ) {
+    if( pdp->ct ) cachetime_free( pdp->ct ) ;
+    free( pdp ) ;
+  }
+}
+
+/* ------------------------------------------------------------------------------------ *
+
 static pconf_t *pconf_new( char *key, octet_t *val )
 {
   pconf_t *new ;
@@ -124,8 +144,9 @@ octarr_t *pconf_get_keyval_by_plugin( plugin_t *top, char *pname, char *key )
 }
 
 
-/* ------------------------------------------------------------------------------------ */
+ * ------------------------------------------------------------------------------------ */
 
+/*
 static plugin_t *plugin_new( char *name ) 
 {
   plugin_t *new ;
@@ -140,6 +161,7 @@ static plugin_t *plugin_new( char *name )
 
   return new ;
 }
+*/
 
 plugin_t *plugin_match( plugin_t *top, octet_t *oct )
 {
@@ -157,70 +179,65 @@ plugin_t *plugin_get( plugin_t *top, char *name )
 {
   plugin_t *pl ;
 
-  if( top == 0 ) return plugin_new( name ) ;
+  if( top == 0 ) return 0 ;
 
   for( pl = top ; pl ; pl = pl->next ) 
     if( strcmp( name, pl->name ) == 0 ) return pl ;
   
   /* no matching definition found */
 
-  for( pl = top ; pl->next ; pl = pl->next ) ;
-
-  pl->next = plugin_new( name ) ;
-  pl->next->prev = pl ;
-
-  return pl->next ;
+  return 0 ;
 }
 
-plugin_t *plugin_add_cachedef( plugin_t *top, char *pname, char *s )
+int plugin_add_cachedef( plugin_t *pl, char *s )
 {
-  cachetime_t *ct = 0, *ctp ;
-  plugin_t    *pl ;
+  cachetime_t *ct = 0 ;
   octet_t      oct ;
 
-  if( s == 0 || *s == '\0' ) return top ;
-
-  pl = plugin_get( top, pname ) ;
+  if( s == 0 || *s == '\0' ) return -1 ;
 
   oct_assign( &oct, s ) ;
 
   ct = cachetime_new( &oct ) ;
 
-  if( ct == 0 ) return 0 ; 
+  if( ct == 0 ) return -1 ; 
 
-  if( pl->dyn.ct == 0 ) pl->dyn.ct = ct ;
-  else {
-    for( ctp = pl->dyn.ct ; ctp->next ; ctp = ctp->next ) ;
-    ctp->next = ct ;
-  }
+  if( pl->dyn == 0 ) pl->dyn = pdyn_new( 0 ) ;
 
-  if( !top ) return pl ;
-  else       return top ; 
+  ct->next = pl->dyn->ct ;
+  pl->dyn->ct = ct ;
+
+  return 1 ;
 }
 
+/*
 plugin_t *plugin_add_conf( plugin_t *top, char *pname, char *key, char *val )
 {
   if( key == 0 || *key == '\0' ) return 0 ;
 
   return pconf_set_keyval( top, pname, key, val ) ;
 }
+*/
 
 /* ------------------------------------------------------------------------------------ */
 
+/*
 static void plugin_free( plugin_t *pl )
 {
   if( pl ) {
     if( pl->handle ) dlclose( pl->handle ) ;
     if( pl->name ) free( pl->name ) ;
-    if( pl->dyn.ct ) cachetime_free( pl->dyn.ct ) ;
-    if( pl->conf ) pconf_free( pl->conf ) ;
+    if( pl->dyn ) pdyn_free( pl->dyn ) ;
+     * don't know how to free this 
+    if( pl->conf ) xyz_free( pl->conf ) ;
+     *
     free( pl ) ;
   }
 }
 
 static plugin_t *plugin_rm( plugin_t **top, plugin_t *pl )
 {
-  plugin_t *next ;
+  plugin_t *prev, *next ;
 
   next = pl->next ;
 
@@ -228,97 +245,57 @@ static plugin_t *plugin_rm( plugin_t **top, plugin_t *pl )
     *top = next ;
   }
   else {
-    pl->prev->next = next ;
-    if( next ) next->prev = pl->prev ;
+    for( prev = *top ; prev->next != pl ; prev = prev->next ) ;
+    prev->next = next ;
   }
 
   plugin_free( pl ) ;
 
   return next ; 
 }
+*/
 
 /* ------------------------------------------------------------------------------------ */
 
-plugin_t *init_plugin( plugin_t *top )
+plugin_t *plugin_load( plugin_t *top, char *name, char *load )
 {
-  plugin_t  *pl ;
-  octarr_t  *oa ;
-  char      *error ;
+  plugin_t  *pl, *new ;
+  char      *modulename ;
+  void      *handle ;
   
   for( pl = top ; pl ; pl = pl->next ) {
-    oa = pconf_get_keyval( pl, "filename" ) ;
-    if( !oa ) {
-      traceLog( "No link to the %s plugin library", pl->name ) ;
-      pl = plugin_rm( &top, pl ) ;
-      continue ;
+    if( strcmp( pl->name, name ) == 0 ) {
+      traceLog( "%s: Already loaded that plugin", name ) ;
+      return top ;
     }
-   
-    /* should only be one, disregard the other */
-    pl->handle = dlopen( oa->arr[0]->val, RTLD_LAZY ) ;
-    if( !pl->handle ) {
-      traceLog( "Unable to open %s library: [%s]", pl->name, dlerror() ) ;
-      pl = plugin_rm( &top, pl ) ; 
-      continue ;
-    }  
+  }
 
-    oa = pconf_get_keyval( pl, "test" ) ;
-    if( oa ) {
-      if( oa->n > 1 ) { /* */
-        traceLog( "Should only be one test function definition for plugin %s", pl->name ) ;
-        pl = plugin_rm( &top, pl ) ; 
-        continue ;
-      }
+  handle = dlopen( load, RTLD_LAZY ) ;
+  if( !handle ) {
+    traceLog( "%s: Unable to open %s library: [%s]", name, load, dlerror() ) ;
+    return top ;
+  }  
 
-      pl->test = ( befunc * ) dlsym( pl->handle, oa->arr[0]->val ) ;
-      if(( error = dlerror()) != NULL ) {
-        traceLog("Couldn't link the %s function in %s", oa->arr[0]->val, pl->name ) ;
-        pl = plugin_rm( &top, pl ) ; 
-        continue ;
-      }
-    }
-    else pl->test = 0 ;
+  modulename = ( char * ) Malloc( strlen( name ) + strlen( "_module" ) + 1 ) ;
+  sprintf( modulename, "%s_module", name ) ;
 
-    oa = pconf_get_keyval( pl, "init" ) ;
-    if( oa ) { /* */
-      if( oa->n  > 1 ) {
-        traceLog( "Should only be one init function definition for plugin %s", pl->name ) ;
-        pl = plugin_rm( &top, pl ) ; 
-        continue ;
-      }
+  new = ( plugin_t * ) dlsym( handle, modulename ) ; 
+ 
+  free( modulename ) ;
 
-      pl->init = (beinitfn * ) dlsym( pl->handle, oa->arr[0]->val ) ;
-      if(( error = dlerror()) != NULL ) {
-        traceLog("Couldn't link the %s function in %s", oa->arr[0]->val, pl->name ) ;
-        pl = plugin_rm( &top, pl ) ; 
-        continue ;
-      }
-    }
-    else pl->init = 0 ;
+  if( new == 0 || new->magic != MODULE_MAGIC_COOKIE ) {
+    traceLog( "%s: Not a proper plugin_struct", name ) ;
+    dlclose( handle ) ;
+    return top ;
+  }
 
-    oa = pconf_get_keyval( pl, "poolsize" ) ;
-    if( oa ) { /* */
-      long l ;
+  new->handle = handle ;
+  new->name = strdup( name ) ;
 
-      if( is_numeric( oa->arr[0], &l ) == SPOCP_SUCCESS ) {
-        /* any other reasonable sizelimit ? */
-        if( l > (long) 0 )  pl->dyn.size = (int) l ;
-      }
-    }
-    else pl->dyn.size = 0 ;
-
-    oa = pconf_get_keyval( pl, "cachetime" ) ;
-    if( oa ) { /* */
-      cachetime_t *ct ;
-      int          i ;
-
-      pl->dyn.ct = ct = cachetime_new( oa->arr[0] ) ;
-      for( i = 1 ; i < oa->n ; i++ ) {
-        ct->next = cachetime_new( oa->arr[i] ) ;
-        ct = ct->next ;
-      }
-    }
-    else pl->dyn.ct = 0 ;
-
+  if( top == 0 ) return new ;
+  else {
+    for( pl = top ; pl->next ; pl = pl->next ) ;
+    pl->next = new ;
   }
 
   return top ;
@@ -326,16 +303,7 @@ plugin_t *init_plugin( plugin_t *top )
 
 void plugin_display( plugin_t *pl )
 {
-  octarr_t *oa ;
-  char      *tmp ;
-
-  for( ; pl ; pl = pl->next ) {
+  for( ; pl ; pl = pl->next ) 
     traceLog( "Active backend: %s", pl->name ) ;
-    if(( oa = pconf_get_keyval( pl, "description" )) != 0 ) {
-      tmp = oct2strdup( oa->arr[0], '\\' ) ; 
-      traceLog( "\tdescription: %s", tmp ) ;
-      free( tmp ) ;
-    } 
-  }
 }
 

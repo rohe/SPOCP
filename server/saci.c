@@ -389,10 +389,11 @@ void saci_init( void )
 static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
 {
   spocp_result_t res = SPOCP_DENIED ; /* the default */
-  ruleset_t *rs ;
-  octet_t   oct ;
-  char      *sexp ;
-  element_t *ep = 0 ;
+  ruleset_t  *rs ;
+  octet_t     oct ;
+  char       *sexp ;
+  element_t  *ep = 0 ;
+  comparam_t  comp ;
  
   /* no ruleset or rules means everything is allowed */
   if( con->rs == 0 || rules( con->rs->db) == 0 ) {
@@ -430,7 +431,11 @@ static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
     return SPOCP_DENIED ;
   }
 
-  res = allowed( rs->db->jp, ep, NULL ) ;
+  comp.rc = SPOCP_SUCCESS ;
+  comp.head = ep ;
+  comp.blob = 0 ;
+
+  res = allowed( rs->db->jp, &comp ) ;
 
   element_free( ep ) ;
 

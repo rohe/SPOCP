@@ -58,7 +58,7 @@ int ipnumcmp( octet_t *ipnum, char *ipser )
   int            netpart ;
   struct in_addr ia1, ia2 ;
 
-  oct2strcpy( ipnum, h1, 16, 0, 0 ) ;
+  oct2strcpy( ipnum, h1, 16, 0 ) ;
   if( inet_aton( h1, &ia1 ) == 0 ) return -1 ;
 
   if( strlen( ipser ) > 18 ) return -1 ;
@@ -86,8 +86,7 @@ int ipnumcmp( octet_t *ipnum, char *ipser )
 
 /* returns evaluation */
 
-spocp_result_t ipnum_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t ipnum_test( cmd_param_t *cpp, octet_t *blob )
 {
   spocp_result_t r = SPOCP_DENIED ;
 
@@ -98,12 +97,13 @@ spocp_result_t ipnum_test(
   FILE     *fp = 0 ;
   int       j, ne, cv ;
   becon_t  *bc = 0 ;
+  pdyn_t   *dyn = cpp->pd ;
 
-  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 || cpp->arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  cv = cached( dyn->cv, oct, &cb ) ;
+  cv = cached( cpp->pd->cv, oct, &cb ) ;
 
   if( cv ) {
     traceLog( "ipnum: cache hit" ) ;
@@ -203,8 +203,14 @@ spocp_result_t ipnum_test(
     }
   }
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
 
   return r ;
 }
 
+plugin_t ipnum_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  ipnum_test,
+  NULL,
+  NULL
+} ;

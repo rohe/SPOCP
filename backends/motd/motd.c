@@ -27,8 +27,7 @@ befunc motd_test ;
 char *motd = "/etc/motd" ;
 char *type = "Text/plain" ;
 
-spocp_result_t motd_test(
-  element_t *e, element_t *r, element_t *x, octet_t *arg, pdyn_t *b, octet_t *blob )
+spocp_result_t motd_test( cmd_param_t *cpp, octet_t *blob )
 {
   FILE *fp ;
   char  buf[256], *lp ;
@@ -54,10 +53,18 @@ spocp_result_t motd_test(
   if( len == 0 ) return SPOCP_UNAVAILABLE ;
   tot = len + DIGITS(len) + 2 + lt + DIGITS(lt) ;
 
-  blob->len = blob->size = tot ;
-  blob->val = (char *) malloc( tot * sizeof( char )) ;
-  sprintf( blob->val, "%d:%s%d:%s", lt, type, len, buf ) ;
+  if( blob ) {
+    blob->len = blob->size = tot ;
+    blob->val = (char *) malloc( tot * sizeof( char )) ;
+    sprintf( blob->val, "%d:%s%d:%s", lt, type, len, buf ) ;
+  }
 
   return SPOCP_SUCCESS ;
 }
 
+plugin_t motd_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  motd_test,
+  NULL,
+  NULL
+} ;

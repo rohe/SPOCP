@@ -53,12 +53,12 @@ ruleinst_t *allowing_rule( junc_t *ap )
  * \param on  A handle that should be used when blobs are to be returned
  * \return SPOCP_SUCCESS on success otherwise an appropriate error code
  */
-spocp_result_t allowed( junc_t *ap, element_t *ep, octarr_t **on )
+spocp_result_t allowed( junc_t *ap, comparam_t *comp )
 {  
-  spocp_result_t rc = SPOCP_SUCCESS, res = SPOCP_DENIED ;
+  spocp_result_t res = SPOCP_DENIED ;
 
-  if(( ap = element_match_r( ap, ep, &rc, ep, on ))) res = SPOCP_SUCCESS ;
-  else if( rc != SPOCP_SUCCESS ) res = rc ;
+  if(( ap = element_match_r( ap, comp->head, comp ))) res = SPOCP_SUCCESS ;
+  else if( comp->rc != SPOCP_SUCCESS ) res = comp->rc ;
 
   return res ;
 }

@@ -22,6 +22,7 @@ rec_allow( ruleset_t *rs, element_t *ep, int scope, octarr_t **on )
 {
   spocp_result_t res = SPOCP_DENIED ;
   ruleset_t      *trs ;
+  comparam_t      comp ;
 
   switch( scope ) {
     case SUBTREE :
@@ -35,15 +36,22 @@ rec_allow( ruleset_t *rs, element_t *ep, int scope, octarr_t **on )
       }
 
     case BASE :
-      if( rs->db ) res = allowed( rs->db->jp, ep, on ) ;
+      comp.rc = SPOCP_SUCCESS ;
+      comp.head = ep ;
+      comp.blob = on ;
+      if( rs->db ) res = allowed( rs->db->jp, &comp ) ;
       break ;
   
     case ONELEVEL :
       if( rs->down ) {
+        comp.rc = SPOCP_SUCCESS ;
+        comp.head = ep ;
+        comp.blob = on ;
+
         for( trs = rs->down ; trs->left ; trs = trs->left ) ;
    
         for(  ; trs && res != SPOCP_SUCCESS ; trs = trs->right ) {
-          if( rs->db ) res = allowed( trs->db->jp, ep, on ) ;
+          if( rs->db ) res = allowed( trs->db->jp, &comp ) ;
         }
       }
       break ;
@@ -171,19 +179,9 @@ void ss_del_db( ruleset_t *rs, int scope )
   }
 }
 
-/***************************************************************
+/****************************************************************/ 
 
- Structure of the rule file:
-
- line    = ( comment | global | ruledef | include )
- comment = "#" text CR
- rule    = "(" S_exp ")" [; blob] CR
- global  = key "=" value
- include = ";include" filename
-
- ***************************************************************/
-
-static spocp_result_t rec_del( ruleset_t *rs, char *uid, size_t *nr )
+static spocp_result_t rec_del( ruleset_t *rs, dbcmd_t *dbc, char *uid, size_t *nr )
 {
   ruleset_t      *trs ;
   db_t           *db ;
@@ -195,7 +193,9 @@ static spocp_result_t rec_del( ruleset_t *rs, char *uid, size_t *nr )
   if( db == 0 ) return 0 ;
 
   if(( rt = get_rule( db->ri, uid ))) {
-    if(( rc = rm_rule( db->jp, rt->rule, rt )) != SPOCP_SUCCESS ) return rc ;
+    if( dbc ) dback_delete( dbc, uid ) ;
+
+    if(( rc = rule_rm( db->jp, rt->rule, rt )) != SPOCP_SUCCESS ) return rc ;
 
     if( free_rule( db->ri, uid ) == 0 ) {
       traceLog( "Hmm, something fishy here, couldn't delete rule" ) ;
@@ -208,13 +208,13 @@ static spocp_result_t rec_del( ruleset_t *rs, char *uid, size_t *nr )
     for( trs = rs->down ; trs->left ; trs = trs->left ) ;
    
     for( ; trs ; trs = trs->right )  
-      if(( rc = rec_del( trs, uid, nr )) != SPOCP_SUCCESS ) return rc ;
+      if(( rc = rec_del( trs, dbc, uid, nr )) != SPOCP_SUCCESS ) return rc ;
   }
 
   return rc ;
 }
 
-spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope )
+spocp_result_t ss_del_rule( ruleset_t *rs, dbcmd_t *dbc, octet_t *op, int scope )
 {
   size_t    n = 0 ;
   char      uid[SHA1HASHLEN+1], *sp ;
@@ -239,7 +239,7 @@ spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope )
   /* first check that the rule is there */
 
   n = 0 ;
-  if( rec_del( rs, uid, &n ) != SPOCP_SUCCESS ) 
+  if( rec_del( rs, dbc, uid, &n ) != SPOCP_SUCCESS ) 
     traceLog( "Error while deleting rules" ) ;
 
   if( n > 1 )       traceLog( "%d rules successfully deleted", n ) ;
@@ -305,25 +305,6 @@ ss_list_rules( ruleset_t *rs, octet_t *pattern, spocp_req_info *sri, int *rc, in
 
 }
 */
-/* --------------------------------------------------------------------------*/
-
-/*
-spocp_result_t ss_add_rule( ruleset_t *rs, octarr_t *oa, bcdef_t *bcd )
-{
-  spocp_result_t  r ;
-  ruleinst_t     *ri = 0 ;
-
-  r = add_right( &(rs->db), oa, &ri ) ;
-  
-  if( ri && bcd ) {
-    ri->bcond = bcd ;
-    bcd->rules = varr_add( bcd->rules, (void *) ri ) ;
-  }
-
-  return r;
-}
-*/
-
 /* --------------------------------------------------------------------------*/
 
 static int rec_rules( ruleset_t *rs, int scope )

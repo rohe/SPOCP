@@ -70,7 +70,7 @@ void sig_chld(int signo)
 int main( int  argc, char **argv )
 {
   int                 debug = 0 ;
-  int                 i = 0, n, nrules = 0 ;
+  int                 i = 0, nrules = 0 ;
   unsigned int        clilen ;
   struct sockaddr_in  cliaddr ;
   struct timeval      start, end ;
@@ -79,7 +79,6 @@ int main( int  argc, char **argv )
   keyval_t            *globals = 0 ;
   FILE                *pidfp ;
   octet_t             oct ;
-  spocp_result_t      rc ;
 
   /* Who am I running as ? */
 
@@ -151,17 +150,26 @@ int main( int  argc, char **argv )
 
   traceLog( "Local context: \"%s\"", localcontext ) ;
   traceLog( "initializing backends" ) ; 
-  if( srv.root->db ) init_plugin( srv.root->db->plugins ) ;
-  LOG( SPOCP_INFO ) if( srv.root->db ) plugin_display( srv.root->db->plugins ) ;
-  if( srv.root->db->plugins ) {
+  LOG( SPOCP_INFO ) if( srv.root->db ) plugin_display( srv.plugin ) ;
+  if( srv.plugin ) {
     run_plugin_init( &srv ) ;
-    if(( srv.root->db->dback = init_dback( srv.root->db->plugins )) != 0 ) {
-      dback_init( srv.root->db->dback, (void *) conf_get, &srv )  ;
-      nrules = dback_read_rules( srv.root->db->dback, &srv.root, &rc ) ;
-    }
+  }
+  if( srv.dback ) {
+    dbcmd_t dbc ;
+    spocp_result_t rc ;
+
+    dbc.handle = 0 ;
+    dbc.dback = srv.dback ;
+    /* does the persistent database store need any initialization ?? *
+    if( srv.dback->init ) srv.dback->init( dbcmd_t *dbc ) ;
+    */
+    
+    if(( nrules = dback_read_rules( &dbc, &srv, &rc )) < 0 ) exit( 1 ) ;
   }
   
-  if( !nrules ) {
+  if( nrules == 0 ) {
+    dbcmd_t dbc ;
+
     if( srv.rulefile == 0 ) {
       LOG( SPOCP_INFO ) traceLog( "No rule file to start with" ) ;
     }
@@ -171,8 +179,10 @@ int main( int  argc, char **argv )
 
     if( 0 ) gettimeofday(&start,NULL) ;
 
-    if( srv.rulefile &&
-        ( srv.root = read_rules( srv.root, srv.rulefile, &n, &globals )) == 0 ) {
+    dbc.dback = srv.dback ;
+    dbc.handle = 0 ;
+
+    if( srv.rulefile && read_rules( &srv, srv.rulefile, &dbc, &globals ) <= 0 ) {
       LOG( SPOCP_ERR ) traceLog( "No valid rules found") ;
       exit(1) ;
     }

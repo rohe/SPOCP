@@ -1,6 +1,8 @@
 #ifndef __SRV_H
 #define __SRV_H
 
+#include <plugin.h>
+
 /* -------------------------------------- */
 
 #define SPOCP_BUFSIZE  4096
@@ -125,6 +127,9 @@ typedef struct _server
   pthread_mutex_t mutex ;     /* lock on the database */
   ruleset_t       *root ;     /* rule database */
 
+  dback_t         *dback ;
+  plugin_t        *plugin ;
+
   int             listen_fd ; /* listen socket */
   pthread_mutex_t mlock ;     /* listener lock */
   int             type ;      /* AF_INET, AF_INET6 or AF_LOCAL */  
@@ -180,9 +185,11 @@ typedef struct _conn {
   spocp_req_info_t sri ;   /* Information about the subject that issued the operation */
   struct _server   *srv ;  /* A pointer to the server on which this connection is running */
 
+  /* information about the persistent store */
+  dbcmd_t          dbc ;
+
   /* transaction stuff */
   int              transaction ;
-  void             *transhandle ; /* transaction handle, for the persistent rulestorage */
 
   pthread_mutex_t  clock ;
 
@@ -298,8 +305,8 @@ int     spocp_conn_read( conn_t *conn ) ;
 
 /* ------ read.c ------- */
 
-void   *rules_get( void *vp, char *file, int *rc  ) ;
-int     dback_read_rules( dback_t *dback, ruleset_t **rs, spocp_result_t *rc ) ;
+int   read_rules( srv_t *, char *, dbcmd_t *, keyval_t ** ) ;
+int   dback_read_rules( dbcmd_t *dbc, srv_t *srv, spocp_result_t *rc ) ;
 
 #ifdef HAVE_LIBSSL
 SSL_CTX       *tls_init( srv_t *srv ) ;
@@ -308,7 +315,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )  ;
 
 /* config.c */
 int            read_config( char *file, srv_t *srv ) ;
-spocp_result_t conf_get( void *vp, int arg, char *pl, char *key, void **res ) ;
+spocp_result_t conf_get( void *vp, int arg, void **res ) ;
 int            set_backend_cachetime( srv_t *srv ) ;
 
 /* */
@@ -344,9 +351,11 @@ spocp_result_t pathname_get( ruleset_t *rs, char *buf, int buflen ) ;
 /* ss.c */
 
 spocp_result_t ss_allow( ruleset_t *, octet_t *, octarr_t **, int ) ;
-spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope ) ;
-spocp_result_t ss_add_rule( ruleset_t *rs, octarr_t *oa, bcdef_t *b ) ;
+spocp_result_t ss_del_rule( ruleset_t *rs, dbcmd_t *d, octet_t *op, int scope ) ;
 spocp_result_t skip_sexp( octet_t *sexp ) ;
+/*
+spocp_result_t ss_add_rule( ruleset_t *rs, octarr_t *oa, bcdef_t *b ) ;
+*/
 
 void      ss_del_db( ruleset_t *rs, int scope ) ;
 octet_t **ss_list_rules( ruleset_t *rs, octet_t *pattern, int *rc, int scope ) ;

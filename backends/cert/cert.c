@@ -237,8 +237,7 @@ spocp_result_t check_cert(X509_STORE *ctx, char *data)
 
 X509_STORE *cert_ctx=NULL;
 
-spocp_result_t cert_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *bcp, octet_t *blob ) 
+spocp_result_t cert_test( cmd_param_t *cpp, octet_t *blob ) 
 {
   spocp_result_t answer;
 
@@ -249,10 +248,9 @@ spocp_result_t cert_test(
     traceLog("Entering cert_test");
   }
 
-  arg->val[arg->len] = 0;
-  cert_b64 = arg->val;
+  cert_b64 = cpp->arg->val;
   DEBUG( SPOCP_DBCOND ){
-    traceLog("Allocating memory for decoded part. Memory needed: %d",arg->len);
+    traceLog("Allocating memory for decoded part. Memory needed: %d",cpp->arg->len);
   }
 
   DEBUG( SPOCP_DBCOND ){
@@ -283,7 +281,7 @@ spocp_result_t cert_syntax( char *arg)
 }
 
 
-spocp_result_t cert_init( confgetfn *cgf, void *conf, becpool_t *bcp ) {
+spocp_result_t cert_init( void **conf, pdyn_t *pdp ) {
   octarr_t   *oa = 0 ;
   void       *vp = 0;
   char       *path = "/usr/local/spocp/conf/cert";
@@ -325,6 +323,12 @@ spocp_result_t cert_init( confgetfn *cgf, void *conf, becpool_t *bcp ) {
   return SPOCP_SUCCESS ;
 }
 
+plugin_t cert_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  cert_test,
+  cert_init,
+  NULL
+} ;
 
 #else
 int spocp_no_ssl ;

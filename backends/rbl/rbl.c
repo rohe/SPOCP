@@ -25,22 +25,21 @@ Typical rbl entry in DNS
 
 */
 
-spocp_result_t rbl_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *bcp, octet_t *blob )
+spocp_result_t rbl_test( cmd_param_t *cpp, octet_t *blob )
 {
-  char    *rblhost ;
-  char    *hostaddr, *s, *r, *c, *d ;
-  int     n, l ;
-  octarr_t    *argv ;
-  octet_t     *oct, *domain, *host ;
+  char      *rblhost ;
+  char      *hostaddr, *s, *r, *c, *d ;
+  int        n, l ;
+  octarr_t  *argv ;
+  octet_t   *oct, *domain, *host ;
 
-  if( arg == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
   argv = oct_split( oct, ';', 0, 0, 0 ) ;
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
 
   if( argv->n != 2 ) {
     octarr_free( argv ) ;

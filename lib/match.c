@@ -179,8 +179,7 @@ any     |      |        |       |  X  |      |        |   X   |
 
  */
 
-static junc_t *ending(
-  junc_t *jp, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **oa )
+static junc_t *ending( junc_t *jp, element_t *ep, comparam_t *comp )
 {
   branch_t      *bp ;
   element_t     *nep ;
@@ -191,7 +190,7 @@ static junc_t *ending(
 
   if( jp->item[ SPOC_ENDOFRULE ] ) {
     /* THIS IS WHERE BCOND IS CHECKED */
-    r = bcond_check( head, jp->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+    r = bcond_check( comp->head, jp->item[ SPOC_ENDOFRULE ]->val.id, comp->blob ) ;
     if( r != SPOCP_SUCCESS) return 0 ;
     else return jp ;
   }
@@ -207,7 +206,7 @@ static junc_t *ending(
 
         if( vl && vl->item[SPOC_ENDOFRULE] ){
           /* THIS IS WHERE BCOND IS CHECKED */
-          r = bcond_check( head, vl->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+          r = bcond_check( comp->head, vl->item[ SPOC_ENDOFRULE ]->val.id, comp->blob ) ;
           if( r != SPOCP_SUCCESS) return 0 ;
           else return vl ;
         }
@@ -249,14 +248,14 @@ static junc_t *ending(
       }
 
       if( nep->next ) {
-        jp = element_match_r( vl, nep->next, rc, head, oa ) ;
+        jp = element_match_r( vl, nep->next, comp ) ;
         
         if( jp && jp->item[SPOC_ENDOFRULE] ) return jp ;
         
       }
       else if( vl->item[SPOC_ENDOFRULE] ) {
         /* THIS IS WHERE BCOND IS CHECKED */
-        r = bcond_check( head, vl->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+        r = bcond_check( comp->head, vl->item[ SPOC_ENDOFRULE ]->val.id, comp->blob ) ;
         if( r != SPOCP_SUCCESS) return 0 ;
         else return vl ;
       }
@@ -265,7 +264,7 @@ static junc_t *ending(
       jp = bp->val.list ;
       if( jp->item[SPOC_ENDOFRULE] ) {
         /* THIS IS WHERE BCOND IS CHECKED */
-        r = bcond_check( head, jp->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+        r = bcond_check( comp->head, jp->item[ SPOC_ENDOFRULE ]->val.id, comp->blob ) ;
         if( r != SPOCP_SUCCESS) return 0 ;
         else return jp ;
       }
@@ -274,7 +273,7 @@ static junc_t *ending(
   }
   else if( jp->item[SPOC_ENDOFRULE] ) {
     /* THIS IS WHERE BCOND IS CHECKED */
-    r = bcond_check( head, jp->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+    r = bcond_check( comp->head, jp->item[ SPOC_ENDOFRULE ]->val.id, comp->blob ) ;
     if( r != SPOCP_SUCCESS) return 0 ;
     else return jp ;
   }
@@ -311,12 +310,12 @@ do_branches( varr_t *avp, element_t *ep, spocp_result_t *rc, octarr_t **on)
 /*****************************************************************/
 
 static junc_t *do_arr(
-  varr_t *a, element_t *e, spocp_result_t *rc, element_t *head, octarr_t **on )
+  varr_t *a, element_t *e, comparam_t *comp )
 {
   junc_t  *jp = 0 ;
 
   while(( jp = varr_junc_pop( a ))) {
-    if(( jp = element_match_r( jp, e, rc, head, on )) != 0 ) break ;
+    if(( jp = element_match_r( jp, e, comp )) != 0 ) break ;
   }
 
   varr_free( a ) ;
@@ -326,7 +325,7 @@ static junc_t *do_arr(
 /*****************************************************************/
 
 static junc_t *next( 
-  junc_t *ju, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **on )
+  junc_t *ju, element_t *ep, comparam_t *comp )
 {
   junc_t   *jp ;
   branch_t *bp ;
@@ -340,19 +339,18 @@ static junc_t *next(
     } while( ep->next == 0 && ju->item[SPOC_ENDOFLIST] ) ;
 
     if( !ep->memberof ) { /* reached the end */
-      jp = ending( ju, ep, rc, head, on ) ;
+      jp = ending( ju, ep, comp ) ;
     }
   }
 
-  jp = element_match_r( ju, ep->next, rc, head, on ) ;
+  jp = element_match_r( ju, ep->next, comp ) ;
 
   return jp ;
 }
 
 /*****************************************************************/
 
-static junc_t *atom_match(
-  junc_t *db, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **on )
+static junc_t *atom_match( junc_t *db, element_t *ep, comparam_t *comp )
 {
   branch_t  *bp ;
   junc_t    *jp = 0, *ju ;
@@ -375,7 +373,7 @@ static junc_t *atom_match(
         traceLog("Matched atom %s", tmp ) ;
         free( tmp ) ;
       }
-      jp = next( ju, ep, rc, head, on ) ;
+      jp = next( ju, ep, comp ) ;
 
       if( jp ) return jp ;
     }
@@ -394,7 +392,7 @@ static junc_t *atom_match(
 
     if( avp ) {
       DEBUG( SPOCP_DMATCH ) traceLog("matched prefix" ) ;
-      jp = do_arr( avp, nep, rc, head, on ) ;
+      jp = do_arr( avp, nep, comp ) ;
     }
     if( jp ) return jp ;
   }
@@ -405,7 +403,7 @@ static junc_t *atom_match(
 
     if( avp ) {
       DEBUG( SPOCP_DMATCH ) traceLog("matched suffix" ) ;
-      jp = do_arr( avp, nep, rc, head, on ) ;
+      jp = do_arr( avp, nep, comp ) ;
     }
 
     if( jp ) return jp ;
@@ -419,9 +417,9 @@ static junc_t *atom_match(
 
     for( i = 0 ; i < DATATYPES ; i++ ) {
       if( slp[i] ) {
-        avp = atom2range_match( atom, slp[i], i, rc ) ;
+        avp = atom2range_match( atom, slp[i], i, &comp->rc ) ;
         if( avp ) {
-          jp = do_arr( avp, nep, rc, head, on ) ;
+          jp = do_arr( avp, nep, comp ) ;
           if( jp ) break ;
         }
       }
@@ -432,29 +430,9 @@ static junc_t *atom_match(
 }
 
 /*****************************************************************/
-
-static int common_type( varr_t *va )
-{
-  int        i, n, type ;
-  element_t *ep ;
-  
-  n = varr_len( va ) ;
-  ep = (element_t *) varr_nth( va, 0 ) ;
-  type = ep->type ;
-
-  for( i = 1 ; i < n ; i++ ) {
-    ep = (element_t *) varr_nth( va, i ) ;
-    if( ep->type != type ) return -1 ;
-  }
-
-  return type ;
-}
-
-/*****************************************************************/
 /* recursive matching of nodes */
 
-junc_t * element_match_r(
- junc_t *db, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **on )
+junc_t * element_match_r( junc_t *db, element_t *ep, comparam_t *comp )
 {
   branch_t    *bp ;
   junc_t      *jp = 0 ;
@@ -468,7 +446,7 @@ junc_t * element_match_r(
 
   /* may have several roads to follow, this might just be one of them */
   DEBUG( SPOCP_DMATCH ) traceLog( "ending called from element_match_r") ; 
-  if(( jp = ending( db, ep, rc, head, on ))) {
+  if(( jp = ending( db, ep, comp ))) {
     return jp ;
   }
 
@@ -478,21 +456,21 @@ junc_t * element_match_r(
   }
 
   if(( bp = ARRFIND( db, SPOC_ANY )) != 0 ) {
-    jp = element_match_r( bp->val.next, ep->next, rc, head, on ) ;
+    jp = element_match_r( bp->val.next, ep->next, comp ) ;
     if( jp ) return jp ;
   }
 
   switch( ep->type ) {
     case SPOC_ATOM:
       DEBUG( SPOCP_DMATCH ) traceLog( "Checking ATOM" ) ;
-      jp = atom_match( db, ep, rc, head, on ) ;
+      jp = atom_match( db, ep, comp ) ;
       break ;
 
     case SPOC_SET:
       /* */
       set = ep->e.set ;
       for( v = varr_first( set ) ; v ; v = varr_next( set, v ) ) {
-        jp = element_match_r( db, (element_t *) v, rc, head, on ) ;
+        jp = element_match_r( db, (element_t *) v, comp ) ;
         if( jp && ( ARRFIND( jp, SPOC_ENDOFRULE))) break ;
       }
 
@@ -503,7 +481,7 @@ junc_t * element_match_r(
         avp = prefix2prefix_match( ep->e.atom, bp->val.prefix ) ;
 
         /* got a set of plausible branches and more elements*/
-        if( avp ) jp = do_arr( avp, ep->next, rc, head, on ) ;
+        if( avp ) jp = do_arr( avp, ep->next, comp ) ;
         else jp = 0 ;
       }
       break ;
@@ -513,7 +491,7 @@ junc_t * element_match_r(
         avp = suffix2suffix_match( ep->e.atom, bp->val.suffix ) ;
 
         /* got a set of plausible branches and more elements*/
-        if( avp ) jp = do_arr( avp, ep->next, rc, head, on ) ;
+        if( avp ) jp = do_arr( avp, ep->next, comp ) ;
         else jp = 0 ;
       }
       break ;
@@ -528,7 +506,7 @@ junc_t * element_match_r(
           avp = range2range_match( ep->e.range, slp[i] ) ;
 
         /* got a set of plausible branches */
-        if( avp ) jp = do_arr( avp, ep->next, rc, head, on ) ;
+        if( avp ) jp = do_arr( avp, ep->next, comp ) ;
         else jp = 0 ;
       }
       break ;
@@ -536,7 +514,7 @@ junc_t * element_match_r(
     case SPOC_LIST:
       DEBUG( SPOCP_DMATCH ) traceLog( "Checking LIST" ) ;
       if(( bp = ARRFIND( db, SPOC_LIST )) != 0 ) {
-        jp = element_match_r( bp->val.list, ep->e.list->head, rc, head, on ) ;
+        jp = element_match_r( bp->val.list, ep->e.list->head, comp ) ;
       }
       break ;
 

@@ -23,6 +23,7 @@
 #include <rvapi.h>
 
 befunc gdbm_test ;
+int P_gdbm_close( void *vp ) ;
 
 /* ===================================================== */
 
@@ -44,8 +45,7 @@ int P_gdbm_close( void *vp )
   return 1 ;
 }
 
-spocp_result_t gdbm_test(
-  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t gdbm_test( cmd_param_t *cmdp, octet_t *blob )
 {
   datum          key, res ;
   GDBM_FILE      dbf = 0 ;
@@ -56,17 +56,17 @@ spocp_result_t gdbm_test(
   char          *str = 0 ;
   becon_t       *bc = 0 ;
 
-  if( arg == 0 || arg->len == 0 ) return SPOCP_MISSING_ARG ;
+  if( cmdp->arg == 0 || cmdp->arg->len == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cmdp->arg, cmdp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  cv = cached( dyn->cv, oct, &cb ) ;
+  cv = cached( cmdp->pd->cv, oct, &cb ) ;
 
   if( cv ) {
     traceLog( "ipnum: cache hit" ) ;
 
     if( cv == EXPIRED ) {
-      cached_rm( dyn->cv, oct ) ;
+      cached_rm( cmdp->pd->cv, oct ) ;
       cv = 0 ;
     }
   }
@@ -77,15 +77,15 @@ spocp_result_t gdbm_test(
   
     o = argv->arr[0] ;
   
-    if( ( bc = becon_get( o, dyn->bcp )) == 0 ) { 
+    if( ( bc = becon_get( o, cmdp->pd->bcp )) == 0 ) { 
       str = oct2strdup( oct, 0 ) ;
       dbf = gdbm_open( str, 512, GDBM_READER, 0, 0) ;
       free( str ) ;
   
       if( !dbf )  r = SPOCP_UNAVAILABLE ;
-      else if( dyn->size ) {
-        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size ) ;
-        bc = becon_push( oct, &P_gdbm_close, (void *) dbf, dyn->bcp ) ;
+      else if( cmdp->pd->size ) {
+        if( !cmdp->pd->bcp ) cmdp->pd->bcp = becpool_new( cmdp->pd->size ) ;
+        bc = becon_push( oct, &P_gdbm_close, (void *) dbf, cmdp->pd->bcp ) ;
       }
     }
     else dbf = ( GDBM_FILE ) bc->con ;
@@ -143,15 +143,21 @@ spocp_result_t gdbm_test(
     r = SPOCP_DENIED ;
   }
   else {
-    if( dyn->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
+    if( cmdp->pd->ct && ( r == SPOCP_SUCCESS || r == SPOCP_DENIED )) {
       time_t t ;
-      t = cachetime_set( oct, dyn->ct ) ;
-      dyn->cv = cache_value( dyn->cv, oct, t, (r|CACHED) , 0 ) ;
+      t = cachetime_set( oct, cmdp->pd->ct ) ;
+      cmdp->pd->cv = cache_value( cmdp->pd->cv, oct, t, (r|CACHED) , 0 ) ;
     }
   }
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cmdp->arg ) oct_free( oct ) ;
 
   return r ;
 }
 
+plugin_t gdbm_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  gdbm_test,
+  NULL,
+  NULL
+} ;

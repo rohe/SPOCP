@@ -28,6 +28,8 @@
 
 #define DIRCHAR(c)       ( ALPHA(c) || DIGIT(c) || (c) == '-' || (c) == '_' || (c) == '.' )
 
+#define MAX(a,b) ((a) < (b) ? b : a)
+#define MIN(a,b) ((a) < (b) ? a : b)
 
 #define COMMENTSTART  0x23 /* # */
 #define LF            0x0A /* linefeed */

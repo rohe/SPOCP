@@ -33,8 +33,7 @@ static int P_spocp_close( void *vp )
   return 1 ;
 }
 
-spocp_result_t spocp_test(
-  element_t *qp, element_t *rp, element_t *xp,  octet_t *arg, pdyn_t *dyn, octet_t *blob )
+spocp_result_t spocp_test( cmd_param_t *cpp, octet_t *blob )
 {
   spocp_result_t r = SPOCP_DENIED ;
 
@@ -44,14 +43,15 @@ spocp_result_t spocp_test(
   char       *path, *server, *query ;
   becon_t    *bc = 0 ;
   SPOCP      *spocp ;
+  pdyn_t     *dyn = cpp->pd ;
 
-  if( arg == 0 ) return SPOCP_MISSING_ARG ;
+  if( cpp->arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
+  if(( oct = element_atom_sub( cpp->arg, cpp->x )) == 0 ) return SPOCP_SYNTAXERROR ;
 
   argv = oct_split( oct, ';', 0, 0, 0 ) ;
 
-  if( oct != arg ) oct_free( oct ) ;
+  if( oct != cpp->arg ) oct_free( oct ) ;
 
   debug = 0 ;
   oct = argv->arr[0] ;
@@ -112,3 +112,9 @@ spocp_result_t spocp_test(
   return r ;
 }
 
+plugin_t spocp_module = {
+  SPOCP20_PLUGIN_STUFF ,
+  spocp_test,
+  NULL,
+  NULL
+} ;

@@ -115,7 +115,7 @@ void           oct_freearr( octet_t **o ) ;
 int            oct2strcmp(  octet_t *o, char *s ) ;
 int            oct2strncmp(  octet_t *o, char *s, size_t l ) ;
 char          *oct2strdup( octet_t *op, char ec ) ;
-int            oct2strcpy( octet_t *op, char *str, size_t len, int esc, char ec ) ;
+int            oct2strcpy( octet_t *op, char *str, size_t len, char ec ) ;
 
 int            octtoi( octet_t *o ) ;
 

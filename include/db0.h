@@ -168,6 +168,14 @@ typedef struct _branch {
 
 /* -------------------------------------------------- */
 
+typedef struct _com_param  {
+  element_t      *head ;
+  octarr_t      **blob ;
+  spocp_result_t  rc ;
+} comparam_t ;
+
+/* -------------------------------------------------- */
+
 #define AND  1
 #define OR   2
 #define NOT  3

@@ -422,9 +422,10 @@ static void bcdef_delink( bcdef_t *bcd )
 
 static spocp_result_t bcond_eval( element_t *qp, element_t *rp, bcspec_t *bcond, octet_t *oct ) 
 {
-  octet_t    spec ;
-  element_t  *tmp, *xp = 0 ;
-  int        sl, rl, rc ;
+  octet_t      spec ;
+  element_t   *tmp, *xp = 0 ;
+  int          sl, rl, rc ;
+  cmd_param_t  cpt ;
  
   octln( &spec, bcond->spec ) ;
 
@@ -450,7 +451,14 @@ static spocp_result_t bcond_eval( element_t *qp, element_t *rp, bcspec_t *bcond,
   spec.val++ ;
   spec.len-- ;
 
-  rc = bcond->plugin->test( qp, rp, xp, &spec, &bcond->plugin->dyn, oct ) ;
+  cpt.q = qp ;
+  cpt.r = rp ;
+  cpt.x = xp ;
+  cpt.arg = &spec ;
+  cpt.pd = bcond->plugin->dyn ;
+  cpt.conf = bcond->plugin->conf ;
+
+  rc = bcond->plugin->test( &cpt, oct ) ;
 
   if( xp ) element_free( xp );
 
@@ -585,13 +593,12 @@ int bcspec_is( octet_t *spec )
  * \param data The boundary condition specification
  * \return A pointer to the internal representation of the boundary condition 
  */
-bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data ) 
+bcdef_t *bcdef_add( db_t *db, plugin_t *p, dbcmd_t *dbc, octet_t *name, octet_t *data ) 
 {
   bcexp_t   *bce ;
   bcdef_t   *bcd, *bc ;
   char       cname[45], *bcname ;
   stree_t   *st ;
-  plugin_t  *plt = db->plugins ;
   octet_t   tmp ; 
 
   if( db == 0 ) {
@@ -610,7 +617,7 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
 
   bcd = bcdef_new() ;
 
-  bce = transv_stree( plt, st, db->bcdef, bcd ) ;
+  bce = transv_stree( p, st, db->bcdef, bcd ) ;
 
   stree_free( st ) ;
 
@@ -638,7 +645,7 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
 
     oct_assign( &tmp, bcd->name ) ;
     bcname = bcname_make( &tmp ) ;
-    dback_save( db->dback, db->dback->conhandle, bcname, data, 0, 0 ) ; 
+    dback_save( dbc, bcname, data, 0, 0 ) ; 
     free( bcname ) ;
   }
 
@@ -664,7 +671,7 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
  * \param name The name of the boundary condition
  * \return A result code, SPOCP_SUCCESS on success
  */
-spocp_result_t bcdef_del( db_t *db, octet_t *name ) 
+spocp_result_t bcdef_del( db_t *db, dbcmd_t *dbc, octet_t *name ) 
 {
   bcdef_t *bcd ;
   char    *bcname ; 
@@ -676,7 +683,7 @@ spocp_result_t bcdef_del( db_t *db, octet_t *name )
 
   bcname = bcname_make( name ) ;
 
-  dback_delete( db->dback, db->dback->conhandle, bcname ) ;
+  dback_delete( dbc, bcname ) ;
   free( bcname ) ;
 
   /* this boundary conditions might have links to other those links 
@@ -698,9 +705,8 @@ spocp_result_t bcdef_del( db_t *db, octet_t *name )
  * \param data The new specification for the boundary condition
  * \return An appropriate result code
  */
-spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data ) 
+spocp_result_t bcdef_replace( db_t *db, plugin_t *p, dbcmd_t *dbc, octet_t *name, octet_t *data ) 
 {
-  plugin_t   *plt = db->plugins ;
   bcdef_t    *bcd ;
   bcexp_t    *bce ;
   stree_t    *st ;
@@ -719,11 +725,11 @@ spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data )
 
   if(( bcd = bcdef_find( db->bcdef, name )) != 0 ) {
 
-    bce = transv_stree( plt, st, db->bcdef, bcd ) ;
+    bce = transv_stree( p, st, db->bcdef, bcd ) ;
   
     bcname = bcname_make( name ) ;
 
-    dback_replace( db->dback, db->dback->conhandle, bcname, data, 0, 0 ) ;
+    dback_replace( dbc, bcname, data, 0, 0 ) ;
 
     bcexp_free( bcd->exp ) ;
   
@@ -745,13 +751,14 @@ spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data )
  *
  * \param db A pointer to the internal database
  * \param o  The boundary conditions specification
+ * \param p  Pointer to the set of plugins that is present
  * \param rc Where the result code of the operation should be stored
  * \return  A pointer to the internal representation or NULL if it does not 
  *          exist, is faulty  or references unknown boundary conditions.
  *          If the boundary condition specification is equal to "NULL", NULL
  *          is also returned but together with the result code SPOCP_SUCCESS.
  */
-bcdef_t *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc )
+bcdef_t *bcdef_get( db_t *db, plugin_t *p, dbcmd_t *dbc, octet_t *o, spocp_result_t *rc )
 {
   bcdef_t       *bcd = 0 ;
   spocp_result_t r ;
@@ -763,7 +770,7 @@ bcdef_t *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc )
     if( bcd == NULL ) *rc = SPOCP_UNAVAILABLE ;
   }
   else {
-    bcd = bcdef_add( db, 0, o ) ;
+    bcd = bcdef_add( db, p, dbc, 0, o ) ;
     if( bcd == 0 ) *rc = SPOCP_SYNTAXERROR ;
   }
 

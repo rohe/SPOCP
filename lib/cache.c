@@ -16,18 +16,15 @@
 #include <time.h>
 #include <string.h>
 
+#include <spocp.h>
 #include <struct.h>
 #include <plugin.h>
 #include <varr.h>
 #include <db0.h>
 #include <func.h>
 #include <wrappers.h>
-#include <spocp.h>
 
 #define MAX_CACHED_VALUES 1024
-
-unsigned int hash_arr( int argc, char **argv ) ;
-cacheval_t *new_cacheval( octet_t *arg, unsigned int h, unsigned int ct, int r) ;
 
 /* ======================================================================= */
 
@@ -41,8 +38,8 @@ Arguments:
 
 Returns:	unsigned integer representing the total hashvalue
  */
-
-unsigned int hash_arr( int argc, char **argv )
+/*
+static unsigned int hash_arr( int argc, char **argv )
 {
   int   i ;
   unsigned int hashv = 0 ;
@@ -52,6 +49,7 @@ unsigned int hash_arr( int argc, char **argv )
 
   return hashv ;
 }
+*/
 
 /**********************************************************
 *          Create a new structure for cached values       *
@@ -65,7 +63,7 @@ Arguments:
 Returns:	a cacheval struct with everything filled in
  */
 
-cacheval_t *cacheval_new( unsigned int h, unsigned int ct, int r)
+static cacheval_t *cacheval_new( unsigned int h, unsigned int ct, int r)
 {
   cacheval_t *cvp ;
   time_t      t ;
@@ -82,14 +80,15 @@ cacheval_t *cacheval_new( unsigned int h, unsigned int ct, int r)
   return cvp ;
 }
 
-void cacheval_free( cacheval_t *cvp )
+static void cacheval_free( cacheval_t *cvp )
 {
   if( cvp ) {
     free( cvp ) ;
   }
 }
 
-void *cacheval_dup( void *vp)
+/*
+static void *cacheval_dup( void *vp)
 {
   cacheval_t *new, *old ;
 
@@ -100,10 +99,11 @@ void *cacheval_dup( void *vp)
   
   return (void *) new ;
 }
+*/
 
 /* ---------------------------------------------------------------------- */
 
-cache_t *cache_new( void )
+static cache_t *cache_new( void )
 {
   cache_t *new ;
 
@@ -116,7 +116,7 @@ cache_t *cache_new( void )
   return new ;
 }
 
-cache_t *cache_add( cache_t *c, void *v ) 
+static cache_t *cache_add( cache_t *c, void *v ) 
 {
   if( c == 0 ) c = cache_new() ;
 
@@ -125,7 +125,7 @@ cache_t *cache_add( cache_t *c, void *v )
   return c ; 
 }
 
-cacheval_t *cache_find( cache_t *c, octet_t *arg )
+static cacheval_t *cache_find( cache_t *c, octet_t *arg )
 {
   unsigned int hash ;
   cacheval_t  *cvp ;
@@ -143,14 +143,18 @@ cacheval_t *cache_find( cache_t *c, octet_t *arg )
   return 0 ;
 }
 
-void cache_del( cache_t *c, cacheval_t *cvp )
+static void cache_del( cache_t *c, cacheval_t *cvp )
 {
   varr_rm( c->va, (void *) cvp ) ;
+  cacheval_free( cvp ) ;
 }
 
-void cache_fifo_rm( cache_t *cp )
+static void cache_fifo_rm( cache_t *cp )
 {
-  varr_fifo_pop( cp->va ) ;
+  cacheval_t *cv ;
+
+  cv = ( cacheval_t * ) varr_fifo_pop( cp->va ) ;
+  cacheval_free( cv ) ;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -182,7 +186,7 @@ cache_t *cache_value( cache_t *cp, octet_t *arg, unsigned int ct, int r, octet_t
 
   /* max number of cachevalues should be configurable */
   if( cp->va && varr_len(cp->va) == MAX_CACHED_VALUES ) {
-    cache_fifo_rm( cp ) ;
+    cache_fifo_rm( cp ) ; /* to make room, remove the oldest */
   }
 
   if( ! cp ) cp = cache_new( ) ;

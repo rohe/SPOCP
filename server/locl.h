@@ -53,7 +53,9 @@
 #include <tcpd.h>
 #endif
 
+/*
 #include "srvconf.h"
+*/
 
 #include <spocp.h>
 #include <func.h>
@@ -63,5 +65,7 @@
 
 #include <db0.h>
 #include <dback.h>
+#include <plugin.h>
+#include <dbapi.h>
 
 #include <srv.h>

@@ -13,6 +13,22 @@
 #include "locl.h"
 RCSID("$Id$");
 
+#define RULEFILE		1
+#define PORT			2
+#define UNIXDOMAINSOCKET	3
+#define CERTIFICATE		4
+#define PRIVATEKEY		5
+#define CALIST			6
+#define DHFILE			7
+#define ENTROPYFILE		8
+#define PASSWD			9
+#define NTHREADS		10
+#define TIMEOUT			11
+#define LOGFILE			12
+#define SSLVERIFYDEPTH		13
+#define PIDFILE			14
+#define MAXCONN			15
+
 char *keyword[] = {
   "__querty__", "rulefile", "port", "unixdomainsocket", "certificate",
   "privatekey", "calist", "dhfile", "entropyfile",
@@ -27,35 +43,24 @@ char *keyword[] = {
 
 #define LINEBUF         1024
 
-#define SYSTEM 32
+#define SYSTEM 1
+#define PLUGIN 2
+#define DBACK  3
 
 /* roughly */
 #define YEAR  31536000
 
 extern char *pidfile ;
 
+char *err_msg = "Error in configuration file, line %d: %s" ;
+
 /*------------------------------------------------------------------ */
 
-spocp_result_t conf_get( void *vp, int arg, char *pl, char *key, void **res )
+spocp_result_t conf_get( void *vp, int arg, void **res )
 {
   srv_t     *srv = (srv_t *) vp ;
-  octarr_t  *on ;
 
   switch( arg ) {
-    case PLUGIN :
-      if( srv->root == 0 || srv->root->db == 0 || srv->root->db->plugins == 0 ) *res = 0 ;
-      else {
-        if( key ) {
-          on = pconf_get_keyval_by_plugin( srv->root->db->plugins, pl, key ) ; 
-          if( on ) *res = ( void * ) on ;
-          else *res = 0 ;
-        }
-        else 
-          *res = ( void * ) pconf_get_keys_by_plugin( srv->root->db->plugins, pl ) ;
-      }
-
-      break ;
-
     case RULEFILE :
       *res = ( void * ) srv->rulefile ; 
       break ;
@@ -128,13 +133,16 @@ spocp_result_t conf_get( void *vp, int arg, char *pl, char *key, void **res )
 
 int read_config( char *file, srv_t *srv )
 {
-  FILE            *fp ;
-  char            s[LINEBUF], *cp, *sp, plugin[256] ;
-  char            section = 0 ;
-  unsigned int    n = 0 ;
-  long            lval ;
-  int             i ;
-  plugin_t        *plugins, *pl ;
+  FILE             *fp ;
+  char              s[LINEBUF], *cp, *sp, pluginname[256] ;
+  char              section = 0, *dbname = 0, *dbload = 0 ;
+  unsigned int      n = 0 ;
+  long              lval ;
+  int               i ;
+  plugin_t         *plugins, *pl = 0 ;
+  dback_t          *dbp = 0 ;
+  const conf_com_t *ccp ;
+  spocp_result_t    r ;
 
   /* should never be necessary */
   if( !srv->root ) srv->root = ruleset_new( 0 ) ;
@@ -142,10 +150,10 @@ int read_config( char *file, srv_t *srv )
   if( !srv->root->db )
     srv->root->db = db_new() ;
 
-  plugins = srv->root->db->plugins ;
+  plugins = srv->plugin ;
 
   if(( fp = fopen( file, "r" )) == NULL ) {
-    fprintf( stderr, "Could not find or open the configuration file \"%s\"\n", file ) ;
+    traceLog( "Could not find or open the configuration file \"%s\"", file ) ;
     return 0 ;
   }
 
@@ -160,38 +168,46 @@ int read_config( char *file, srv_t *srv )
 
       cp = find_balancing( s+1, '[',']' ) ;
       if( cp == 0 ) {
-        fprintf( stderr, "Syntax error in configuration file on line %u\n", n ) ;
+        traceLog( err_msg, n, "Section specification" ) ;
         return 0 ;
       }
 
       *cp = 0 ;
       sp = s+1 ;
 
-      if( strcasecmp( sp, "system" ) == 0 ) section = SYSTEM ;
+      if( strcasecmp( sp, "server" ) == 0 ) section = SYSTEM ;
+      else if( strcasecmp( sp, "dback" ) == 0 ) section = DBACK ;
       else {
         section = PLUGIN ;
-        strcpy( plugin, sp ) ;
+        strcpy( pluginname, sp ) ;
+        pl = 0 ;
       }
 
       continue ;
     }
 
-    /* Within a section */
+    /* Within a section 
+     * The directives are of the form:
+     * key *SP "=" *SP val *SP val
+     * val = 1*nonspacechar / '"' char '"'
+     */
 
     rm_lt_sp( s, 1 ) ;  /* remove leading and trailing blanks */
 
+    /* empty line or comment */
     if( *s == 0 || *s == '#' ) continue ;
 
     cp = strchr( s, '=' ) ;
     if( cp == 0 ) {
-      fprintf(stderr, "Error in line %d\n", n ) ;
+      traceLog( err_msg, n, "syntax error" ) ;
       continue ;
     }
 
     sp = cp ;
     for( *cp++ = '\0' ; *cp && ( *cp == ' ' || *cp == '\t' ) ; cp++ ) *cp = '\0' ;
-    for( sp-- ; sp != s && ( *sp == ' ' || *sp == '\t' ) ; sp-- ) *sp = '\0' ;
+    for( sp-- ; sp >= s && ( *sp == ' ' || *sp == '\t' ) ; sp-- ) *sp = '\0' ;
   
+    /* no key, not good */
     if( *s == '\0' ) continue ;
 
     switch( section ) {
@@ -200,13 +216,12 @@ int read_config( char *file, srv_t *srv )
           if( strcasecmp( keyword[i] , s ) == 0 ) break ;
 
         if( keyword[i] == 0 ) {
-           fprintf(stderr, "Unknown keyword \"%s\"\n", s ) ;
+           traceLog( err_msg, n, "Unknown keyword" ) ;
            continue ;
         } 
 
         switch( i ) {
           case RULEFILE :
-            fprintf( stderr, "rulefile: \"%s\"\n", cp ) ;
             if ( srv->rulefile ) free( srv->rulefile ) ;
             srv->rulefile = Strdup( cp ) ;
             break ;
@@ -252,15 +267,13 @@ int read_config( char *file, srv_t *srv )
               if( lval >= 0 && lval <= YEAR )
                 srv->timeout = ( unsigned int ) lval ;
               else {
-                fprintf(stderr,"[timeout] value, out of range, setting default (%d)\n",
-                        DEFAULT_TIMEOUT ) ;
+                traceLog( err_msg, n, "Value out of range") ;
                 srv->timeout = DEFAULT_TIMEOUT ;
               }
             }
             else
             {
-              fprintf(stderr,"[timeout] Non numeric value given, setting default (%d)\n",
-                      DEFAULT_TIMEOUT ) ;
+              traceLog( err_msg, n, "Non numeric value" ) ;
               srv->timeout = DEFAULT_TIMEOUT ;
             }
     
@@ -277,19 +290,19 @@ int read_config( char *file, srv_t *srv )
                 srv->port = ( unsigned int ) lval ;
               }
               else {
-                fprintf(stderr,"[port] number out of range\n") ;
+                traceLog( err_msg, n, "Number out of range") ;
                 srv->port = DEFAULT_PORT ;
               }
             }
             else {
-              fprintf(stderr,"[port] Non numeric value given for port\n" ) ;
+              traceLog( err_msg, n, "Non numeric value" ) ;
             }
             break ;
     
           case NTHREADS:
             if( numstr( cp, &lval ) == SPOCP_SUCCESS ) {
               if( lval <= 0 ) {
-                fprintf(stderr,"[threads] Error in specification, has to be > 0 \n" );
+                traceLog( err_msg, n, "Value out of range" );
                 return 0 ;
               }
               else {
@@ -299,7 +312,7 @@ int read_config( char *file, srv_t *srv )
               }
             }
             else {
-              fprintf( stderr, "[threads] Non numeric specification, not accepted\n" ) ;
+              traceLog( err_msg, n, "Non numeric specification" ) ;
               return 0 ;
             }
             break ;
@@ -310,12 +323,12 @@ int read_config( char *file, srv_t *srv )
                 srv->sslverifydepth = ( unsigned int ) lval ;
               }
               else {
-                fprintf(stderr,"[sslverifydepth] number out of range\n") ;
+                traceLog(err_msg, n,"number out of range") ;
                 srv->sslverifydepth = 0 ;
               }
             }
             else {
-              fprintf(stderr,"[sslverifydepth] Non numeric value given for port\n" ) ;
+              traceLog(err_msg, n,"Non numeric value" ) ;
             }
             break ;
     
@@ -330,25 +343,109 @@ int read_config( char *file, srv_t *srv )
                 srv->nconn = ( unsigned int ) lval ;
               }
               else {
-                fprintf(stderr,"[nconn] number out of range\n") ;
+                traceLog(err_msg, n,"Number out of range") ;
                 srv->sslverifydepth = 0 ;
               }
             }
             else {
-              fprintf(stderr,"[nconn] Non numeric value given for port\n" ) ;
+              traceLog(err_msg, n,"Non numeric value" ) ;
             }
             break ;
         }
         break ;
  
       case PLUGIN:
-        pl = plugin_add_conf( plugins, plugin, s, cp ) ;
-        if( !pl ) fprintf( stderr, "Error i rulefile, line %d\n", n ) ;
+        if( pl == 0 ) {
+          if( strcmp( s, "load" ) != 0 ) {
+            traceLog( err_msg, n, "First directive in plugin sector has to be \"load\"" ) ;
+            section = 0 ;
+          }
+
+          if(( pl = plugin_load( plugins, pluginname, cp )) == 0 ) section = 0 ;
+          else {
+            /* The last one is placed last */
+            for(  ; pl->next ; pl = pl->next ) ;
+          }
+
+          if( plugins == 0 ) plugins = pl ;
+        }
         else {
-          if( !plugins ) plugins = pl ;
+          if( strcmp( s, "poolsize" ) == 0 ) {
+            if( numstr( cp, &lval ) == SPOCP_SUCCESS ) {
+              if( lval <= 0 ) {
+                traceLog(err_msg, n,"Value out of range" );
+              }
+              else {
+                int level = ( int ) lval ;
+    
+                if( pl->dyn == 0 ) pl->dyn = pdyn_new( level ) ;
+                if( pl->dyn->size == 0 ) pl->dyn->size = level ;
+              }
+            }
+            else {
+              traceLog( err_msg, n, "Non numeric specification" ) ;
+            }
+          }
+          else if( strcmp( s, "cachetime" ) == 0 ) {
+            if( plugin_add_cachedef( pl, cp ) < 0 ) 
+              traceLog( err_msg, n, "Cachetime def" ) ;
+          }
+          else if( pl->ccmds == 0 ) { /* No directives allowed */
+            traceLog( err_msg, n, "Directive where there should not be one" ) ;
+          } 
+          else {
+            for( ccp = pl->ccmds ; ccp ; ccp++ ) {
+              if( strcmp( ccp->name, s ) == 0 ) {
+                r = ccp->func( &pl->conf, ccp->cmd_data, 1, &cp ) ;
+                if( r != SPOCP_SUCCESS ) {
+                  traceLog( err_msg, n, ccp->errmsg ) ;
+                }
+                break ;
+              }
+            }
+            if( ccp == 0 ) {
+              traceLog( err_msg, n, "Unknown directive" ) ;
+            }
+          }
         }
         break ;
 
+      case DBACK:
+        if( dbp == 0 ) {
+          if( strcmp( s, "name" ) == 0 ) {
+            dbname = Strdup( cp ) ;
+            if( dbname && dbload ) {
+              dbp = dback_load( dbname, dbload ) ;
+              free( dbname ) ;
+              free( dbload ) ;
+            }
+          }
+          else if( strcmp( s, "load" ) == 0 ) {
+            dbload = Strdup( cp ) ;
+            if( dbname && dbload ) {
+              dbp = dback_load( dbname, dbload ) ;
+              free( dbname ) ;
+              free( dbload ) ;
+            }
+          }
+          else 
+            traceLog( err_msg, n, "Unknown directive" ) ;
+        }
+        else {
+          for( ccp = dbp->ccmds ; ccp && *ccp->name ; ccp++ ) {
+            if( strcmp( ccp->name, s ) == 0 ) {
+              r = ccp->func( &dbp->conf, ccp->cmd_data, 1, &cp ) ;
+              if( r != SPOCP_SUCCESS ) {
+                traceLog( err_msg, n, ccp->errmsg ) ;
+              }
+              break ;
+            }
+          }
+          if( ccp == 0 ) {
+            traceLog( err_msg, n, "Unknown directive" ) ;
+          }
+        }
+        break ;
     }
   }
 
@@ -357,7 +454,8 @@ int read_config( char *file, srv_t *srv )
   if( srv->threads == 0 ) srv->threads = DEFAULT_NTHREADS ;
   if( srv->sslverifydepth == 0 ) srv->sslverifydepth = DEFAULT_SSL_DEPTH ;
 
-  srv->root->db->plugins = plugins ;
+  srv->plugin = plugins ;
+  srv->dback = dbp ;
 
   return 1 ;
 }

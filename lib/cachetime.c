@@ -28,6 +28,9 @@ time_t cachetime_set( octet_t *str, cachetime_t *ct )
   else return 0 ;
 }
 
+/* expects the format 
+ * time [ 1*SP pattern ]
+ */
 cachetime_t *cachetime_new( octet_t *s )
 {
   cachetime_t *new ;
