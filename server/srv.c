@@ -141,18 +141,30 @@ add_response(spocp_iobuf_t * out, int rc, const char *fmt, ...)
 	res = add_response_va(out, rc, fmt, ap);
 	va_end(ap);
 
+	iobuf_add_len_tag( out );
+
 	return res;
 }
 
 static spocp_result_t
 add_response_blob(spocp_iobuf_t * out, int rc, octet_t * data)
 {
-	spocp_result_t  sr = add_response(out, rc, NULL);
+	spocp_result_t  sr;
+
+	sr = add_response_va(out, rc, NULL, NULL);
 
 	if (sr != SPOCP_SUCCESS)
 		return sr;
 
-	return data != NULL ? iobuf_add_octet(out, data) : sr;
+	if (data)
+		sr = iobuf_add_octet( out, data) ;
+
+	if (sr != SPOCP_SUCCESS)
+		return sr;
+
+	iobuf_add_len_tag( out );
+
+	return sr;
 }
 
 /*
@@ -665,11 +677,7 @@ com_query(conn_t * conn)
 
 	if (r == SPOCP_SUCCESS && on) {
 		while ((oct = octarr_pop(on))) {
-			if (add_response(out, SPOCP_MULTI, 0) != SPOCP_SUCCESS) {
-				r = SPOCP_OPERATIONSERROR;
-				break;
-			}
-			if (iobuf_add_octet(out, oct) != SPOCP_SUCCESS) {
+			if (add_response_blob(out, SPOCP_MULTI, oct) != SPOCP_SUCCESS) {
 				r = SPOCP_OPERATIONSERROR;
 				break;
 			}
@@ -678,19 +686,23 @@ com_query(conn_t * conn)
 			traceLog("returns \"%s\"", str);
 			free(str);
 
+			/*
 			if ((wr = send_results(conn)) == 0)
 				r = SPOCP_CLOSE;
 			oct_free(oct);
 
-			/*
+			 *
 			 * wait for the master to empty the queue 
-			 */
+			 *
 			pthread_mutex_lock(&out->lock);
 			pthread_cond_wait(&out->empty, &out->lock);
 			pthread_mutex_unlock(&out->lock);
+			*/
 		}
 
 		octarr_free(on);
+
+		traceLog( "r after blobs");
 	}
 
 	return postop( conn, r, 0);

@@ -410,29 +410,18 @@ int
 send_results(conn_t * conn)
 {
 	spocp_iobuf_t  *out = conn->out;
-	size_t          len;
-	char            ldef[16];
-	int             nr;
 
 	if (0)
 		timestamp("Send results");
 
-	len = out->w - out->p;
-
-	nr = snprintf(ldef, 16, "%d:", len);
-	iobuf_insert(out, out->p, ldef, nr);
-
-	len += nr;
 
 	LOG(SPOCP_INFO) {
 		*out->w = '\0';
-		traceLog("[%d]SEND_RESULT: [%s]", conn->fd, out->p);
+		traceLog("[%d]SEND_RESULT: [%s]", conn->fd, out->r);
 	}
 
 	if (0)
 		timestamp("Result placed in outqueue");
-
-        out->p = out->w ;
 
 	conn->status = CNST_WRITE;
 

@@ -212,7 +212,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			}
 			
 			if( rdef.blob ) {
-				oa = octarr_add(oa, rdef.blob->val) ;
+				oa = octarr_add(oa, octdup(rdef.blob->val)) ;
 			}
 			
 			r = dbapi_rule_add(&(trs->db), srv->plugin, dbc, oa, NULL);
