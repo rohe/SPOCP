@@ -440,6 +440,7 @@ void            ll_rm_link(ll_t * lp, node_t * np);
  */
 
 int		element_print( octet_t *oct, element_t *ep);
+char		*element2str( element_t *ep);
 element_t	*element_reduce( element_t *ep ) ;
 
 /*
