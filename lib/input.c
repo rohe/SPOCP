@@ -77,16 +77,21 @@ get_len(octet_t * op)
 	 * check that first, since those are not allowed in this context 
 	 */
 
-	if (*sp == ' ' || *sp == '-' || *sp == '+')
+	if (*sp == ' ' || *sp == '-' || *sp == '+') {
+		traceLog( "Disallowed char %c in length field", *sp ) ;
 		return -1;
+        }
 
 	l = strtol(sp, &ep, 10);
 
 	/*
 	 * no number read 
 	 */
-	if (ep == sp)
+	if (ep == sp) {
+		traceLog("No digit found at \"%c%c%c%c\"", *sp, *(sp+1),
+		    *(sp+2), *(sp+3) ) ;
 		return -1;
+        }
 
 	/*
 	 * ep points to the first non digit character or '\0' 

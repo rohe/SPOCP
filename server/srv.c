@@ -362,11 +362,13 @@ com_starttls(conn_t * conn)
 		if ((wr = send_results(conn)) == 0)
 			r = SPOCP_CLOSE;
 
+		traceLog("Setting connection status so main wan't touch it") ;
 		conn->status = CNST_SSL_NEG;	/* Negotiation in progress */
 
 		/*
 		 * whatever is in the input buffert must not be used anymore 
 		 */
+                traceLog("Input buffer flush") ;
 		iobuf_flush(conn->in);
 
 		/*
@@ -1098,7 +1100,7 @@ spocp_result_t
 get_operation(conn_t * conn, proto_op ** oper)
 {
 	spocp_result_t  r;
-	octet_t         wo, op, arg;
+	octet_t         wo, op, arg, oa;
 	int             l = 0;
 	/*
 	 * char *tmp ; 
@@ -1108,7 +1110,7 @@ get_operation(conn_t * conn, proto_op ** oper)
 		int             n;
 
 		if ((n = iobuf_content(conn->in)))
-			traceLog("%d bytes in input buffer");
+			traceLog("%d bytes in input buffer", n);
 		else
 			traceLog("Empty input buffer");
 	}
@@ -1130,10 +1132,13 @@ get_operation(conn_t * conn, proto_op ** oper)
 	if ((r = get_str(&arg, &wo)) != SPOCP_SUCCESS)
 		return r;
 
+        traceLog("OpLen: %d", wo.len ) ;
+        octln( &oa, &wo) ;
+
 	/*
 	 * Just the operation specification 
 	 */
-	if ((r = get_str(&wo, &op)) != SPOCP_SUCCESS)
+	if ((r = get_str(&oa, &op)) != SPOCP_SUCCESS)
 		return r;
 
 	octln(&conn->oper, &op);
@@ -1211,7 +1216,7 @@ get_operation(conn_t * conn, proto_op ** oper)
 	 * conn->oparg = 0 ; * should be done elsewhere 
 	 */
 
-	if ((r = get_oparg(&wo, &conn->oparg)) != SPOCP_SUCCESS)
+	if ((r = get_oparg(&oa, &conn->oparg)) != SPOCP_SUCCESS)
 		return r;
 
 	if (*oper == 0)

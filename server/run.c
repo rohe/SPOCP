@@ -175,11 +175,11 @@ spocp_srv_run(srv_t * srv)
 				if (0)
 					traceLog("Next is %p", next);
 			} else {
-				if (!conn->stop
-				    && conn->status != CNST_SSL_NEG) {
+				if (!conn->stop) {
 					maxfd = MAX(maxfd, conn->fd);
-					FD_SET(conn->fd, &rfds);
 					FD_SET(conn->fd, &wfds);
+				    	if( conn->status != CNST_SSL_NEG) 
+						FD_SET(conn->fd, &rfds);
 				}
 
 				if ((err =

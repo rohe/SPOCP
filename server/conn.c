@@ -354,32 +354,32 @@ int
 spocp_conn_write(conn_t * conn)
 {
 	int             n, l;
-	spocp_iobuf_t  *io = conn->out;
+	spocp_iobuf_t  *out = conn->out;
 
-	pthread_mutex_lock(&io->lock);
+	pthread_mutex_lock(&out->lock);
 
-	n = conn->writen(conn, io->r, io->w - io->r);
+	n = conn->writen(conn, out->r, out->w - out->r);
 
 	if (n >= 0) {
 		DEBUG(SPOCP_DSRV) traceLog("spocp_io_write wrote %d bytes", n);
 
-		io->r += n;
-		io->left -= n;
+		out->r += n;
+		out->left -= n;
 
 		/*
 		 * have to unlock since iobuf_shift will try to lock 
 		 */
-		pthread_mutex_unlock(&io->lock);
-		iobuf_shift(io);
+		pthread_mutex_unlock(&out->lock);
+		iobuf_shift(out);
 
-		if ((l = iobuf_content(io)) == 0) {
+		if ((l = iobuf_content(out)) == 0) {
 			DEBUG(SPOCP_DSRV)
 			    traceLog("Wrote everything in buffer");
-			pthread_cond_broadcast(&io->empty);
+			pthread_cond_broadcast(&out->empty);
 		} else
 			DEBUG(SPOCP_DSRV) traceLog("%d left in buffert", l);
 	} else
-		pthread_mutex_unlock(&io->lock);
+		pthread_mutex_unlock(&out->lock);
 
 	if (0)
 		timestamp("Done writing");

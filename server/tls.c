@@ -672,7 +672,7 @@ tls_start(conn_t * conn, ruleset_t * rs)
 {
 	SSL            *ssl;
 	SSL_CTX        *ctx = (SSL_CTX *) conn->srv->ctx;
-	int             maxbits, r, n;
+	int             maxbits, r, n = 0;
 	char           *sid_ctx = "spocp";
 	SSL_CIPHER     *cipher;
 
@@ -700,9 +700,9 @@ tls_start(conn_t * conn, ruleset_t * rs)
 	}
 
 	n = iobuf_content(conn->in);
-	traceLog("%d bytes in input buffer");
+	traceLog("tls_start: %d bytes in input buffer", n);
 	if (n) {
-		traceLog("%x%x%x%x", conn->in->r[0], conn->in->r[1],
+		traceLog("tls_start: %x%x%x%x", conn->in->r[0], conn->in->r[1],
 			 conn->in->r[2], conn->in->r[3]);
 	}
 
@@ -713,19 +713,30 @@ tls_start(conn_t * conn, ruleset_t * rs)
 	/*
 	 * waits for the client to initiate the handshake 
 	 */
-	/*
-	 * { fd_set rset ; int retval ;
-	 * 
-	 * FD_ZERO( &rset ) ; FD_SET( conn->fd, &rset ) ; retval =
-	 * select(conn->fd+1,&rset,NULL,NULL,0) ;
-	 * 
-	 */
+	{
+		fd_set rset ; int retval ;
+	  
+		FD_ZERO( &rset );
+		FD_SET( conn->fd, &rset );
+		traceLog( "Waiting for the client" ) ;
+		retval = select(conn->fd+1,&rset,NULL,NULL,0) ;
+	}
 	if ((r = SSL_accept(ssl)) <= 0) {
+		int se ;
 
-		if ((r = SSL_get_error(ssl, r)) == SSL_ERROR_WANT_READ) {
+		if ((se = SSL_get_error(ssl, r)) == SSL_ERROR_WANT_READ) {
 			traceLog("Want_read");
+		} else if (se == SSL_ERROR_SYSCALL) {
+			unsigned long err ;
+
+			err = ERR_get_error();
+			if( err == 0L && r == 0 ) {
+				traceLog("EOF observed") ;
+			}
+			else 
+				traceLog("I/O error occured (%ld/%d)", err, r);
 		} else {
-			traceLog("SSL_get_error: %d", SSL_get_error(ssl, r));
+			traceLog("SSL_get_error: %d", se);
 			tls_error(SPOCP_ERR, conn, "SSL accept error");
 			SSL_free(ssl);
 		}
