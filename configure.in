@@ -170,7 +170,7 @@ AH_TEMPLATE( [HAVE_LIBLBER], [Define to 1 if you have the 'lber' library] )
 AH_TEMPLATE( [HAVE_LIBLDAP], [Define to 1 if you have the 'ldap' library] ) 
 AH_TEMPLATE( [HAVE_LIBGDBM], [Define to 1 if you have the 'gdbm' library] ) 
 AH_TEMPLATE( [HAVE_LIBODBC], [Define to 1 if you have the 'odbc' library] ) 
-AH_TEMPLATE([HAVE_LIBSPOCPCLIENT],[Define to 1 if you have the 'spocpclient' library]) 
+#AH_TEMPLATE([HAVE_LIBSPOCPCLIENT],[Define to 1 if you have the 'spocpclient' library]) 
 
 if test "$ldapset" = "yes" ; then
   AC_CHECK_LIB([lber], [ber_read], AC_DEFINE(HAVE_LIBLBER), [ldapset=no])
@@ -185,9 +185,9 @@ if test "$sql" = "yes" ; then
   AC_CHECK_LIB([odbc], [SQLConnect], [AC_DEFINE(HAVE_LIBODBC)], [sql=no] )
 fi
 
-if test "$spocp" = "yes" ; then
-  AC_CHECK_LIB([spocpclient], [spocp_send_query], AC_DEFINE(HAVE_LIBSPOCPCLIENT), [sql=no] )
-fi
+#if test "$spocp" = "yes" ; then
+#  AC_CHECK_LIB([spocpclient], [spocp_send_query], AC_DEFINE(HAVE_LIBSPOCPCLIENT), [sql=no] )
+#fi
 
 AM_CONDITIONAL( BUILD_CERT, test x$cert = xyes ) 
 AM_CONDITIONAL( BUILD_DTIME, test x$difftime = xyes ) 
