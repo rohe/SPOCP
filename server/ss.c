@@ -128,7 +128,7 @@ spocp_result_t ss_allow( ruleset_t *rs, octet_t *sexp, octarr_t **on, int scope 
   /* just ignore extra bytes */
   oct.len -= dec.len ;
   str = oct2strdup( &oct, '\\' ) ;
-  traceLog("Query: \"%s\" in \"%s\"", str, rs->name ) ;
+  if( 0 ) traceLog("Query: \"%s\" in \"%s\"", str, rs->name ) ;
   free( str ) ;
 
   res = rec_allow( rs, ep, scope, on ) ;
