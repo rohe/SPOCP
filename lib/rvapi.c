@@ -753,7 +753,7 @@ element_nth(element_t * e, int n)
 		for (i = 0, e = e->e.list->head; i < n && e->next;
 			e = e->next, i++);
 
-		if i == n 
+		if (i == n) 
 			return e;
 		else
 			return 0;

@@ -30,10 +30,9 @@ befunc          strmatch_test;
 spocp_result_t
 strmatch_test(cmd_param_t * cpp, octet_t * blob)
 {
-	octarr_t       *argv = 0;
-	element_t      *ce[2], *cen[2];
-	int             i, r = SPOCP_DENIED, n;
-	octet_t        *oct = 0, *var0 = 0, *var1 = 0;
+	octarr_t	*argv = 0;
+	int		r = SPOCP_DENIED;
+	octet_t		*oct = 0;
 
 	if (cpp->arg == 0 || cpp->arg->len == 0)
 		return SPOCP_MISSING_ARG;
@@ -57,6 +56,10 @@ strmatch_test(cmd_param_t * cpp, octet_t * blob)
 
 	} /*
 	else {
+		element_t	*ce[2], *cen[2];
+		int		i, n;
+		octet_t		*var0 = 0, *var1 = 0;
+
 		ce[0] = element_nth(cpp->x, 0);
 		ce[1] = element_nth(cpp->x, 1);
 
