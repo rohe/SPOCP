@@ -40,7 +40,7 @@ AC_ARG_ENABLE(flatfile,	--enable-flatfile	Enable flatfile backend, [flatfile=yes
 AC_ARG_ENABLE(gdbm,	--enable-gdbm	Enable gdbm backend, [gdbm=yes])
 AC_ARG_ENABLE(ipnum,	--enable-ipnum	Enable ipnum backend, [ipnum=yes] )
 AC_ARG_ENABLE(lastlogin,	--enable-lastlogin	Enable lastlogin backend, [lastlogin=yes])
-AC_ARG_ENABLE(ldapset,	--enable-ldapset	Enable ldapset backend, [ldapset=yes])
+AC_ARG_ENABLE(ldap,	--enable-ldap	Enable ldap backends, [ldap=yes])
 AC_ARG_ENABLE(localgroup,	--enable-localgroup	Enable localgroup backend, [localgroup=yes])
 AC_ARG_ENABLE(mailmatch,	--enable-mailmatch	Enable mailmatch backend, [mailmatch=yes])
 AC_ARG_ENABLE(motd,	--enable-motd	Enable motd backend,[motd=yes] )
@@ -51,7 +51,6 @@ AC_ARG_ENABLE(sql,	--enable-sql	Enable sql backend, [sql=yes])
 AC_ARG_ENABLE(strmatch,	--enable-strmatch	Enable strmatch backend, [strmatch=yes])
 AC_ARG_ENABLE(system,	--enable-system	Enable system backend, [system=yes])
 AC_ARG_ENABLE(time,	--enable-time	Enable time backend, [time=yes])
-AC_ARG_ENABLE(ldapproxy,	--enable-ldapproxy	Enable ldapproxy backend, [ldapproxy=yes])
 AC_ARG_ENABLE(all,	--enable-all	Enable all backends )
 
 AC_ARG_ENABLE(ipv6,   --disable-ipv6    Build WITHOUT ipv6 support,,enable_ipv6=yes) 
@@ -85,7 +84,6 @@ if test $have_modules = yes ; then
     gdbm=yes
     ipnum=yes
     lastlogin=yes
-    ldapset=yes
     localgroup=yes
     mailmatch=yes
     motd=yes
@@ -96,7 +94,7 @@ if test $have_modules = yes ; then
     strmatch=yes
     system=yes
     time=yes
-    ldapproxy=yes
+    ldap=yes
   fi
 else
   if test "$cert" = "yes" ; then
@@ -117,8 +115,8 @@ else
   if test "$lastlogin" = "yes" ; then
     AC_MSG_WARN([lastlogin backend disabled, ignoring --enable-lastlogin])
   fi
-  if test "$ldapset" = "yes" ; then
-    AC_MSG_WARN([ldapset backend disabled, ignoring --enable-ldapset])
+  if test "$ldap" = "yes" ; then
+    AC_MSG_WARN([ldap backends disabled, ignoring --enable-ldap])
   fi
   if test "$localgroup" = "yes" ; then
     AC_MSG_WARN([localgroup backend disabled, ignoring --enable-localgroup])
@@ -150,9 +148,6 @@ else
   if test "$time" = "yes" ; then
     AC_MSG_WARN([time backend disabled, ignoring --enable-time])
   fi
-  if test "$ldapproxy" = "yes" ; then
-    AC_MSG_WARN([ldapproxy backend disabled, ignoring --enable-ldapproxy])
-  fi
 
   cert=no
   difftime=no
@@ -160,7 +155,7 @@ else
   gdbm=no
   ipnum=no
   lastlogin=no
-  ldapset=no
+  ldap=no
   localgroup=no
   mailmatch=no
   motd=no
@@ -171,12 +166,8 @@ else
   strmatch=no
   system=no
   time=no
-  ldapproxy=no
 
 fi
-
-have_lber=no
-have_ldap=no
 
 AH_TEMPLATE( [HAVE_LIBDL], [Define to 1 if you have the 'dl' library] )
 AH_TEMPLATE( [HAVE_LIBLBER], [Define to 1 if you have the 'lber' library] )
@@ -185,9 +176,11 @@ AH_TEMPLATE( [HAVE_LIBGDBM], [Define to 1 if you have the 'gdbm' library] )
 AH_TEMPLATE( [HAVE_LIBODBC], [Define to 1 if you have the 'odbc' library] ) 
 #AH_TEMPLATE([HAVE_LIBSPOCPCLIENT],[Define to 1 if you have the 'spocpclient' library]) 
 
-if test "$ldapset" = "yes" ; then
-  AC_CHECK_LIB([lber], [ber_read], AC_DEFINE(HAVE_LIBLBER), [ldapset=no])
-  AC_CHECK_LIB([ldap], [ldap_init], AC_DEFINE(HAVE_LIBLDAP), [ldapset=no] )
+if test "$ldap" = "yes" ; then
+  AC_CHECK_LIB([ldap], [ber_read], AC_DEFINE(HAVE_LIBLBER), [ldap=no])
+  if test "$ldap" = "yes" ; then
+    AC_CHECK_LIB([ldap], [ldap_init], AC_DEFINE(HAVE_LIBLDAP), [ldap=no] )
+  fi
 fi
 
 if test "$gdbm" = "yes" ; then
@@ -195,11 +188,12 @@ if test "$gdbm" = "yes" ; then
 fi
 
 if test "$sql" = "yes" ; then
-  AC_CHECK_LIB([odbc], [SQLConnect], [AC_DEFINE(HAVE_LIBODBC)], [sql=no] )
+  AC_CHECK_LIB([sql], [SQLConnect], [AC_DEFINE(HAVE_LIBODBC)], [sql=no] )
+  AC_CHECK_HEADERS([sqlext.h])
 fi
 
 #if test "$spocp" = "yes" ; then
-#  AC_CHECK_LIB([spocpclient], [spocp_send_query], AC_DEFINE(HAVE_LIBSPOCPCLIENT), [sql=no] )
+#  AC_CHECK_LIB([spocpclient], [spocp_send_query], AC_DEFINE(HAVE_LIBSPOCPCLIENT), [spocpclient=no] )
 #fi
 
 AM_CONDITIONAL( BUILD_CERT, test x$cert = xyes ) 
@@ -208,7 +202,8 @@ AM_CONDITIONAL( BUILD_FFILE, test x$flatfile = xyes )
 AM_CONDITIONAL( BUILD_GDBM, test x$gdbm = xyes ) 
 AM_CONDITIONAL( BUILD_IPNUM, test x$ipnum = xyes ) 
 AM_CONDITIONAL( BUILD_LASTLOGIN, test x$lastlogin = xyes ) 
-AM_CONDITIONAL( BUILD_LDAPSET, test x$ldapset = xyes ) 
+AM_CONDITIONAL( BUILD_LDAPSET, test x$ldap = xyes ) 
+AM_CONDITIONAL( BUILD_LDAPPROXY, test x$ldap = xyes ) 
 AM_CONDITIONAL( BUILD_LOCALGROUP, test x$localgroup = xyes ) 
 AM_CONDITIONAL( BUILD_MAILMATCH, test x$mailmatch = xyes ) 
 AM_CONDITIONAL( BUILD_MOTD, test x$motd = xyes ) 
@@ -219,7 +214,6 @@ AM_CONDITIONAL( BUILD_SQL, test x$sql = xyes )
 AM_CONDITIONAL( BUILD_STRMATCH, test x$strmatch = xyes ) 
 AM_CONDITIONAL( BUILD_SYSTEM, test x$system = xyes ) 
 AM_CONDITIONAL( BUILD_TIME, test x$time = xyes ) 
-AM_CONDITIONAL( BUILD_LDAPPROXY, test x$ldapproxy = xyes ) 
 
 dnl *************************************************
 
@@ -304,7 +298,7 @@ freebsd*)
         LDFLAGS="$LDFLAGS -pthread";;
 gnu*|k*bsd*-gnu|linux*)
         optimize_def="-O2"
-        CPPFLAGS="$CPPFLAGS -D_GNU_SOURCE -D_REENTRANT";;
+        CPPFLAGS="$CPPFLAGS -D_REENTRANT";;
 hpux*)  CPPFLAGS="$CPPFLAGS -D_REENTRANT";;
 irix*)  optimize_def="-O2"
         CPPFLAGS="$CPPFLAGS -D_SGI_MP_SOURCE";;
