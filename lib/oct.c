@@ -339,6 +339,9 @@ octcmp(octet_t * a, octet_t * b)
 	size_t          n;
 	int             r;
 
+	if (a == 0 || b == 0 ) 
+		return -1;
+
 	n = MIN(a->len, b->len);
 
 	r = memcmp(a->val, b->val, n);
