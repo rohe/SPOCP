@@ -35,14 +35,15 @@
 spocp_result_t  get_str(octet_t * so, octet_t * ro);
 spocp_result_t  get_and(octet_t * oct, element_t * ep);
 
-atom_t         *get_atom(octet_t * op, spocp_result_t * rc);
 atom_t         *atom_new(octet_t * op);
 
-spocp_result_t  do_prefix(octet_t * oct, element_t * ep);
-spocp_result_t  do_suffix(octet_t * oct, element_t * ep);
-spocp_result_t  do_or(octet_t * oct, element_t * ep);
-spocp_result_t  do_range(octet_t * oct, element_t * ep);
-spocp_result_t  do_list(octet_t * tag, octet_t * list, element_t * ep,
+/*
+atom_t         *get_atom(octet_t * op, spocp_result_t * rc);
+static spocp_result_t  do_prefix(octet_t * oct, element_t * ep);
+static spocp_result_t  do_suffix(octet_t * oct, element_t * ep);
+static spocp_result_t  do_or(octet_t * oct, element_t * ep);
+static spocp_result_t  do_range(octet_t * oct, element_t * ep);
+static spocp_result_t  do_list(octet_t * tag, octet_t * list, element_t * ep,
 			char *base);
 
 spocp_result_t  is_valid_range(range_t * rp);
@@ -50,6 +51,7 @@ spocp_result_t  is_atom(range_t * rp);
 
 spocp_result_t  set_limit(boundary_t * bp, octet_t * op);
 boundary_t     *set_delimiter(range_t * range, octet_t oct);
+*/
 
 /*
  * =============================================================== 
@@ -88,7 +90,50 @@ atom_new(octet_t * op)
 	return ap;
 }
 
-atom_t         *
+/*
+ * ----------------------------------- 
+ */
+
+void
+set_memberof(varr_t * va, element_t * group)
+{
+	void           *vp;
+	element_t      *ep;
+
+	for (vp = varr_first(va); vp; vp = varr_next(va, vp)) {
+		ep = (element_t *) vp;
+		ep->memberof = group;
+	}
+}
+
+int
+ipv4cmp(struct in_addr *ia1, struct in_addr *ia2)
+{
+	return ia2->s_addr - ia1->s_addr;
+}
+
+int
+ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2)
+{
+	uint32_t       *lw = (uint32_t *) ia1;
+	uint32_t       *uw = (uint32_t *) ia2;
+	int             r, i;
+
+	for (i = 0; i < 4; i++, lw++, uw++) {
+		r = *uw - *lw;
+		if (r)
+			return r;
+	}
+
+	return 0;
+}
+
+
+/*
+ * =============================================================== 
+ */
+
+static atom_t         *
 get_atom(octet_t * op, spocp_result_t * rc)
 {
 	octet_t         oct;
@@ -100,7 +145,7 @@ get_atom(octet_t * op, spocp_result_t * rc)
 	return atom_new(&oct);
 }
 
-spocp_result_t
+static spocp_result_t
 do_prefix(octet_t * oct, element_t * ep)
 {
 	spocp_result_t  rc = SPOCP_SUCCESS;
@@ -127,7 +172,7 @@ do_prefix(octet_t * oct, element_t * ep)
 	return SPOCP_SUCCESS;
 }
 
-spocp_result_t
+static spocp_result_t
 do_suffix(octet_t * oct, element_t * ep)
 {
 	spocp_result_t  rc = 0;
@@ -159,23 +204,6 @@ list_new(void)
 {
 	return (list_t *) Calloc(1, sizeof(list_t));
 }
-
-/*
- * ----------------------------------- 
- */
-
-void
-set_memberof(varr_t * va, element_t * group)
-{
-	void           *vp;
-	element_t      *ep;
-
-	for (vp = varr_first(va); vp; vp = varr_next(va, vp)) {
-		ep = (element_t *) vp;
-		ep->memberof = group;
-	}
-}
-
 
 /*
  * ----------------------------------- 
@@ -250,7 +278,7 @@ do_set(octet_t * oct, element_t * ep)
  * -------------------------------------------------------------------------- 
  */
 
-boundary_t     *
+static boundary_t     *
 set_delimiter(range_t * range, octet_t oct)
 {
 	boundary_t     *bp = 0;
@@ -292,7 +320,7 @@ set_delimiter(range_t * range, octet_t oct)
 }
 
 /*
- * -------------------------------------------------------------------------- 
+ * ========================================================================== 
  */
 
 void
@@ -367,7 +395,7 @@ hms2int(octet_t * op, long *num)
  * -------------------------------------------------------------------------- 
  */
 
-spocp_result_t
+static spocp_result_t
 set_limit(boundary_t * bp, octet_t * op)
 {
 	int             r = SPOCP_SYNTAXERROR;
@@ -405,28 +433,6 @@ set_limit(boundary_t * bp, octet_t * op)
 	return r;
 }
 
-int
-ipv4cmp(struct in_addr *ia1, struct in_addr *ia2)
-{
-	return ia2->s_addr - ia1->s_addr;
-}
-
-int
-ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2)
-{
-	uint32_t       *lw = (uint32_t *) ia1;
-	uint32_t       *uw = (uint32_t *) ia2;
-	int             r, i;
-
-	for (i = 0; i < 4; i++, lw++, uw++) {
-		r = *uw - *lw;
-		if (r)
-			return r;
-	}
-
-	return 0;
-}
-
 /*
  * what's invalid ? 1) the upper boundary being lower than the lower 2) not
  * allowing the only possible value to be within the boundaries equivalent to
@@ -434,7 +440,7 @@ ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2)
  * 
  * Returns: FALSE if invalid TRUE if valid 
  */
-spocp_result_t
+static spocp_result_t
 is_valid_range(range_t * rp)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
@@ -483,7 +489,7 @@ is_valid_range(range_t * rp)
 /*
  * checks whether the range in fact is an atom 
  */
-spocp_result_t
+static spocp_result_t
 is_atom(range_t * rp)
 {
 	uint32_t       *u, *l;
@@ -527,7 +533,7 @@ is_atom(range_t * rp)
 	return sr;
 }
 
-spocp_result_t
+static spocp_result_t
 do_range(octet_t * op, element_t * ep)
 {
 	octet_t         oct;
@@ -692,7 +698,7 @@ do_range(octet_t * op, element_t * ep)
 	return r;
 }
 
-spocp_result_t
+static spocp_result_t
 do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
@@ -752,11 +758,12 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 }
 
 /*
- * parse a string until I've got one full query 
+ * ======================================================================
  */
+
 /*
  * S-expression format is (3:tag7:element) the so called canonical
- * representation, and not (tag element)
+ * representation, and not (tag element) the advanced format
  * 
  * which among other things means that spaces does not occur between elements 
  */
@@ -860,9 +867,6 @@ element_get(octet_t * op, element_t ** epp)
 	return r;
 }
 
-/*
- * ============================================================================ 
- */
 /*
  * ============================================================================ 
  */
