@@ -64,17 +64,6 @@ typedef struct _regexp {
   char         *regex ;
 } regexp_t ;
   
-/*
-typedef struct _aci {
-  char          access ;   * bitmap *
-  char          *string ;
-  char          *net ;
-  char          *mask ;
-  regexp_t      *cert ; 
-  struct _aci   *next ;
-} aci_t ;
-*/
-
 typedef struct _ruleset {
   pthread_rdwr_t   rw_lock;
   pthread_mutex_t  transaction ;
@@ -89,20 +78,6 @@ typedef struct _ruleset {
 /*
   this is the configuration stuff
   first the server configuration */
-
-typedef struct _hconn {
-  char  *referer;
-  char  *host ;
-  char  *useragent ;
-  char  *contenttype ;
-  char  *authorization ;
-  char  *cookie ;
-  char  *soapaction ;
-  char  *url ;
-  int   method ;
-  int   keep_alive ;
-  long  contentlength ;
-} hconn_t ;
 
 /* and then plugin specific configuration */
 
@@ -154,11 +129,6 @@ typedef struct _server
   int             sslverifydepth ;
   char            *server_id ;
   int             srvtype ;
-
-  strarr_t        *clients ;
-
-  strarr_t        *ctime ;
-  other_t         *other ;
 
 #ifdef HAVE_LIBSSL
   void            *ctx;
@@ -408,30 +378,6 @@ int            spocp_err ;
 extern srv_t   srv ;
 struct utsname myname ;
 char           *localcontext ;
-
-/* ssl stuff 
-extern char *SslEntropyFile ;
-extern int   session_timeout ;
-extern char *certificateFile ;
-extern char *privateKey ;
-extern char *caList ;
-extern char *dhFile ;
-extern char *passwd ;
-extern int   timeout ;
-
-extern int             listenfd ;
-
-extern char *logfile ;
-extern int  port ;
-extern int  protocol ;
-extern char *uds ;
-extern char *server_id ;
-extern char *rulefile ;
-extern int  sslverifydepth ;
-
-extern int  srvtype ;
-
-*/
 
 extern int  allow_serverity ;
 extern int  deny_serverity ;
