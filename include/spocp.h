@@ -1,8 +1,6 @@
 #ifndef __SPOCP_H
 #define __SPOCP_H
 
-#include <config.h>
-
 #include <time.h>
 #include <sys/time.h>
 
