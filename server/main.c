@@ -183,8 +183,12 @@ int main( int  argc, char **argv )
   traceLog( "initializing backends" ) ; 
   if( srv.root->db ) init_plugin( srv.root->db->plugins ) ;
   LOG( SPOCP_INFO ) if( srv.root->db ) plugin_display( srv.root->db->plugins ) ;
-  if( srv.root->db->plugins ) run_plugin_init( &srv ) ;
-
+  if( srv.root->db->plugins ) {
+    run_plugin_init( &srv ) ;
+    if(( srv.root->db->dback = init_dback( srv.root->db->plugins )) != 0 )
+      dback_init( srv.root->db->dback, (void *) conf_get, &srv )  ;
+  }
+  
   if( srv.rulefile == 0 ) {
     LOG( SPOCP_INFO ) traceLog( "No rule file to start with" ) ;
   }
