@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define SPOCP_BACKEND 1
+
 #include <spocp.h>
 #include <be.h>
 #include <plugin.h>
@@ -20,7 +22,9 @@
  * The native Spocp protocol is used 
  */
 
+/*
 extern int      spocpc_debug;
+*/
 befunc          spocp_test;
 
 static int
@@ -70,7 +74,7 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 	if (oct != cpp->arg)
 		oct_free(oct);
 
-	spocpc_debug = 0;
+	/* spocpc_debug = 0; */
 	host = argv->arr[0];
 
 	memset( &qres, 0, sizeof( queres_t )) ;
@@ -166,6 +170,7 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 plugin_t        spocp_module = {
 	SPOCP20_PLUGIN_STUFF,
 	spocp_test,
+	NULL,
 	NULL,
 	NULL
 };

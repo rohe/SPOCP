@@ -85,5 +85,6 @@ plugin_t        strmatch_module = {
 	SPOCP20_PLUGIN_STUFF,
 	strmatch_test,
 	NULL,
+	NULL,
 	NULL
 };

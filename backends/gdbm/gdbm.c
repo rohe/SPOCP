@@ -180,5 +180,6 @@ plugin_t        gdbm_module = {
 	SPOCP20_PLUGIN_STUFF,
 	gdbm_test,
 	NULL,
+	NULL,
 	NULL
 };

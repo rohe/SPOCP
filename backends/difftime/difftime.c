@@ -203,5 +203,6 @@ plugin_t        difftime_module = {
 	SPOCP20_PLUGIN_STUFF,
 	difftime_test,
 	NULL,
+	NULL,
 	NULL
 };

@@ -83,5 +83,6 @@ plugin_t        system_module = {
 	SPOCP20_PLUGIN_STUFF,
 	system_test,
 	NULL,
+	NULL,
 	NULL
 };

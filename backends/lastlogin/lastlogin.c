@@ -257,5 +257,6 @@ plugin_t        lastlogin_module = {
 	SPOCP20_PLUGIN_STUFF,
 	lastlogin_test,
 	NULL,
+	NULL,
 	NULL
 };

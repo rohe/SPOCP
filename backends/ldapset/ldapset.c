@@ -61,6 +61,7 @@
 
 #include <spocp.h>
 #include <be.h>
+#include <wrappers.h>
 #include <plugin.h>
 #include <rvapi.h>
 #include <func.h>
@@ -1707,6 +1708,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 plugin_t        ldapset_module = {
 	SPOCP20_PLUGIN_STUFF,
 	ldapset_test,
+	NULL,
 	NULL,
 	NULL
 };

@@ -191,5 +191,6 @@ plugin_t        flatfile_module = {
 	SPOCP20_PLUGIN_STUFF,
 	flatfile_test,
 	NULL,
+	NULL,
 	NULL
 };

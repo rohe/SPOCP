@@ -25,6 +25,7 @@
  * res_query( "_ldap._tcp.umu.se", ns_t_srv, ns_c_in, ans[BUFSIZ], BUFSIZ);
  */
 
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
@@ -33,12 +34,12 @@
 #include <string.h>
 #include <strings.h>
 
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <resolv.h>
+#ifdef __APPLE__
+#include <arpa/nameser_compat.h>
+#endif
 
-#include <ldap.h>
-#include <lber.h>
+#include "lber.h"
+#include "ldap.h"
 
 #include <spocp.h>
 #include <be.h>
@@ -54,8 +55,8 @@ typedef unsigned int	u_int32_t;
 #endif
 
 typedef union {
-    HEADER          hdr;
-    unsigned char   buf[BUFSIZ];
+    HEADER		hdr;
+    unsigned char	buf[BUFSIZ];
 } dns_packet_t;
 
 typedef	struct {
@@ -560,6 +561,7 @@ ldapproxy_test(cmd_param_t * cpp, octet_t * blob)
 plugin_t        ldapproxy_module = {
 	SPOCP20_PLUGIN_STUFF,
 	ldapproxy_test,
+	NULL,
 	NULL,
 	NULL
 };

@@ -342,6 +342,7 @@ plugin_t        cert_module = {
 	SPOCP20_PLUGIN_STUFF,
 	cert_test,
 	cert_init,
+	NULL,
 	NULL
 };
 

@@ -50,8 +50,9 @@ spocp_result_t  ipnum_syntax(octet_t * arg);
 /*
  * The format of the file should be
  * 
- * comment = '#' whatever line = keyword ':' value *( ',' value ) value =
- * ipnumber "/" netpart
+ * comment = '#' whatever
+ * line = keyword ':' value *( ',' value )
+ * value = ipnumber "/" netpart
  * 
  * for instance
  * 
@@ -255,6 +256,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 plugin_t        ipnum_module = {
 	SPOCP20_PLUGIN_STUFF,
 	ipnum_test,
+	NULL,
 	NULL,
 	NULL
 };

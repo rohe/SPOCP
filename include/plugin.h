@@ -161,18 +161,20 @@ typedef struct plugin_t {
 	/*! Runtime statistics */
 	stat_t		*stat;
 	/*! the dynamic library handle */ 
-	void           *handle;	
+	void		*handle;	
 	/*! where the plugin can keep its data */
-	void           *conf;	
+	void		*conf;	
 	/*! The name by which the backend should be known to the server*/
-	char           *name;
+	char		*name;
 	/*! A pointer to the backend test function */
-	befunc         *test;
+	befunc		*test;
 	/*! A pointer to the backend initialization function */
-	beinitfn       *init;
+	beinitfn	*init;
 	/*! A pointer to a set of commands that should be used when specified
 	 * directives appear in the configuration file */
-	conf_com_t     *ccmds;
+	conf_com_t	*ccmds;
+	/*! For the backend to release all it's private configuration */
+	conf_args	*free;
 } plugin_t;
 
 /*! The Spocp library major version number */

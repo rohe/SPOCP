@@ -28,6 +28,9 @@ conf_args set_name;
 char	*motd = "/etc/motd";
 char	*type = "Text/plain";
 
+spocp_result_t set_name( void **lh, void *cd, int argc, char **argv);
+spocp_result_t release_name( void **lh, void *cd, int argc, char **argv);
+
 /* ====================================================================== */
 
 spocp_result_t
@@ -41,6 +44,15 @@ set_name( void **lh, void *cd, int argc, char **argv)
 		return SPOCP_MISSING_ARG;
 }
 
+spocp_result_t
+release_name( void **lh, void *cd, int argc, char **argv)
+{
+	if (*lh)
+		free( *lh );
+
+	return SPOCP_SUCCESS;
+}
+
 /* ---------------------------------------------------------------------- */
 
 spocp_result_t
@@ -48,7 +60,8 @@ motd_test(cmd_param_t * cpp, octet_t * blob)
 {
 	FILE           *fp;
 	char            buf[256], *str, *txt = 0, *arr[3];
-	int             len, lt, tot;
+	int             tot;
+	unsigned int	lt;
 
 	fp = fopen(motd, "r");
 	if (fp == 0)
@@ -88,7 +101,7 @@ motd_test(cmd_param_t * cpp, octet_t * blob)
 		arr[0] = type;
 		arr[1] = txt;
 		arr[2] = 0;
-		sexp_printa( str, &lt, "aa", arr);
+		sexp_printa( str, &lt, "aa", (void **) arr);
 	
 		octset(blob, str, tot-lt); 
 	}
@@ -107,5 +120,6 @@ plugin_t        motd_module = {
 	SPOCP20_PLUGIN_STUFF,
 	motd_test,
 	NULL,
-	conffunc
+	conffunc,
+	release_name
 };

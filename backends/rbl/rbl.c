@@ -113,5 +113,6 @@ plugin_t        rbl_module = {
 	SPOCP20_PLUGIN_STUFF,
 	rbl_test,
 	NULL,
+	NULL,
 	NULL
 };

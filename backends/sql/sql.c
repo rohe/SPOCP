@@ -293,6 +293,7 @@ plugin_t        sql_module = {
 	SPOCP20_PLUGIN_STUFF,
 	sql_test,
 	NULL,
+	NULL,
 	NULL
 };
 #else

@@ -183,6 +183,7 @@ plugin_t        time_module = {
 	SPOCP20_PLUGIN_STUFF,
 	time_test,
 	NULL,
+	NULL,
 	NULL
 };
 

@@ -223,5 +223,6 @@ plugin_t        localgroup_module = {
 	SPOCP20_PLUGIN_STUFF,
 	localgroup_test,
 	NULL,
+	NULL,
 	NULL
 };

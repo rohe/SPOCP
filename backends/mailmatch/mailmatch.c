@@ -160,5 +160,6 @@ plugin_t        mailmatch_module = {
 	SPOCP20_PLUGIN_STUFF,
 	addrmatch_test,
 	NULL,
+	NULL,
 	NULL
 };

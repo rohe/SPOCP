@@ -142,5 +142,6 @@ plugin_t        regexp_module = {
 	SPOCP20_PLUGIN_STUFF,
 	regexp_test,
 	NULL,
+	NULL,
 	NULL
 };
