@@ -270,7 +270,7 @@ void		charmatrix_free( char **m );
  * ===============================================================================
  */
 
-int		get_len(octet_t * oct);
+int		get_len(octet_t * oct, spocp_result_t *rc);
 spocp_result_t	get_str(octet_t * oct, octet_t * str);
 int		sexp_len(octet_t * sexp);
 

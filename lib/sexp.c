@@ -24,48 +24,59 @@
 #include <func.h>
 
 #include <spocp.h>
+#include <proto.h>
 #include <macros.h>
 #include <wrappers.h>
 
 /*!
  * \brief Grabs the length field from a S-expression
  * \param op A octet struct containing the remaining part of the S-expression
+ * \param rc pointer to a result code enum.
  * \return The length of the following atom or -1 if something went wrong.
  */
 int
-get_len(octet_t * op)
+get_len(octet_t * op, spocp_result_t *rc)
 {
-	char           *ep, *sp = op->val;
-	long            l;
+	char	*sp;
+	int	n = 0;
+	size_t  l;
 
-	/*
-	 * strtol skips SP (0x20) and allows a leading '-'/'+' so I have to
-	 * check that first, since those are not allowed in this context 
-	 */
-
-	if (*sp == ' ' || *sp == '-' || *sp == '+') {
-		traceLog( "Disallowed char %c in length field", *sp ) ;
+	if( op->len == 0) {
+		*rc = SPOCP_MISSING_CHAR;
 		return -1;
-        }
+	}
 
-	l = strtol(sp, &ep, 10);
+	for ( n = 0, l = 0, sp = op->val ; l < op->len && DIGIT(*sp) ; l++,sp++) {
+		if (n) n *= 10;
+		n += *sp -'0' ;
+	}
 
-	/*
-	 * no number read 
-	 */
-	if (ep == sp) {
+	if (n == 0) {
+		sp = op->val;
 		traceLog("No digit found at \"%c%c%c%c\"", *sp, *(sp+1),
 		    *(sp+2), *(sp+3) ) ;
+		*rc = SPOCP_SYNTAXERROR;
 		return -1;
         }
 
-	/*
-	 * ep points to the first non digit character or '\0' 
-	 */
-	op->len -= ep - sp;
-	op->val = ep;
+	if (l == op->len) {
+		*rc = SPOCP_MISSING_CHAR;
+		return -1;
+	}
 
-	return (int) l;
+	/*
+	 * ep points to the first non digit character 
+	 * which has to be ':'
+	 */
+	if (*sp != ':') {
+		*rc = SPOCP_SYNTAXERROR;
+		return -1;
+	}
+
+	op->len -= l;
+	op->val = sp;
+
+	return n;
 }
 
 /*!
@@ -79,18 +90,15 @@ get_len(octet_t * op)
 spocp_result_t
 get_str(octet_t * so, octet_t * ro)
 {
+	spocp_result_t rc;
+
 	if (ro == 0)
 		return SPOCP_OPERATIONSERROR;
 
 	ro->size = 0;
 
-	ro->len = get_len(so);
-
-	if (ro->len < 0) {
-		LOG(SPOCP_ERR) traceLog("In string \"%s\" ", so->val);
-		LOG(SPOCP_ERR) traceLog("parse error: error in lengthfield");
-		return SPOCP_SYNTAXERROR;
-	}
+	if (( ro->len = get_len(so, &rc)) < 0 ) 
+		return rc;
 
 	if ((so->len - 1) < ro->len) {
 		LOG(SPOCP_ERR) {
@@ -103,18 +111,13 @@ get_str(octet_t * so, octet_t * ro)
 		return SPOCP_MISSING_CHAR;
 	}
 
-	if (*so->val != ':') {
-		LOG(SPOCP_ERR) traceLog("parse error: missing \":\"");
+	if (ro->len == 0) {
+		LOG(SPOCP_ERR) traceLog("Zero length strings not allowed");
 		return SPOCP_SYNTAXERROR;
 	}
 
 	so->val++;
 	so->len--;
-
-	if (ro->len == 0) {
-		LOG(SPOCP_ERR) traceLog("Zero length strings not allowed");
-		return SPOCP_SYNTAXERROR;
-	}
 
 	ro->val = so->val;
 	ro->size = 0;		/* signifying that it's not dynamically

@@ -147,7 +147,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 
 		o = argv->arr[0];
 
-		if ((bc = becon_get(o, dyn->bcp)) == 0) {
+		if (dyn == 0 || (bc = becon_get(o, dyn->bcp)) == 0) {
 			file = oct2strdup(o, 0);
 			fp = fopen(file, "r");
 			free(file);

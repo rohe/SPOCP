@@ -1171,7 +1171,12 @@ native_server(conn_t * con)
 
 					attr.val = in->r;
 					attr.len = in->w - in->r;
-					l = get_len(&attr);
+					/* try to get information on how much
+					 * that is needed
+					 */
+					if(( l = get_len(&attr,&r)) < 0 )
+						l = 2 * in->bsize;
+
 					if ((r =
 					     iobuf_resize(in,
 							  l - attr.len, 1)) !=
