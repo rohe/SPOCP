@@ -327,6 +327,35 @@ octcmp(octet_t * a, octet_t * b)
 /*
  * ---------------------------------------------------------------------- 
  */
+/*!
+ * \brief Compares two octet string structs in reverse order
+ * \param a, b The two octet strings
+ * \return 0 if they are equal, not 0 if they are unequal 
+ */
+
+int
+octrcmp(octet_t *a, octet_t *b)
+{
+	size_t	n;
+	int	r;
+	char	*s, *c;
+
+	n = MIN(a->len, b->len);
+
+	for ( s = a->val, c = b->val ; n ; n--, s--, c-- ) {
+		if (*s != *c)
+			break;
+	}
+
+	if (n)
+		return (*s - *c);
+	else 
+		return (a->len - b->len);
+}
+
+/*
+ * ---------------------------------------------------------------------- 
+ */
 /*! \brief Compares at the most n bytes of two octet strings to find out if
  * they are equal or not. \param a, b The two octet strings \param cn The
  * number of bytes that should be check \return 0 if equal, non 0 otherwise 
