@@ -26,6 +26,9 @@
 #define TOKENCHAR(c)     ( !WHITESPACE(c) && !LISTDELIM(c) )
 #define CONTROLCHAR(c)   ( ((c) >= 0x00 && (c) <= 0x06) || ((c) >= 0x0e && (c) <= 0x1f ))
 
+#define DIRCHAR(c)       ( ALPHA(c) || DIGIT(c) || (c) == '-' || (c) == '_' || (c) == '.' )
+
+
 #define COMMENTSTART  0x23 /* # */
 #define LF            0x0A /* linefeed */
 

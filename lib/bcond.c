@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include <db0.h>
 #include <wrappers.h>
 #include <sha1.h>
@@ -5,6 +7,8 @@
 #include <plugin.h>
 #include <spocp.h>
 #include <rvapi.h>
+#include <proto.h>
+#include <dback.h>
 
 typedef struct _stree {
   int list ;
@@ -12,6 +16,9 @@ typedef struct _stree {
   struct _stree *next ;
   struct _stree *part ;
 } stree_t ;
+
+
+/* ---------------------------------------------------------------------- */
 
 bcspec_t *bcspec_new( plugin_t *plt, octet_t *spec )
 {
@@ -38,6 +45,8 @@ bcspec_t *bcspec_new( plugin_t *plt, octet_t *spec )
   return bcs ; 
 }
 
+/* ---------------------------------------------------------------------- */
+
 void bcspec_free( bcspec_t *bcs )
 {
   if( bcs ) {
@@ -49,16 +58,35 @@ void bcspec_free( bcspec_t *bcs )
   }
 }
 
+/* ---------------------------------------------------------------------- */
+
+int bcspec_is( octet_t *spec ) 
+{
+  int n ;
+
+  if(( n = octchr( spec, ':' )) < 0 ) return FALSE ;
+  
+  for( n-- ; n >= 0 && DIRCHAR( spec->val[n] ) ; n-- ) ;
+
+  if( n == -1 ) return TRUE ;
+  else return FALSE ;
+}
+
+/* ---------------------------------------------------------------------- */
 
 bcexp_t *bcexp_new()
 {
   return ( bcexp_t * ) Calloc( 1, sizeof( bcexp_t )) ;
 }
 
+/* ---------------------------------------------------------------------- */
+
 static bcexp_t *varr_bcexp_pop( varr_t *va )
 {
   return ( bcexp_t *) varr_pop( va ) ;
 }
+
+/* ---------------------------------------------------------------------- */
 
 void bcexp_free( bcexp_t *bce ) 
 {
@@ -389,6 +417,10 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
   char       cname[45] ;
   stree_t   *st ;
   plugin_t  *plt = db->plugins ;
+  octet_t   dbname ; 
+
+  if( db == 0 ) {
+  }
 
   if( *data->val == '(' ) {
     if(( st = parse_sexp( data )) == 0 ) return 0 ;
@@ -422,7 +454,19 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
     }
   }
 
-  dback_save( db->dback, bcd->name, data, 0, 0 ) ; 
+  /* create a bcond name that MUST differ from rule ids
+     Since rule ids are SHA1 hashes, it consists of lower case letters a-f and
+     numbers. So making the bcond name in the persistent store start with
+     "BCOND:" will make it absolutely diffrent.
+   */
+
+  dbname.size = dbname.len = strlen( bcd->name ) + 6 + 1 ;
+  dbname.val = (char * ) Malloc( dbname.size ) ;
+  /* Slighly awkward, but has to be done like this */
+  sprintf( dbname.val, "BCOND:%s", bcd->name ) ;
+
+  dback_save( db->dback, &dbname, data, 0, 0 ) ; 
+  free( dbname.val ) ;
 
   bcd->exp = bce ;
 

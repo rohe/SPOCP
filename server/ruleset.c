@@ -19,14 +19,9 @@
 #include <wrappers.h>
 #include <macros.h>
 #include <func.h>
+#include <proto.h>
 
 #include <srv.h>
-
-#define ASCII_LOWER(c) ( (c) >= 'a' && (c) <= 'z' )
-#define ASCII_UPPER(c) ( (c) >= 'A' && (c) <= 'Z' )
-#define DIGIT(c)       ( (c) >= '0' && (c) <= '9' )
-#define ASCII(c)       ( ASCII_LOWER(c) || ASCII_UPPER(c) )
-#define DIRCHAR(c)     ( ASCII(c) || DIGIT(c) || (c) == '-' || (c) == '_' || (c) == '.' )
 
 /* ---------------------------------------------------------------------- */
 

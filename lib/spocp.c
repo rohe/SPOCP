@@ -170,7 +170,7 @@ spocp_result_t spocp_add_rule( void **vp, octarr_t *oa )
 
   LOG( SPOCP_INFO ) traceLog( "spocp_add_rule" ) ; 
 
-  if( oa->n == 0 ) return SPOCP_MISSING_ARG ;
+  if( !oa || oa->n == 0 ) return SPOCP_MISSING_ARG ;
 
   if( vp ) db = (db_t *) *vp ;
   else return SPOCP_UNWILLING ;

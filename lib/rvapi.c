@@ -5,7 +5,7 @@
                           rvapi.c  -  description
                              -------------------
     begin                : Thr Jan 29 2004
-    copyright            : (C) 2003 by Stockholm university, Sweden
+    copyright            : (C) 2004 by Stockholm university, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory

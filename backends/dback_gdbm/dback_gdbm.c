@@ -241,3 +241,11 @@ void *db_gdbm_allkeys( void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
+void *db_gdbm_begin( void *v0, void *v1, spocp_result_t *rc )
+{
+  *rc = SPOCP_NOT_SUPPORTED ;
+
+  return 0 ;
+}
+
+

@@ -325,6 +325,8 @@ ruleinst_t *varr_ruleinst_nth( varr_t *va, int n ) ;
 
 /* ----- */
 
+int            bcspec_is( octet_t *spec ) ;
+
 spocp_result_t bcexp_eval( element_t *qp, element_t *rp, bcexp_t *bce, octarr_t **on ) ;
 spocp_result_t bcond_check( element_t *qp, index_t *id, octarr_t **on ) ;
 

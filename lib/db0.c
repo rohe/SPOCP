@@ -839,6 +839,7 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
 {
   ruleinfo_t  *ri ;
   ruleinst_t  *rt ;
+  octet_t     uid ;
 
   if( db->ri == 0 ) db->ri = ri = ruleinfo_new() ;
   else ri = db->ri ;
@@ -855,7 +856,8 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
     }
   }
 
-  dback_save( db->dback, rt->uid, rule, blob, bcondname ) ; 
+  oct_assign( &uid, rt->uid ) ;
+  dback_save( db->dback, &uid, rule, blob, bcondname ) ; 
 
   rbt_insert( ri->rules, (item_t) rt ) ;
 

@@ -1,3 +1,18 @@
+/*! \file lib/dback.c
+ * \author Roland Hedberg <roland@catalogix.se>
+ */
+/***************************************************************************
+                                 dback.c 
+                             -------------------
+    begin                : Fri Mar 12 2004
+    copyright            : (C) 2004 by Stockholm university, Sweden
+    email                : roland@catalogix.se
+
+   COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
+   of this package for details.
+
+ ***************************************************************************/
+
 #include <config.h>
 
 #include <sys/types.h>
@@ -8,15 +23,18 @@
 #include <dback.h>
 #include <wrappers.h>
 #include <func.h>
+#include <macros.h>
 #include <proto.h>
 
 static char *necessary_function[] = { "get", "put", "delete", "allkeys",  0 } ;
 static char *optional_function[] = { "init", "firstkey", "nextkey", "open", "close", 0 } ;
 
-dback_t *dback_new( void ) 
+static dback_t *dback_new( void ) 
 {
   return ( dback_t * ) Calloc (1, sizeof( dback_t )) ;
 }
+
+/* ---------------------------------------------------------------------- */
 
 dback_t *init_dback( plugin_t *pl )
 {
@@ -145,11 +163,9 @@ octet_t *datum_make( octet_t *rule, octet_t *blob, char *bcname )
   size_t   size ;
   char    *str ;
 
-  if( !blob && !bcname ) return octdup( rule ) ;
-
-  len = rule->len + 1 + DIGIT( rule->len ) ;
-  if( blob ) len += blob->len + 1 + DIGIT( blob->len ) ;
-  if( bcname ) len += strlen( bcname ) + 1 + DIGIT( strlen( bcname )) ;
+  len = rule->len + 1 + DIGITS( rule->len ) ;
+  if( blob ) len += blob->len + 1 + DIGITS( blob->len ) ;
+  if( bcname ) len += strlen( bcname ) + 1 + DIGITS( strlen( bcname )) ;
 
   len += 4 ;
 
@@ -219,19 +235,16 @@ spocp_result_t dback_init( dback_t *dback, void *cfg, void *conf )
   return r ;
 }
 
-spocp_result_t dback_save( dback_t *dback, char *uid, octet_t *rule, octet_t *blob, char *bcname ) 
+spocp_result_t dback_save( dback_t *dback, octet_t *uid, octet_t *rule, octet_t *blob, char *bcname ) 
 {
   octet_t        *datum ;
   spocp_result_t  r ;
-  octet_t         oct ;
 
   if( dback == 0 ) return SPOCP_SUCCESS ;
 
   datum = datum_make( rule, blob, bcname ) ;
 
-  oct_assign( &oct, uid ) ;
-
-  dback->put( (void *) &oct, (void *) datum, &r ) ; 
+  dback->put( (void *) uid, (void *) datum, &r ) ; 
 
   oct_free( datum ) ;
 
@@ -239,7 +252,7 @@ spocp_result_t dback_save( dback_t *dback, char *uid, octet_t *rule, octet_t *bl
 }
 
 spocp_result_t
-dback_read( dback_t *dback, char *uid, octet_t *rule, octet_t *blob, char **bcname ) 
+dback_read( dback_t *dback, octet_t *uid, octet_t *rule, octet_t *blob, char **bcname ) 
 {
   octet_t        *datum = 0 ;
   spocp_result_t  r ;
@@ -249,7 +262,7 @@ dback_read( dback_t *dback, char *uid, octet_t *rule, octet_t *blob, char **bcna
     return SPOCP_UNAVAILABLE;
   }
 
-  oct_assign( &oct, uid ) ;
+  octln( &oct, uid ) ;
 
   if(( datum = dback->get( (void *) &oct, 0, &r )) == 0 ) {
     return SPOCP_UNAVAILABLE ; 
@@ -258,9 +271,9 @@ dback_read( dback_t *dback, char *uid, octet_t *rule, octet_t *blob, char **bcna
     return datum_parse( datum, rule, blob, bcname ) ;
 }
 
-void *dback_open( dback_t *dback, spocp_result_t r )
+void *dback_open( dback_t *dback, spocp_result_t *r )
 {
-  return dback->open( 0, 0, &r ) ;
+  return dback->open( 0, 0, r ) ;
 }
 
 spocp_result_t dback_close( dback_t *dback, void *vp )
@@ -272,21 +285,21 @@ spocp_result_t dback_close( dback_t *dback, void *vp )
   return r ;
 }
 
-octet_t *dback_first_key( dback_t *dback, void *vp, spocp_result_t r )
+octet_t *dback_first_key( dback_t *dback, void *vp, spocp_result_t *r )
 {
-  return (octet_t *) dback->firstkey( vp, 0, &r ) ;
+  return (octet_t *) dback->firstkey( vp, 0, r ) ;
 }
 
-octet_t *dback_next_key( dback_t *dback, void *vp, octet_t *key, spocp_result_t r )
+octet_t *dback_next_key( dback_t *dback, void *vp, octet_t *key, spocp_result_t *r )
 {
-  return (octet_t *) dback->nextkey( vp, (void *) key, &r ) ; 
+  return (octet_t *) dback->nextkey( vp, (void *) key, r ) ; 
 }
 
-octarr_t *dback_all_keys( dback_t *dback, spocp_result_t r )
+octarr_t *dback_all_keys( dback_t *dback, spocp_result_t *r )
 {
   if( dback == 0 ) return 0 ;
 
-  return (octarr_t *) dback->allkeys( 0, 0, &r ) ; 
+  return (octarr_t *) dback->allkeys( 0, 0, r ) ; 
 }
 
 spocp_result_t dback_delete( dback_t *dback, char *key )
@@ -300,6 +313,38 @@ spocp_result_t dback_delete( dback_t *dback, char *key )
 
   dback->delete( &oct, 0, &r ) ;
 
+  return r ;
+}
+
+void *dback_begin( dback_t *dback , spocp_result_t *r )
+{
+  return dback->begin( 0, 0, r ) ;
+}
+
+spocp_result_t dback_end( dback_t *dback, void *transhandle )
+{
+  spocp_result_t r ;
+
+  dback->end( transhandle, 0, &r ) ;
+
+  return r ;
+}
+
+spocp_result_t dback_commit( dback_t *dback, void *transhandle )
+{
+  spocp_result_t r ;
+
+  dback->commit( transhandle, 0, &r ) ;
+  
+  return r ;
+}
+
+spocp_result_t dback_rollback( dback_t *dback, void *transhandle )
+{
+  spocp_result_t r ;
+
+  dback->rollback( transhandle, 0, &r ) ;
+  
   return r ;
 }
 

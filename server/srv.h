@@ -17,6 +17,7 @@
 #include <spocp.h>
 #include <pthread.h>
 #include "srvconf.h"
+#include <dback.h>
 
 /* -------------------------------------- */
 
@@ -184,25 +185,30 @@ typedef struct _server
 
 typedef struct _conn {
 
-  int              fd ;
-  int              fdw ;      /* for writing if different from reading */
+  int              fd ;         /* connection filedescriptor */
+  int              fdw ;        /* for writing if different from reading */
   int              status ;
   int              con_type ;
-  int              transaction ;
   int              ops_pending ;
-  int              stop ;
-  int              tls ;
-  time_t           last_event ;
+  int              stop ;       /* Set (!= 0) if this connection is to be closed */
+  int              tls ;        /* Is TLS/SSL in force ? -1 if not, otherwise a filedescriptor */
+  time_t           last_event ; /* The last time anything happend on this connection */
 
-  ruleset_t        *rs ;      /* rule database for this connection */
-  spocp_req_info_t sri ;      /* contains hostname/hostaddr */
-  struct _server   *srv ;
+  ruleset_t        *rs ;   /* rule database for this connection */
+  spocp_req_info_t sri ;   /* Information about the subject that issued the operation */
+  struct _server   *srv ;  /* A pointer to the server on which this connection is running */
+
+  /* transaction stuff */
+  int              transaction ;
+  void             *transhandle ; /* transaction handle, for the persistent rulestorage */
 
   pthread_mutex_t  clock ;
 
+  /* Input/Output buffers */
   spocp_iobuf_t    *in ;
   spocp_iobuf_t    *out ;
 
+  /* Information that is filled in per operation */
   octet_t          oper ;
   octet_t          *oppath ;
   octarr_t         *oparg ;
@@ -217,6 +223,8 @@ typedef struct _conn {
   char             *ssl_vers ;
   char             *transpsec ;
 
+  /* pointers to functions that is used for reading, writing and closing from
+     this connection */
   int (*readn) (struct _conn *conn, char *buf, size_t len);
   int (*writen)(struct _conn *conn, char *buf, size_t count);
   int (*close) (struct _conn *conn);
@@ -306,9 +314,10 @@ int     conn_setup( conn_t *con, srv_t *srv, int fd, char *host ) ;
 int     spocp_conn_write( conn_t *conn ) ;
 int     spocp_conn_read( conn_t *conn ) ;
 
-/* ------------- */
+/* ------ read.c ------- */
 
-void  *rules_get( void *vp, char *file, int *rc  ) ;
+void   *rules_get( void *vp, char *file, int *rc  ) ;
+int     dback_read_rules( dback_t *dback, ruleset_t **rs, spocp_result_t *rc ) ;
 
 #ifdef HAVE_LIBSSL
 SSL_CTX       *tls_init( srv_t *srv ) ;

@@ -101,7 +101,7 @@ void sig_chld(int signo)
 int main( int  argc, char **argv )
 {
   int                 debug = 0 ;
-  int                 i = 0, n ;
+  int                 i = 0, n, nrules = 0 ;
   unsigned int        clilen ;
   struct sockaddr_in  cliaddr ;
   struct timeval      start, end ;
@@ -110,6 +110,7 @@ int main( int  argc, char **argv )
   keyval_t            *globals = 0 ;
   FILE                *pidfp ;
   octet_t             oct ;
+  spocp_result_t      rc ;
 
   /* Who am I running as ? */
 
@@ -185,28 +186,30 @@ int main( int  argc, char **argv )
   LOG( SPOCP_INFO ) if( srv.root->db ) plugin_display( srv.root->db->plugins ) ;
   if( srv.root->db->plugins ) {
     run_plugin_init( &srv ) ;
-    if(( srv.root->db->dback = init_dback( srv.root->db->plugins )) != 0 )
+    if(( srv.root->db->dback = init_dback( srv.root->db->plugins )) != 0 ) {
       dback_init( srv.root->db->dback, (void *) conf_get, &srv )  ;
+      nrules = dback_read_rules( srv.root->db->dback, &srv.root, &rc ) ;
+    }
   }
   
-  if( srv.rulefile == 0 ) {
-    LOG( SPOCP_INFO ) traceLog( "No rule file to start with" ) ;
-  }
-  else {
-    LOG( SPOCP_INFO ) traceLog( "Opening rules file \"%s\"", srv.rulefile ) ;
-  }
+  if( !nrules ) {
+    if( srv.rulefile == 0 ) 
+      LOG( SPOCP_INFO ) traceLog( "No rule file to start with" ) ;
+    else 
+      LOG( SPOCP_INFO ) traceLog( "Opening rules file \"%s\"", srv.rulefile ) ;
 
-  if( 0 ) gettimeofday(&start,NULL) ;
+    if( 0 ) gettimeofday(&start,NULL) ;
 
-  if( srv.rulefile &&
-      ( srv.root = read_rules( srv.root, srv.rulefile, &n, &globals )) == 0 ) {
-    LOG( SPOCP_ERR ) traceLog( "No valid rules found") ;
-    exit(1) ;
-  }
+    if( srv.rulefile &&
+        ( srv.root = read_rules( srv.root, srv.rulefile, &n, &globals )) == 0 ) {
+      LOG( SPOCP_ERR ) traceLog( "No valid rules found") ;
+      exit(1) ;
+    }
 
-  if( 0 ) {
-    gettimeofday(&end,NULL) ;
-    print_elapsed( "readrule time:", start, end ) ;
+    if( 0 ) {
+      gettimeofday(&end,NULL) ;
+      print_elapsed( "readrule time:", start, end ) ;
+    }
   }
 
   gettimeofday(&start,NULL) ;

@@ -264,6 +264,8 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
   }
   else rs = (ruleset_t * ) vp ;
 
+  if( rs->db == 0 ) rs->db = db_new() ;
+
   prev.len = prev.size = 0 ;
   prev.val = 0 ;
 
@@ -520,5 +522,111 @@ void *get_rules( void *vp, char *file, int *rc  )
   keyval_t *globals = 0  ;
 
   return (void *) read_rules( vp, file, rc, &globals ) ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+static octet_t *bcref_create( char *bcname )
+{
+  octet_t *ref ;
+  size_t   size, l = strlen( bcname ) ; ;
+
+  size = l + DIGITS( l ) + 1 ;
+  size += 8 ;
+
+  ref = oct_new( size, 0 ) ;
+  sexp_printv( ref->val, &size, "(aa)", "ref", bcname ) ;
+  ref->len = ref->size - size ;
+ 
+  return ref ;
+}
+
+/* ---------------------------------------------------------------------- */
+
+int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
+{
+  octarr_t       *oa = 0, *roa = 0 ;
+  spocp_result_t  r ;
+  int             i, f = 0, n = 0 ;
+  octet_t         tmp, dat0, dat1, *bcond;
+  char           *bcname = 0 ;
+  ruleset_t      *rs ;
+
+  oa = dback_all_keys( dback, &r ) ;
+
+  if( r == SPOCP_SUCCESS && oa && oa->n ) {
+    if( *rspp == 0 ) {
+      *rspp = ruleset_new( 0 ) ;
+    }
+
+    rs = *rspp ;
+
+    if( rs->db == 0 ) rs->db = db_new() ;
+
+    /* three passes, the first for simple bconds */
+    for( i = 0 ; i < oa->n ; i++ ) {
+      if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) != 0 ) continue ;
+
+      if( bcspec_is( oa->arr[i] ) == TRUE ) {
+        tmp.val = oa->arr[i]->val + 6 ;
+        tmp.len = oa->arr[i]->len - 6 ;
+
+        r = dback_read( dback, oa->arr[i], &dat0, &dat1, &bcname ) ;
+        if( dat0.len ) {
+          bcdef_add( rs->db, &tmp, &dat0) ;
+          octclr( &dat0 ) ;
+        }
+      }
+    } 
+    /* the second for compound bconds */
+    for( i = 0 ; i < oa->n ; i++ ) {
+      if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) != 0 ) continue ;
+
+      if( bcspec_is( oa->arr[i] ) == FALSE ) {
+        tmp.val = oa->arr[i]->val + 6 ;
+        tmp.len = oa->arr[i]->len - 6 ;
+
+        r = dback_read( dback, oa->arr[i], &dat0, &dat1, &bcname ) ;
+
+        if( dat0.len ) {
+          bcdef_add( rs->db, &tmp, &dat0) ;
+          octclr( &dat0 ) ;
+        }
+      }
+    } 
+    /* and the third for rules */
+    for( i = 0 ; i < oa->n ; i++ ) {
+      if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) == 0 ) continue ;
+
+      r = dback_read( dback, oa->arr[i], &dat0, &dat1, &bcname ) ;
+
+      roa = octarr_add( roa, octdup(&dat0) ) ;
+      octclr( &dat0 ) ;
+
+      if( bcname ) {
+        bcond = bcref_create( bcname ) ;
+        octarr_add( roa, bcond ) ;
+        bcname = 0 ;
+      }
+
+      if( dat1.len ) {
+        octarr_add( roa, octdup(&dat1) ) ;
+        octclr( &dat1 ) ;
+      }
+
+      if(( r = spocp_add_rule( (void **) &(rs->db), roa )) == SPOCP_SUCCESS ) n++ ;
+      else {
+        LOG( SPOCP_WARNING ) traceLog("Failed to add rule: \"%s\"", dat0.val ) ;
+        f++ ;
+      }
+      octarr_free( roa ) ;
+
+      roa = 0 ;
+    } 
+
+    octarr_free( oa ) ;
+  }
+
+  return n ;
 }
 
