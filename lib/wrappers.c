@@ -92,6 +92,8 @@ char *Strcat( char *dest, char *src, int *size )
 }
 
 #ifndef HAVE_STRNLEN
+size_t strnlen( const char *s, size_t len );
+
 size_t strnlen( const char *s, size_t len )
 {
   size_t i ;
@@ -103,6 +105,8 @@ size_t strnlen( const char *s, size_t len )
 #endif
 
 #ifndef HAVE_STRNDUP
+char *strndup( const char *old, size_t sz ) ;
+
 char *strndup( const char *old, size_t sz ) 
 {
   size_t len = strnlen( old, sz ) ;
