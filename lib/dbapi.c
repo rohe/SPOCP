@@ -41,7 +41,7 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 	DEBUG(SPOCP_DPARSE) {
 		str = oct2strdup(sexp, '%');
 		traceLog(LOG_DEBUG,"Parsing the S-expression \"%s\"", str);
-		free(str);
+		Free(str);
 
 		octln( &oct, sexp ) ;
 	}
@@ -50,7 +50,7 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 	if ((res = element_get(sexp, target)) != SPOCP_SUCCESS) {
 		str = oct2strdup(sexp, '%');
 		traceLog(LOG_INFO,"The S-expression \"%s\" didn't parse OK", str);
-		free(str);
+		Free(str);
 	}
 	else {
 		DEBUG(SPOCP_DPARSE) {
@@ -58,7 +58,7 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 	
 			str = oct2strdup(&oct, '%');
 			traceLog(LOG_DEBUG,"Query: \"%s\"", str);
-			free(str);
+			Free(str);
 		}
 	}
 
@@ -104,7 +104,7 @@ dbapi_db_del(db_t * db, dbcmd_t * dbc)
 {
 	free_all_rules(db->ri);
 	junc_free(db->jp);
-	free(db);
+	Free(db);
 }
 
 spocp_result_t
@@ -232,7 +232,7 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 					traceLog(LOG_INFO,
 					    "Unknown boundary condition:\"%s\"",
 					    tmp);
-					free(tmp);
+					Free(tmp);
 				}
 				return r;
 			}
@@ -242,7 +242,7 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 	LOG(SPOCP_INFO) {
 		tmp = oct2strdup(oa->arr[0], '%');
 		traceLog(LOG_INFO,"spocp_add_rule:\"%s\"", tmp);
-		free(tmp);
+		Free(tmp);
 	}
 
 	if ((r = add_right(&db, dbc, oa, &ri, bcd))) {
@@ -268,7 +268,7 @@ dbapi_db_dup(db_t * db, spocp_result_t * r)
 		return 0;
 	}
 
-	new = (db_t *) calloc(1, sizeof(db_t *));
+	new = (db_t *) Calloc(1, sizeof(db_t *));
 
 	if (new == 0) {
 		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Memory allocation problem");

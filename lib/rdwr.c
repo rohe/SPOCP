@@ -10,6 +10,7 @@
 #include <stdlib.h>
 
 #include <plugin.h>
+#include <wrappers.h>
 
 int
 pthread_rdwr_init(pthread_rdwr_t * rdwrp)
@@ -102,7 +103,7 @@ pthread_rdwr_destroy(pthread_rdwr_t * p)
 		if ((r = pthread_cond_destroy(&(p->lock_free))) != 0)
 			return r;
 
-		free(p);
+		Free(p);
 	}
 
 	return 0;

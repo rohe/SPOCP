@@ -350,8 +350,8 @@ varr_t	 *get_all_range_followers(branch_t * bp, varr_t * pa);
 subelem_t	  *subelem_new(void);
 void		subelem_free(subelem_t * sep);
 
-void		boundary_print(boundary_t * bp);
-boundary_t	 *boundary_dup(boundary_t * bp);
+char 		*boundary_print(boundary_t * bp);
+boundary_t	*boundary_dup(boundary_t * bp);
 int		 boundary_xcmp(boundary_t * b1p, boundary_t * b2p);
 
 void		junc_print(int lev, junc_t * jp);

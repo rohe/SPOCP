@@ -143,7 +143,7 @@ free_db(db_t * db)
 	if (db) {
 		free_all_rules(db->ri);
 		junc_free(db->jp);
-		free(db);
+		Free(db);
 	}
 }
 

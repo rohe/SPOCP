@@ -52,14 +52,14 @@ becon_free(becon_t * bc, int close)
 			 */
 			pthread_mutex_destroy(bc->c_lock);
 
-			free(bc->c_lock);
+			Free(bc->c_lock);
 		}
 
 		if (bc->arg)
 			oct_free(bc->arg);
 
 
-		free(bc);
+		Free(bc);
 	}
 }
 
@@ -102,9 +102,9 @@ becpool_rm(becpool_t * bcp, int close)
 
 		pthread_mutex_unlock(bcp->lock);
 		pthread_mutex_destroy(bcp->lock);
-		free(bcp->lock);
+		Free(bcp->lock);
 
-		free(bcp);
+		Free(bcp);
 	}
 }
 

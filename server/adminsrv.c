@@ -46,7 +46,7 @@ rule_free( rule_t *r )
 		if (r->rule) oct_free( r->rule );
 		if (r->blob) oct_free( r->blob );
 		if (r->ep) element_free( r->ep);
-		free(r);
+		Free(r);
 	}
 }
 
@@ -73,7 +73,7 @@ as_read_rules( char *file, rule_t **rule)
 					  file);
 		sp = getcwd(oct.val, oct.size);
 		LOG(SPOCP_EMERG) traceLog(LOG_INFO,"I'm in \"%s\"", sp);
-		free(oct.val);
+		Free(oct.val);
 		return -1;
 	}
 

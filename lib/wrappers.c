@@ -19,10 +19,12 @@
 #include <wrappers.h>
 #include <func.h>
 
+/* #define DEBUG_XYZ 1 */
+
 void	*
 Malloc(size_t size)
 {
-#ifdef XYZ
+#ifdef DEBUG_XYZ
 	void	*vp = xMalloc(size);
 #else
 	void	*vp = malloc(size);
@@ -38,7 +40,7 @@ Malloc(size_t size)
 void	*
 Calloc(size_t n, size_t size)
 {
-#ifdef XYZ
+#ifdef DEBUG_XYZ
 	void	*vp = xCalloc(n, size);
 #else
 	void	*vp = calloc(n, size);
@@ -54,7 +56,7 @@ Calloc(size_t n, size_t size)
 void           *
 Recalloc(void *vp, size_t n, size_t size)
 {
-#ifdef XYZ
+#ifdef DEBUG_XYZ
 	void	*nvp = xRecalloc(vp, n, size);
 #else
 	void	*nvp = realloc(vp, n * size);
@@ -66,11 +68,20 @@ Recalloc(void *vp, size_t n, size_t size)
 	return nvp;
 }
 
+void
+Free( void *v )
+{
+#ifdef DEBUG_XYZ
+	xFree(v);
+#else
+	free(v);
+#endif
+}
 
 void           *
 Realloc(void *vp, size_t n)
 {
-#ifdef XYZ
+#ifdef DEBUG_XYZ
 	void	*nvp = xRealloc(vp, n);
 #else
 	void	*nvp = realloc(vp, n);
@@ -85,7 +96,7 @@ Realloc(void *vp, size_t n)
 char           *
 Strdup(char *s)
 {
-#ifdef XYZ
+#ifdef DEBUG_XYZ
 	char	*sp = xStrdup(s);
 #else
 	char	*sp = strdup(s);

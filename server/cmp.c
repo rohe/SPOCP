@@ -8,6 +8,7 @@
 #include <spocp.h>
 #include <struct.h>
 #include <varr.h>
+#include <wrappers.h>
 
 /*
  * verify 
@@ -59,8 +60,8 @@ atomcmp( atom_t *a, atom_t *b, octet_t *str )
 	
 		printf("atomcmp: [%s][%s] => %d\n", c,s,r);
 
-		free(c);
-		free(s);
+		Free(c);
+		Free(s);
 	}
 	if( str && r == 0 ) {
 		octcat( str, a->val.val, a->val.len );

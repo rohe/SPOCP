@@ -32,7 +32,7 @@ reply_free( reply_t *r)
 {
 	if (r) {
 		iobuf_free( r->buf );
-		free( r );
+		Free( r );
 	}
 }
 
@@ -78,7 +78,7 @@ reply_add( reply_t *head, work_info_t *wi )
 
 			tmp = str_esc( rp->buf->r, rp->buf->w - rp->buf->r );
 			traceLog(LOG_INFO, "Adding reponse: [%s]", tmp );
-			free( tmp );
+			Free( tmp );
 
 			wi->buf = 0;
 			/* so noone will overwrite this */
@@ -124,7 +124,7 @@ gather_replies( spocp_iobuf_t *out, conn_t *conn )
 
 		tmp = str_esc( out->r, out->w - out->r );
 		traceLog(LOG_INFO, "Replies(%d): [%s]", r, tmp );
-		free( tmp );
+		Free( tmp );
 	}
 
 	pthread_mutex_unlock( &conn->rlock );

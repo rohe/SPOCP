@@ -223,7 +223,7 @@ void
 octclr(octet_t * oct)
 {
 	if (oct->size) {
-		free(oct->val);
+		Free(oct->val);
 	}
 
 	oct->size = oct->len = 0;
@@ -413,7 +413,7 @@ void
 octmove(octet_t * a, octet_t * b)
 {
 	if (a->size)
-		free(a->val);
+		Free(a->val);
 
 	a->size = b->size;
 	a->val = b->val;
@@ -563,8 +563,8 @@ oct_free(octet_t * o)
 {
 	if (o) {
 		if (o->val && o->size && o->len)
-			free(o->val);
-		free(o);
+			Free(o->val);
+		Free(o);
 	}
 }
 
@@ -581,8 +581,8 @@ oct_freearr(octet_t ** oa)
 	if (oa) {
 		for (; *oa != 0; oa++) {
 			if ((*oa)->size)
-				free((*oa)->val);
-			free(*oa);
+				Free((*oa)->val);
+			Free(*oa);
 		}
 	}
 }
@@ -860,5 +860,5 @@ void oct_print( char *tag, octet_t *o )
 
 	tmp = oct2strdup( o, '\\');
 	traceLog(LOG_DEBUG,"%s: %s", tag, tmp);
-	free(tmp);
+	Free(tmp);
 }

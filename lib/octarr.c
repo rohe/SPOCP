@@ -137,11 +137,11 @@ octarr_half_free(octarr_t * oa)
 	if (oa) {
 		if (oa->size) {
 			for (i = 0; i < oa->n; i++)
-				free(oa->arr[i]);
+				Free(oa->arr[i]);
 
-			free(oa->arr);
+			Free(oa->arr);
 		}
-		free(oa);
+		Free(oa);
 	}
 }
 
@@ -160,9 +160,9 @@ octarr_free(octarr_t * oa)
 			for (i = 0; i < oa->n; i++)
 				oct_free(oa->arr[i]);
 
-			free(oa->arr);
+			Free(oa->arr);
 		}
-		free(oa);
+		Free(oa);
 	}
 }
 

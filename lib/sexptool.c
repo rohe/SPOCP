@@ -63,7 +63,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 				if (vp - 2 != sp) {
 					*(vp - 2) = '\0';
 					arg[j] =
-					    (sexparg_t *) malloc(sizeof(sexparg_t));
+					    (sexparg_t *) Malloc(sizeof(sexparg_t));
 					arg[j]->var = strdup(sp);
 					arg[j]->af = 0;
 					arg[j]->type = 'l';
@@ -81,7 +81,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 					if (strcmp(transf[i].var, vp) == 0) {
 						arg[j] =
 						    (sexparg_t *)
-						    malloc(sizeof(sexparg_t));
+						    Malloc(sizeof(sexparg_t));
 						arg[j]->var = 0;
 						arg[j]->af = transf[i].af;
 						arg[j]->type = transf[i].type;
@@ -100,8 +100,8 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 					    "parse_format: variable [%s] unknown",
 					    vp);
 					for (i = 0; arg[i] && i < n; i++)
-						free(arg[i]);
-					free(arg);
+						Free(arg[i]);
+					Free(arg);
 					return 0;
 				}
 			}
@@ -112,7 +112,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 	}
 
 	if (*sp) {		/* trailing string, which is quite ok */
-		arg[j] = (sexparg_t *) malloc(sizeof(sexparg_t));
+		arg[j] = (sexparg_t *) Malloc(sizeof(sexparg_t));
 		arg[j]->var = strdup(sp);
 		arg[j]->af = 0;
 		arg[j]->type = 'l';
@@ -168,7 +168,7 @@ sexp_constr( void *comarg, sexparg_t ** ap )
 	 */
 	for (i = 0; ap[i]; i++) {
 		if (ap[i]->af && ap[i]->dynamic == TRUE)
-			free(argv[i]);
+			Free(argv[i]);
 	}
 
 	return res;
@@ -184,10 +184,10 @@ void sexparg_free( sexparg_t **sa)
 
 	if (sa) {
 		for ( i = 0; sa[i]; i++ ) {
-			if (sa[i]->var) free(sa[i]->var);
-			free( sa[i] );
+			if (sa[i]->var) Free(sa[i]->var);
+			Free( sa[i] );
 		}
-		free( sa ) ;
+		Free( sa ) ;
 	}
 }
 

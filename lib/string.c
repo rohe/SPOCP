@@ -141,7 +141,7 @@ line_split(char *s, char c, char ec, int flag, int max, int *parts)
 
 	*parts = i;
 
-	free(tmp);
+	Free(tmp);
 
 	return res;
 }
@@ -196,9 +196,9 @@ void charmatrix_free( char **m )
 
 	if (m) {
 		for (i = 0; m[i] != 0; i++ ) {
-			free(m[i]);
+			Free(m[i]);
 		}
-		free(m);
+		Free(m);
 	}
 }
 
@@ -225,16 +225,16 @@ char *normalize( char *s )
 	utf8 = stringprep_locale_to_utf8(s);
 
 	bufsize = strlen(utf8) * 2;
-	buf = (char *) malloc ( bufsize * sizeof( char ) );
+	buf = (char *) Malloc ( bufsize * sizeof( char ) );
 	strcpy(buf,utf8);
 
 	rc = stringprep (buf, bufsize, 0, stringprep_nameprep);
 	if (rc != STRINGPREP_OK) {
 		traceLog(LOG_INFO,"Stringprep failed with rc %d", rc);
-		free(buf);
+		Free(buf);
 		buf = utf8;
 	} else 
-		free(utf8);
+		Free(utf8);
 	
 	traceLog(LOG_INFO,"result %s", buf);
 #else

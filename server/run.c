@@ -11,7 +11,7 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-#define XYZ 0
+/* #define DEBUG_XYZ 0 */
 
 /*
  * ---------------------------------------------------------------------- 
@@ -164,16 +164,19 @@ static int read_work( srv_t *srv, conn_t *conn )
 	spocp_result_t	res;
 	work_info_t	wi;
 
-	if (XYZ)
-		traceLog(LOG_DEBUG,"input readable on %d", conn->fd);
+#ifdef DEBUG_XYZ
+	traceLog(LOG_DEBUG,"input readable on %d", conn->fd);
+#endif
 
 	/*
 	 * read returns number of bytes read 
 	 */
 	n = spocp_conn_read(conn);
 
-	if (XYZ)
-		traceLog(LOG_DEBUG,"Read returned %d from %d", n, conn->fd);
+#ifdef DEBUG_XYZ
+	traceLog(LOG_DEBUG,"Read returned %d from %d", n, conn->fd);
+#endif
+
 	/*
 	 * traceLog(LOG_DEBUG, "[%s]", conn->in->buf ) ; 
 	 */
@@ -184,30 +187,45 @@ static int read_work( srv_t *srv, conn_t *conn )
 		return 1;
 	}
 
-	if (XYZ)
-		timestamp("read con");
+#ifdef DEBUG_XYZ
+	timestamp("read con");
+#endif
 
 	while( iobuf_content( conn->in )) {
 		memset( &wi, 0, sizeof( work_info_t ));
 		wi.conn = conn;
 
 		res = get_operation(&wi);
-		if (XYZ)
-			traceLog(LOG_DEBUG,"Getops returned %d", res);
+#ifdef DEBUG_XYZ
+		traceLog(LOG_DEBUG,"Getops returned %d", res);
+#endif
 		if (res != SPOCP_SUCCESS)
 			return 1;
 
 		gettimeofday( &conn->op_start, NULL );
 
-		if (XYZ)
-			timestamp("add work item");
+#ifdef DEBUG_XYZ
+		timestamp("add work item");
+#endif
 
 		if( tpool_add_work(srv->work, &wi) == 0 ) {
 			/* place this last in the list */
+#ifdef DEBUG_XYZ
+			timestamp("add_reply_queur");
+#endif
 			add_reply_queuer( conn, &wi );
+#ifdef DEBUG_XYZ
+			timestamp("new iobuf");
+#endif
 			wi.buf = iobuf_new(512);
 			return_busy( &wi );
+#ifdef DEBUG_XYZ
+			timestamp("reply add");
+#endif
 			reply_add( conn->head, &wi );
+#ifdef DEBUG_XYZ
+			timestamp("send_results");
+#endif
 			if (send_results(conn) == 0)
 				res = SPOCP_CLOSE;
 			return 1;
@@ -280,7 +298,7 @@ spocp_srv_run(srv_t * srv)
 
 			/*
 			 * DEBUG( SPOCP_DSRV ) traceLog(LOG_DEBUG,"fd=%d [status: %d,
-			 * ops_pending:%d]\n", conn->fd, conn->status,
+			 * ops_pending:%d]", conn->fd, conn->status,
 			 * conn->ops_pending); 
 			 */
 
@@ -332,25 +350,26 @@ spocp_srv_run(srv_t * srv)
 		noto.tv_sec = 0;
 		noto.tv_usec = 1000;
 
-		if (XYZ) {
-			timestamp("before select");
-			if( FD_ISSET(wake_sds[0], &rfds))
-				traceLog(LOG_INFO, "wakeup listener is on");
-			traceLog(LOG_INFO, "Maxfd:%d", maxfd);
-		}
+#ifdef DEBUG_XYZ
+		timestamp("before select");
+		if( FD_ISSET(wake_sds[0], &rfds))
+			traceLog(LOG_INFO, "wakeup listener is on");
+		traceLog(LOG_INFO, "Maxfd:%d", maxfd);
+#endif
 		/*
 		 * Select on all file descriptors, wait forever 
 		 */
 		nready = select(maxfd + 1, &rfds, &wfds, NULL, 0);
-		if (XYZ)
-			timestamp("after select");
+#ifdef DEBUG_XYZ
+		timestamp("after select");
+#endif
 
 		/*
 		 * Check for errors 
 		 */
 		if (nready < 0) {
 			if (errno != EINTR)
-				traceLog(LOG_ERR,"Unable to select: %s\n",
+				traceLog(LOG_ERR,"Unable to select: %s",
 					 strerror(errno));
 			continue;
 		}
@@ -361,8 +380,9 @@ spocp_srv_run(srv_t * srv)
 		if (nready == 0)
 			continue;
 
-		if (XYZ)
-			timestamp("Readable/Writeable");
+#ifdef DEBUG_XYZ
+		timestamp("Readable/Writeable");
+#endif
 
 		/*
 		 * traceLog(LOG_DEBUG, "maxfd: %d, nready: %d", maxfd, nready ) ; 
@@ -382,8 +402,9 @@ spocp_srv_run(srv_t * srv)
 
 		if (received_sigterm == 0 && FD_ISSET(srv->listen_fd, &rfds)) {
 
-			if (XYZ)
-				timestamp("New connection");
+#ifdef DEBUG_XYZ
+			timestamp("New connection");
+#endif
 
 			len = sizeof(client_addr);
 			client =
@@ -398,8 +419,9 @@ spocp_srv_run(srv_t * srv)
 
 			DEBUG(SPOCP_DSRV) traceLog(LOG_ERR,"Got connection on fd=%d",
 						   client);
-			if (XYZ)
-				timestamp("Accepted");
+#ifdef DEBUG_XYZ
+			timestamp("Accepted");
+#endif
 
 			val = fcntl(client, F_GETFL, 0);
 			if (val == -1) {
@@ -494,8 +516,9 @@ spocp_srv_run(srv_t * srv)
 					pe++;
 				}
 			}
-			if (XYZ)
-				timestamp("Done with new connection setup");
+#ifdef DEBUG_XYZ
+			timestamp("Done with new connection setup");
+#endif
 		}
 
 		/*
@@ -520,9 +543,10 @@ spocp_srv_run(srv_t * srv)
 			 * wasn't around when the select was done 
 			 */
 			if (conn->fd > maxfd) {
-				if (XYZ)
-					traceLog(LOG_DEBUG,
-					    "%d Not this time ! Too young", conn->fd);
+#ifdef DEBUG_XYZ
+				traceLog(LOG_DEBUG,
+				    "%d Not this time ! Too young", conn->fd);
+#endif
 				continue;
 			}
 
@@ -543,7 +567,7 @@ spocp_srv_run(srv_t * srv)
 
 				DEBUG(SPOCP_DSRV) {
 					traceLog(LOG_DEBUG,
-					    "Outgoing data on fd %d (%d)\n",
+					    "Outgoing data on fd %d (%d)",
 					    conn->fd, n);
 				}
 
@@ -577,8 +601,9 @@ spocp_srv_run(srv_t * srv)
 			 */
 
 		}
-		if (XYZ)
-			timestamp("one loop done");
+#ifdef DEBUG_XYZ
+		timestamp("one loop done");
+#endif
 	}
 
 	/* will deconnect all external connections held by the plugins */

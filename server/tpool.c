@@ -29,7 +29,7 @@ typedef struct _ptharg {
 	int             id;
 } ptharg_t;
 
-static int VV=0;
+/* #define DEBUG_TPO 0 */
 
 static int
 add_work_structs(pool_t * pool, int n)
@@ -53,7 +53,7 @@ static void
 free_work_struct(void *vp)
 {
 	if (vp) {
-		free(vp);
+		Free(vp);
 	}
 }
 
@@ -65,20 +65,20 @@ free_wpool(afpool_t * afp)
 
 	if (afp) {
 		if (afp->active) {	/* shouldn't be any actives */
-			free(afp->active);
+			Free(afp->active);
 		}
 		if (afp->free) {
 			pool = afp->free;
 
 			while ((pi = pool_pop(pool))) {
 				free_work_struct(pi->info);
-				free(pi);
+				Free(pi);
 			}
 
-			free(pool);
+			Free(pool);
 		}
 
-		free(afp);
+		Free(afp);
 	}
 }
 
@@ -160,13 +160,13 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
 	work_info_t    *workp;
 	pool_item_t    *pi;
 
-	if (VV) {
-		timestamp("tpool_add_work");
-		traceLog(LOG_DEBUG,"cur_queue_size:%d", tpool->cur_queue_size);
-		traceLog(LOG_DEBUG,"max_queue_size:%d", tpool->max_queue_size);
-		traceLog(LOG_DEBUG,"shutdown:%d", tpool->shutdown);
-		traceLog(LOG_DEBUG,"queue_closed:%d", tpool->queue_closed);
-	}
+#ifdef DEBUG_TPO
+	timestamp("tpool_add_work");
+	traceLog(LOG_DEBUG,"cur_queue_size:%d", tpool->cur_queue_size);
+	traceLog(LOG_DEBUG,"max_queue_size:%d", tpool->max_queue_size);
+	traceLog(LOG_DEBUG,"shutdown:%d", tpool->shutdown);
+	traceLog(LOG_DEBUG,"queue_closed:%d", tpool->queue_closed);
+#endif
 
 	/*
 	 * traceLog(LOG_DEBUG, "queued items: %d", number_of_active( tpool->queue )) ; 
@@ -227,6 +227,9 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
 		}
 	}
 
+#ifdef DEBUG_TPO
+	traceLog(LOG_NOTICE,"get_empty");
+#endif
 	pi = afpool_get_empty(tpool->queue);
 
 	workp = (work_info_t *) pi->info;
@@ -235,6 +238,9 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
 	workp->conn = wi->conn;
 	workp->oparg = wi->oparg;
 	workp->oper = wi->oper;
+#ifdef DEBUG_TPO
+	traceLog(LOG_NOTICE,"New workp->buf");
+#endif
 	workp->buf = iobuf_new( 1024 );
 	workp->conn->ops_pending++;
 
@@ -242,8 +248,9 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
 
 	afpool_push_item(tpool->queue, pi);
 
-	if (VV)
-		timestamp("Signal the workitem");
+#ifdef DEBUG_TPO
+	timestamp("Signal the workitem");
+#endif
 	pthread_cond_signal(&(tpool->queue_not_empty));
 
 	return 1;
@@ -299,11 +306,11 @@ tpool_destroy(tpool_t * tpool, int finish)
 	/*
 	 * Now free pool structures 
 	 */
-	free(tpool->threads);
+	Free(tpool->threads);
 
 	free_wpool(tpool->queue);
 
-	free(tpool);
+	Free(tpool);
 
 	return 1;
 }
@@ -334,7 +341,9 @@ tpool_thread(void *arg)
 		 */
 		afpool_lock(workqueue);
 
-		if(VV) traceLog(LOG_DEBUG, "Thread %d looking for work", id ) ; 
+#ifdef DEBUG_TPO
+		traceLog(LOG_DEBUG, "Thread %d looking for work", id ) ; 
+#endif
 
 		/*
 		 * nothing in the queue, wait for something to appear 
@@ -355,7 +364,9 @@ tpool_thread(void *arg)
 
 		afpool_unlock(workqueue);
 
-		if(VV) traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
+#ifdef DEBUG_TPO
+		traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
+#endif
 
 		/*
 		 * Has a shutdown started while I was sleeping? 
@@ -430,8 +441,9 @@ tpool_thread(void *arg)
 			pthread_cond_signal(&(tpool->queue_not_full));
 		}
 
-		if (VV)
-			timestamp("loopturn done");
+#ifdef DEBUG_TPO
+		timestamp("loopturn done");
+#endif
 	}
 
 	return (NULL);

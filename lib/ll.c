@@ -47,9 +47,9 @@ ll_free(ll_t * lp)
 			if (lp->ff)
 				lp->ff(np->payload);
 			pp = np->next;
-			free(np);
+			Free(np);
 		}
-		free(lp);
+		Free(lp);
 	}
 }
 
@@ -110,7 +110,7 @@ ll_pop(ll_t * lp)
 		lp->head = np->next;
 		lp->head->prev = 0;
 		vp = np->payload;
-		free(np);
+		Free(np);
 		lp->n--;
 
 		return vp;
@@ -223,7 +223,7 @@ ll_rm_item(ll_t * lp, void *pattern, int all)
 			ll_rm_link(lp, np);
 
 			lp->ff(np->payload);
-			free(np);
+			Free(np);
 
 			lp->n--;
 			n++;

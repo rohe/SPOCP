@@ -265,12 +265,12 @@ parr_free(parr_t * ap)
 				for (i = 0; i < ap->n; i++)
 					ap->ff(ap->vect[i]);
 
-			free(ap->vect);
+			Free(ap->vect);
 		}
 
 		if (ap->refc)
-			free(ap->refc);
-		free(ap);
+			Free(ap->refc);
+		Free(ap);
 	}
 }
 
@@ -325,7 +325,7 @@ void
 P_free(item_t vp)
 {
 	if (vp)
-		free(vp);
+		Free(vp);
 }
 
 void

@@ -44,7 +44,7 @@ subelem_free(subelem_t * sep)
 			element_free(sep->ep);
 		if (sep->next)
 			subelem_free(sep->next);
-		free(sep);
+		Free(sep);
 	}
 }
 

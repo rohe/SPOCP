@@ -246,7 +246,7 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 
 			str = oct2strdup(wi->oppath, '%');
 			traceLog(LOG_INFO,"ERR: No \"%s\" ruleset", str);
-			free(str);
+			Free(str);
 
 			r = SPOCP_DENIED|UNKNOWN_RULESET;
 		}
@@ -263,7 +263,7 @@ postop( work_info_t *wi, spocp_result_t rc, const char *msg)
 	if( msg && *msg ) {
 		traceLog(LOG_INFO,"return message:%s", msg);
 		add_response(wi->buf, rc, msg);
-		free((char *) msg);
+		Free((char *) msg);
 	}
 	else {
 		ar = add_response(wi->buf, rc, 0);
@@ -647,7 +647,7 @@ com_commit(work_info_t *wi)
 		for( i = 0 ; i < n ; i++ ) 
 			pthread_rdwr_wunlock(&(rspp[i])->rw_lock);
 
-		free(rspp);
+		Free(rspp);
 		opstack_free( conn->ops );
 		conn->ops = 0;
 		conn->transaction = 0;
@@ -688,7 +688,7 @@ com_query(work_info_t *wi)
 			if (wi->oparg->n == 1) {
 				str = oct2strdup(wi->oparg->arr[0], '%');
 				traceLog(LOG_INFO,"[%d]QUERY:%s", conn->fd, str);
-				free(str);
+				Free(str);
 			}
 			else if (wi->oparg->n == 2) {
 				char *pa, *se;
@@ -697,8 +697,8 @@ com_query(work_info_t *wi)
 				se = oct2strdup(wi->oparg->arr[1], '%');
 				traceLog(LOG_INFO,"[%d]QUERY:%s %s",
 				    conn->fd, pa, se);
-				free(pa);
-				free(se);
+				Free(pa);
+				Free(se);
 			}
 		}
 	}
@@ -743,7 +743,7 @@ com_query(work_info_t *wi)
 				str = oct2strdup(oct, '%');
 				DEBUG(SPOCP_DSRV) 
 					traceLog(LOG_DEBUG,"returns \"%s\"", str);
-				free(str);
+				Free(str);
 			}
 		}
 		resset_free(rset);
@@ -945,7 +945,7 @@ com_list(work_info_t *wi)
 					char           *str;
 					str = oct2strdup(op, '\\');
 					traceLog(LOG_DEBUG,str);
-					free(str);
+					Free(str);
 				}
 
 				if ((rc = add_response_blob(out, SPOCP_MULTI,
@@ -1001,7 +1001,7 @@ com_summary(work_info_t *wi)
 			else {
 				tmp = oct2strdup(op, 0);
 				traceLog( LOG_INFO, "%s", tmp );
-				free(tmp);
+				Free(tmp);
 				rc = add_response_blob(out, SPOCP_MULTI, op);
 			}
 		}
@@ -1039,7 +1039,7 @@ com_show(work_info_t *wi)
 		pthread_rdwr_wlock(&rs->rw_lock);
 		ri = ruleinst_find_by_uid(rs->db->ri->rules, uid);
 		pthread_rdwr_wunlock(&rs->rw_lock);
-		free(uid);
+		Free(uid);
 
 		if ( ri ){	
 			r = add_response_blob(wi->buf, SPOCP_MULTI, ri->rule);
@@ -1162,7 +1162,7 @@ get_operation(work_info_t *wi )
 
 		tmp = oct2strdup(&arg, '%');
 		traceLog(LOG_DEBUG,"ARG. [%s]", tmp);
-		free(tmp);
+		Free(tmp);
 	}
 
 	/*

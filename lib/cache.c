@@ -64,7 +64,7 @@ cacheval_free(cacheval_t * cvp)
 {
 	if (cvp) {
 		octclr( &cvp->blob );
-		free(cvp);
+		Free(cvp);
 	}
 }
 
@@ -147,7 +147,7 @@ cache_free( cache_t *cp )
 {
 	if (cp) {
 		while( cache_fifo_rm( cp ));
-		free( cp );
+		Free( cp );
 	}
 }
 

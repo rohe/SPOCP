@@ -26,6 +26,11 @@
 #include <macros.h>
 #include <varr.h>
 
+/*
+#define SPOCP_TEST
+ */
+
+static void slnode_print( slnode_t *s );
 
 /*
  * An implementation of a skip-list 
@@ -89,9 +94,19 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 	if (b2p == 0)
 		return -1;
 
+#ifdef SPOCP_TEST
+	DEBUG(SPOCP_DMATCH) {
+		char *b1, *b2 ;
+
+		traceLog(LOG_DEBUG,"boundary_xcmp (%d)", b2p->type) ;
+		b1 = boundary_print( b1p) ;
+		b2 = boundary_print( b2p) ; 
+		traceLog(LOG_DEBUG, "%s <> %s", b1, b2 );
+		Free(b1);
+		Free(b2);
+	}
+#endif
 	/*
-	 * traceLog(LOG_DEBUG,"boundary_xcmp (%d)", b2p->type) ; boundary_print( b1p) ;
-	 * boundary_print( b2p) ; 
 	 */
 
 	switch (b2p->type & 0x07) {
@@ -114,9 +129,13 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 
 	case SPOC_NUMERIC:
 	case SPOC_TIME:
-		if ((v = b1p->v.num - b2p->v.num) == 0) {
+		if ((v = (b1p->v.num - b2p->v.num)) == 0) {
 			v = b1p->type - b2p->type;
 		}
+#ifdef SPOCP_TEST
+		traceLog(LOG_DEBUG,"Numeric %ld, %ld => %d", b1p->v.num,
+			  b2p->v.num, v);
+#endif
 		break;
 
 	case SPOC_IPV4:
@@ -136,8 +155,12 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 #endif
 	}
 
+#ifdef SPOCP_TEST
+	DEBUG(SPOCP_DMATCH) {
+		traceLog(LOG_DEBUG, "res: %d", v ) ; 
+	}
+#endif
 	/*
-	 * traceLog(LOG_DEBUG, "res: %d", v ) ; 
 	 */
 
 	return v;
@@ -194,9 +217,9 @@ sl_free_node(slnode_t * slp)
 		}
 
 		if (slp->next)
-			free(slp->next);
+			Free(slp->next);
 
-		free(slp);
+		Free(slp);
 	}
 }
 
@@ -339,6 +362,14 @@ sl_delete(slist_t * slp, boundary_t * item)
 slnode_t       *
 sl_rec_find(slnode_t * node, boundary_t * item, int n, int *flag)
 {
+
+#ifdef SPOCP_TEST
+	DEBUG( SPOCP_DMATCH) {
+		traceLog(LOG_DEBUG, "sl_rec_find" );
+		slnode_print( node);
+	}
+#endif
+
 	if (node->sz == 0)
 		return 0;	/* end of list */
 
@@ -348,8 +379,12 @@ sl_rec_find(slnode_t * node, boundary_t * item, int n, int *flag)
 	}
 
 	if (boundary_xcmp(item, node->next[n]->item) < 0) {
-
 		if (n == 0) {	/* reached the bottom */
+#ifdef SPOCP_TEST
+			DEBUG( SPOCP_DMATCH )
+				traceLog(LOG_DEBUG, "Reached bottom");
+#endif
+
 			*flag = 1;
 			return node->next[0];	/* So what's returned is the
 						 * next bigger */
@@ -379,16 +414,33 @@ sl_find(slist_t * slp, boundary_t * item)
 
 /************************************************************************/
 
-void
+static void
+slnode_print( slnode_t *s )
+{
+	char *str ;
+
+	if ( s->item ) {
+		str = boundary_print( s->item );
+		traceLog(LOG_DEBUG,"%s sz=%d", str, s->sz );
+	}
+	else {
+		traceLog(LOG_DEBUG,"top or bottom sz=%d", s->sz );
+	}
+
+}
+
+/************************************************************************/
+
+char *
 boundary_print(boundary_t * bp)
 {
-	char	ip[65], *lte = "-";
+	char	ip[65], *lte = "-", *str = NULL ;
 
 	if (bp == 0)
-		return;
+		return strdup("");
 
 	if (bp->type == 0 && bp->v.val.len == 0)
-		return;
+		return strdup("");
 
 	switch (bp->type & 0xF0) {
 	case LT | GLE:
@@ -410,15 +462,20 @@ boundary_print(boundary_t * bp)
 	switch (bp->type & 0x07) {
 	case SPOC_ALPHA:
 	case SPOC_DATE:
-		if (bp->v.val.len)
-			traceLog(LOG_DEBUG," %s %s", lte, bp->v.val.val);
-		else
-			traceLog(LOG_DEBUG," NULL");
+		if (bp->v.val.len) {
+			str = Calloc( 5+bp->v.val.len, sizeof(char));
+			sprintf(str,"%s %s", lte, bp->v.val.val);
+		}
+		else {
+			str = Calloc( 10, sizeof(char));
+			sprintf(str,"%s NULL", lte);
+		}
 		break;
 
 	case SPOC_TIME:
 	case SPOC_NUMERIC:
-		traceLog(LOG_DEBUG," %s %d", lte, bp->v.num);
+		str = Calloc( 32, sizeof(char));
+		sprintf(str,"%s %ld", lte, bp->v.num);
 		break;
 
 	case SPOC_IPV4:
@@ -431,17 +488,21 @@ boundary_print(boundary_t * bp)
 			strlcat( ip, tmp, sizeof(op));
 		}
 #endif
-		traceLog(LOG_DEBUG," %x %s %s", bp->type, lte, ip);
+		str = Calloc( 32, sizeof(char));
+		sprintf(str, " %x %s %s", bp->type, lte, ip);
 		break;
 
 #ifdef USE_IPV6
 	case SPOC_IPV6:
 		inet_ntop(AF_INET6, (void *) &bp->v.v6, ip, 65);
-		traceLog(LOG_DEBUG," %s %s", lte, ip);
+		str = Calloc( 96, sizeof(char));
+		sprintf(str, " %s %s", lte, ip);
 		break;
 #endif
 
 	}
+
+	return str;
 }
 
 void
@@ -449,14 +510,19 @@ sl_print(slist_t * slp)
 {
 	slnode_t       *sn;
 	int             i;
+	char 		*s;
 
 	if (slp == 0)
 		return;
 
-	for (sn = slp->head, i = 0; sn->next; sn = sn->next[0], i++) {
-		traceLog(LOG_DEBUG,"%d:", i);
-		boundary_print(sn->item);
+	for (sn = slp->head, i = 0; sn->next ; sn = sn->next[0], i++) {
+		s = boundary_print(sn->item);
+		traceLog(LOG_DEBUG,"%p, %d: %s", sn, i,s );
+		Free( s );
 	}
+	s = boundary_print(sn->item);
+	traceLog(LOG_DEBUG,"%p, %d: %s", sn, i,s );
+	Free( s );
 }
 
 /************************************************************************/
@@ -473,9 +539,20 @@ sl_match(slist_t * slp, boundary_t * item)
 		return 0;
 	}
 
+#ifdef SPOCP_TEST
 	DEBUG(SPOCP_DMATCH) sl_print(slp);
+#endif
+
 	node = sl_rec_find(slp->head, item, slp->lgn, &flag);
 
+#ifdef SPOCP_TEST
+	DEBUG( SPOCP_DMATCH) {
+		traceLog(LOG_DEBUG,"sl_rec_find returned flag:%d, %p",
+			flag,node);
+		if (node != NULL)
+			slnode_print( node );
+	}
+#endif
 	/*
 	 * found a exakt match 
 	 */
@@ -493,8 +570,14 @@ sl_match(slist_t * slp, boundary_t * item)
 				break;
 		}
 	} else { /* what I have is a pointer to a larger value */
-		for (nc = slp->head; nc != node; nc = nc->next[0])
-			lp = varr_or(lp, nc->junc, 1);
+		if (node == slp->head) {
+			lp = varr_or(lp, node->junc, 1 );
+			nc = slp->head->next[0];
+		}
+		else {
+			for (nc = slp->head; nc != node; nc = nc->next[0])
+				lp = varr_or(lp, nc->junc, 1);
+		}
 
 		for (;; nc = nc->next[0]) {
 			up = varr_or(up, nc->junc, 1);
@@ -504,9 +587,23 @@ sl_match(slist_t * slp, boundary_t * item)
 	}
 
 	/* sieve out all the ones that are both below and above */
+#ifdef SPOCP_TEST
+	DEBUG(SPOCP_DMATCH) {
+		varr_print(lp, NULL);
+		varr_print(up, NULL);
+	}
+#endif
+
 	res = varr_and(lp, up);
 	varr_free(lp);
 	varr_free(up);
+
+#ifdef SPOCP_TEST
+	DEBUG(SPOCP_DMATCH) { 
+		traceLog(LOG_DEBUG,"RES:");
+		varr_print(res, NULL);
+	}
+#endif
 
 	return res;
 }
@@ -597,6 +694,18 @@ sl_range_add(slist_t * slp, range_t * rp)
 {
 	slnode_t       *low, *upp;
 	junc_t         *jp;
+
+#ifdef SPOCP_TEST
+	DEBUG(SPOCP_DMATCH) {
+		char *l,*u ;
+
+		l = boundary_print(&rp->lower);
+		u = boundary_print(&rp->upper);
+		traceLog(LOG_DEBUG,"upper: %s, lower: %s", u,l );
+		Free(u);
+		Free(l);
+	}
+#endif
 
 	if ((rp->lower.type & 0xF0) == 0) {	/* no value */
 		low = slp->head;

@@ -92,43 +92,43 @@ srv_free( srv_t *srv)
 		plugin_unload_all( srv->plugin);
 
 	if (srv->id)
-		free( srv->id );
+		Free( srv->id );
 
 	if (srv->certificateFile)
-		free( srv->certificateFile);
+		Free( srv->certificateFile);
 
 	if (srv->privateKey)
-		free( srv->privateKey);
+		Free( srv->privateKey);
 
 	if (srv->caList)
-		free( srv->caList);
+		Free( srv->caList);
 
 	if (srv->dhFile)
-		free( srv->dhFile );
+		Free( srv->dhFile );
 
 	if (srv->SslEntropyFile)
-		free( srv->SslEntropyFile);
+		Free( srv->SslEntropyFile);
 
 	if (srv->passwd)
-		free( srv->passwd );
+		Free( srv->passwd );
 
 	if (srv->logfile)
-		free( srv->logfile);
+		Free( srv->logfile);
 
 	if (srv->pidfile)
-		free( srv->pidfile );
+		Free( srv->pidfile );
 
 	if (srv->uds)
-		free( srv->uds );
+		Free( srv->uds );
 
 	if (srv->rulefile)
-		free( srv->rulefile) ;
+		Free( srv->rulefile) ;
 
 	if (srv->server_id)
-		free( srv->server_id);
+		Free( srv->server_id);
 	
 	if (srv->hostname)
-		free( srv->hostname);
+		Free( srv->hostname);
 
 	if (srv->connections)
 		afpool_free( srv->connections, P_conn_free);

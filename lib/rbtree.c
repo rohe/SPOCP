@@ -49,7 +49,7 @@ rb_free(rbnode_t * rb, ffunc * ff)
 	if (rb) {
 		if (rb->item && ff)
 			ff(rb->item);
-		free(rb);
+		Free(rb);
 	}
 }
 
@@ -68,7 +68,7 @@ rbt_free(rbt_t * rbt)
 {
 	if (rbt) {
 		rb_tree_free(rbt->head, rbt->ff);
-		free(rbt);
+		Free(rbt);
 	}
 }
 
@@ -600,7 +600,7 @@ rb_print(rbnode_t * h, char *path, pfunc * pf)
 
 	tmp = pf(h->item);
 	printf("(%d)%s:%s\n", h->red, path, tmp);
-	free(tmp);
+	Free(tmp);
 
 	if (hl) {
 		path[l] = 'l';

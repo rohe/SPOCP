@@ -33,6 +33,8 @@
 #include <spocp.h>
 #include <proto.h>
 
+/* #define DEBUG_INP 1 */
+
 spocp_result_t  get_str(octet_t * so, octet_t * ro);
 spocp_result_t  get_and(octet_t * oct, element_t * ep);
 
@@ -284,7 +286,7 @@ set_delimiter(range_t * range, octet_t oct)
 	case 'g':
 		switch (oct.val[1]) {
 		case 'e':
-			range->lower.type |= GLE;
+			range->lower.type |= (GT | GLE);
 			bp = &range->lower;
 			break;
 
@@ -298,7 +300,7 @@ set_delimiter(range_t * range, octet_t oct)
 	case 'l':
 		switch (oct.val[1]) {
 		case 'e':
-			range->upper.type |= GLE;
+			range->upper.type |= (LT | GLE);
 			bp = &range->upper;
 			break;
 
@@ -689,8 +691,8 @@ do_range(octet_t * op, element_t * ep)
 		ep->e.range = 0;
 	} else {
 		/*
-		 * boundary_print( &rp->lower ) ; boundary_print( &rp->upper ) 
-		 * ; 
+		 l = boundary_print( &rp->lower ) ;
+		 u = boundary_print( &rp->upper ) ; 
 		 */
 		op->val++;
 		op->len--;
@@ -709,8 +711,14 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"List tag");
 
 	ep->type = SPOC_LIST;
+#ifdef DEBUG_INP
+	traceLog(LOG_DEBUG,"list_new");
+#endif
 	ep->e.list = list_new();
 
+#ifdef DEBUG_INP
+	traceLog(LOG_DEBUG,"element_new");
+#endif
 	pep = ep->e.list->head = element_new();
 
 	/*
@@ -718,6 +726,9 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 	 */
 	pep->memberof = ep;
 	pep->type = SPOC_ATOM;
+#ifdef DEBUG_INP
+	traceLog(LOG_DEBUG,"atom_new");
+#endif
 	pep->e.atom = atom_new(to);
 
 	/*
@@ -753,7 +764,7 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 		char           *tmp;
 		tmp = oct2strdup(to, '\\');
 		traceLog(LOG_DEBUG,"Input end of list with tag [%s]", tmp);
-		free(tmp);
+		Free(tmp);
 	}
 
 	return SPOCP_SUCCESS;
@@ -778,6 +789,8 @@ element_get(octet_t * op, element_t ** epp)
 	spocp_result_t  r = SPOCP_SUCCESS;
 	element_t      *ep = 0;
 
+	traceLog(LOG_DEBUG,"element_get()");
+
 	if (op->len == 0)
 		return SPOCP_SYNTAXERROR;
 
@@ -801,13 +814,8 @@ element_get(octet_t * op, element_t ** epp)
 
 		if ((r = get_str(op, &oct)) == SPOCP_SUCCESS) {
 
-			if (oct.len == 1 && oct.val[0] == '*') {	/* not 
-									 * a
-									 * simple 
-									 * list, 
-									 * star 
-									 * expression 
-									 */
+			if (oct.len == 1 && oct.val[0] == '*') {
+				/* not a simple list, star expression */
 
 				if (*op->val == ')') {
 					ep->type = SPOC_ANY;	/* that's all

@@ -281,7 +281,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 						       atom->val, '\\');
 					traceLog(LOG_DEBUG,"found end of list [%s]",
 						 tmp);
-					free(tmp);
+					Free(tmp);
 				}
 			}
 
@@ -306,7 +306,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 						traceLog( LOG_DEBUG,
 						    "found end of list [%s]",
 						     tmp);
-						free(tmp);
+						Free(tmp);
 					}
 				}
 
@@ -334,23 +334,37 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 			}
 		} else {
 			vl = bp->val.list;
-			if (vl->item[SPOC_ENDOFRULE]) {
-				DEBUG(SPOCP_DMATCH) 
-					traceLog(LOG_DEBUG,"ENDOFRULE marker(4)");
-				/*
-				 * THIS IS WHERE BCOND IS CHECKED 
-				 */
-				si = vl->item[SPOC_ENDOFRULE]->val.id;
-				if (comp->nobe)
-					res = rss_add( res, si, comp);
-				else {
-					r = bcond_check(comp->head, si, comp->blob);
-					if (r == SPOCP_SUCCESS) 
+			while(1) {
+				if (vl->item[SPOC_ENDOFRULE]) {
+					DEBUG(SPOCP_DMATCH) 
+						traceLog(LOG_DEBUG,
+						    "ENDOFRULE marker(4)");
+					/*
+					 * THIS IS WHERE BCOND IS CHECKED 
+					 */
+					si = vl->item[SPOC_ENDOFRULE]->val.id;
+					if (comp->nobe)
 						res = rss_add( res, si, comp);
-				}
-			} 
-			else {
-				traceLog(LOG_DEBUG,"Matching list end");
+					else {
+						r = bcond_check(comp->head, si,
+							comp->blob);
+						if (r == SPOCP_SUCCESS) 
+							res = rss_add( res, si,
+								comp);
+					}
+					break;
+				} 
+				else {
+					bp = vl->item[SPOC_ENDOFLIST];
+					if (bp) {
+						DEBUG(SPOCP_DMATCH) 
+							traceLog(LOG_DEBUG,
+							    "ENDOFLIST marker");
+						vl = bp->val.list;
+					}
+					else
+						break;
+				} 
 			}
 		}
 	} 
@@ -368,7 +382,16 @@ do_arr(varr_t * a, element_t * e, comparam_t * comp)
 	resset_t	*rs = 0, *r;
 
 	while ((jp = varr_junc_pop(a))) {
-		r = element_match_r(jp, e, comp);
+#ifdef SPOCP_TEST
+		traceLog(LOG_DEBUG,"jp:%p, e:%p",jp,e);
+#endif
+		r = ending(jp, e, comp );
+		if (!r || comp->all)
+			r = resset_join(r,element_match_r(jp, e, comp));
+#ifdef SPOCP_TEST
+		DEBUG(SPOCP_DMATCH)
+			resset_print(r);
+#endif
 		if (r) {
 			if (!comp->all) {
 				rs = r;
@@ -451,7 +474,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 			DEBUG(SPOCP_DMATCH) {
 				tmp = oct2strdup(&atom->val, '%');
 				traceLog(LOG_DEBUG,"Matched atom %s", tmp);
-				free(tmp);
+				Free(tmp);
 			}
 			rs = next(ju, ep, comp);
 
@@ -461,7 +484,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 			DEBUG(SPOCP_DMATCH) {
 				tmp = oct2strdup(&atom->val, '%');
 				traceLog(LOG_DEBUG,"Failed to matched atom %s", tmp);
-				free(tmp);
+				Free(tmp);
 			}
 		}
 	}
@@ -503,7 +526,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 				avp = atom2range_match(atom, slp[i], i,
 					&comp->rc);
 				if (avp) {
-					rs = resset_join(rs,do_arr(avp,nep,comp));
+					rs=resset_join(rs,do_arr(avp,nep,comp));
 					if (rs && !comp->all)
 						break;
 				}

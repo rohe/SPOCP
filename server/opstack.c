@@ -25,7 +25,7 @@ opstack_free( opstack_t *osn )
 		if (osn->next)
 			opstack_free( osn->next );
 
-		free( osn );
+		Free( osn );
 	}
 }
 

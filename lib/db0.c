@@ -810,7 +810,7 @@ ruleinst_free(ruleinst_t * rt)
 		 * if( rt->ep ) element_rm( rt->ep ) ; 
 		 */
 
-		free(rt);
+		Free(rt);
 	}
 }
 
@@ -897,7 +897,7 @@ ruleinfo_free(ruleinfo_t * ri)
 {
 	if (ri) {
 		rbt_free(ri->rules);
-		free(ri);
+		Free(ri);
 	}
 }
 
@@ -1072,7 +1072,7 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 			traceLog("...") ;
 			str = oct2strdup( r->rule, '%' );
 			traceLog("Rule[%d]: %s", i, str );
-			free(str);
+			Free(str);
 		}
 		*/
 
@@ -1087,7 +1087,7 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 			char	*str;
 			str = oct2strdup( oct, '%' );
 			traceLog("Rule[%d] => %s", i, str );
-			free(str);
+			Free(str);
 		}
 		*/
 
@@ -1148,7 +1148,7 @@ db_free( db_t *db)
 		bcdef_free( db->bcdef );
 		plugin_unload_all( db->plugins );
 
-		free(db);
+		Free(db);
 	}
 }
 

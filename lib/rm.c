@@ -113,7 +113,7 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 		char           *tmp;
 		tmp = oct2strdup(&ap->val, '\\');
 		traceLog(LOG_DEBUG,"atom_rm: bucket [%s] [%d]", tmp, bucket->refc);
-		free(tmp);
+		Free(tmp);
 	}
 
 	jp = bucket->next;
@@ -459,7 +459,7 @@ set_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
 			ts->next = ds->next;
 		}
 
-		free(ds);
+		Free(ds);
 	}
 
 	return 1;
@@ -570,7 +570,7 @@ rule_rm(junc_t * jp, octet_t * rule, ruleinst_t * rt)
 		char           *tmp;
 		tmp = oct2strdup(rule, '\\');
 		traceLog(LOG_DEBUG,"- rm rule [%s]", tmp);
-		free(tmp);
+		Free(tmp);
 	}
 
 	/*

@@ -473,7 +473,7 @@ main(int argc, char **argv)
 
 	srv_free( &srv );
 	if (cnfg != DEF_CNFG)
-		free( cnfg );
+		Free( cnfg );
 
 	exit(0);
 }

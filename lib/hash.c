@@ -79,7 +79,7 @@ buck_free( buck_t *b )
 {
 	if (b){
 		octclr(&b->val);
-		free(b);
+		Free(b);
 	}
 }
 
@@ -173,7 +173,7 @@ phash_print(phash_t * ht)
 		if (ba[i]) {
 			tmp = oct2strdup(&ba[i]->val, '%');
 			traceLog(LOG_INFO,"Hash[%d]: %s", i, tmp);
-			free(tmp);
+			Free(tmp);
 		}
 }
 
@@ -239,7 +239,7 @@ phash_resize(phash_t * ht)
 		if (oldarr[i])
 			phash_insert_bucket(ht, oldarr[i]);
 
-	free(oldarr);
+	Free(oldarr);
 	/*
 	 * print_phash( ht ) ; 
 	 */
@@ -328,9 +328,9 @@ phash_free(phash_t * ht)
 				if (arr[i] != 0)
 					bucket_free(arr[i]);
 
-			free(ht->arr);
+			Free(ht->arr);
 		}
-		free(ht);
+		Free(ht);
 	}
 }
 
@@ -351,7 +351,7 @@ bucket_rm(phash_t * ht, buck_t * bp)
 	if (i == 0)
 		return;
 
-	free(bp);
+	Free(bp);
 	ht->arr[rc] = 0;
 
 	/*
@@ -370,7 +370,7 @@ bucket_rm(phash_t * ht, buck_t * bp)
 		if (arr[n])
 			phash_insert_bucket(ht, arr[n]);
 
-	free(arr);
+	Free(arr);
 }
 
 int

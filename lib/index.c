@@ -80,9 +80,9 @@ index_free(spocp_index_t * id)
 		if (id->size) {
 			for (i = 0; i < id->n; i++)
 				ruleinst_free(id->arr[i]);
-			free(id->arr);
+			Free(id->arr);
 		}
-		free(id);
+		Free(id);
 	}
 }
 
@@ -94,8 +94,8 @@ index_free(spocp_index_t * id)
 void index_delete( spocp_index_t *si)
 {
 	if (si) {
-		free(si->arr);
-		free(si);
+		Free(si->arr);
+		Free(si);
 	}
 }
 

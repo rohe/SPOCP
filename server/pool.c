@@ -26,15 +26,15 @@ pool_free( pool_t *p, ffunc *ff )
 				next = pi->next;
 				if (ff && pi->info)
 					ff(pi->info);
-				free(pi);
+				Free(pi);
 			}
 			if (pi) {
 				if (ff && pi->info)
 					ff(pi->info);
-				free(pi);
+				Free(pi);
 			}
 		}
-		free(p);
+		Free(p);
 	}
 }
 
@@ -62,7 +62,7 @@ afpool_free( afpool_t *a, ffunc *ff )
 		if (a->active)
 			pool_free( a->active, ff);
 
-		free(a);
+		Free(a);
 	}
 }
 

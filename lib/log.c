@@ -292,7 +292,7 @@ print_elapsed(char *s, struct timeval start, struct timeval end)
 	}
 	end.tv_sec -= start.tv_sec;
 
-	traceLog(LOG_INFO, "%s: %.3ld.%.6ld\n", s, end.tv_sec, end.tv_usec);
+	traceLog(LOG_INFO, "%s: %.3ld.%.6ld", s, end.tv_sec, end.tv_usec);
 }
 
 /*!

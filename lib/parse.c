@@ -41,7 +41,7 @@ chunk_free(spocp_chunk_t * c)
 			oct_free(c->val);
 		if (c->next)
 			chunk_free(c->next);
-		free(c);
+		Free(c);
 	}
 }
 
@@ -113,7 +113,7 @@ charbuf_new( FILE *fp, size_t size )
 	buf = ( spocp_charbuf_t * ) Malloc( sizeof( spocp_charbuf_t ));
 
 	buf->fp = fp;
-	buf->str = (char *) calloc ( size, sizeof( char ));
+	buf->str = (char *) Calloc ( size, sizeof( char ));
 	buf->size = size;
 	buf->start = buf->str ; 
 
@@ -129,8 +129,8 @@ charbuf_new( FILE *fp, size_t size )
 void charbuf_free( spocp_charbuf_t *sc )
 {
 	if( sc ) {
-		if( sc->str ) free(sc->str);
-		free(sc);
+		if( sc->str ) Free(sc->str);
+		Free(sc);
 	}
 }
 
@@ -164,7 +164,7 @@ mycpy(char *res, char *start, int len, int sofar)
 	char           *tmp;
 
 	if (res == 0) {
-		res = (char *) malloc((len + 1) * sizeof(char));
+		res = (char *) Malloc((len + 1) * sizeof(char));
 		strncpy(res, start, len);
 		res[len] = 0;
 	} else {

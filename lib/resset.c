@@ -48,7 +48,7 @@ resset_free( resset_t *rs)
 		octarr_free( rs->blob );
 		if (rs->next)
 			resset_free(rs->next);
-		free( rs );
+		Free( rs );
 	}
 }
 
@@ -152,6 +152,9 @@ resset_and( resset_t *a, resset_t *b)
 void 
 resset_print( resset_t *rs)
 {
+	if (rs == 0)
+		return;
+
 	if (rs->si)
 		index_print(rs->si);
 	else {
@@ -225,7 +228,7 @@ qresult_free( qresult_t *res )
 		resset_free( res->part );
 		if (res->next)
 			qresult_free(res->next);
-		free(res);
+		Free(res);
 	}
 }
 

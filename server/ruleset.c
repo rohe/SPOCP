@@ -119,7 +119,7 @@ ruleset_free(ruleset_t * rs)
 {
 	if (rs) {
 		if (rs->name)
-			free(rs->name);
+			Free(rs->name);
 
 		if (rs->down)
 			ruleset_free(rs->down);
@@ -131,7 +131,7 @@ ruleset_free(ruleset_t * rs)
 		if (rs->db) 
 			db_free( rs->db );
 
-		free(rs);
+		Free(rs);
 	}
 }
 
@@ -204,7 +204,7 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 		char *tmp;
 		tmp = oct2strdup( name, '%' );
 		traceLog(LOG_INFO, "Find ruleset %s", tmp );
-		free(tmp);
+		Free(tmp);
 	}
 	*/
 
@@ -342,7 +342,7 @@ ruleset_create(octet_t * name, ruleset_t *root)
 
 		tmp = oct2strdup( name, '%' );
 		traceLog(LOG_INFO,"Create ruleset: %s", tmp);
-		free(tmp);
+		Free(tmp);
 	}
 	*/
 

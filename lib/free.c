@@ -33,8 +33,8 @@ octet_free(octet_t * op)
 {
 	if (op) {
 		if (op->val)
-			free(op->val);
-		free(op);
+			Free(op->val);
+		Free(op);
 	}
 }
 
@@ -46,11 +46,9 @@ void
 atom_free(atom_t * ap)
 {
 	if (ap) {
-		/*
-		 * ap->val.val is just a link so it shouldn't be freed 
-		 */
+		octclr(&ap->val);
 
-		free(ap);
+		Free(ap);
 	}
 }
 
@@ -66,9 +64,9 @@ range_free(range_t * rp)
 		case SPOC_DATE:
 		case SPOC_ALPHA:
 			if (rp->lower.v.val.len)
-				free(rp->lower.v.val.val);
+				Free(rp->lower.v.val.val);
 			if (rp->upper.v.val.len)
-				free(rp->upper.v.val.val);
+				Free(rp->upper.v.val.val);
 			break;
 
 		case SPOC_TIME:
@@ -78,7 +76,7 @@ range_free(range_t * rp)
 			break;
 		}
 
-		free(rp);
+		Free(rp);
 	}
 }
 
@@ -97,7 +95,7 @@ list_free(list_t * lp)
 			element_free(ep);
 		}
 
-		free(lp);
+		Free(lp);
 	}
 }
 
@@ -138,7 +136,7 @@ element_free(element_t * ep)
 
 		}
 
-		free(ep);
+		Free(ep);
 	}
 }
 
@@ -154,7 +152,7 @@ boundary_free(boundary_t * bp)
 		case SPOC_ALPHA:
 		case SPOC_DATE:
 			if (bp->v.val.len)
-				free(bp->v.val.val);
+				Free(bp->v.val.val);
 			break;
 
 		case SPOC_NUMERIC:
@@ -164,7 +162,7 @@ boundary_free(boundary_t * bp)
 			break;
 		}
 
-		free(bp);
+		Free(bp);
 	}
 }
 
@@ -181,7 +179,7 @@ dset_free(dset_t * ds)
 		}
 		if (ds->next)
 			dset_free(ds->next);
-		free(ds);
+		Free(ds);
 	}
 }
 
@@ -232,6 +230,6 @@ junc_free(junc_t * juncp)
 				branch_free(juncp->item[i]);
 			}
 		}
-		free(juncp);
+		Free(juncp);
 	}
 }

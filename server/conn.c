@@ -1,4 +1,3 @@
-
 /***************************************************************************
                            conn.c  -  description
                              -------------------
@@ -20,7 +19,7 @@ int             conn_close(conn_t * conn);
 
 void            conn_iobuf_clear(conn_t * con);
 
-int x_f = 0;
+int x_f = 1;
 
 /*
  * ---------------------------------------------------------------------- 
@@ -76,29 +75,29 @@ conn_env_reset(conn_t * con)
 	if (con) {
 #ifdef HAVE_SSL
 		if (con->subjectDN) {
-			free(con->subjectDN);
+			Free(con->subjectDN);
 			con->subjectDN = 0;
 		}
 		if (con->issuerDN) {
-			free(con->issuerDN);
+			Free(con->issuerDN);
 			con->issuerDN = 0;
 		}
 		if (con->cipher) {
-			free(con->cipher);
+			Free(con->cipher);
 			con->cipher = 0;
 		}
 		if (con->ssl_vers) {
-			free(con->ssl_vers);
+			Free(con->ssl_vers);
 			con->ssl_vers = 0;
 		}
 		if (con->transpsec) {
-			free(con->transpsec);
+			Free(con->transpsec);
 			con->transpsec = 0;
 		}
 #endif
 #ifdef HAVE_SASL
 		if (con->sasl_mech) {
-			free(con->sasl_mech);
+			Free(con->sasl_mech);
 			con->sasl_mech = 0;
 		}
 		if (con->sasl) {
@@ -106,7 +105,7 @@ conn_env_reset(conn_t * con)
 			con->sasl = 0;
 		}
 		if (con->sasl_username) {
-			free(con->sasl_username);
+			Free(con->sasl_username);
 			con->sasl_username = 0;
 		}
 #endif
@@ -118,19 +117,19 @@ spocp_req_info_free( spocp_req_info_t *sri )
 {
 	if (sri) {
 		if (sri->hostname) {
-			free(sri->hostname);
+			Free(sri->hostname);
 		}
 		if (sri->hostaddr) {
-			free(sri->hostaddr);
+			Free(sri->hostaddr);
 		}
 		if (sri->invhost) {
-			free(sri->invhost);
+			Free(sri->invhost);
 		}
 		if (sri->subject) {
 			oct_free( sri->subject );
 		}
 		if (sri->sexp_subject) {
-			free( sri->sexp_subject );
+			Free( sri->sexp_subject );
 		}
 		memset( sri, 0, sizeof( spocp_req_info_t ));
 	}
@@ -161,7 +160,7 @@ conn_free(conn_t * con)
 		iobuf_free(con->in);
 		iobuf_free(con->out);
 		pthread_mutex_destroy(&con->clock);
-		free(con);
+		Free(con);
 	}
 }
 
@@ -461,7 +460,7 @@ send_results(conn_t * conn)
 
 		tmp = str_esc( out->r, out->w - out->r );
 		traceLog(LOG_INFO,"[%d]SEND_RESULT: [%s]", conn->fd, tmp);
-		free( tmp );
+		Free( tmp );
 	}
 
 	if (x_f)

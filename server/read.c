@@ -26,8 +26,8 @@ ptree_free(ptree_t * ptp)
 		if (ptp->next)
 			ptree_free(ptp->next);
 		if (ptp->val.size)
-			free(ptp->val.val);
-		free(ptp);
+			Free(ptp->val.val);
+		Free(ptp);
 	}
 }
 /*
@@ -360,7 +360,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 						  &name, &dat0);
 					octclr(&dat0);
 				}
-				free(tmp);
+				Free(tmp);
 			}
 		}
 		/*
@@ -385,7 +385,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 					octclr(&dat0);
 				}
 
-				free(tmp);
+				Free(tmp);
 			}
 		}
 		/*
@@ -396,7 +396,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 				continue;
 			tmp = oct2strdup(oa->arr[i], 0);
 			r = dback_read(dbc, tmp, &dat0, &dat1, &bcname);
-			free(tmp);
+			Free(tmp);
 
 			roa = octarr_add(roa, octdup(&dat0));
 			octclr(&dat0);

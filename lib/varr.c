@@ -42,8 +42,8 @@ void
 varr_free(varr_t * va)
 {
 	if (va) {
-		free(va->arr);
-		free(va);
+		Free(va->arr);
+		Free(va);
 	}
 }
 
@@ -277,6 +277,19 @@ varr_len(varr_t * va)
 		return va->n;
 	else
 		return 0;
+}
+
+void 
+varr_print( varr_t *va, ffunc *item_print )
+{
+	int i;
+
+	traceLog(LOG_DEBUG,"VARR:");
+	for( i = 0; i < va->n; i++ )
+		if (item_print == NULL)
+			traceLog(LOG_DEBUG, "%p", va->arr[i] );
+		else
+			item_print( va->arr[i] );
 }
 
 /*

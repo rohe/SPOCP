@@ -55,7 +55,7 @@ pdyn_free(pdyn_t * pdp)
 		if (pdp->cv)
 			cache_free( pdp->cv);
 		
-		free(pdp);
+		Free(pdp);
 	}
 }
 
@@ -185,7 +185,7 @@ plugin_load(plugin_t * top, char *name, char *load)
 
 	new = (plugin_t *) dlsym(handle, modulename);
 
-	free(modulename);
+	Free(modulename);
 
 	if (new == 0 || new->magic != MODULE_MAGIC_COOKIE) {
 		traceLog(LOG_ERR,"%s: Not a proper plugin_struct", name);
@@ -216,7 +216,7 @@ plugin_unload( plugin_t *pl )
 		if (pl->conf);
 			/* how do I remove this */
 		if (pl->name) 
-			free( pl->name );
+			Free( pl->name );
 		if (pl->handle)
 			dlclose( pl->handle );
 

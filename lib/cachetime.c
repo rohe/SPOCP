@@ -93,9 +93,9 @@ cachetime_free(cachetime_t * ct)
 {
 	if (ct) {
 		if (ct->pattern.size)
-			free(ct->pattern.val);
+			Free(ct->pattern.val);
 		if (ct->next)
 			cachetime_free(ct->next);
-		free(ct);
+		Free(ct);
 	}
 }

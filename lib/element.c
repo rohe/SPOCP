@@ -150,7 +150,7 @@ element_set_reduce( element_t *ep )
 	element_print( op, ep );
 	tmp = oct2strdup( op, 0 );
 	traceLog(LOG_DEBUG,"Reducing: [%s]", tmp );
-	free( tmp );
+	Free( tmp );
 #endif
 
 	varr_rm_dup( ep->e.set, P_element_cmp, P_element_free ); 
@@ -160,7 +160,7 @@ element_set_reduce( element_t *ep )
 	element_print( op, ep );
 	tmp = oct2strdup( op, 0 );
 	traceLog(LOG_DEBUG, "1:st Reduction to [%s]", tmp);
-	free(tmp);
+	Free(tmp);
 #endif
 
 	va = ep->e.set;
@@ -178,7 +178,7 @@ element_set_reduce( element_t *ep )
 	element_print( op, ep );
 	tmp = oct2strdup( op, 0 );
 	traceLog(LOG_DEBUG, "2:nd Reduction to [%s]", tmp);
-	free(tmp);
+	Free(tmp);
 	oct_free( op );
 #endif
 

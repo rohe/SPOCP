@@ -50,7 +50,7 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 		tmp = oct2strdup( spec, 0 );
 		traceLog( LOG_ERR,
 		    "Error in boundary condition specification \"%s\"", tmp);
-		free(tmp);
+		Free(tmp);
 		return 0;
 	}
 
@@ -61,7 +61,7 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 	if ((p = plugin_match(plt, spec)) == 0) {
 		tmp = oct2strdup(spec, 0 );
 		traceLog(LOG_ERR,"Doesn't match any known plugin \"%s\"",tmp);
-		free(tmp);
+		Free(tmp);
 		return 0;
 	}
 
@@ -83,13 +83,13 @@ bcspec_free(bcspec_t * bcs)
 {
 	if (bcs) {
 		if (bcs->name)
-			free(bcs->name);
+			Free(bcs->name);
 		if (bcs->args)
 			octarr_free(bcs->args);
 		if (bcs->spec)
 			oct_free(bcs->spec);
 
-		free(bcs);
+		Free(bcs);
 	}
 }
 
@@ -129,7 +129,7 @@ bcexp_free(bcexp_t * bce)
 			while ((bp = varr_bcexp_pop(bce->val.arr)) != 0)
 				bcexp_free(bp);
 			if (bce->val.arr)
-				free(bce->val.arr);
+				Free(bce->val.arr);
 			break;
 
 		case NOT:
@@ -145,7 +145,7 @@ bcexp_free(bcexp_t * bce)
 			break;
 
 		}
-		free(bce);
+		Free(bce);
 	}
 }
 
@@ -160,7 +160,7 @@ bcdef_free(bcdef_t * bcd)
 
 	if (bcd) {
 		if (bcd->name)
-			free(bcd->name);
+			Free(bcd->name);
 		if (bcd->exp)
 			bcexp_free(bcd->exp);
 		while (bcd->users && bcd->users->n) {
@@ -171,7 +171,7 @@ bcdef_free(bcdef_t * bcd)
 		}
 
 		if (bcd->users)
-			free(bcd->users);
+			Free(bcd->users);
 	}
 }
 
@@ -270,8 +270,8 @@ stree_free(stree_t * stp)
 		if (stp->next)
 			stree_free(stp->next);
 		if (stp->val.size)
-			free(stp->val.val);
-		free(stp);
+			Free(stp->val.val);
+		Free(stp);
 	}
 }
 
@@ -310,7 +310,7 @@ parse_bcexp(octet_t * sexp)
 	stree_t	*ptp, *ntp = 0, *ptr;
 
 	if (*sexp->val == '(') {
-		ptp = (stree_t *) calloc(1, sizeof(stree_t));
+		ptp = (stree_t *) Calloc(1, sizeof(stree_t));
 		ptp->list = 1;
 		sexp->val++;
 		sexp->len--;
@@ -351,7 +351,7 @@ parse_bcexp(octet_t * sexp)
 			return 0;
 		}
 	} else {
-		ptp = (stree_t *) calloc(1, sizeof(stree_t));
+		ptp = (stree_t *) Calloc(1, sizeof(stree_t));
 		if (get_str(sexp, &ptp->val) != SPOCP_SUCCESS) {
 			stree_free(ptp);
 			return 0;
@@ -448,7 +448,7 @@ transv_stree(plugin_t * plt, stree_t * st, bcdef_t * list, bcdef_t * parent)
 				if ((bce->val.single =
 				     transv_stree(plt, st->next, list,
 						  parent)) == 0) {
-					free(bce);
+					Free(bce);
 					return 0;
 				}
 			} else
@@ -818,7 +818,7 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 		oct_assign(&tmp, bcd->name);
 		bcname = bcname_make(&tmp);
 		dback_save(dbc, bcname, data, 0, 0);
-		free(bcname);
+		Free(bcname);
 	}
 
 	bcd->exp = bce;
@@ -861,7 +861,7 @@ bcdef_del(db_t * db, dbcmd_t * dbc, octet_t * name)
 	bcname = bcname_make(name);
 
 	dback_delete(dbc, bcname);
-	free(bcname);
+	Free(bcname);
 
 	/*
 	 * this boundary conditions might have links to other those links
@@ -1021,7 +1021,7 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 	if (r == SPOCP_SUCCESS) {	/* if so ri has to be defined */
 		str = oct2strdup(ri->rule, '%');
 		traceLog(LOG_INFO,"Matched rule \"%s\"", str);
-		free(str);
+		Free(str);
 	}
 
 	return r;

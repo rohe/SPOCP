@@ -170,7 +170,7 @@ get_path(void * vp)
 	rp = sexp_printv(res, &size, "o", wi->oppath);
 
 	if (rp == 0)
-		free(res);
+		Free(res);
 
 	return rp;
 }
@@ -191,7 +191,7 @@ get_action(void * vp)
 	rp = sexp_printv(res, &size, "o", &wi->oper);
 
 	if (rp == 0)
-		free(res);
+		Free(res);
 
 	return rp;
 }
@@ -218,7 +218,7 @@ get_arguments(void * vp)
 	rp = sexp_printa(res, &size, format, (void **) wi->oparg->arr);
 
 	if (rp == 0)
-		free(res);
+		Free(res);
 
 	return rp;
 }
@@ -388,12 +388,12 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 	if ((res = element_get(&oct, &ep)) != SPOCP_SUCCESS) {
 		traceLog(LOG_ERR,"The S-expression \"%s\" didn't parse OK", sexp);
 
-		free(sexp);
+		Free(sexp);
 		return res;
 	}
 
 	if (oct.len) {		/* shouldn't be anything left*/
-		free(sexp);
+		Free(sexp);
 		element_free(ep);
 		return SPOCP_DENIED;
 	}
@@ -404,7 +404,7 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 
 	res = allowed(rs->db->jp, &comp, &rset);
 
-	free(sexp);
+	Free(sexp);
 	element_free(ep);
 	resset_free( rset );
 

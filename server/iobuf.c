@@ -40,8 +40,8 @@ iobuf_free( spocp_iobuf_t *io)
 {
 	if (io) {
 		if (io->bsize)
-			free( io->buf );
-		free(io);
+			Free( io->buf );
+		Free(io);
 	}
 }
 

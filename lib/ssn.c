@@ -315,12 +315,12 @@ ssn_free(ssn_t * pssn)
 			 * No next either 
 			 */
 			down = pssn->down;
-			free(pssn);
+			Free(pssn);
 			pssn = down;
 		} else {
 			if (pssn->next)
 				junc_free(pssn->next);
-			free(pssn);
+			Free(pssn);
 			pssn = 0;
 		}
 	}
