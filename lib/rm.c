@@ -250,7 +250,7 @@ Returns:
 
 int prefix_rm( branch_t *bp, element_t *elemp, ruleinst_t *rt ) 
 {
-  atom_t *ap = elemp->e.prefix ;
+  atom_t *ap = elemp->e.atom;
 
   DEBUG(SPOCP_DSTORE) traceLog( "rm prefix \"%s\"", ap->val.val ) ;
 
@@ -269,7 +269,7 @@ Returns:
 
 int suffix_rm( branch_t *bp, element_t *elemp, ruleinst_t *rt ) 
 {
-  atom_t *ap = elemp->e.suffix ;
+  atom_t *ap = elemp->e.atom;
 
   DEBUG(SPOCP_DSTORE) traceLog( "rm suffix \"%s\"", ap->val.val ) ;
 
@@ -489,14 +489,11 @@ int element_rm( junc_t *jp, element_t *ep, ruleinst_t *rt )
     case SPOC_RANGE :
       break ;
 
-    case SPOC_BCOND :
-      break ;
-
     case SPOC_LIST :
       r = list_rm( bp, ep, rt ) ;
       break ;
 
-    case SPOC_OR :
+    case SPOC_SET :
       break ;
 
   }
