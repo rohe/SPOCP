@@ -1,7 +1,7 @@
 
 /***************************************************************************
-                          ldapset.c  -  description
-                             -------------------
+			ldapset.c  -  description
+			   -------------------
  ***************************************************************************/
 
 #include <config.h>
@@ -68,8 +68,8 @@
 
 
 typedef struct _scnode {
-	char           *str;
-	int             size;
+	char	 *str;
+	int	   size;
 	struct _scnode *left;
 	struct _scnode *right;
 	struct _scnode *up;
@@ -84,12 +84,12 @@ typedef struct _scnode {
 
 #define SC_KEYWORD 0
 #define SC_VALUE   1
-#define SC_ATTR    2
-#define SC_AND     3
-#define SC_OR      4
-#define SC_VAL     5
-#define SC_DN      6
-#define SC_BASE    7
+#define SC_ATTR	2
+#define SC_AND	 3
+#define SC_OR	4
+#define SC_VAL	 5
+#define SC_DN	6
+#define SC_BASE	7
 #define SC_ONELEV  8
 #define SC_SUBTREE 9
 #define SC_UNDEF   10
@@ -100,20 +100,20 @@ typedef struct _scnode {
 #define SC_TYPE_VAL 17
 
 typedef struct _strlistnode {
-	char           *str;
+	char	 *str;
 	struct _strlistnode *next;
 	struct _strlistnode *prev;
 } lsln_t;
 
 typedef struct _vset {
-	int             scope;	/* SC_BASE | SC_ONELEV | SC_SUBTREE */
-	int             type;	/* SC_AND | SC_OR */
-	int             restype;	/* SC_VAL | SC_DN */
-	int             recurs;
-	char           *attr;
-	lsln_t         *attset;
-	lsln_t         *dn;
-	lsln_t         *val;
+	int	   scope;	/* SC_BASE | SC_ONELEV | SC_SUBTREE */
+	int	   type;	/* SC_AND | SC_OR */
+	int	   restype;	/* SC_VAL | SC_DN */
+	int	   recurs;
+	char	 *attr;
+	lsln_t	   *attset;
+	lsln_t	   *dn;
+	lsln_t	   *val;
 	struct _vset   *left;	/* which vset will I get the lefthand Set from 
 				 */
 	struct _vset   *right;	/* which vset will I get the righthand Set
@@ -125,27 +125,29 @@ typedef struct _vset {
  * ========================================================== 
  */
 
-void            scnode_free(scnode_t * scp);
-scnode_t       *scnode_new(int size);
-scnode_t       *scnode_get(octet_t * op, spocp_result_t * rc);
-scnode_t       *tree_top(scnode_t * scp);
+static char	*ls_strdup( char *s );
 
-vset_t         *vset_new(void);
-void            vset_free(vset_t * sp);
-vset_t         *vset_get(scnode_t * scp, int type, octarr_t * oa,
+void	  scnode_free(scnode_t * scp);
+scnode_t	 *scnode_new(int size);
+scnode_t	 *scnode_get(octet_t * op, spocp_result_t * rc);
+scnode_t	 *tree_top(scnode_t * scp);
+
+vset_t	   *vset_new(void);
+void	  vset_free(vset_t * sp);
+vset_t	   *vset_get(scnode_t * scp, int type, octarr_t * oa,
 			 spocp_result_t * rc);
-void            vset_print(vset_t * sp, int ns);
+void	  vset_print(vset_t * sp, int ns);
 
-vset_t         *vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc);
+vset_t	   *vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc);
 
-lsln_t         *get_results(LDAP *, LDAPMessage *, lsln_t *, lsln_t *, int,
-			    int);
-void            rm_children(vset_t * sp);
+lsln_t	   *get_results(LDAP *, LDAPMessage *, lsln_t *, lsln_t *, int,
+				int);
+void	  rm_children(vset_t * sp);
 
-lsln_t         *do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret);
-LDAP           *open_conn(char *server, spocp_result_t * ret);
+lsln_t	   *do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret);
+LDAP	 *open_conn(char *server, spocp_result_t * ret);
 
-befunc          ldapset_test;
+befunc	ldapset_test;
 
 /*
  * ========================================================== 
@@ -154,7 +156,7 @@ befunc          ldapset_test;
 static lsln_t  *
 lsln_new(char *s)
 {
-	lsln_t         *new;
+	lsln_t	   *new;
 
 	new = (lsln_t *) calloc(1, sizeof(lsln_t));
 
@@ -178,7 +180,7 @@ lsln_free(lsln_t * slp)
 static lsln_t  *
 lsln_add(lsln_t * slp, char *s)
 {
-	lsln_t         *loc;
+	lsln_t	   *loc;
 
 	if (slp == 0)
 		return lsln_new(s);
@@ -198,7 +200,7 @@ lsln_add(lsln_t * slp, char *s)
 static lsln_t  *
 lsln_dup(lsln_t * old)
 {
-	lsln_t         *new = 0;
+	lsln_t	   *new = 0;
 
 	for (; old; old = old->next)
 		new = lsln_add(new, old->str);
@@ -209,7 +211,7 @@ lsln_dup(lsln_t * old)
 static lsln_t  *
 lsln_or(lsln_t * a, lsln_t * b)
 {
-	lsln_t         *ls, *res = 0;
+	lsln_t	   *ls, *res = 0;
 
 	LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "lsnl_or" ) ; 
 	for (ls = a; ls; ls = ls->next) {
@@ -251,7 +253,7 @@ lsln_join(lsln_t * a, lsln_t * b)
 static lsln_t  *
 lsln_and(lsln_t * a, lsln_t * b)
 {
-	lsln_t         *ls, *res = 0;
+	lsln_t	   *ls, *res = 0;
 
 	LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "lsnl_and" ) ; 
 	for (; b; b = b->next) {
@@ -287,7 +289,7 @@ lsln_find(lsln_t * sl, char *s)
  * static lsln_t *lsln_next( lsln_t *sl ) { return sl->next ; } 
  */
 
-static char    *
+static char	*
 lsln_get_val(lsln_t * sl)
 {
 	return sl->str;
@@ -296,7 +298,7 @@ lsln_get_val(lsln_t * sl)
 static int
 lsln_values(lsln_t * sl)
 {
-	int             i = 0;
+	int	   i = 0;
 
 	for (; sl; sl = sl->next)
 		i++;
@@ -307,8 +309,8 @@ lsln_values(lsln_t * sl)
 static char   **
 lsln_to_arr(lsln_t * sl)
 {
-	char          **arr;
-	int             i;
+	char	**arr;
+	int	   i;
 
 	arr = (char **) calloc(lsln_values(sl) + 1, sizeof(char *));
 
@@ -327,15 +329,58 @@ lsln_print( lsln_t *ll )
 		traceLog( LOG_INFO, "(%d) \"%s\"", i, ll->str);
 }
 
+static char *
+ls_strdup( char *s )
+{
+	 char *new, *sp, *cp;
+
+	if( strstr( s, "*()\\") == NULL ) {
+		return strdup( s );
+	}
+
+	/* Probably much to big but better safe than sorry */
+	new = ( char * ) malloc((strlen(s)*3+1) * sizeof( char ));
+
+	for( sp = s, cp = new; *sp; sp++ ) {
+		switch( *sp ) {
+		case '*':
+		  *cp++ = '\\';
+		  *cp++ = '2';
+		  *cp++ = 'a';
+		  break;
+		case '(':
+		  *cp++ = '\\';
+		  *cp++ = '2';
+		  *cp++ = '8';
+		  break;
+		case ')':
+		  *cp++ = '\\';
+		  *cp++ = '2';
+		  *cp++ = '9';
+		  break;
+		case '\\':
+		  *cp++ = '\\';
+		  *cp++ = '5';
+		  *cp++ = 'c';
+		  break;
+		default:
+		  *cp++ = *sp;
+		}
+	}
+	*cp = '\0';
+
+	return new;
+}
+
 /*
  * ========================================================== 
  */
 
-static char           *
+static char	 *
 safe_strcat(char *dest, char *src, int *size)
 {
-	char           *tmp;
-	int             dl, sl;
+	char	 *tmp;
+	int	   dl, sl;
 
 	if (src == 0 || *size <= 0)
 		return 0;
@@ -373,10 +418,10 @@ scnode_free(scnode_t * scp)
 	}
 }
 
-scnode_t       *
+scnode_t	 *
 scnode_new(int size)
 {
-	scnode_t       *scp;
+	scnode_t	 *scp;
 
 	scp = (scnode_t *) calloc(1, sizeof(scnode_t));
 
@@ -391,10 +436,10 @@ scnode_new(int size)
 	return scp;
 }
 
-vset_t         *
+vset_t	   *
 vset_new(void)
 {
-	vset_t         *vs;
+	vset_t	   *vs;
 
 	vs = (vset_t *) calloc(1, sizeof(vset_t));
 
@@ -438,9 +483,9 @@ vset_free(vset_t * sp)
 void
 vset_print(vset_t * sp, int ns)
 {
-	char            space[16];
-	int             i;
-	lsln_t         *ts;
+	char	  space[16];
+	int	   i;
+	lsln_t	   *ts;
 
 	memset(space, 0, sizeof(space));
 	memset(space, ' ', ns);
@@ -470,7 +515,7 @@ vset_print(vset_t * sp, int ns)
 		vset_print(sp->right, ns + 1);
 }
 
-scnode_t       *
+scnode_t	 *
 tree_top(scnode_t * scp)
 {
 	if (scp == 0)
@@ -486,12 +531,12 @@ tree_top(scnode_t * scp)
  * routine that parses the valueset part of a ldapset boundary condition
  * returns a three structure with the individual elements 
  */
-scnode_t       *
+scnode_t	 *
 scnode_get(octet_t * op, spocp_result_t * rc)
 {
-	char           *cp, *sp, c;
-	scnode_t       *psc = 0, *nsc;
-	int             j = 0, l, d;
+	char	 *cp, *sp, c;
+	scnode_t	 *psc = 0, *nsc;
+	int	   j = 0, l, d;
 
 	*rc = 0;
 
@@ -589,7 +634,7 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 			 * NULL Strings, not allowed 
 			 */
 			if ((c == '"' && (*(sp + 1) == '"')) ||
-			    (c == '<' && (*(sp + 1) == '>')) || (l - j == 1)) {
+				(c == '<' && (*(sp + 1) == '>')) || (l - j == 1)) {
 				scnode_free(tree_top(psc));
 				*rc = SC_SYNTAXERROR;
 				return 0;
@@ -597,15 +642,15 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 
 			if (*sp == '"') {	/* go to end marker */
 				for (cp = ++sp, j = --l; j && *cp != '"';
-				     cp++, j--);
+					 cp++, j--);
 
 			} else if (*sp == '<') {	/* go to end marker */
 				for (cp = ++sp, j = --l; j && *cp != '>';
-				     cp++, j--);
+					 cp++, j--);
 
 			} else
 				for (cp = sp, j = l; j && !SC_SPEC(*cp);
-				     cp++, j--);
+					 cp++, j--);
 
 			if (c == '"' || c == '<') {
 				if (j == 0) {
@@ -644,13 +689,13 @@ scnode_get(octet_t * op, spocp_result_t * rc)
  * Gets the valueset definition broken down into a tree structure and from
  * there assigns values to parts 
  */
-vset_t         *
+vset_t	   *
 vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 {
-	vset_t         *sp = 0;
-	char            c, *cp, *ap;
-	int             n, rt = SC_UNDEF;
-	char           *dnp;
+	vset_t	   *sp = 0;
+	char	  c, *cp, *ap;
+	int	   n, rt = SC_UNDEF;
+	char	 *dnp;
 
 
 	c = *(scp->str);
@@ -775,7 +820,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 		}
 
 		sp->dn =
-		    lsln_add(sp->dn, strndup(scp->str + 1, scp->size - 3));
+			lsln_add(sp->dn, strndup(scp->str + 1, scp->size - 3));
 		break;
 
 	case '[':
@@ -789,7 +834,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 		}
 
 		sp->val =
-		    lsln_add(sp->val, strndup(scp->str + 1, scp->size - 3));
+			lsln_add(sp->val, strndup(scp->str + 1, scp->size - 3));
 		break;
 
 	case '{':		/* str == "{}" */
@@ -845,7 +890,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 			 */
 
 			if (*scp->str != '\\'
-			    || (*dnp < '0' || *dnp >= ('0' + oa->n))) {
+				|| (*dnp < '0' || *dnp >= ('0' + oa->n))) {
 				vset_free(sp);
 				*rc = SPOCP_SYNTAXERROR;
 				return 0;
@@ -856,8 +901,8 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 					return 0;
 				}
 				sp->dn =
-				    lsln_add(sp->dn,
-					     oct2strdup(oa->arr[n], '\\'));
+					lsln_add(sp->dn,
+						 oct2strdup(oa->arr[n], '\\'));
 			}
 		} else {
 			dnp = scp->str + 1;
@@ -881,8 +926,8 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 					return 0;
 				}
 				sp->dn =
-				    lsln_add(sp->dn,
-					     oct2strdup(oa->arr[n], '\\'));
+					lsln_add(sp->dn,
+						 oct2strdup(oa->arr[n], '\\'));
 			}
 		}
 	}
@@ -890,15 +935,15 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 	return sp;
 }
 
-lsln_t         *
+lsln_t	   *
 get_results(LDAP * ld,
-	    LDAPMessage * res, lsln_t * attr, lsln_t * val, int type, int ao)
+		LDAPMessage * res, lsln_t * attr, lsln_t * val, int type, int ao)
 {
-	int             i, nr, wildcard = 0;
-	lsln_t         *set = 0;
-	LDAPMessage    *e;
-	BerElement     *be = NULL;
-	char          **vect = 0, *ap, *dn;
+	int	   i, nr, wildcard = 0;
+	lsln_t	   *set = 0;
+	LDAPMessage	*e;
+	BerElement	 *be = NULL;
+	char	**vect = 0, *ap, *dn;
 
 	nr = ldap_count_entries(ld, res);
 
@@ -919,7 +964,7 @@ get_results(LDAP * ld,
 			set = lsln_dup(val);
 
 		for (e = ldap_first_entry(ld, res); e != NULL;
-		     e = ldap_next_entry(ld, e)) {
+			 e = ldap_next_entry(ld, e)) {
 
 			/*
 			 * I'm might not be really interested in the attribute 
@@ -932,7 +977,7 @@ get_results(LDAP * ld,
 				 * DNs" ) ; 
 				 */
 				dn = ldap_get_dn(ld, e);
-				set = lsln_add(set, strdup(dn));
+				set = lsln_add(set, ls_strdup(dn));
 				ldap_memfree(dn);
 			} else {
 				/*
@@ -940,8 +985,8 @@ get_results(LDAP * ld,
 				 * attribute values" ) ; 
 				 */
 				for (ap = ldap_first_attribute(ld, e, &be);
-				     ap != NULL;
-				     ap = ldap_next_attribute(ld, e, be)) {
+					 ap != NULL;
+					 ap = ldap_next_attribute(ld, e, be)) {
 					/*
 					 * unsigned comparision between
 					 * attribute names 
@@ -967,12 +1012,12 @@ get_results(LDAP * ld,
 						 * I'm looking for 
 						 */
 						if ( !wildcard &&
-						    lsln_find(val, vect[i]) == 0)
+							lsln_find(val, vect[i]) == 0)
 							continue;
 
 						set =
-						    lsln_add(set,
-							     strdup(vect[i]));
+							lsln_add(set,
+								 ls_strdup(vect[i]));
 					}
 
 					ldap_value_free(vect);
@@ -984,7 +1029,7 @@ get_results(LDAP * ld,
 		 * traceLog(LOG_DEBUG,"SC_AND") ; 
 		 */
 		for (e = ldap_first_entry(ld, res); e != NULL;
-		     e = ldap_next_entry(ld, e)) {
+			 e = ldap_next_entry(ld, e)) {
 
 			if (type == SC_DN) {
 				/*
@@ -992,7 +1037,7 @@ get_results(LDAP * ld,
 				 * DNs" ) ; 
 				 */
 				dn = ldap_get_dn(ld, e);
-				set = lsln_add(set, strdup(dn));
+				set = lsln_add(set, ls_strdup(dn));
 				ldap_memfree(dn);
 			} else {
 				/*
@@ -1001,8 +1046,8 @@ get_results(LDAP * ld,
 				 */
 
 				for (ap = ldap_first_attribute(ld, e, &be);
-				     ap != NULL;
-				     ap = ldap_next_attribute(ld, e, be)) {
+					 ap != NULL;
+					 ap = ldap_next_attribute(ld, e, be)) {
 
 					/*
 					 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Got
@@ -1019,12 +1064,12 @@ get_results(LDAP * ld,
 
 					for (i = 0; vect[i]; i++) {
 						if (!wildcard &&
-						    lsln_find(val, vect[i]) == 0)
+							lsln_find(val, vect[i]) == 0)
 							continue;
 
 						set =
-						    lsln_add(set,
-							     strdup(vect[i]));
+							lsln_add(set,
+								 ls_strdup(vect[i]));
 					}
 
 					ldap_value_free(vect);
@@ -1048,12 +1093,12 @@ get_results(LDAP * ld,
  * server is [ user [ : password ] @ ] host 
  */
 
-LDAP           *
+LDAP	 *
 open_conn(char *server, spocp_result_t * ret)
 {
-	LDAP           *ld = 0;
-	int             rc, vers = 3;
-	char           *user = 0, *passwd = 0;
+	LDAP	 *ld = 0;
+	int	   rc, vers = 3;
+	char	 *user = 0, *passwd = 0;
 
 	if ((passwd = index(server, '@'))) {
 		user = server;
@@ -1068,7 +1113,7 @@ open_conn(char *server, spocp_result_t * ret)
 
 	if ((ld = ldap_init(server, 0)) == 0) {
 		LOG( SPOCP_WARNING )
-		    traceLog(LOG_DEBUG, "Error: Couldn't initialize the LDAP server") ; 
+			traceLog(LOG_DEBUG, "Error: Couldn't initialize the LDAP server") ; 
 		*ret = SPOCP_INFO_UNAVAIL;
 		return 0;
 	}
@@ -1079,9 +1124,9 @@ open_conn(char *server, spocp_result_t * ret)
 	 */
 
 	if (ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &vers) !=
-	    LDAP_SUCCESS) {
+		LDAP_SUCCESS) {
 		LOG( SPOCP_WARNING )
-		    traceLog(LOG_WARNING, "Error: Couldn't set the version") ; 
+			traceLog(LOG_WARNING, "Error: Couldn't set the version") ; 
 		*ret = SPOCP_INFO_UNAVAIL;
 		ldap_unbind(ld);
 		return 0;
@@ -1091,9 +1136,9 @@ open_conn(char *server, spocp_result_t * ret)
 	 * automatic follow referrals 
 	 */
 	if (ldap_set_option(ld, LDAP_OPT_REFERRALS, LDAP_OPT_ON) !=
-	    LDAP_SUCCESS) {
+		LDAP_SUCCESS) {
 		LOG( SPOCP_WARNING )
-		    traceLog(LOG_WARNING, "Error: Couldn't set follow referrals") ; 
+			traceLog(LOG_WARNING, "Error: Couldn't set follow referrals") ; 
 		*ret = SPOCP_INFO_UNAVAIL;
 		ldap_unbind(ld);
 		return 0;
@@ -1102,7 +1147,7 @@ open_conn(char *server, spocp_result_t * ret)
 
 	if ((rc = ldap_simple_bind_s(ld, user, passwd)) != LDAP_SUCCESS) {
 		LOG( SPOCP_WARNING )
-		    traceLog(LOG_WARNING, "LDAP bind failed to %s", server ) ; 
+			traceLog(LOG_WARNING, "LDAP bind failed to %s", server ) ; 
 		*ret = SPOCP_INFO_UNAVAIL;
 		ldap_unbind(ld);
 		return 0;
@@ -1122,16 +1167,16 @@ open_conn(char *server, spocp_result_t * ret)
 	return ld;
 }
 
-lsln_t         *
+lsln_t	   *
 do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 {
-	int             rc, scope, size = 256, na;
-	lsln_t         *arr = 0, *sa = 0;
-	lsln_t         *attrset = vsetp->attset, *dn = vsetp->dn, *val =
-	    vsetp->val;
-	char           *base, *va, **attr;
-	char           *filter;
-	LDAPMessage    *res = 0;
+	int	   rc, scope, size = 256, na;
+	lsln_t	   *arr = 0, *sa = 0;
+	lsln_t	   *attrset = vsetp->attset, *dn = vsetp->dn, *val =
+		vsetp->val;
+	char	 *base, *va, **attr;
+	char	 *filter;
+	LDAPMessage	*res = 0;
 
 	/*
 	 * openended queries are not allowed 
@@ -1151,7 +1196,7 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 	if ((vsetp->type == SC_AND) && (val == 0))
 		return 0;
 
-        *ret = SPOCP_SUCCESS;
+	  *ret = SPOCP_SUCCESS;
 	filter = (char *) malloc(size * sizeof(char));
 
 	na = lsln_values(vsetp->attset);
@@ -1179,7 +1224,7 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 				va = lsln_get_val(val);
 				filter = safe_strcat(filter, "(", &size);
 				filter =
-				    safe_strcat(filter, lsln_get_val(attrset),
+					safe_strcat(filter, lsln_get_val(attrset),
 						&size);
 				filter = safe_strcat(filter, "=", &size);
 				filter = safe_strcat(filter, va, &size);
@@ -1189,24 +1234,24 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 				for (val = vsetp->val; val; val = val->next) {
 					va = lsln_get_val(val);
 					filter =
-					    safe_strcat(filter, "(", &size);
+						safe_strcat(filter, "(", &size);
 					filter =
-					    safe_strcat(filter,
+						safe_strcat(filter,
 							lsln_get_val(attrset),
 							&size);
 					filter =
-					    safe_strcat(filter, "=", &size);
+						safe_strcat(filter, "=", &size);
 					filter =
-					    safe_strcat(filter, va, &size);
+						safe_strcat(filter, va, &size);
 					filter =
-					    safe_strcat(filter, ")", &size);
+						safe_strcat(filter, ")", &size);
 				}
 				filter = safe_strcat(filter, ")", &size);
 			}
 		} else {
 			filter = safe_strcat(filter, "(", &size);
 			filter =
-			    safe_strcat(filter, lsln_get_val(attrset), &size);
+				safe_strcat(filter, lsln_get_val(attrset), &size);
 			filter = safe_strcat(filter, "=*)", &size);
 		}
 	}
@@ -1228,14 +1273,14 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 				filter, base, scope ) ; 
 
 		if ((rc =
-		     ldap_search_s(ld, base, scope, filter, attr, 0, &res))) {
+			 ldap_search_s(ld, base, scope, filter, attr, 0, &res))) {
 			ldap_perror(ld, "During search");
 			lsln_free(arr);
 			arr = 0;
 			*ret = SPOCP_OTHER;
 		} else {
 			if ((sa =
-			     get_results(ld, res, vsetp->attset, val,
+				 get_results(ld, res, vsetp->attset, val,
 					 vsetp->restype, vsetp->type))) {
 				arr = lsln_join(arr, sa);
 				lsln_free(sa);
@@ -1272,13 +1317,13 @@ rm_children(vset_t * sp)
 	sp->left = sp->right = 0;
 }
 
-vset_t         *
+vset_t	   *
 vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 {
 	/*
 	 * vset_t *tmp ; 
 	 */
-	lsln_t         *arr;
+	lsln_t	   *arr;
 
 	if (sp->left) {
 		if ((sp->left = vset_compact(sp->left, ld, rc)) == 0) {
@@ -1319,7 +1364,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 		 * am I heading for a query 
 		 */
 		if (sp->left->scope >= SC_BASE
-		    && sp->left->scope <= SC_SUBTREE) {
+			&& sp->left->scope <= SC_SUBTREE) {
 
 			sp->dn = sp->left->dn;
 			sp->left->dn = 0;
@@ -1333,8 +1378,8 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 			 * determine the type of values 
 			 */
 			if ((sp->right->restype == SC_VAL
-			     || sp->right->restype == SC_UNDEF)
-			    && sp->right->val) {
+				 || sp->right->restype == SC_UNDEF)
+				&& sp->right->val) {
 				sp->val = sp->right->val;
 				sp->right->val = 0;
 			} else {
@@ -1424,7 +1469,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 						lsln_free(sp->val);
 
 					sp->val =
-					    lsln_and(sp->left->val, sp->right->val);
+						lsln_and(sp->left->val, sp->right->val);
 
 				} else if (sp->left->val && sp->right->dn) {
 					if( sp->restype == SC_DN ) {
@@ -1434,7 +1479,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 						lsln_free(sp->val);
 
 					arr =
-					    lsln_and(sp->left->val, sp->right->dn);
+						lsln_and(sp->left->val, sp->right->dn);
 
 					if( sp->restype == SC_DN ) 
 						sp->dn = arr;
@@ -1449,7 +1494,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 						lsln_free(sp->val);
 
 					arr =
-					    lsln_and(sp->left->dn, sp->right->val);
+						lsln_and(sp->left->dn, sp->right->val);
 
 					if( sp->restype == SC_DN ) 
 						sp->dn = arr;
@@ -1461,7 +1506,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 
 				rm_children(sp);
 				if (( sp->restype == SC_DN && sp->dn == 0) ||
-				    ( sp->restype != SC_DN && sp->val == 0)) {
+					( sp->restype != SC_DN && sp->val == 0)) {
 					/*
 					 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "The
 					 * resulting set was empty" ) ; 
@@ -1522,7 +1567,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 				if (sp->val)
 					lsln_free(sp->val);
 				sp->val =
-				    lsln_or(sp->left->val, sp->right->val);
+					lsln_or(sp->left->val, sp->right->val);
 			} else if (sp->left->val) {
 				if (sp->val)
 					lsln_free(sp->val);
@@ -1557,15 +1602,15 @@ spocp_result_t
 ldapset_test(cmd_param_t * cpp, octet_t * blob)
 {
 	spocp_result_t  r = SPOCP_DENIED, rc = SPOCP_SUCCESS ;
-	scnode_t       *scp;
-	vset_t         *vset, *res;
-	char           *ldaphost, *tmp;
-	octet_t        *oct, *o, cb;
-	LDAP           *ld = 0;
-	becon_t        *bc = 0;
-	octarr_t       *argv;
-	int             cv = 0;
-	pdyn_t         *dyn = cpp->pd;
+	scnode_t	 *scp;
+	vset_t	   *vset, *res;
+	char	 *ldaphost, *tmp;
+	octet_t	  *oct, *o, cb;
+	LDAP	 *ld = 0;
+	becon_t	  *bc = 0;
+	octarr_t	 *argv;
+	int	   cv = 0;
+	pdyn_t	   *dyn = cpp->pd;
 
 	if (cpp->arg == 0 || cpp->arg->len == 0)
 		return SPOCP_MISSING_ARG;
@@ -1629,7 +1674,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 					else if (dyn && dyn->size) {
 						if (!dyn->bcp)
 							dyn->bcp =
-							    becpool_new(dyn->
+								becpool_new(dyn->
 									size);
 						bc = becon_push(o,
 								&P_ldapclose,
@@ -1644,7 +1689,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 
 					if (res != 0) {
 						if (res->restype == SC_DN
-						    && res->dn)
+							&& res->dn)
 							r = SPOCP_SUCCESS;
 						else if ((res->restype ==
 							  SC_VAL
@@ -1690,10 +1735,10 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 		r = SPOCP_DENIED;
 	} else {
 		if (dyn && dyn->ct && (r == SPOCP_SUCCESS || r == SPOCP_DENIED)) {
-			time_t          t;
+			time_t	t;
 			t = cachetime_set(oct, dyn->ct);
 			dyn->cv =
-			    cache_value(dyn->cv, oct, t, (r | CACHED), 0);
+				cache_value(dyn->cv, oct, t, (r | CACHED), 0);
 		}
 	}
 
@@ -1705,7 +1750,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 	return r;
 }
 
-plugin_t        ldapset_module = {
+plugin_t	  ldapset_module = {
 	SPOCP20_PLUGIN_STUFF,
 	ldapset_test,
 	NULL,
