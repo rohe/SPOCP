@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libdifftimeplugin.la
 
 libdifftimeplugin_la_SOURCES = difftime.c
 libdifftimeplugin_la_LDFLAGS = -module
-libdifftimeplugin_la_LIBADD = -lspocp -L../../lib
+libdifftimeplugin_la_LIBADD = ../../lib/libspocp.la
 
-INCLUDES = -I../../server/ 
+INCLUDES = -I$(srcdir)/../../include
 endif BUILD_DTIME

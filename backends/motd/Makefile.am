@@ -3,9 +3,8 @@ lib_LTLIBRARIES = libmotdplugin.la
 
 libmotdplugin_la_SOURCES = motd.c
 libmotdplugin_la_LDFLAGS = -module
+libmotdplugin_la_LIBADD = ../../lib/libspocp.la
 
-libmotdplugin_la_LIBADD = -lspocp -L../../lib
-
-INCLUDES = -I../../server/ 
+INCLUDES = -I$(srcdir)/../../include
 
 endif BUILD_MOTD

@@ -3,8 +3,8 @@ lib_LTLIBRARIES = libipnumplugin.la
 
 libipnumplugin_la_SOURCES = ipnum.c
 libipnumplugin_la_LDFLAGS = -module
-libipnumplugin_la_LIBADD = -lspocp -L../../lib
+libipnumplugin_la_LIBADD = ../../lib/libspocp.la
 
-INCLUDES = -I../../server/ 
+INCLUDES = -I$(srcdir)/../../include
 endif BUILD_IPNUM
 

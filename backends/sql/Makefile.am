@@ -3,9 +3,8 @@ lib_LTLIBRARIES = libsqlplugin.la
 
 libsqlplugin_la_SOURCES = sql.c
 libsqlplugin_la_LDFLAGS = -module
+libsqlplugin_la_LIBADD = ../../lib/libspocp.la
 
-libsqlplugin_la_LIBADD = -lspocp -L../../lib
-
-INCLUDES = -I../../server/ 
+INCLUDES = -I$(srcdir)/../../include
 
 endif BUILD_SQL

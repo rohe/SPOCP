@@ -3,9 +3,8 @@ lib_LTLIBRARIES = libtimeplugin.la
 
 libtimeplugin_la_SOURCES = time.c
 libtimeplugin_la_LDFLAGS = -module
+libtimeplugin_la_LIBADD = ../../lib/libspocp.la
 
-libtimeplugin_la_LIBADD = -lspocp -L../../lib
-
-INCLUDES = -I../../server/ 
+INCLUDES = -I$(srcdir)/../../include
 
 endif BUILD_TIME

@@ -3,8 +3,8 @@ lib_LTLIBRARIES = liblocalgroupplugin.la
 
 liblocalgroupplugin_la_SOURCES = localgroup.c
 liblocalgroupplugin_la_LDFLAGS = -module
-liblocalgroupplugin_la_LIBADD = -lspocp -L../../lib
+liblocalgroupplugin_la_LIBADD = ../../lib/libspocp.la
 
-INCLUDES = -I../../server/ 
+INCLUDES = -I$(srcdir)/../../include
 
 endif BUILD_LOCALGROUP

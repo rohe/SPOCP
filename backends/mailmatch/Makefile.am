@@ -3,8 +3,8 @@ lib_LTLIBRARIES = libmailmatchplugin.la
 
 libmailmatchplugin_la_SOURCES = mailmatch.c
 libmailmatchplugin_la_LDFLAGS = -module
-libmailmatchplugin_la_LIBADD = -lspocp -L../../lib
+libmailmatchplugin_la_LIBADD = ../../lib/libspocp.la
 
-INCLUDES = -I../../server/ 
+INCLUDES = -I$(srcdir)/../../include
 
 endif BUILD_MAILMATCH

@@ -3,7 +3,7 @@ lib_LTLIBRARIES = libflatfplugin.la
 
 libflatfplugin_la_SOURCES = flatfile.c
 libflatfplugin_la_LDFLAGS = -module
-libflatfplugin_la_LIBADD = -lspocp -L../../lib
+libflatfplugin_la_LIBADD = ../../lib/libspocp.la
 
-INCLUDES = -I../../server/
+INCLUDES = -I$(srcdir)/../../include
 endif BUILD_FFILE
