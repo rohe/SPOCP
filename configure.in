@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(spocd, 2.1.0, roland@catalogix.se)
+AC_INIT(spocd, 2.1.1, roland@catalogix.se)
 AM_INIT_AUTOMAKE([foreign no-dependencies 1.7])
 AC_CONFIG_SRCDIR([include/wrappers.h])
 AM_CONFIG_HEADER([include/config.h])
@@ -51,6 +51,7 @@ AC_ARG_ENABLE(sql,	--enable-sql	Enable sql backend, [sql=yes])
 AC_ARG_ENABLE(strmatch,	--enable-strmatch	Enable strmatch backend, [strmatch=yes])
 AC_ARG_ENABLE(system,	--enable-system	Enable system backend, [system=yes])
 AC_ARG_ENABLE(time,	--enable-time	Enable time backend, [time=yes])
+AC_ARG_ENABLE(ldapproxy,	--enable-ldapproxy	Enable ldapproxy backend, [ldapproxy=yes])
 AC_ARG_ENABLE(all,	--enable-all	Enable all backends )
 
 AC_ARG_ENABLE(ipv6,   --disable-ipv6    Build WITHOUT ipv6 support,,enable_ipv6=yes) 
@@ -95,6 +96,7 @@ if test $have_modules = yes ; then
     strmatch=yes
     system=yes
     time=yes
+    ldapproxy=yes
   fi
 else
   if test "$cert" = "yes" ; then
@@ -148,6 +150,9 @@ else
   if test "$time" = "yes" ; then
     AC_MSG_WARN([time backend disabled, ignoring --enable-time])
   fi
+  if test "$ldapproxy" = "yes" ; then
+    AC_MSG_WARN([ldapproxy backend disabled, ignoring --enable-ldapproxy])
+  fi
 
   cert=no
   difftime=no
@@ -166,6 +171,7 @@ else
   strmatch=no
   system=no
   time=no
+  ldapproxy=no
 
 fi
 
@@ -213,6 +219,7 @@ AM_CONDITIONAL( BUILD_SQL, test x$sql = xyes )
 AM_CONDITIONAL( BUILD_STRMATCH, test x$strmatch = xyes ) 
 AM_CONDITIONAL( BUILD_SYSTEM, test x$system = xyes ) 
 AM_CONDITIONAL( BUILD_TIME, test x$time = xyes ) 
+AM_CONDITIONAL( BUILD_LDAPPROXY, test x$ldapproxy = xyes ) 
 
 dnl *************************************************
 
@@ -340,6 +347,7 @@ AC_CONFIG_FILES([Makefile
 		backends/strmatch/Makefile
 		backends/system/Makefile
 		backends/time/Makefile
+		backends/ldapproxy/Makefile
 		backends/dback_gdbm/Makefile
 		client/Makefile
 		client/src/Makefile
