@@ -1,4 +1,4 @@
-bin_PROGRAMS = spocd dbg_spocd
+bin_PROGRAMS = spocd dbg_spocd adminsrv
 
 common_SOURCES = iobuf.c conn.c socket.c init.c \
 	saci.c ruleset.c util.c read.c ss.c readcnf.c opstack.c
@@ -15,6 +15,14 @@ dbg_spocd_SOURCES = $(spocd_SOURCES)
 dbg_spocd_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la #@SASL_LDFLAGS@ @SASL_LIBS@
 
 dbg_spocd_LDFLAGS = -static
+
+#
+
+adminsrv_SOURCES = adminsrv.c cmp.c readcnf.c util.c config.c
+
+adminsrv_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la #@SASL_LDFLAGS@ @SASL_LIBS@
+
+adminsrv_LDFLAGS = -static
 
 #
 
