@@ -21,20 +21,20 @@
 #include <wrappers.h>
 #include <spocp.h>
 #include <sha1.h>
+#include <rbtree.h>
 
-junc_t  *element_add( plugin_t *pl, junc_t *dvp, element_t *ep, ruleinst_t *ri ) ;
+junc_t  *element_add( plugin_t *pl, junc_t *dvp, element_t *ep, ruleinst_t *ri, int n ) ;
 junc_t  *rm_next( junc_t *ap, branch_t *bp ) ;
 char    *set_item_list( junc_t *dv ) ;
 junc_t  *atom_add( branch_t *bp, atom_t *ap ) ;
 junc_t  *extref_add( branch_t *bp, atom_t *ap ) ;
 junc_t  *list_end( junc_t *arr ) ;
 junc_t  *list_add( plugin_t *pl, branch_t *bp, list_t *lp, ruleinst_t *ri ) ;
-limit_t *limit_new( ) ;
 junc_t  *range_add( branch_t *bp, range_t *rp ) ;
 junc_t  *prefix_add( branch_t *bp, atom_t *ap ) ;
 junc_t  *rule_close( junc_t *ap, ruleinst_t *ri ) ;
 
-erset_t *erset_dup( erset_t *old, ruleinfo_t *ri ) ;
+/* erset_t *erset_dup( erset_t *old, ruleinfo_t *ri ) ; */
 
 /*
 junc_t  *list_close( junc_t *ap, element_t *ep, ruleinst_t *ri, int *eor ) ;
@@ -45,9 +45,6 @@ ruleinst_t *ruleinst_dup( ruleinst_t *ri )  ;
 void       ruleinst_free( ruleinst_t *ri ) ;
 
 void       P_ruleinst_free( void * ) ;
-
-void       *P_raci_dup( void *vp ) ;
-void       P_raci_free( void *vp ) ;
 
 int P_uid_match( void  *vp, void *pattern ) ;
 
@@ -156,12 +153,10 @@ junc_t *junc_dup( junc_t *jp, ruleinfo_t *ri )
           nbp->val.id = index_dup( obp->val.id, ri ) ;
           break ;
 
-        case SPOC_BCOND:
-          nbp->val.set = erset_dup( obp->val.set, ri ) ;
-          break ;
-
+/*
         case SPOC_REPEAT :
           break ;
+*/
 
       }
     }
@@ -233,6 +228,15 @@ junc_t *atom_add( branch_t *bp, atom_t *ap )
 
 /************************************************************/
 
+junc_t *any_add( branch_t *bp ) 
+{
+  if( bp->val.next == 0 ) bp->val.next = junc_new() ;
+
+  return bp->val.next ;
+}
+
+/************************************************************/
+
 char *P_print_junc( item_t i )
 {
   junc_print( 0, (junc_t *) i ) ;
@@ -254,114 +258,21 @@ item_t P_junc_dup( item_t i, item_t j )
 /************************************************************
 *                                                           *
 ************************************************************/
-/*
 
-Arguments:
-
-Returns:
-*/
-
-static ref_t *ref_get( plugin_t *top, atom_t *ap )
+varr_t *varr_ruleinst_add( varr_t *va, ruleinst_t *ju )
 {
-  char           *cp ;
-  ref_t          *ref = 0 ;
-  int            l, inv = 0 ;
-  octet_t        beo, arg, oct ;
-  spocp_result_t rc ;
-  plugin_t       *pl ;
-
-  beo.val = ap->val.val ;
-  beo.len = ap->val.len ;
-
-  if( *beo.val == '!' ) {
-    beo.val++ ;
-    beo.len-- ;
-    inv = 1 ;
-  }
-
-  /* typespecification only ascii */
-  if(( cp = index( beo.val, ':' )) == 0 ) {
-    LOG( SPOCP_WARNING ) traceLog( "No argument to external reference") ;
-    arg.val = 0 ;
-    arg.len = 0 ;
-  }
-  else {
-    l = cp - beo.val ;
-    arg.val = ++cp ;
-    arg.len = beo.len - l - 1 ;
-    beo.len = l  ;
-  }
-
-  /* check if known external reference */
-  if(( pl = plugin_match( top, &beo )) == 0 ) {
-    LOG( SPOCP_WARNING ) traceLog( "unknown external \"%s\" reference", beo.val ) ;
-    return 0 ;
-  }
-
-  DEBUG(SPOCP_DSTORE) traceLog( "add external \"%s\" reference", beo.val ) ;
-
-  ref = ( ref_t *) Calloc( 1, sizeof( ref_t )) ;
-
-  ref->bc.val = 0 ;
-  ref->bc.size = ref->bc.len = 0 ;
-
-  ref->plugin = pl ;
-
-  if( inv ) {
-    oct.val = beo.val ;
-    oct.len = ap->val.len - 1 ;
-    rc = octcpy( &ref->bc, &oct ) ;
-  }
-  else rc = octcpy( &ref->bc, &ap->val ) ;
-
-  if( arg.len ) {
-    ref->arg.val = ref->bc.val + beo.len + 1 ;
-    ref->arg.len = arg.len ;
-  }
-
-  ref->cachedval = 0 ;
-  ref->next = 0 ;
-  ref->inv = inv ;
-
-  /* set cachetime */
-
-  ref->ctime = cachetime_set( &ref->arg , pl ) ;
-
-  return ref ;
+  return varr_add( va, (void *) ju ) ;
 }
 
-junc_t *erset_add( plugin_t *pl, branch_t *bp, set_t *set )
+ruleinst_t *varr_ruleinst_pop( varr_t *va ) 
 {
-  int       i ;
-  erset_t   *es, *next ;
-
-  es = erset_new( set->n ) ;
-
-  for( i = 0 ; i < set->n ; i++ ) {
-    if(( es->ref[i] = ref_get( pl, set->element[i]->e.atom )) == 0 ) {
-      /* clean up */
-      es->n = i ;
-      erset_free( es ) ;
-      return 0 ;
-    }
-  }
-
-  es->n = set->n ;
-  es->next = junc_new() ;
-
-  if( bp->val.set == 0 ) {
-    bp->val.set = es ;
-  }
-  else {
-    /* the simple way to start with */
-    for( next = bp->val.set ; next->other ; next = next->other ) ;
-
-    next->other = es ;
-  }
-
-  return es->next ;
+  return ( ruleinst_t *) varr_pop( va ) ;
 }
 
+ruleinst_t *varr_ruleinst_nth( varr_t *va, int n )
+{
+  return ( ruleinst_t *) varr_nth( va, n ) ;
+}
 
 /************************************************************
 *                                                           *
@@ -421,7 +332,7 @@ junc_t *list_add( plugin_t *pl, branch_t *bp, list_t *lp, ruleinst_t *ri )
   elp = lp->head ; 
 
   /* fails, means I should clean up */
-  if(( jp = element_add( pl, jp, elp, ri )) == 0 ) {
+  if(( jp = element_add( pl, jp, elp, ri, 1 )) == 0 ) {
     traceLog( "List add failed") ;
     return 0 ;
   }
@@ -468,25 +379,6 @@ void list_clean( junc_t *jp, list_t *lp )
         break ;
     } 
   }
-}
-
-/************************************************************
-*                                                           *
-************************************************************/
-/*
-
-Arguments:
-
-Returns:
-*/
-
-limit_t *limit_new( )
-{
-  limit_t *lp ;
-
-  lp = ( limit_t * ) Calloc ( 1, sizeof( limit_t )) ;
-
-  return lp ;
 }
 
 /************************************************************
@@ -651,10 +543,10 @@ static junc_t *add_next( plugin_t *plugin, junc_t *jp, element_t *ep, ruleinst_t
 {
   int eor = 0 ;
 
-  if( ep->next ) jp = element_add( plugin, jp, ep->next, ri ) ;
+  if( ep->next ) jp = element_add( plugin, jp, ep->next, ri, 1 ) ;
   else if( ep->memberof) {
-    if( ep->memberof->type == SPOC_OR )  ; /* handed upstream */
-    else if( ep->type != SPOC_LIST ) /* a list never closes itself */ 
+    /* if( ep->memberof->type == SPOC_SET )  ; */
+    if( ep->type != SPOC_LIST ) /* a list never closes itself */ 
       jp = list_close( jp, ep, ri, &eor ) ;
   }
 
@@ -680,79 +572,87 @@ Returns: pointer to the next node in the tree
 */
 
 
-junc_t *element_add( plugin_t *pl, junc_t *jp, element_t *ep, ruleinst_t *rt )
+junc_t *element_add( plugin_t *pl, junc_t *jp, element_t *ep, ruleinst_t *rt, int next )
 {
   branch_t  *bp = 0 ;
-  set_t     *set ;
   junc_t    *ap = 0 ;
-  int       i ;
+  int       n ;
+  varr_t    *va, *dsva ;
+  element_t *elem ;
+  dset_t    *ds ;
+  void      *v ;
 
-  if( ep->type == SPOC_OR ) {
-    set = ep->e.set ;
-    for( i = 0 ; i < set->n ; i++ ) {
-      if(( ap = element_add( pl, jp, set->element[i], rt )) == 0 ) break ;
-      ap = add_next( pl, ap, ep, rt ) ;
-    }
+  bp = ARRFIND( jp, ep->type );
+
+  /* DEBUG( SPOCP_DSTORE ) traceLog("Items: %s", set_item_list( jp ) ) ; */
+
+  if( bp == 0 ) {
+    bp = ( branch_t *) Calloc (1, sizeof( branch_t )) ;
+    bp->type = ep->type ;
+    bp->count = 1 ;
+    ap = branch_add( jp, bp ) ;
   }
   else {
-    bp = ARRFIND( jp, ep->type );
+    bp->count++ ;
+  }
 
-    /* DEBUG( SPOCP_DSTORE ) traceLog("Items: %s", set_item_list( jp ) ) ; */
+  DEBUG( SPOCP_DSTORE ) traceLog("Branch [%d] [%d]", bp->type, bp->count ) ;
 
-    if( bp == 0 ) {
-      bp = ( branch_t *) Calloc (1, sizeof( branch_t )) ;
-      bp->type = ep->type ;
-      bp->count = 1 ;
-      ap = branch_add( jp, bp ) ;
-    }
-    else {
-      bp->count++ ;
-    }
+  switch( ep->type ) {
+    case SPOC_ATOM:
+      if(( ap = atom_add( bp, ep->e.atom )) && next) ap = add_next( pl, ap, ep, rt ) ;
+      break ;
 
-    DEBUG( SPOCP_DSTORE ) traceLog("Branch [%d] [%d]", bp->type, bp->count ) ;
+    case SPOC_PREFIX:
+      if(( ap = prefix_add( bp, ep->e.atom ))&& next) ap = add_next( pl, ap, ep, rt ) ;
+      break ;
 
-    switch( ep->type ) {
-      case SPOC_ATOM:
-        if(( ap = atom_add( bp, ep->e.atom ))) ap = add_next( pl, ap, ep, rt ) ;
-        break ;
+    case SPOC_SUFFIX:
+      if(( ap = suffix_add( bp, ep->e.atom ))&& next) ap = add_next( pl, ap, ep, rt ) ;
+      break ;
 
-      case SPOC_PREFIX:
-        if(( ap = prefix_add( bp, ep->e.prefix ))) ap = add_next( pl, ap, ep, rt ) ;
-        break ;
-  
-      case SPOC_SUFFIX:
-        if(( ap = suffix_add( bp, ep->e.prefix ))) ap = add_next( pl, ap, ep, rt ) ;
-        break ;
-  
-      case SPOC_RANGE:
-        if(( ap = range_add( bp, ep->e.range ))) ap = add_next( pl, ap, ep, rt ) ;
-        break ;
-  
-      case SPOC_LIST:
-        if(( ap = list_add( pl, bp, ep->e.list, rt ))) ap = add_next( pl, ap, ep, rt ) ;
-        break ;
-  
-      case SPOC_OR:
-        break ;
-  /*
-      case SPOC_E....F:
-        if(( ap = erset_add( bp, ep->e.set ))) ap = add_next( pl, ap, ep, rt ) ;
-        break ;
-  */
-      case SPOC_BCOND:
-        if(( ap = erset_add( pl, bp, ep->e.set ))) ap = add_next( pl, ap, ep, rt ) ;
-        break ;
-  
-    }
+    case SPOC_RANGE:
+      if(( ap = range_add( bp, ep->e.range ))&& next) ap = add_next( pl, ap, ep, rt ) ;
+      break ;
 
-    if( ap == 0 && bp != 0 ) {
-      bp->count-- ;
+    case SPOC_LIST:
+      if(( ap = list_add( pl, bp, ep->e.list, rt ))&& next)
+        ap = add_next( pl, ap, ep, rt ) ;
+      break ;
 
-      if( bp->count == 0 ) {
-        DEBUG( SPOCP_DSTORE ) traceLog( "Freeing type %d branch", bp->type ) ;
-        branch_free( bp ) ;
-        jp->item[ep->type] = 0 ;
+    case SPOC_ANY:
+      if(( ap = any_add( bp )) && next) ap = add_next( pl, ap, ep, rt ) ;
+      break ;
+
+    case SPOC_SET:
+      va = ep->e.set ;
+      n = varr_len( va ) ;
+      if( bp->val.set == 0 )
+        ds = bp->val.set = ( dset_t * ) Calloc( 1, sizeof( dset_t )) ;
+      else {
+        for( ds = bp->val.set ; ds->next ; ds = ds->next ) ;
+        ds->next = ( dset_t * ) Calloc( 1, sizeof( dset_t )) ;
+        ds = ds->next ;
       }
+
+      for( v = varr_first( va ), dsva = ds->va ; v ; v = varr_next(va, v )) {
+        elem = (element_t *) v ;
+        if(( ap = element_add( pl, jp, elem, rt, 0 )) == 0 ) break ;
+        dsva = varr_add( dsva, ap ) ;
+        ap = add_next( pl, ap, ep, rt ) ;
+      }
+      ds->va = dsva ;
+
+      break ;
+  }
+
+  if( ap == 0 && bp != 0 ) {
+    bp->count-- ;
+
+    if( bp->count == 0 ) {
+      DEBUG( SPOCP_DSTORE ) traceLog( "Freeing type %d branch", bp->type ) ;
+      branch_free( bp ) ;
+      jp->item[ep->type] = 0 ;
     }
   }
 
@@ -764,7 +664,7 @@ junc_t *element_add( plugin_t *pl, junc_t *jp, element_t *ep, ruleinst_t *rt )
  ************************************************************/
  
 /* ----------  raci ------------ */
-
+/*
 raci_t *raci_new( )
 {
   raci_t *sa = 0 ;
@@ -784,7 +684,7 @@ raci_t *raci_dup( raci_t *sa, ruleinfo_t *ri )
 
   new->resource = subelement_dup( sa->resource ) ;
   new->action   = sa->action ;
-  new->subject  = element_dup( sa->subject, 0, 0 ) ;
+  new->subject  = element_dup( sa->subject, 0 ) ;
 
   return new ;
 }
@@ -809,7 +709,7 @@ void P_raci_free( void *vp )
   raci_free( (raci_t *) vp ) ;
 }
 
-/* mostly PLACEHOLDER */
+* mostly PLACEHOLDER *
 
 int P_raci_print( void *vp )
 {
@@ -819,7 +719,7 @@ int P_raci_print( void *vp )
 
   return 0 ;
 }
-
+*/
 /* ---------------  ruleinst ----------------------------- */
 
 ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob )
@@ -829,32 +729,29 @@ ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob )
   unsigned char       sha1sum[21], *ucp ;
   int                 j ;
 
+  if( rule == 0 || rule->len == 0 ) return 0 ;
+
   rip = ( ruleinst_t * ) Calloc ( 1, sizeof( ruleinst_t )) ;
 
-  if( rule && rule->len ) rip->rule = octdup( rule ) ;
-  else rip->rule = 0 ;
+  rip->rule = octdup( rule ) ;
 
   if( blob && blob->len ) rip->blob = octdup( blob ) ;
   else rip->blob = 0 ;
 
-  if( rule ) {
-    sha1_starts( &ctx ) ;
+  sha1_starts( &ctx ) ;
 
-    sha1_update( &ctx, (uint8 *) rule->val, rule->len ) ;
-    if( blob ) sha1_update( &ctx, (uint8 *) blob->val, blob->len ) ;
+  sha1_update( &ctx, (uint8 *) rule->val, rule->len ) ;
+  if( blob ) sha1_update( &ctx, (uint8 *) blob->val, blob->len ) ;
 
-    sha1_finish( &ctx, (unsigned char *) sha1sum ) ;
+  sha1_finish( &ctx, (unsigned char *) sha1sum ) ;
 
-    for( j = 0, ucp = (unsigned char *) rip->uid ; j < 20; j++, ucp += 2 )
-      sprintf( (char *) ucp, "%02x", sha1sum[j] );
+  for( j = 0, ucp = (unsigned char *) rip->uid ; j < 20; j++, ucp += 2 )
+    sprintf( (char *) ucp, "%02x", sha1sum[j] );
 
-    DEBUG( SPOCP_DSTORE ) traceLog( "New rule (%s)", rip->uid ) ;
-  }
+  DEBUG( SPOCP_DSTORE ) traceLog( "New rule (%s)", rip->uid ) ;
 
   rip->ep = 0 ;
-  rip->raci = 0 ;
   rip->alias = 0 ;
-  rip->aci = 0 ;
  
   return rip ;
 }
@@ -873,7 +770,6 @@ ruleinst_t *ruleinst_dup( ruleinst_t *ri )
   new->rule = octdup( ri->rule ) ;
   /* if( ri->ep ) new->ep =  element_dup( ri->ep ) ; */ 
   if( ri->alias ) new->alias = ll_dup( ri->alias ) ;
-  if( ri->aci ) new->aci = ll_dup( ri->aci ) ;
 
   return new ;
 }
@@ -888,9 +784,7 @@ void ruleinst_free( ruleinst_t *rt )
   if( rt ) {
     if( rt->rule )  oct_free( rt->rule ) ;
     if( rt->blob )  oct_free( rt->blob ) ;
-    if( rt->aci )   ll_free( rt->aci ) ;
     if( rt->alias ) ll_free( rt->alias ) ;
-    if( rt->raci )  raci_free( rt->raci ) ;
 /*    if( rt->ep )    element_rm( rt->ep ) ; */
 
     free( rt ) ;
@@ -1019,6 +913,7 @@ ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob )
   return rt ;
 }
 
+/*
 ruleinst_t *aci_save( db_t *db, octet_t *rule )
 {
   ruleinfo_t  *ri ;
@@ -1043,6 +938,7 @@ ruleinst_t *aci_save( db_t *db, octet_t *rule )
 
   return rt ;
 }
+*/
 
 int nrules( ruleinfo_t *ri )
 {
@@ -1057,11 +953,11 @@ int rules( db_t *db )
   else return 1 ;
 }
 
-parr_t *get_rule_inx( ruleinfo_t *ri ) 
+varr_t *get_rule_inx( ruleinfo_t *ri ) 
 {
   if( ri == 0 ) return 0 ;
 
-  return rbt2parr( ri->rules ) ;
+  return rbt2varr( ri->rules ) ;
 }
 
 ruleinst_t *get_rule( ruleinfo_t  *ri, char *uid ) 
@@ -1121,49 +1017,41 @@ octet_t *rulename_print(  ruleinst_t *r, char *rs )
   return oct ;
 }
  
-spocp_result_t get_all_rules( db_t *db, octarr_t *oa, spocp_req_info_t *sri, char *rs )
+spocp_result_t get_all_rules( db_t *db, octarr_t *oa, char *rs )
 {
   int            i, n ;
   ruleinst_t     *r ;
-  parr_t         *pa = 0, *pb = 0 ;
+  varr_t         *pa = 0, *pb = 0 ;
   octet_t        *oct, *arg[2] ;
   spocp_result_t rc = SPOCP_SUCCESS ;
 
   n = nrules( db->ri ) ;
-  n += nrules( db->raci ) ;
 
   if( n == 0 ) return rc ;
 
   if(( oa->size - oa->n ) < n ) octarr_mr( oa, n ) ;
 
-  if( db->ri ) pa = rbt2parr( db->ri->rules ) ;
-  if( db->raci ) pb = rbt2parr( db->raci->rules ) ;
+  if( db->ri ) pa = rbt2varr( db->ri->rules ) ;
 
-  if( pa && pb ) parr_join( pa, pb ) ;
+  if( pa && pb ) varr_or( pa, pb, 0 ) ;
   else if( pb ) pa = pb ;
 
   arg[1] = 0 ;
 
-  for( i = 0 ; i < pa->n ; i++ ) {
-    r = ( ruleinst_t * ) parr_get_item_by_index( pa, i ) ;
+  for( i = 0 ; ( r = ( ruleinst_t * ) varr_nth( pa, i )) ; i++ ) {
 
-    /* allowed to see the rule  */
-    arg[0] = r->rule ;
-    if( allowed_by_aci( db, arg, sri, "LIST" ) != SPOCP_SUCCESS ) continue ; 
-     
     if(( oct = rulename_print( r, rs )) == 0 ) {
       rc = SPOCP_OPERATIONSERROR ;
       octarr_free( oa ) ;
-      goto gar_done ;
+      break ;
     }
 
     octarr_add( oa, oct ) ;
   }
 
-gar_done:
   /* dont't remove the items since I've only used pointers */
-  parr_free( pa ) ;
-  parr_free( pb ) ;
+  varr_free( pa ) ;
+  varr_free( pb ) ;
 
   return rc ;
 }
@@ -1182,7 +1070,6 @@ db_t *db_new( )
   db = ( db_t * ) Calloc ( 1, sizeof( db_t )) ;
   db->jp = junc_new() ;
   db->ri = ruleinfo_new( ) ;
-  db->bcp = becpool_new( 16, 0 ) ;
 
   return db ;
 }
@@ -1206,7 +1093,7 @@ spocp_result_t store_right( db_t *db, element_t *ep, ruleinst_t *rt )
 
   if( db->jp == 0 ) db->jp = junc_new() ;
 
-  if( element_add( db->plugins, db->jp, ep, rt ) == 0 ) r = SPOCP_OPERATIONSERROR ;
+  if( element_add( db->plugins, db->jp, ep, rt, 1 ) == 0 ) r = SPOCP_OPERATIONSERROR ;
   else r = SPOCP_SUCCESS ;
 
   return r ;
@@ -1223,43 +1110,36 @@ Arguments:
 Returns:	TRUE if OK
 */
 
-spocp_result_t add_right( db_t **db, octet_t **arg, spocp_req_info_t *sri, ruleinst_t **ri )
+spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri )
 {
   element_t      *ep ;
-  int            r = 0 ;
-  octet_t        rule, blob, oct, *a[2] ;
+  octet_t        rule, blob, oct ;
   ruleinst_t     *rt ;
-  spocp_result_t rc ;
+  spocp_result_t rc = SPOCP_SUCCESS ;
 
   /*
   LOG( SPOCP_WARNING ) traceLog("Adding new rule: \"%s\"", rp->val) ;
   */
 
-  /* If there is some ACI that is relevant for this, find it now
-     when it comes to aci checking the blob shouldn't be part of it, so there should
-     only be one octet_t argument
-   */
-
-  a[0] = arg[0] ;
-  a[1] = 0 ;
-  if(( rc = allowed_by_aci( *db, arg, sri, "ADD" )) != SPOCP_SUCCESS ) {
-    return rc ;
-  } 
-
   if( *db == 0 ) {
     *db = db_new( ) ;
   }
 
-  oct.len = rule.len = arg[0]->len ;
-  oct.val = rule.val = arg[0]->val ;
+  rule.len = rule.size = 0 ;
+  rule.val = 0 ;
 
-  if( arg[1] ) {
-    blob.len = arg[1]->len ;
-    blob.val = arg[1]->val ;
+  blob.len = blob.size = 0 ;
+  blob.val = 0 ;
+
+  octln( &oct, oa->arr[0] ) ;
+  octln( &rule, oa->arr[0] ) ;
+
+  if( oa->n > 1 ) {
+    octln( &blob, oa->arr[1] ) ;
   }
   else blob.len = 0 ;
 
-  if(( r = element_get( &oct, &ep )) == SPOCP_SUCCESS ) {
+  if(( rc = element_get( &oct, &ep )) == SPOCP_SUCCESS ) {
 
     /* stuff left ?? */
     /* just ignore it */
@@ -1273,7 +1153,7 @@ spocp_result_t add_right( db_t **db, octet_t **arg, spocp_req_info_t *sri, rulei
     }
 
     /* right == rule */
-    if(( r = store_right( *db, ep, rt )) != SPOCP_SUCCESS ) { 
+    if(( rc = store_right( *db, ep, rt )) != SPOCP_SUCCESS ) { 
       element_free( ep ) ;
 
       /* remove ruleinstance */
@@ -1285,7 +1165,7 @@ spocp_result_t add_right( db_t **db, octet_t **arg, spocp_req_info_t *sri, rulei
     *ri = rt ;
   }
   
-  return r ;
+  return rc ;
 }
 
 int P_print_str( void *vp )
@@ -1311,7 +1191,6 @@ int ruleinst_print( ruleinst_t *ri )
   }
 
   if( ri->alias ) ll_print( ri->alias ) ;
-  if( ri->aci ) ll_print( ri->aci ) ;
 
   return 0 ;
 }

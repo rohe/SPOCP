@@ -87,6 +87,8 @@ int get_len( octet_t *op )
 
 spocp_result_t get_str( octet_t *so, octet_t *ro )
 {
+  if( ro == 0 ) return SPOCP_OPERATIONSERROR ;
+
   ro->size = 0 ;
 
   ro->len = get_len( so ) ;
@@ -140,12 +142,14 @@ atom_t *atom_new( octet_t *op )
   if( op ) {
     ap->val.val = Strndup( op->val, op->len ) ;
     ap->val.len = op->len ;
+    ap->val.size = op->len ;
 
     ap->hash = lhash( (unsigned char *) op->val, op->len, 0 ) ;
   }
   else {
     ap->val.val = 0 ;
     ap->val.len = 0 ;
+    ap->val.size = 0 ;
     ap->hash = 0 ;
   }
 
@@ -171,7 +175,7 @@ spocp_result_t do_prefix( octet_t *oct, element_t *ep )
 
   ep->type = SPOC_PREFIX ;
 
-  if(( ep->e.prefix = get_atom( oct, &rc )) == 0 ) return rc ;
+  if(( ep->e.atom = get_atom( oct, &rc )) == 0 ) return rc ;
 
   /* a check for external references, which is not allowed in ranges */
 
@@ -195,7 +199,7 @@ spocp_result_t do_suffix( octet_t *oct, element_t *ep )
 
   ep->type = SPOC_SUFFIX ;
 
-  if(( ep->e.suffix = get_atom( oct, &rc )) == 0 ) return rc ;
+  if(( ep->e.atom = get_atom( oct, &rc )) == 0 ) return rc ;
 
   if( *oct->val != ')' ) { 
     LOG(SPOCP_ERR) traceLog( "Missing ending ')'" ) ;
@@ -211,94 +215,22 @@ spocp_result_t do_suffix( octet_t *oct, element_t *ep )
 
 /* ----------------------------------- */
 
-set_t *set_new( int size )
+static list_t *list_new( void )
 {
-  set_t *a ;
-
-  a = ( set_t * ) Calloc (1, sizeof( set_t )) ;
-
-  if( size ) {
-    a->size = size ;
-    a->n = 0 ;
-    a->element = ( element_t ** ) Calloc ( size, sizeof( element_t * )) ;
-  }
-
-  return a ;
-}
-
-/*
-void set_free( set_t *a )
-{
-  int i ;
-
-  if( a ) {
-    if( a->size ) {
-      for( i = 0 ; i < a->n ; i++ ) element_free( a->element[i] ) ;
-      free( a->element ) ;
-    }
-    free( a ) ;
-  }
-}
-*/
-
-set_t *set_join( set_t *a, set_t *b )
-{
-  element_t **tmp ;
-  int      i, n ;
-
-  if( a == 0 ) {
-    a = set_new( 0 ) ;
-    a->n = b->n ;
-    a->size = b->size ;
-    a->element = b->element ;
-    b->n = b->size = 0 ;
-    b->element = 0 ;
-  }
-  else {
-    if(( a->size - a->n ) < b->n ) { /* not enough space */
-      n = a->size ;
-      do {
-        a->size += n ;
-      } while(( a->size - a->n ) < b->n ) ;
-
-      tmp = realloc( a->element, a->size * sizeof( element_t * )) ;
-
-      a->element = tmp ;
-    }
-
-    for( i = 0 ; i < b->n ; i++ )
-     a->element[a->n++] = b->element[i] ;
-  }
-
-  return a ;
-}
-
-set_t *set_add( set_t *a, element_t *ep )
-{
-  element_t **tmp ;
-
-  if( a == 0 ) {
-    a = set_new( 4 ) ;
-  }
-
-  if( a->n == a->size ) {
-    a->size *= 2 ;
-    tmp = realloc( a->element, a->size * sizeof( element_t * )) ;
-    a->element = tmp ;
-  }
-
-  a->element[a->n++] = ep ; 
-
-  return a ;
+  return ( list_t *) Calloc (1,  sizeof( list_t )) ;
 }
 
 /* ----------------------------------- */
 
-void set_memberof( set_t *s, element_t *group ) 
+void set_memberof( varr_t *va, element_t *group ) 
 {
-  int i ;
+  void      *vp ;
+  element_t *ep ;
 
-  for( i = 0 ; i < s->n ; i++ ) s->element[i]->memberof = group ;
+  for( vp = varr_first( va ) ; vp ; vp = varr_next( va, vp ) ) {
+    ep = (element_t *) vp ;
+    ep->memberof = group ;
+  }
 }
 
 
@@ -307,7 +239,7 @@ void set_memberof( set_t *s, element_t *group )
 static spocp_result_t get_set( octet_t *oct, element_t *ep )
 {
   element_t      *nep = 0 ;
-  set_t          *pa, *sa = 0 ;
+  varr_t         *pa, *sa = 0 ;
   spocp_result_t rc ;
 
   /* until end of star expression is found */
@@ -321,19 +253,20 @@ static spocp_result_t get_set( octet_t *oct, element_t *ep )
     if( nep->type == ep->type ) {
       pa = nep->e.set ;
 
-      sa = set_join( sa, pa ) ;
-      set_free( pa, 0 ) ;
+      sa = varr_or( sa, pa, 0 ) ;
     }
     else {
-      sa = set_add( sa, nep ) ;
+      sa = varr_add( sa, ( void *) nep ) ;
     }
   }
 
+  DEBUG(SPOCP_DPARSE) traceLog( "Got end of set" ) ;
+  
   /* only one item in the and expr, so it's not really a set. It's just a
      element and should therefore be treated as such */
   if( sa->n == 1 ) {
-    ep = sa->element[0] ;
-    set_free( sa, 0 ) ;
+    ep = ( element_t *) varr_pop( sa ) ;
+    varr_free( sa ) ;
   }
   else {
     ep->e.set = sa ;
@@ -351,49 +284,13 @@ static spocp_result_t get_set( octet_t *oct, element_t *ep )
 
 /* -------------------------------------------------------------------------- */
 
-spocp_result_t do_or( octet_t *oct, element_t *ep )
+spocp_result_t do_set( octet_t *oct, element_t *ep )
 {
-  DEBUG(SPOCP_DPARSE) traceLog( "Parsing 'or' expression" ) ;
+  DEBUG(SPOCP_DPARSE) traceLog( "Parsing 'set' expression" ) ;
 
-  ep->type = SPOC_OR ; 
+  ep->type = SPOC_SET ; 
 
   return get_set( oct, ep ) ;
-}
-
-/* -------------------------------------------------------------------------- */
-
-spocp_result_t do_bcond( octet_t *oct, element_t *ep ) 
-{
-  element_t      *nep = 0 ;
-  set_t          *sa = 0 ;
-  spocp_result_t rc ;
-
-  while( oct->len && *oct->val != ')' ) {
-
-    if(( rc = element_get( oct, &nep )) == SPOCP_SYNTAXERROR ) return rc ;
-
-    if( nep->type != SPOC_ATOM ) {
-      element_free( nep ) ;
-      set_free( sa, 1 ) ;
-      return SPOCP_SYNTAXERROR ;
-    }
-
-    /* the real test of it's a external reference comes later, sofar if it's a atom it's OK */
-
-    nep->memberof = ep ;
-
-    sa = set_add( sa, nep ) ;
-  }
-
-  ep->type = SPOC_BCOND ;
-  ep->e.set = sa ;
-
-  if( *oct->val == ')' ) {
-    oct->val++ ;
-    oct->len-- ;
-  }
-
-  return SPOCP_SUCCESS ;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -596,7 +493,7 @@ spocp_result_t is_valid_range( range_t *rp )
 
       case SPOC_ALPHA :
       case SPOC_DATE :
-        c = octcmp( &rp->lower.v.val, &rp->upper.v.val ) ;
+        c = octcmp( &rp->upper.v.val, &rp->lower.v.val ) ;
         break ;
 
       default:
@@ -794,16 +691,14 @@ done:
 spocp_result_t do_list( octet_t *to, octet_t *lo, element_t *ep, char *base )
 {
   spocp_result_t r = SPOCP_SUCCESS ;
-  list_t         *lp = 0 ;
   element_t      *nep = 0, *pep ;
 
   DEBUG(SPOCP_DPARSE) traceLog( "List tag" ) ;
 
   ep->type = SPOC_LIST ;
-  lp = ( list_t *) Malloc ( sizeof( list_t )) ;
-  ep->e.list = lp ;
+  ep->e.list = list_new() ;
 
-  pep = lp->head = element_new() ;
+  pep = ep->e.list->head = element_new() ;
 
   /* first element has to be a atom */
   pep->memberof = ep ;
@@ -818,7 +713,7 @@ spocp_result_t do_list( octet_t *to, octet_t *lo, element_t *ep, char *base )
     r = element_get( lo, &nep ) ;
 
     if( r != SPOCP_SUCCESS ) {
-      list_free( lp ) ;
+      list_free( ep->e.list ) ;
       ep->e.list = 0 ;
       return r ;
     }
@@ -842,7 +737,7 @@ spocp_result_t do_list( octet_t *to, octet_t *lo, element_t *ep, char *base )
   /* compute hash of the whole list in string representation 
      This is sort of an artifact, has very limited usage
    */
-  lp->hstrlist = lhash( (unsigned char *) base, lo->val - base, 0 ) ;
+  ep->e.list->hstrlist = lhash( (unsigned char *) base, lo->val - base, 0 ) ;
 
   return SPOCP_SUCCESS ;
 }
@@ -887,7 +782,13 @@ spocp_result_t element_get( octet_t *op, element_t **epp )
 
       if( oct.len == 1 && oct.val[0] == '*' ) { /* not a simple list, star expression */
 
-        if(( r = get_str( op, &oct )) == SPOCP_SUCCESS ) {
+        if( *op->val == ')' ) {
+          ep->type = SPOC_ANY ; /* that's all that is needed */
+          op->val++ ;
+          op->len-- ;
+          r = SPOCP_SUCCESS ;
+        }
+        else if(( r = get_str( op, &oct )) == SPOCP_SUCCESS ) {
 
           /* unless proven otherwise */
           r = SPOCP_SYNTAXERROR ;
@@ -900,11 +801,10 @@ spocp_result_t element_get( octet_t *op, element_t **epp )
           
             case 5:
               if( strncmp( oct.val, "range", 5) == 0 ) r = do_range( op, ep ) ;
-              else if( strncmp( oct.val, "bcond", 5) == 0 ) r = do_bcond( op, ep ) ;
               break ;
     
-            case 2:
-              if( strncmp( oct.val, "or", 2) == 0 ) r = do_or( op, ep ) ;
+            case 3:
+              if( strncmp( oct.val, "set", 3) == 0 ) r = do_set( op, ep ) ;
               break ;
           }
         }

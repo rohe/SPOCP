@@ -22,52 +22,6 @@
 #include <macros.h>
 #include <wrappers.h>
 
-static junc_t *do_bcond( branch_t *, element_t *, parr_t *, becpool_t *, spocp_result_t *, octnode_t ** );
-
-typedef struct _joct {
-  junc_t *jp ;
-  octnode_t *on ;
-} joct_t ;
-
-/* =============================================================== */
-
-joct_t *joct_new( junc_t *jp, octnode_t *on )
-{
-  joct_t *jo ;
-
-  jo = ( joct_t * ) Malloc ( sizeof( joct_t )) ;
-  jo->jp = jp ;
-  jo->on = on ;
- 
-  return jo ;
-}
-
-void joct_free( joct_t *jo )
-{
-  if( jo ) {
-    /* don't free the junc_t pointer */
-    octnode_free( jo->on ) ;
-    free( jo ) ;
-  }
-}
-
-int joct_cmp( joct_t *a, joct_t *b ) 
-{
-  if( a ) {
-    if( b ) {
-      if( a->jp == b->jp ) return octnode_cmp( a->on, b->on ) ;
-      else return a->jp - b->jp ; 
-    }
-    else return 1 ;
-  }
-  else if( b ) return -1 ;
-  else return 0 ;
-}
-
-int P_joctcmp( void *a, void *b )
-{
-  return joct_cmp(( joct_t *) a, ( joct_t * ) b ) ;
-}
 
 /* =============================================================== */
 /*
@@ -102,9 +56,9 @@ junc_t *atom2atom_match( atom_t *ap, phash_t *pp )
   else return 0 ;
 }
 
-parr_t *atom2prefix_match( atom_t *ap, ssn_t *pp )
+varr_t *atom2prefix_match( atom_t *ap, ssn_t *pp )
 {
-  parr_t *avp = 0;
+  varr_t *avp = 0;
 
   DEBUG( SPOCP_DMATCH )
   { 
@@ -116,16 +70,16 @@ parr_t *atom2prefix_match( atom_t *ap, ssn_t *pp )
   return avp ;
 }
 
-parr_t *atom2suffix_match( atom_t *ap, ssn_t *pp )
+varr_t *atom2suffix_match( atom_t *ap, ssn_t *pp )
 {
-  parr_t *avp = 0;
+  varr_t *avp = 0;
 
   avp = ssn_match( pp, ap->val.val, BACKWARD ) ;
 
   return avp ;
 }
 
-parr_t *atom2range_match( atom_t *ap, slist_t *slp, int vtype, spocp_result_t *rc )
+varr_t *atom2range_match( atom_t *ap, slist_t *slp, int vtype, spocp_result_t *rc )
 {
   boundary_t  value ;
   octet_t     *vo ;
@@ -182,17 +136,17 @@ parr_t *atom2range_match( atom_t *ap, slist_t *slp, int vtype, spocp_result_t *r
   }
 }
 
-parr_t *prefix2prefix_match( atom_t *prefa, ssn_t *prefix )
+varr_t *prefix2prefix_match( atom_t *prefa, ssn_t *prefix )
 {
   return atom2prefix_match( prefa, prefix ) ;
 }
 
-parr_t *suffix2suffix_match( atom_t *prefa, ssn_t *suffix )
+varr_t *suffix2suffix_match( atom_t *prefa, ssn_t *suffix )
 {
   return atom2suffix_match( prefa, suffix ) ;
 }
 
-parr_t *range2range_match( range_t *ra, slist_t *slp )
+varr_t *range2range_match( range_t *ra, slist_t *slp )
 {
   return sl_range_match( slp, ra ) ;
 }
@@ -214,38 +168,41 @@ O = can make sense in very special cases, should be
     handled while storing rules. Which means I don't
     care about them here
 
-        | atom | prefix | range | set | list | suffix |
---------+------+--------+-------+-----+------|--------|
-atom    |  X   |   X    |   X   |  X  |      |   X    |
---------+------+--------+-------+-----+------|--------|
-prefix  |      |   X    |       |     |      |        |
---------|------+--------+-------+-----+------|--------|
-range   |  0   |        |   X   |  0  |      |        |
---------+------+--------+-------+-----+------|--------|
-set     |  0   |   0    |   0   |  X  |  0   |   0    |
---------+------+--------+-------+-----+------|--------|
-list    |      |        |       |     |  X   |        |
----------------------------------------------+--------|
-suffix  |      |        |       |     |      |   X    |
----------------------------------------------+--------|
+        | atom | prefix | range | set | list | suffix |  any  |
+--------+------+--------+-------+-----+------|--------|-------|
+atom    |  X   |   X    |   X   |  X  |      |   X    |   X   |
+--------+------+--------+-------+-----+------|--------|-------|
+prefix  |      |   X    |       |     |      |        |   X   |
+--------|------+--------+-------+-----+------|--------|-------|
+range   |  0   |        |   X   |  0  |      |        |   X   |
+--------+------+--------+-------+-----+------|--------|-------|
+set     |  0   |   0    |   0   |  X  |  0   |   0    |   X   |
+--------+------+--------+-------+-----+------|--------|-------|
+list    |      |        |       |     |  X   |        |   X   |
+---------------------------------------------+--------|-------|
+suffix  |      |        |       |     |      |   X    |   X   |
+---------------------------------------------+--------|-------|
+any     |      |        |       |  X  |      |        |   X   |
+---------------------------------------------+--------|-------|
 
  */
 
-static junc_t * ending(
-  junc_t *jp,
-  element_t *ep,
-  parr_t *gjp,
-  becpool_t *bcp,
-  spocp_result_t *rc,
-  octnode_t **on )
+static junc_t *ending(
+  junc_t *jp, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **oa )
 {
-  branch_t  *bp ;
-  element_t *nep ;
-  junc_t    *vl = 0 ;
+  branch_t      *bp ;
+  element_t     *nep ;
+  junc_t        *vl = 0 ;
+  spocp_result_t r ;
 
   if( !jp ) return 0 ;
 
-  if( jp->item[ SPOC_ENDOFRULE ] ) return jp ;
+  if( jp->item[ SPOC_ENDOFRULE ] ) {
+    /* THIS IS WHERE BCOND IS CHECKED */
+    r = bcond_check( head, jp->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+    if( r != SPOCP_SUCCESS) return 0 ;
+    else return jp ;
+  }
 
   if( jp->item[ SPOC_ENDOFLIST ] ) {
 
@@ -256,7 +213,12 @@ static junc_t * ending(
       if( ep->next == 0 && ep->memberof == 0 ) {
         vl = bp->val.list ;
 
-        if( vl && vl->item[SPOC_ENDOFRULE] ) return vl ;
+        if( vl && vl->item[SPOC_ENDOFRULE] ){
+          /* THIS IS WHERE BCOND IS CHECKED */
+          r = bcond_check( head, vl->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+          if( r != SPOCP_SUCCESS) return 0 ;
+          else return vl ;
+        }
         else return 0 ;
       }
 
@@ -274,10 +236,6 @@ static junc_t * ending(
       vl = bp->val.list ;
 
       while( nep->memberof ) {
-
-        if( vl->item[SPOC_BCOND] &&
-            (jp = do_bcond( vl->item[SPOC_BCOND], nep, gjp, bcp, rc, on )) != 0 )
-            return jp ;
 
         if( vl->item[SPOC_ENDOFLIST] ) 
           bp = vl->item[SPOC_ENDOFLIST] ;
@@ -299,246 +257,118 @@ static junc_t * ending(
       }
 
       if( nep->next ) {
-        jp = element_match_r( vl, nep->next, gjp, bcp, rc, on ) ;
+        jp = element_match_r( vl, nep->next, rc, head, oa ) ;
+        
         if( jp && jp->item[SPOC_ENDOFRULE] ) return jp ;
+        
       }
-      else if( vl->item[SPOC_ENDOFRULE] ) return vl ;
+      else if( vl->item[SPOC_ENDOFRULE] ) {
+        /* THIS IS WHERE BCOND IS CHECKED */
+        r = bcond_check( head, vl->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+        if( r != SPOCP_SUCCESS) return 0 ;
+        else return vl ;
+      }
     }
-    else {
+    else { /* ep == 0, can't do a boundary check that uses variable substitution */
       jp = bp->val.list ;
-      if( jp->item[SPOC_ENDOFRULE] ) return jp ;
+      if( jp->item[SPOC_ENDOFRULE] ) {
+        /* THIS IS WHERE BCOND IS CHECKED */
+        r = bcond_check( head, jp->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+        if( r != SPOCP_SUCCESS) return 0 ;
+        else return jp ;
+      }
+      else return jp ;
     }
   }
-  else if( jp->item[SPOC_ENDOFRULE] ) return jp ;
+  else if( jp->item[SPOC_ENDOFRULE] ) {
+    /* THIS IS WHERE BCOND IS CHECKED */
+    r = bcond_check( head, jp->item[ SPOC_ENDOFRULE ]->val.id, oa ) ;
+    if( r != SPOCP_SUCCESS) return 0 ;
+    else return jp ;
+  }
 
   return 0 ;
 }
 
+/*****************************************************************/
+
 /*
-void *extref_cmp( extref_t *erp, element_t *ep, parr_t *pap, becpool_t *bcp )
+static junc_t *
+do_branches( varr_t *avp, element_t *ep, spocp_result_t *rc, octarr_t **on)
 {
-  ref_t  *rp ;
-  junc_t *jp = 0 ;
+  int     i ;
+  junc_t  *jp = 0, *ea = 0 ;
 
-#ifdef HAVE_LIBPTHREAD
-  pthread_mutex_lock( &erp->mutex ) ;
-#endif
+  * DEBUG( SPOCP_DMATCH ) traceLog( "do_branches: %d", varr_items( avp )) ; *
 
-  * comparing two boundary conditions *
-  for( rp = erp->refl ; rp ; rp = rp->nextref ) {
-    jp = 0 ;
-    if( octcmp( &ep->e.atom->val, &rp->bc ) == 0 ) {
-
-      jp = element_match_r( rp->next, ep, pap, bcp ) ;
-      if( jp && jp->item[SPOC_ENDOFRULE] ) return (void *) jp ;
-
-      break ;
-    }
+  for( i = 0 ;  ; i++ ) {
+    if(( jp = varr_junc_nth( avp, i)) == 0 ) break ;
+    DEBUG( SPOCP_DMATCH ) traceLog( "ending called from do_branches" ) ; 
+    if(( ea = ending( jp, ep, rc, on ))) break ;
   }
 
-#ifdef HAVE_LIBPTHREAD
-  pthread_mutex_unlock( &erp->mutex ) ;
-#endif
+  if( jp != 0 ) jp = ea ;
 
-  return 0 ;
+  * clean up *
+  varr_free( avp ) ;
+
+  return jp ;
 }
 */
 
-static void *erset_skip(
-  erset_t *erp,
-  element_t *ep,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc,
-  octnode_t **on )
-{
-  junc_t  *jp ;
-
-  for( ; erp ; erp = erp->other) {
-    jp = element_match_r( erp->next, ep, pap, bcp, rc, on ) ;
-    if( jp && jp->item[SPOC_ENDOFRULE] ) return (void *) jp ;
-  }
-
-  return 0 ;
-}
-
-
-static junc_t * do_erset(
-  erset_t *es,
-  element_t *ep,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc,
-  octnode_t **on) 
-{
-  size_t     i ;
-  junc_t    *jp ;
-  octet_t    blob ;
-  
-  for( i = 0 ; i < es->n ; i++ ) {
-    memset( &blob, 0, sizeof( octet_t )) ;
-    if( do_ref( es->ref[i], pap, bcp, &blob ) != TRUE ) {
-      if( *on ) {
-        octnode_free( *on ) ;
-        *on = 0 ;
-      }
-      return 0 ;
-    }
-    *on = octnode_add( *on, &blob ) ;
-  }
-  
-  DEBUG( SPOCP_DBCOND ) traceLog("External references evaluated to TRUE") ;
-
-  jp = element_match_r( es->next, ep, pap, bcp, rc, on ) ;
-
-  if( jp && jp->item[SPOC_ENDOFRULE] ) return jp ;
-  else return 0 ;
-}
-
-static parr_t * do_er(
-  erset_t *es,
-  element_t *ep,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc)
-{
-  junc_t    *jp ;
-  octnode_t *on ;
-  parr_t    *parr = 0 ;
-  joct_t    *jo ;
-
-  for( ; es ; es = es->other ) {
-    on = 0 ;
-    if(( jp = do_erset( es, ep, pap, bcp, rc, &on )) != 0 ) {
-      if( parr == 0 ) parr = parr_new( 4, &P_pcmp, 0, &P_pcpy, 0 ) ;
-      jo = joct_new( jp, on ) ;
-      parr_add( parr, (void *) jo ) ;
-      break ;
-    }
-  }
-
-  return parr ;
-}
-
 /*****************************************************************/
 
-static junc_t *do_branches(
-  parr_t *avp,
-  element_t *ep,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc,
-  octnode_t **on )
+static junc_t *do_arr(
+  varr_t *a, element_t *e, spocp_result_t *rc, element_t *head, octarr_t **on )
 {
-  int     i ;
-  junc_t *jp = 0, *ea = 0 ;
-  joct_t *jo ;
+  junc_t  *jp = 0 ;
 
-  /* DEBUG( SPOCP_DMATCH ) traceLog( "do_branches: %d", parr_items( avp )) ; */
-
-  for( i = parr_items( avp ) - 1 ; i >= 0 ; i-- ) {
-    jo = ( joct_t * ) parr_get_item_by_index( avp, i) ;
-    if(( ea = ending( jo->jp, ep, pap, bcp, rc, &jo->on ))) break ;
+  while(( jp = varr_junc_pop( a ))) {
+    if(( jp = element_match_r( jp, e, rc, head, on )) != 0 ) break ;
   }
 
-  /* DEBUG( SPOCP_DMATCH ) traceLog( "do_branches returned %d", i ) ; */
-  if( i < 0 ) jp = 0 ;
-  else {
-    jp = ea ;
-    if( jo->on ) {
-      *on = octnode_join( *on, jo->on ) ;
-      jo->on = 0 ; /* so it want get accidentally removed */
+  varr_free( a ) ;
+
+  return jp ;
+}
+/*****************************************************************/
+
+static junc_t *next( 
+  junc_t *ju, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **on )
+{
+  junc_t   *jp ;
+  branch_t *bp ;
+
+  if( ep->next == 0 ) { /* end of list */
+    do {
+      if( !ep->memberof ) break ;
+      if(( bp = ju->item[SPOC_ENDOFLIST]) == 0 ) break ;
+      ju = bp->val.list ;
+      ep = ep->memberof ;
+    } while( ep->next == 0 && ju->item[SPOC_ENDOFLIST] ) ;
+
+    if( !ep->memberof ) { /* reached the end */
+      jp = ending( ju, ep, rc, head, on ) ;
     }
   }
 
-  /* clean up */
-  parr_free( avp ) ;
+  jp = element_match_r( ju, ep->next, rc, head, on ) ;
 
   return jp ;
 }
 
 /*****************************************************************/
 
-static junc_t * do_bcond(
-  branch_t *bp,
-  element_t *ep,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc,
-  octnode_t **on )
-{
-  erset_t  *es ;
-  parr_t   *avp ;
-  junc_t   *jp = 0 ;
-
-  if( bcp == 0 ) {
-    jp = erset_skip( bp->val.set, ep, pap, bcp, rc, on ) ;
-  }
-  else if( ep && ep->type == SPOC_BCOND ) {
-    DEBUG( SPOCP_DMATCH ) traceLog( "extref_cmp") ;
-    if(( es = er_cmp( bp->val.set, ep )) != 0 ) jp = es->next ;
-  }
-  else {
-    DEBUG( SPOCP_DMATCH ) traceLog( "do_er") ;
-    if(( avp = do_er( bp->val.set, ep, pap, bcp, rc ))) { 
-      jp = do_branches( avp, ep, pap, bcp, rc, on ) ;
-    }
-  }
-
-  return jp ;
-}
-
-/*****************************************************************/
-static parr_t *do_arr(
-  parr_t *a,
-  parr_t *p,
-  element_t *e,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc)
-{
-  junc_t    *jp ;
-  joct_t    *jo ;
-  int        j ;
-  octnode_t *on ;
-
-  for( j = 0 ; j < a->n ; j++ ) {
-    jp = a->vect[j] ;
-
-    jp = element_match_r( jp, e, pap, bcp, rc, &on ) ;
-
-    if( jp ) {
-      /* Storing pointers in a array, don't want them delete when the array is deleted */
-      if( p == 0 ) p = parr_new( 4, &P_joctcmp, 0, 0, 0 ) ;
-
-      jo = joct_new( jp, on ) ;
-      parr_add_nondup( p, (void *) jo ) ;
-    }
-  }
-
-  parr_free( a ) ;
-
-  return p ;
-}
-/*****************************************************************/
-
-static parr_t *
-atom_match(
-  junc_t *db,
-  element_t *ep,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc )
+static junc_t *atom_match(
+  junc_t *db, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **on )
 {
   branch_t  *bp ;
   junc_t    *jp = 0, *ju ;
-  parr_t    *parr = 0, *avp = 0 ;
+  varr_t    *avp = 0 ;
   element_t *nep ;
   slist_t  **slp ;
   int        i ;
   atom_t    *atom ;
-  octnode_t *on = 0 ;
-  joct_t    *jo ;
 
   if( ep == 0 ) return 0 ;
 
@@ -549,23 +379,9 @@ atom_match(
     if(( ju = atom2atom_match( atom, bp->val.atom ))) {
       DEBUG( SPOCP_DMATCH ) traceLog("Matched atom %s", atom->val.val ) ;
 
-      jp = element_match_r( ju, nep, pap, bcp, rc, &on ) ;
+      jp = next( ju, ep, rc, head, on ) ;
 
-      if( jp ) {
-        if( parr == 0 ) parr = parr_new( 4, &P_joctcmp, 0, 0, 0 ) ;
-        jo = joct_new( jp, on ) ;
-        parr_add( parr, (void *) jo ) ;
-      }
-
-      /* Is this really necessary */
-      if( nep == 0 ) {
-        on = 0 ;
-        if(( jp = ending( ju, ep, pap, bcp, rc, &on )) != 0 ) {
-          if( parr == 0 ) parr = parr_new( 4, &P_joctcmp, 0, 0, 0 ) ;
-          jo = joct_new( jp, on ) ;
-          parr_add( parr, (void *) jo ) ;
-        }
-      }
+      if( jp ) return jp ;
     }
     else {
       DEBUG( SPOCP_DMATCH ) traceLog("Failed to matched atom %s", atom->val.val ) ;
@@ -578,8 +394,9 @@ atom_match(
 
     if( avp ) {
       DEBUG( SPOCP_DMATCH ) traceLog("matched prefix" ) ;
-      parr = do_arr( avp, parr, nep, pap, bcp, rc ) ;
+      jp = do_arr( avp, nep, rc, head, on ) ;
     }
+    if( jp ) return jp ;
   }
 
   if(( bp = ARRFIND( db, SPOC_SUFFIX )) != 0 ) {
@@ -588,8 +405,10 @@ atom_match(
 
     if( avp ) {
       DEBUG( SPOCP_DMATCH ) traceLog("matched suffix" ) ;
-      parr = do_arr( avp, parr, nep, pap, bcp, rc ) ;
+      jp = do_arr( avp, nep, rc, head, on ) ;
     }
+
+    if( jp ) return jp ;
   }
 
   if(( bp = ARRFIND( db, SPOC_RANGE )) != 0 ) {
@@ -601,57 +420,174 @@ atom_match(
     for( i = 0 ; i < DATATYPES ; i++ ) {
       if( slp[i] ) {
         avp = atom2range_match( atom, slp[i], i, rc ) ;
-        if( avp ) parr = do_arr( avp, parr, nep, pap, bcp, rc ) ;
+        if( avp ) {
+          jp = do_arr( avp, nep, rc, head, on ) ;
+          if( jp ) break ;
+        }
       }
     }
   }
 
-  return parr ;
+  return jp ;
+}
+
+/*****************************************************************/
+
+int common_type( varr_t *va )
+{
+  int        i, n, type ;
+  element_t *ep ;
+  
+  n = varr_len( va ) ;
+  ep = (element_t *) varr_nth( va, 0 ) ;
+  type = ep->type ;
+
+  for( i = 1 ; i < n ; i++ ) {
+    ep = (element_t *) varr_nth( va, i ) ;
+    if( ep->type != type ) return -1 ;
+  }
+
+  return type ;
+}
+
+varr_t *set_match( junc_t *db, varr_t *set, spocp_result_t *rc ) 
+{
+  int         type = common_type( set ) ;
+  int         i, n ;
+  varr_t     *pa[3], *tmp, *pp, *all = 0 ;
+  element_t  *elem ;
+  slist_t   **slp ;
+  branch_t   *bp ;
+
+  for( i = 0 ; i < 3 ; i++ ) pa[i] = 0 ;
+
+  switch( type ) {
+    case SPOC_LIST:  /* can't match */
+      return 0 ;
+
+    case SPOC_ATOM: /* can match prefix, suffix or range */
+      if(( bp = ARRFIND( db, SPOC_PREFIX )) != 0 ) {
+
+        elem = varr_nth( set, 0 ) ;
+        n = varr_len( set ) ;
+        pa[0] = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
+
+        for( i = 1 ; pa[0] && i < n ; i++ ) {
+          elem = varr_nth( set, i ) ;
+          tmp = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
+    
+          if( tmp ) pa[0] = varr_or( pa[0], tmp, 0 ) ;
+        }
+      }
+    
+      if(( bp = ARRFIND( db, SPOC_SUFFIX )) != 0 ) {
+    
+        elem = varr_nth( set, 0 ) ;
+        n = varr_len( set ) ;
+
+        pa[1] = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
+    
+        for( i = 1 ; pa[1] && i < n ; i++ ) {
+          elem = varr_nth( set, i ) ;
+          tmp = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
+    
+          if( tmp ) pa[1] = varr_or( pa[1], tmp, 0 ) ;
+        }
+      }
+    
+      if(( bp = ARRFIND( db, SPOC_RANGE )) != 0 ) {
+        /* how do I get to know the type ?
+           I don't so I have to test everyone */
+    
+        for( slp = bp->val.range , i = 0 ; slp && i < DATATYPES ; i++, slp++ ) {
+          elem = varr_nth( set, 0 ) ;
+          n = varr_len( set ) ;
+
+          if( *slp ) pp = atom2range_match( elem->e.atom, slp[i], i, rc ) ;
+          else continue ;
+
+          for( i = 1 ; pp && i < n ; i++ ) {
+            elem = varr_nth( set, i ) ;
+            tmp = atom2range_match( elem->e.atom, slp[i], i, rc ) ;
+            if( tmp ) pp = varr_or( pp, tmp, 0 ) ;
+          }
+
+          pa[2] = varr_or( pa[2], pp, 0 ) ;
+        }
+      }
+
+      if( pa[0] ) {
+        all = varr_or(pa[0], pa[1], 0) ;
+      }
+      break ;
+
+    case SPOC_PREFIX: /* can only match prefixes */
+      if(( bp = ARRFIND( db, SPOC_PREFIX )) != 0 ) {
+
+        elem = varr_nth( set, 0 ) ;
+        n = varr_len( set ) ;
+
+        pa[0] = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
+
+        for( i = 1 ; pa[0] && i < n ; i++ ) {
+          elem = varr_nth( set, i ) ;
+          tmp = atom2prefix_match( elem->e.atom, bp->val.prefix ) ;
+    
+          if( tmp ) pa[0] = varr_or( pa[0], tmp, 0 ) ;
+        }
+        all = pa[0] ;
+      }
+      break ;
+
+    case SPOC_SUFFIX: /* can only match suffixes */
+      if(( bp = ARRFIND( db, SPOC_SUFFIX )) != 0 ) {
+    
+        elem = varr_nth( set, 0 ) ;
+        n = varr_len( set ) ;
+
+        pa[1] = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
+    
+        for( i = 1 ; pa[1] && i < n ; i++ ) {
+          elem = varr_nth( set, i ) ;
+          tmp = atom2suffix_match( elem->e.atom, bp->val.suffix ) ;
+    
+          if( tmp ) pa[1] = varr_or( pa[1], tmp, 0 ) ;
+        }
+        all = pa[1] ;
+      }
+    
+      break ;
+
+    case SPOC_RANGE: /* can only match ranges */
+      break ;
+
+    case -1 : /* can only match another set */
+      break ; 
+  }
+
+  return all ; 
 }
 
 /*****************************************************************/
 /* recursive matching of nodes */
 
 junc_t * element_match_r(
-  junc_t *db,
-  element_t *ep,
-  parr_t *pap,
-  becpool_t *bcp,
-  spocp_result_t *rc,
-  octnode_t **on )
+ junc_t *db, element_t *ep, spocp_result_t *rc, element_t *head, octarr_t **on )
 {
   branch_t    *bp ;
   junc_t      *jp = 0 ;
-  parr_t      *avp = 0 ;
+  varr_t      *avp = 0 ;
   int          i ;
   slist_t    **slp ;
-  set_t       *set ;
-  octnode_t   *non = 0 ;
+  varr_t      *set ;
+  void        *v ;
 
   if( db == 0 ) return 0 ;
 
-  /* DEBUG( SPOCP_DMATCH ) traceLog( "element_match_r") ; */
   /* may have several roads to follow, this might just be one of them */
-  if(( jp = ending( db, ep, pap, bcp, rc, &non ))) {
-    *on = octnode_join( *on, non ) ;
+  DEBUG( SPOCP_DMATCH ) traceLog( "ending called from element_match_r") ; 
+  if(( jp = ending( db, ep, rc, head, on ))) {
     return jp ;
-  }
-  else if( non ) {
-    octnode_free( non ) ;
-    non = 0 ;
-  }
-
-  /* boundary conditions must be evaluated when they appear. 
-     The absence of a be cpool means don't check boundary conditions just skip past  */
-  if(( bp = ARRFIND(db,SPOC_BCOND))) {
-    if(( jp = do_bcond( bp, ep, pap, bcp, rc, &non )) != 0 ) {
-      *on = octnode_join( *on, non ) ;
-      return jp ;
-    }
-    else if( non ) {
-      octnode_free( non ) ;
-      non = 0 ;
-    }
   }
 
   if( ep == 0 ) { 
@@ -659,20 +595,22 @@ junc_t * element_match_r(
     return jp ;
   }
 
+  if(( bp = ARRFIND( db, SPOC_ANY )) != 0 ) {
+    jp = element_match_r( bp->val.next, ep->next, rc, head, on ) ;
+    if( jp ) return jp ;
+  }
+
   switch( ep->type ) {
     case SPOC_ATOM:
       DEBUG( SPOCP_DMATCH ) traceLog( "Checking ATOM" ) ;
-      if(( avp = atom_match( db, ep, pap, bcp, rc ))) {
-        jp = do_branches( avp, ep, pap, bcp, rc, &non ) ;
-      }
+      jp = atom_match( db, ep, rc, head, on ) ;
       break ;
 
-    case SPOC_OR:
-      /* only one item in the set has to match */
+    case SPOC_SET:
+      /* */
       set = ep->e.set ;
-
-      for( i = 0 ; i < set->n ; i++  ) {
-        jp = element_match_r( db, set->element[i] , pap, bcp, rc, &non ) ;
+      for( v = varr_first( set ) ; v ; v = varr_next( set, v ) ) {
+        jp = element_match_r( db, (element_t *) v, rc, head, on ) ;
         if( jp && ( ARRFIND( jp, SPOC_ENDOFRULE))) break ;
       }
 
@@ -680,24 +618,20 @@ junc_t * element_match_r(
 
     case SPOC_PREFIX:
       if(( bp = ARRFIND( db, SPOC_PREFIX )) != 0 ) {
-        avp = prefix2prefix_match( ep->e.prefix, bp->val.prefix ) ;
+        avp = prefix2prefix_match( ep->e.atom, bp->val.prefix ) ;
 
         /* got a set of plausible branches and more elements*/
-        if( avp ) {
-          jp = do_branches( avp, ep, pap, bcp, rc, &non ) ;
-        }
+        if( avp ) jp = do_arr( avp, ep->next, rc, head, on ) ;
         else jp = 0 ;
       }
       break ;
 
     case SPOC_SUFFIX:
       if(( bp = ARRFIND( db, SPOC_SUFFIX )) != 0 ) {
-        avp = suffix2suffix_match( ep->e.suffix, bp->val.suffix ) ;
+        avp = suffix2suffix_match( ep->e.atom, bp->val.suffix ) ;
 
         /* got a set of plausible branches and more elements*/
-        if( avp ) {
-          jp = do_branches( avp, ep, pap, bcp, rc, &non ) ;
-        }
+        if( avp ) jp = do_arr( avp, ep->next, rc, head, on ) ;
         else jp = 0 ;
       }
       break ;
@@ -712,9 +646,7 @@ junc_t * element_match_r(
           avp = range2range_match( ep->e.range, slp[i] ) ;
 
         /* got a set of plausible branches */
-        if( avp ) {
-          jp = do_branches( avp, ep, pap, bcp, rc, &non ) ;
-        }
+        if( avp ) jp = do_arr( avp, ep->next, rc, head, on ) ;
         else jp = 0 ;
       }
       break ;
@@ -722,16 +654,20 @@ junc_t * element_match_r(
     case SPOC_LIST:
       DEBUG( SPOCP_DMATCH ) traceLog( "Checking LIST" ) ;
       if(( bp = ARRFIND( db, SPOC_LIST )) != 0 ) {
-        jp = element_match_r( bp->val.list, ep->e.list->head, pap, bcp, rc, &non ) ;
+        jp = element_match_r( bp->val.list, ep->e.list->head, rc, head, on ) ;
       }
       break ;
 
-    case SPOC_ENDOFLIST:
-      return bp->val.list ;
-  }
+    case SPOC_ANY:
+      /* jp = 0 ; implied */
+      break ;
 
-  if( jp == 0 && non ) octnode_free( non ) ;
-  else if( jp != 0 && non ) *on = octnode_join( *on, non ) ;
+    case SPOC_ENDOFLIST:
+      bp = ARRFIND( db, SPOC_ENDOFLIST ) ;
+      if( bp ) return bp->val.list ;
+      else return 0 ;
+      break ; /* never reached */
+  }
 
   return jp ;
 }

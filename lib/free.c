@@ -19,7 +19,6 @@
 #include <func.h>
 #include <wrappers.h>
 
-void ref_free( ref_t *ref )  ;
 void junc_free( junc_t *juncp ) ;
 
 void octet_free( octet_t *op ) ;
@@ -27,7 +26,6 @@ void boundary_free( boundary_t *bp ) ;
 void bucket_free( buck_t *bp )  ;
 void hashtable_free( phash_t *hp )  ;
 void ssn_free( ssn_t *ssp ) ;
-void limit_free( limit_t *lp ) ;
 void branch_free( branch_t *bp ) ;
 
 /* ======================================================== */
@@ -92,29 +90,15 @@ void list_free( list_t *lp )
 
 /* --------------------------------------------------------------- */
 
-/* --------------------------------------------------------------- */
-
-void set_free( set_t *and, int flag ) 
-{
-  int i ;
-
-  if( and ) {
-    if( and->n && flag ) {
-      for( i = 0 ; i < and->n ; i++ )
-        if( and->element[i] ) element_free( and->element[i] ) ;
-    }
-
-    free( and ) ;
-  }
-}
-
-/* --------------------------------------------------------------- */
-
 void element_free( element_t *ep )
 {
+  element_t *e ;
+
   if( ep ) {
     switch( ep->type ) {
       case SPOC_ATOM:
+      case SPOC_PREFIX:
+      case SPOC_SUFFIX:
         atom_free( ep->e.atom ) ;
         break ;
 
@@ -122,16 +106,9 @@ void element_free( element_t *ep )
         list_free( ep->e.list ) ;
         break ;
 
-      case SPOC_OR:
-        set_free( ep->e.set, 1 ) ;
-        break ;
-
-      case SPOC_PREFIX:
-        atom_free( ep->e.prefix ) ;
-        break ;
-
-      case SPOC_SUFFIX:
-        atom_free( ep->e.suffix ) ;
+      case SPOC_SET:
+        while(( e = varr_pop( ep->e.set ))) element_free( e ) ;
+        varr_free( ep->e.set ) ;
         break ;
 
       case SPOC_RANGE:
@@ -169,14 +146,17 @@ void boundary_free( boundary_t *bp )
 
 /* --------------------------------------------------------------- */
 
-void ref_free( ref_t *ref ) 
+static void dset_free( dset_t *ds )
 {
-  if( ref ) {
-    if( ref->bc.len ) free( ref->bc.val ) ;
-    if( ref->cachedval ) ll_free( ref->cachedval ) ;
-    if( ref->next ) junc_free( ref->next ) ;
+  junc_t *jp ;
 
-    free( ref ) ;
+  if( ds ) {
+    if( ds->va ) {
+      while(( jp = varr_pop( ds->va ))) junc_free( jp ) ; 
+      varr_free( ds->va ) ;
+    }
+    if( ds->next ) dset_free( ds->next ) ;
+    free( ds ) ;
   }
 }
 
@@ -188,16 +168,16 @@ void branch_free( branch_t *bp )
 
   if( bp ) {
     switch( bp->type ) {
-      case SPOC_BCOND :
-        erset_free( bp->val.set ) ;
-        break ;
-
       case SPOC_ATOM:
         phash_free( bp->val.atom ) ;
         break ;
 
       case SPOC_LIST:
         junc_free( bp->val.list ) ;
+        break ;
+
+      case SPOC_SET:
+        dset_free( bp->val.set ) ;
         break ;
 
       case SPOC_PREFIX:
