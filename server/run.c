@@ -10,6 +10,8 @@ RCSID("$Id$");
 
 typedef struct sockaddr SA;
 
+#define XYZ 1
+
 /*
  * ---------------------------------------------------------------------- 
  */
@@ -153,7 +155,7 @@ spocp_srv_run(srv_t * srv)
 			next = pi->next;
 
 			if (conn->stop && conn->ops_pending <= 0) {
-				if (0)
+				if (XYZ)
 					timestamp("removing connection");
 				conn->close(conn);
 				conn_reset(conn);
@@ -172,14 +174,18 @@ spocp_srv_run(srv_t * srv)
 					     strerror(err));
 
 				pe--;
-				if (0)
+				if (XYZ)
 					traceLog("Next is %p", next);
 			} else {
 				if (!conn->stop) {
-					maxfd = MAX(maxfd, conn->fd);
-					FD_SET(conn->fd, &wfds);
-				    	if( conn->status != CNST_SSL_NEG) 
+					if (conn->status == CNST_WRITE){
+						maxfd = MAX(maxfd, conn->fd);
+						FD_SET(conn->fd, &wfds);
+					}
+				    	if (conn->status != CNST_SSL_NEG) {
+						maxfd = MAX(maxfd, conn->fd);
 						FD_SET(conn->fd, &rfds);
+					}
 				}
 
 				if ((err =
@@ -197,13 +203,13 @@ spocp_srv_run(srv_t * srv)
 		noto.tv_sec = 0;
 		noto.tv_usec = 1000;
 
-		if (0)
+		if (XYZ)
 			timestamp("before select");
 		/*
-		 * Select on all file descriptors, don't wait forever 
+		 * Select on all file descriptors, wait forever 
 		 */
 		nready = select(maxfd + 1, &rfds, &wfds, NULL, 0);
-		if (0)
+		if (XYZ)
 			timestamp("after select");
 
 		/*
@@ -222,7 +228,7 @@ spocp_srv_run(srv_t * srv)
 		if (nready == 0)
 			continue;
 
-		if (0)
+		if (XYZ)
 			timestamp("Readable/Writeable");
 
 		/*
@@ -256,7 +262,7 @@ spocp_srv_run(srv_t * srv)
 
 			DEBUG(SPOCP_DSRV) traceLog("Got connection on fd=%d",
 						   client);
-			if (0)
+			if (XYZ)
 				timestamp("Accepted");
 
 			val = fcntl(client, F_GETFL, 0);
@@ -380,7 +386,7 @@ spocp_srv_run(srv_t * srv)
 			 * wasn't around when the select was done 
 			 */
 			if (conn->fd > maxfd) {
-				if (0)
+				if (XYZ)
 					traceLog("Not this time ! Too young");
 				continue;
 			}
@@ -394,14 +400,15 @@ spocp_srv_run(srv_t * srv)
 			 */
 
 			if (FD_ISSET(conn->fd, &rfds) && !conn->stop) {
-				if (0)
-					timestamp("input readable");
+				if (XYZ)
+					traceLog("input readable on %d",
+					    conn->fd);
 
 				/*
 				 * read returns number of bytes read 
 				 */
 				n = spocp_conn_read(conn);
-				if (0)
+				if (XYZ)
 					traceLog("Read returned %d from %d", n,
 						 conn->fd);
 				/*
@@ -412,7 +419,7 @@ spocp_srv_run(srv_t * srv)
 					conn->stop = 1;
 					continue;
 				}
-				if (0)
+				if (XYZ)
 					timestamp("read con");
 
 				res = get_operation(conn, &operation);
@@ -421,7 +428,7 @@ spocp_srv_run(srv_t * srv)
 				if (res != SPOCP_SUCCESS)
 					continue;
 
-				if (0)
+				if (XYZ)
 					timestamp("add work item");
 				/*
 				 * this will not happen until the for loop is
@@ -432,29 +439,26 @@ spocp_srv_run(srv_t * srv)
 			}
 
 			if (FD_ISSET(conn->fd, &wfds)) {
-				if (0)
-					timestamp("output writeable");
 
-				n = iobuf_content(conn->out);
-
-				if (n == 0)
-					iobuf_flush(conn->out);
-				else {
-					if (0)
-						timestamp("**writing con");
-
-					DEBUG(SPOCP_DSRV)
-					    traceLog
-					    ("Outgoing data on fd %d (%d)\n",
-					     conn->fd, n);
-
-					n = spocp_conn_write(conn);
-
-					if (n == -1)
-						traceLog
-						    ("Error in writing to %d",
-						     conn->fd);
+				DEBUG(SPOCP_DSRV) {
+					n = iobuf_content(conn->out);
+					traceLog(
+					    "Outgoing data on fd %d (%d)\n",
+					    conn->fd, n);
 				}
+
+				n = spocp_conn_write(conn);
+
+				if (XYZ)
+					traceLog("Wrote %d on %d",
+					   n, conn->fd);
+
+				if (n == -1)
+					traceLog
+					    ("Error in writing to %d",
+					     conn->fd);
+				else if (iobuf_content(conn->out) == 0)
+					conn->status = CNST_ACTIVE;
 			}
 
 			/*
@@ -464,7 +468,7 @@ spocp_srv_run(srv_t * srv)
 			 */
 
 		}
-		if (0)
+		if (XYZ)
 			timestamp("one loop done");
 	}
 }

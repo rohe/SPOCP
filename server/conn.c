@@ -400,6 +400,7 @@ send_results(conn_t * conn)
 
 	if (0)
 		timestamp("Send results");
+
 	len = out->w - out->p;
 
 	nr = snprintf(ldef, 16, "%d:", len);
@@ -416,6 +417,8 @@ send_results(conn_t * conn)
 		timestamp("Result placed in outqueue");
 
         out->p = out->w ;
+
+	conn->status = CNST_WRITE;
 
 	return 1;
 }

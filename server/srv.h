@@ -35,7 +35,7 @@ typedef struct _spocp_iobuf {
   char           *buf ;
   char           *r ;     /* Where in the buffer reading should start */
   char           *w ;     /* Where in the buffer writing should start */
-  char           *p ;     /* Where the last 'line' starts */
+  char           *p ;     /* Where in the buffer writing should start */
   char           *end ;    /* end of buffer */
   size_t          bsize ;
   size_t          left ;
@@ -62,11 +62,12 @@ typedef struct _ruleset {
 /* -------------------------------------- */
 
 /* The connection states. */
-#define CNST_FREE      0
-#define CNST_SETUP     1
-#define CNST_ACTIVE    2
-#define CNST_SSL_NEG   3
-#define CNST_STOP      4
+#define CNST_FREE	0
+#define CNST_SETUP	1
+#define CNST_ACTIVE	2
+#define CNST_SSL_NEG	3
+#define CNST_STOP	4
+#define CNST_WRITE	5
 
 /* -------------------------------------- */
 
@@ -295,13 +296,13 @@ int  spocp_send_results( conn_t *conn ) ;
 
 /* iobuf.c */
 
-spocp_result_t iobuf_resize( spocp_iobuf_t *io, int increase, int lock ) ;
+spocp_result_t iobuf_resize( spocp_iobuf_t *io, int increase ) ;
 spocp_result_t iobuf_add( spocp_iobuf_t *io, char *s ) ;
 spocp_result_t iobuf_add_octet( spocp_iobuf_t *io, octet_t *o ) ;
 spocp_iobuf_t *iobuf_new( size_t size ) ;
 void           iobuf_shift( spocp_iobuf_t *io ) ;
 void           iobuf_flush( spocp_iobuf_t *io ) ;
-spocp_result_t iobuf_insert( spocp_iobuf_t *io, char *where, char *what, int len ) ;
+void           iobuf_insert( spocp_iobuf_t *io, int where, char *what, int len ) ;
 int            iobuf_content( spocp_iobuf_t *io ) ;
 void           conn_iobuf_clear( conn_t * ) ;
 
