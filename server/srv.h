@@ -153,6 +153,8 @@ typedef struct _server
   int             sslverifydepth ;
   char            *server_id ;
   int             srvtype ;
+  
+  char            *hostname;
 
 #ifdef HAVE_SSL
   void            *ctx;

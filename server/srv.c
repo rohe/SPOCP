@@ -126,10 +126,10 @@ static void oparg_clear( conn_t *con )
   con->oppath = 0 ;
 }
 
-spocp_resut_t com_auth( conn_t *conn )
+spocp_result_t com_auth( conn_t *conn )
 {
   spocp_result_t  r = SPOCP_SUCCESS ;
-  const char     *msg = NULL;
+  char           *msg = NULL;
   int             wr ;
 
   LOG (SPOCP_INFO ) traceLog("Attempt to authenticate");
@@ -138,7 +138,8 @@ spocp_resut_t com_auth( conn_t *conn )
 
   if (conn->sasl == NULL) {
     wr = sasl_server_new("spocp",
-			 conn->srv->sri.hostname,
+			 conn->srv->hostname,
+			 NULL,
 			 NULL,
 			 NULL,
 			 NULL,
@@ -152,10 +153,10 @@ spocp_resut_t com_auth( conn_t *conn )
   }
 
   if (conn->oparg->n == 0) { /* list auth mechs */
-    const char *mechs;
+    char *mechs;
     int mechlen,count;
 
-    wr = sasl_listmech(conn,NULL,NULL," ",NULL,&mechs,&mechlen,&count);
+    wr = sasl_listmech(conn->sasl,NULL,NULL," ",NULL,&mechs,&mechlen,&count);
     if (wr != SASL_OK) {
       LOG (SPOCP_ERR) traceLog("Failed to generate SASL mechanism list");
       r = SPOCP_OTHER;
@@ -202,11 +203,11 @@ spocp_result_t com_starttls( conn_t *conn )
   if ( conn->sasl != NULL) {
     LOG( SPOCP_ERR ) traceLog("Layering violation: SASL already in operation") ;
     r = SPOCP_STATE_VIOLATION ; /* XXX definiera och ... */
-  } else if( conn->ssl != NULL )
+  } else if( conn->ssl != NULL ) {
     LOG( SPOCP_ERR ) traceLog("Layering violation: SSL already in operation") ;
     r = SPOCP_STATE_VIOLATION ; /* XXX ... fixa informativt felmeddleande */
-  else if(( r = operation_access( conn )) == SPOCP_SUCCESS ) {
-    /* Ready to start TLS/SSL */
+  } else if(( r = operation_access( conn )) == SPOCP_SUCCESS ) {
+  /* Ready to start TLS/SSL */
     add_response( conn->out, SPOCP_SSL_START ) ;
     if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
     
