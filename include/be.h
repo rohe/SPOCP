@@ -47,7 +47,7 @@ typedef struct be_con_t {
 	/*! Previous */
 	struct be_con_t *prev;
 #ifdef HAVE_LIBPTHREAD
-	/*! Lock, so that not two threads grab the same connection */
+	/*! Lock, so that two threads can not grab the same connection */
 	pthread_mutex_t *c_lock;
 #endif
 } becon_t;
