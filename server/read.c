@@ -547,6 +547,9 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
 
   oa = dback_all_keys( dback, dback->conhandle, &r ) ;
 
+  memset( &dat0, 0, sizeof( octet_t )) ;
+  memset( &dat1, 0, sizeof( octet_t )) ;
+
   if( r == SPOCP_SUCCESS && oa && oa->n ) {
     if( *rspp == 0 ) {
       *rspp = ruleset_new( 0 ) ;
