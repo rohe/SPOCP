@@ -40,7 +40,7 @@ parse_sexp(octet_t * sexp)
 	ptree_t        *ptp, *ntp = 0, *ptr;
 
 	if (*sexp->val == '(') {
-		ptp = (ptree_t *) calloc(1, sizeof(ptree_t));
+		ptp = (ptree_t *) Calloc(1, sizeof(ptree_t));
 		ptp->list = 1;
 		sexp->val++;
 		sexp->len--;
@@ -65,7 +65,7 @@ parse_sexp(octet_t * sexp)
 			return 0;
 		}
 	} else {
-		ptp = (ptree_t *) calloc(1, sizeof(ptree_t));
+		ptp = (ptree_t *) Calloc(1, sizeof(ptree_t));
 		if (get_str(sexp, &ptp->val) != SPOCP_SUCCESS) {
 			ptree_free(ptp);
 			return 0;

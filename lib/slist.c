@@ -439,10 +439,10 @@ boundary_print(boundary_t * bp)
 	char	ip[65], *lte = "-", *str = NULL ;
 
 	if (bp == 0)
-		return strdup("");
+		return Strdup("");
 
 	if (bp->type == 0 && bp->v.val.len == 0)
-		return strdup("");
+		return Strdup("");
 
 	switch (bp->type & 0xF0) {
 	case LT | GLE:

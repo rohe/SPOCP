@@ -24,6 +24,10 @@
 #include <wrappers.h>
 
 /*
+#define AVLUS 0
+*/
+
+/*
  *----------------------------------------------------------------------
  */
 
@@ -37,6 +41,12 @@ resset_new( spocp_index_t *t, octarr_t *blob )
 	rs->blob = blob ;
 	rs->next = 0;
 
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"====----____");
+	resset_print(rs);
+	traceLog(LOG_DEBUG,"____----====");
+#endif
+
 	return rs;
 }
 
@@ -44,10 +54,19 @@ void
 resset_free( resset_t *rs)
 {
 	if( rs) {
+#ifdef AVLUS 
+		traceLog(LOG_DEBUG,"resset_free %p", rs);
+#endif
 		index_delete( rs->si );
-		octarr_free( rs->blob );
-		if (rs->next)
+		if (rs->blob ) {
+#ifdef AVLUS 
+			traceLog(LOG_DEBUG,"octarr_free %p", rs->blob);
+#endif
+			octarr_free( rs->blob );
+		}
+		if (rs->next) {
 			resset_free(rs->next);
+		}
 		Free( rs );
 	}
 }
@@ -55,28 +74,39 @@ resset_free( resset_t *rs)
 resset_t *
 resset_add( resset_t *rs, spocp_index_t *t, octarr_t *blob)
 {
-	resset_t *head;
+	resset_t *head, *tail;
+
+	tail = resset_new( t, blob );
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"resset_add tail %p", tail);
+#endif
 
 	if (rs)
 		head = rs;
 	else 
-		return resset_new( t, blob );
+		return tail;
 
 	while( rs->next )
 		rs = rs->next;
 
-	rs->next = resset_new(t, blob);
+	rs->next = tail;
 	return head;
 }
 
 resset_t *
 resset_join( resset_t *a, resset_t *b)
 {
+	resset_t *head;
+
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"resset_join %p %p", a, b);
+#endif
 	if (a) {
+		head = a;
 		while( a->next)
 			a = a->next;
 		a->next = b;
-		return a;
+		return head;
 	}
 	else
 		return b;
@@ -157,17 +187,13 @@ resset_print( resset_t *rs)
 
 	if (rs->si)
 		index_print(rs->si);
-	else {
-		DEBUG(SPOCP_DMATCH)
-			traceLog(LOG_DEBUG,"No ruleindex");
-	}
+	else 
+		traceLog(LOG_DEBUG,"No ruleindex");
 
 	if (rs->blob)
-		octarr_print(rs->blob);
-	else {
-		DEBUG(SPOCP_DMATCH)
-			traceLog(LOG_DEBUG,"No blob");
-	}
+		octarr_print(LOG_DEBUG, rs->blob);
+	else 
+		traceLog(LOG_DEBUG,"No blob");
 
 	if (rs->next)
 		resset_print(rs->next);

@@ -23,7 +23,9 @@
 #include <macros.h>
 #include <wrappers.h>
 
-#define AVLUS 1
+/*
+#define AVLUS 0
+*/
 
 static resset_t *next(junc_t *, element_t *, comparam_t *) ;
 
@@ -210,6 +212,9 @@ rss_add( resset_t *rs, spocp_index_t *si, comparam_t *comp)
 	else
 		rs = resset_add( rs, si, 0);
 
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"rss_add %p", rs );
+#endif
 	return rs;
 }
 
@@ -233,10 +238,14 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		 * THIS IS WHERE BCOND IS CHECKED 
 		 */
 		si = jp->item[SPOC_ENDOFRULE]->val.id ;
-		if (comp->nobe)
+		if (comp->nobe) {
 			res = rss_add( res, si, comp);
+		}
 		else if ((r = bcond_check(comp->head, si, comp->blob))
 				== SPOCP_SUCCESS) {
+#ifdef AVLUS
+			traceLog(LOG_DEBUG,"ENDOFRULE"); 
+#endif
 			res = rss_add( res, si, comp);
 			
 			if (!comp->all)
@@ -257,7 +266,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 			eop = oct_new( 512,NULL);
 			element_print( eop, ep );
-			oct_print( "ELEMENT:", eop);
+			oct_print( LOG_INFO, "ELEMENT:", eop);
 			oct_free( eop);
 #endif
 
@@ -289,13 +298,8 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 			DEBUG(SPOCP_DMATCH) {
 				if (nep->type == SPOC_LIST) {
-					char           *tmp;
-					tmp =
-					    oct2strdup(&nep->e.list->head->e.
-						       atom->val, '\\');
 					traceLog(LOG_DEBUG,"found end of list [%s]",
-						 tmp);
-					Free(tmp);
+						 &nep->e.list->head->e.atom->val);
 				}
 			}
 
@@ -312,15 +316,9 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 				DEBUG(SPOCP_DMATCH) {
 					if (nep->type == SPOC_LIST) {
-						char           *tmp;
-						tmp =
-						    oct2strdup(&nep->e.list->
-							       head->e.atom->
-							       val, '\\');
-						traceLog( LOG_DEBUG,
+						oct_print( LOG_DEBUG,
 						    "found end of list [%s]",
-						     tmp);
-						Free(tmp);
+						     &nep->e.list->head->e.atom->val);
 					}
 				}
 
@@ -338,12 +336,14 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */
 				si = vl->item[SPOC_ENDOFRULE]->val.id;
-				if (comp->nobe)
+				if (comp->nobe) {
 					res = rss_add( res, si, comp);
+				}
 				else {
 					r = bcond_check(comp->head, si, comp->blob);
-					if (r == SPOCP_SUCCESS) 
+					if (r == SPOCP_SUCCESS) {
 						res = rss_add( res, si, comp);
+					}
 				}
 			}
 		} else {
@@ -357,14 +357,15 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 					 * THIS IS WHERE BCOND IS CHECKED 
 					 */
 					si = vl->item[SPOC_ENDOFRULE]->val.id;
-					if (comp->nobe)
+					if (comp->nobe) {
 						res = rss_add( res, si, comp);
+					}
 					else {
 						r = bcond_check(comp->head, si,
 							comp->blob);
-						if (r == SPOCP_SUCCESS) 
-							res = rss_add( res, si,
-								comp);
+						if (r == SPOCP_SUCCESS) { 
+							res = rss_add(res,si,comp);
+						}
 					}
 					break;
 				} 
@@ -382,6 +383,10 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 			}
 		}
 	} 
+
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"Ending %p", res);
+#endif
 
 	return res;
 }
@@ -401,7 +406,7 @@ do_arr(varr_t * a, element_t * e, comparam_t * comp)
 
 		eop = oct_new( 512,NULL);
 		element_print( eop, e );
-		oct_print( "do_arr", eop);
+		oct_print(LOG_INFO, "do_arr", eop);
 		oct_free( eop);
 
 #endif
@@ -435,11 +440,13 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 {
 	resset_t	*rs = 0;
 	branch_t	*bp;
+	element_t	*sep;
 
 	DEBUG(SPOCP_DMATCH)
 		traceLog(LOG_DEBUG,"Do Next");
 
 	rs = ending(ju, ep, comp);
+	sep = ep;
 	if (rs) {
 	       	if(!comp->all)
 			return rs;
@@ -459,12 +466,19 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 			DEBUG(SPOCP_DMATCH)
 			    traceLog(LOG_DEBUG,"ending called from next");
 
+			if ( sep == ep )
+				return rs;
+
 			if ((rs = resset_join(rs,ending(ju, ep, comp))) && !comp->all) 
 				return rs;
 		}
 	}
 
 	rs = resset_join(rs,element_match_r(ju, ep->next, comp));
+
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"Next() %p", rs);
+#endif
 
 	return rs;
 }
@@ -525,15 +539,18 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 		avp = atom2suffix_match(atom, bp->val.suffix);
 
 		if (avp) {
-			octet_t *eop ;
 
 			DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"matched suffix");
 
 #ifdef AVLUS
-			eop = oct_new( 512,NULL);
-			element_print( eop, ep );
-			oct_print( "ep", eop);
-			oct_free( eop);
+			{
+				octet_t *eop ;
+
+				eop = oct_new( 512,NULL);
+				element_print( eop, ep );
+				oct_print(LOG_INFO, "ep", eop);
+				oct_free( eop);
+			}
 #endif
 
 			rs = resset_join(rs,do_arr(avp, ep, comp));
@@ -581,16 +598,19 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 	varr_t		*set;
 	void		*v;
 	resset_t	*res = 0, *rs, *setrs=0;
-	octet_t		*eop;
 
 	if (db == 0)
 		return 0;
 
 #ifdef AVLUS
-	eop = oct_new( 512,NULL);
-	element_print( eop, ep );
-	oct_print( "element_match", eop);
-	oct_free( eop);
+	{
+		octet_t		*eop;
+
+		eop = oct_new( 512,NULL);
+		element_print( eop, ep );
+		oct_print(LOG_INFO, "element_match", eop);
+		oct_free(eop);
+	}
 #endif
 
 	/*
@@ -616,7 +636,7 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 	switch (ep->type) {
 	case SPOC_ATOM:
 		DEBUG(SPOCP_DMATCH) {
-			oct_print("Checking ATOM",&ep->e.atom->val);
+			oct_print(LOG_INFO,"Checking ATOM",&ep->e.atom->val);
 		}
 		res = resset_join(res,atom_match(db, ep, comp));
 		break;
@@ -632,17 +652,25 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 		comp->nobe = 1;
 		for (v = varr_first(set), i = 0; v; v = varr_next(set, v), i++) {
 			rs = element_match_r(db, (element_t *) v, comp);
-
+#ifdef AVLUS
+			traceLog(LOG_DEBUG,"element_match_r returned %p", rs);
+#endif
 			if (setrs == 0)
 				setrs = rs;
-			else
+			else {
 				setrs = resset_and(setrs, rs);
+#ifdef AVLUS
+				traceLog(LOG_DEBUG, "spocp_set resset_and %p", setrs);
+#endif
+			}
 			
 			if (setrs == 0)
 				break;
 			else {
-				traceLog(LOG_DEBUG,"Result set join gave:");
-				index_print(setrs->si);
+				DEBUG(SPOCP_DMATCH) {
+					traceLog(LOG_DEBUG,"Result set join gave:");
+					resset_print(setrs);
+				}
 			}
 		}
 		comp->all = old;
@@ -651,10 +679,15 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 			if( bcond_check(comp->head, setrs->si, comp->blob)
 			    == SPOCP_SUCCESS) {
 				res = rss_add( res, setrs->si, comp);
-				traceLog(LOG_DEBUG,">>> RESULT SET >>>");
+#ifdef AVLUS
+				traceLog(LOG_DEBUG,">>> RESULT SET %p>>>", res);
 				resset_print(res);
 				traceLog(LOG_DEBUG,"<<<<<<<<<<<<<<<<<<");
+#endif
 			}
+#ifdef AVLUS
+			traceLog(LOG_DEBUG, "spocp_set resset_free %p", setrs);
+#endif
 			resset_free(setrs);
 		}
 		break;
@@ -717,5 +750,8 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 		break;		/* never reached */
 	}
 
+#ifdef AVLUS
+	traceLog( LOG_INFO, "element_match_r returns %p", res);
+#endif
 	return res;
 }

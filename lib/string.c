@@ -238,7 +238,7 @@ char *normalize( char *s )
 	
 	traceLog(LOG_INFO,"result %s", buf);
 #else
-	buf = strdup(s);
+	buf = Strdup(s);
 #endif
 
 	return buf;

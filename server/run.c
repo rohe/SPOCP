@@ -11,7 +11,7 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-/* #define DEBUG_XYZ 0 */
+/* #define AVLUS 0 */
 
 /*
  * ---------------------------------------------------------------------- 
@@ -164,7 +164,7 @@ static int read_work( srv_t *srv, conn_t *conn )
 	spocp_result_t	res;
 	work_info_t	wi;
 
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 	traceLog(LOG_DEBUG,"input readable on %d", conn->fd);
 #endif
 
@@ -173,7 +173,7 @@ static int read_work( srv_t *srv, conn_t *conn )
 	 */
 	n = spocp_conn_read(conn);
 
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 	traceLog(LOG_DEBUG,"Read returned %d from %d", n, conn->fd);
 #endif
 
@@ -187,7 +187,7 @@ static int read_work( srv_t *srv, conn_t *conn )
 		return 1;
 	}
 
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 	timestamp("read con");
 #endif
 
@@ -196,7 +196,7 @@ static int read_work( srv_t *srv, conn_t *conn )
 		wi.conn = conn;
 
 		res = get_operation(&wi);
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 		traceLog(LOG_DEBUG,"Getops returned %d", res);
 #endif
 		if (res != SPOCP_SUCCESS)
@@ -204,26 +204,26 @@ static int read_work( srv_t *srv, conn_t *conn )
 
 		gettimeofday( &conn->op_start, NULL );
 
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 		timestamp("add work item");
 #endif
 
 		if( tpool_add_work(srv->work, &wi) == 0 ) {
 			/* place this last in the list */
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 			timestamp("add_reply_queur");
 #endif
 			add_reply_queuer( conn, &wi );
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 			timestamp("new iobuf");
 #endif
 			wi.buf = iobuf_new(512);
 			return_busy( &wi );
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 			timestamp("reply add");
 #endif
 			reply_add( conn->head, &wi );
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 			timestamp("send_results");
 #endif
 			if (send_results(conn) == 0)
@@ -245,7 +245,7 @@ spocp_srv_run(srv_t * srv)
 	struct sockaddr_in client_addr;
 	fd_set          rfds, wfds;
 	struct timeval  noto;
-	char            ipaddr[65], hname[NI_MAXHOST + 1];
+	char            ipaddr[64], hname[NI_MAXHOST];
 	int             pe = 1;
 
 	signal(SIGPIPE, SIG_IGN);
@@ -257,7 +257,7 @@ spocp_srv_run(srv_t * srv)
 
 	traceLog(LOG_INFO,"Running server!!");
 
-	memset( ipaddr, 0, 65);
+	memset( ipaddr, 0, 64);
 
 	if (srv->connections) {
 		int             f, a;
@@ -350,7 +350,7 @@ spocp_srv_run(srv_t * srv)
 		noto.tv_sec = 0;
 		noto.tv_usec = 1000;
 
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 		timestamp("before select");
 		if( FD_ISSET(wake_sds[0], &rfds))
 			traceLog(LOG_INFO, "wakeup listener is on");
@@ -360,7 +360,7 @@ spocp_srv_run(srv_t * srv)
 		 * Select on all file descriptors, wait forever 
 		 */
 		nready = select(maxfd + 1, &rfds, &wfds, NULL, 0);
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 		timestamp("after select");
 #endif
 
@@ -380,7 +380,7 @@ spocp_srv_run(srv_t * srv)
 		if (nready == 0)
 			continue;
 
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 		timestamp("Readable/Writeable");
 #endif
 
@@ -391,7 +391,9 @@ spocp_srv_run(srv_t * srv)
 		if (FD_ISSET(wake_sds[0], &rfds)) {
 			char            c[BUFSIZ];
 
+#ifdef AVLUS
 			traceLog(LOG_DEBUG,"Woken by wake listener");
+#endif
 			read(wake_sds[0], c, sizeof(c));
 		}
 
@@ -402,7 +404,7 @@ spocp_srv_run(srv_t * srv)
 
 		if (received_sigterm == 0 && FD_ISSET(srv->listen_fd, &rfds)) {
 
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 			timestamp("New connection");
 #endif
 
@@ -419,7 +421,7 @@ spocp_srv_run(srv_t * srv)
 
 			DEBUG(SPOCP_DSRV) traceLog(LOG_ERR,"Got connection on fd=%d",
 						   client);
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 			timestamp("Accepted");
 #endif
 
@@ -516,7 +518,7 @@ spocp_srv_run(srv_t * srv)
 					pe++;
 				}
 			}
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 			timestamp("Done with new connection setup");
 #endif
 		}
@@ -543,7 +545,7 @@ spocp_srv_run(srv_t * srv)
 			 * wasn't around when the select was done 
 			 */
 			if (conn->fd > maxfd) {
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 				traceLog(LOG_DEBUG,
 				    "%d Not this time ! Too young", conn->fd);
 #endif
@@ -601,7 +603,7 @@ spocp_srv_run(srv_t * srv)
 			 */
 
 		}
-#ifdef DEBUG_XYZ
+#ifdef AVLUS
 		timestamp("one loop done");
 #endif
 	}

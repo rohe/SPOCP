@@ -13,6 +13,10 @@
 #include <proto.h>
 #include <dback.h>
 
+/*
+ * #define AVLUS 1
+ */
+
 /*! Local struct used to store parsed information about bcond s-expressions */
 typedef struct _stree {
 	/*! Is this a list/set or not */
@@ -41,16 +45,13 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 	bcspec_t       *bcs = 0;
 	plugin_t       *p;
 	int             n;
-	char		*tmp;
 
 	/*
 	 * two parts name ":" typespec 
 	 */
 	if ((n = octchr(spec, ':')) < 0) {
-		tmp = oct2strdup( spec, 0 );
-		traceLog( LOG_ERR,
-		    "Error in boundary condition specification \"%s\"", tmp);
-		Free(tmp);
+		oct_print( LOG_ERR,
+		    "Error in boundary condition specification", spec);
 		return 0;
 	}
 
@@ -59,9 +60,7 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 	spec->len = n;
 
 	if ((p = plugin_match(plt, spec)) == 0) {
-		tmp = oct2strdup(spec, 0 );
-		traceLog(LOG_ERR,"Doesn't match any known plugin \"%s\"",tmp);
-		Free(tmp);
+		traceLog(LOG_ERR,"Doesn't match any known plugin",spec);
 		return 0;
 	}
 
@@ -984,7 +983,6 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 	int             i;
 	spocp_result_t  r = SPOCP_DENIED;
 	ruleinst_t     *ri = 0;
-	char           *str;
 
 	/*
 	 * find the top 
@@ -999,14 +997,20 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 		ri = id->arr[i];
 
 		if (ri->bcond == 0) {
+#ifdef AVLUS
+			traceLog(LOG_INFO, "No bcond");
+#endif
 			if (ri->blob)
+#ifdef AVLUS
+				traceLog(LOG_INFO, "Adds blob");
+#endif
 				*oa = octarr_add(*oa, octdup(ri->blob));
 			r = SPOCP_SUCCESS;
 			break;
 		}
 
 		r = bcexp_eval(ep, ri->ep, ri->bcond->exp, oa);
-		DEBUG(SPOCP_DMATCH) {
+		{
 			traceLog(LOG_INFO,"boundary condition \"%s\" returned %d\n",
 				 ri->bcond->name, r);
 		}
@@ -1017,11 +1021,14 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa)
 			break;
 		}
 	}
+#ifdef AVLUS
+	traceLog(LOG_INFO,"Blob list");
+	octarr_print( LOG_INFO, *oa );
+#endif
 
-	if (r == SPOCP_SUCCESS) {	/* if so ri has to be defined */
-		str = oct2strdup(ri->rule, '%');
-		traceLog(LOG_INFO,"Matched rule \"%s\"", str);
-		Free(str);
+	LOG(SPOCP_INFO) {
+		if (r == SPOCP_SUCCESS) 	/* if so ri has to be defined */
+			oct_print(LOG_INFO,"Matched rule", ri->rule);
 	}
 
 	return r;

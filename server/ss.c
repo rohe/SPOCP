@@ -356,7 +356,7 @@ db_dup(db_t * db)
 	if (db == 0)
 		return 0;
 
-	new = (db_t *) calloc(1, sizeof(db_t *));
+	new = (db_t *) Calloc(1, sizeof(db_t *));
 
 	if (new == 0) {
 		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Memory allocation problem");

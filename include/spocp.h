@@ -255,7 +255,7 @@ octet_t 	*octcln(octet_t *);
 void		octclr(octet_t *);
 spocp_result_t	octcat(octet_t *, char *, size_t);
 
-void		oct_print( char *tag, octet_t *o);
+void		oct_print( int p, char *tag, octet_t *o);
 
 octarr_t	*octarr_new(size_t n);
 octarr_t	*octarr_add(octarr_t * oa, octet_t * o);
@@ -267,7 +267,7 @@ void		octarr_half_free(octarr_t * oa);
 octet_t		*octarr_pop(octarr_t * oa);
 octet_t		*octarr_rm(octarr_t * oa, int n);
 
-void		octarr_print( octarr_t *oa);
+void		octarr_print( int p, octarr_t *oa);
 
 char		**line_split(char *s, char c, char ec, int flag, int max,
 				int *parts);

@@ -1082,6 +1082,7 @@ parse_path(octet_t * o)
 		sp++, i++) {
 		if (*sp == '/') {
 			if (oa == 0) {
+				traceLog(LOG_DEBUG, "New octarr");
 				oa = octarr_new(2);
 				oct = oct_new(sp - o->val, o->val);
 				octarr_add(oa, oct);

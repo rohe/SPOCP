@@ -194,7 +194,7 @@ plugin_load(plugin_t * top, char *name, char *load)
 	}
 
 	new->handle = handle;
-	new->name = strdup(name);
+	new->name = Strdup(name);
 	new->next = NULL;
 
 	if (top == 0)

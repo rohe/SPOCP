@@ -292,8 +292,8 @@ main(void)
 		if (i < 2) {
 			sha1_update(&ctx, (uint8 *) msg[i], strlen(msg[i]));
 		} else {
-			if (!(buf = (char *) malloc(1000))) {
-				perror("malloc");
+			if (!(buf = (char *) Malloc(1000))) {
+				perror("Malloc");
 				return (1);
 			}
 

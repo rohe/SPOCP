@@ -224,7 +224,7 @@ main(int argc, char **argv)
 	if (0)
 		printf("Domain: %s\n", path);
 
-	srv.hostname = strdup(localhost);
+	srv.hostname = Strdup(localhost);
 
 	localcontext = (char *) Calloc(strlen(localhost) + strlen("//") + 1,
 				       sizeof(char));

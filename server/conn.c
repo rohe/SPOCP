@@ -449,8 +449,9 @@ send_results(conn_t * conn)
 {
 	spocp_iobuf_t  *out = conn->out;
 
-	if (x_f)
-		timestamp("Send results");
+#ifdef AVLUS
+	timestamp("Send results");
+#endif
 
 	if (gather_replies( out, conn ) == 0)
 		return 1;
@@ -463,8 +464,9 @@ send_results(conn_t * conn)
 		Free( tmp );
 	}
 
-	if (x_f)
-		timestamp("Result placed in outqueue");
+#ifdef AVLUS
+	timestamp("Result placed in outqueue");
+#endif
 
 	conn->status = CNST_WRITE;
 

@@ -77,7 +77,8 @@ reply_add( reply_t *head, work_info_t *wi )
 			rp->buf = wi->buf;
 
 			tmp = str_esc( rp->buf->r, rp->buf->w - rp->buf->r );
-			traceLog(LOG_INFO, "Adding reponse: [%s]", tmp );
+			DEBUG(SPOCP_DMATCH)
+				traceLog(LOG_INFO, "Adding reponse: [%s]", tmp );
 			Free( tmp );
 
 			wi->buf = 0;
@@ -119,12 +120,14 @@ gather_replies( spocp_iobuf_t *out, conn_t *conn )
 		reply_free( rp );
 	}
 
-	if (r) {
-		char *tmp;
+	LOG(SPOCP_INFO){
+		if (r) {
+			char *tmp;
 
-		tmp = str_esc( out->r, out->w - out->r );
-		traceLog(LOG_INFO, "Replies(%d): [%s]", r, tmp );
-		Free( tmp );
+			tmp = str_esc( out->r, out->w - out->r );
+			traceLog(LOG_INFO, "Replies(%d): [%s]", r, tmp );
+			Free( tmp );
+		}
 	}
 
 	pthread_mutex_unlock( &conn->rlock );

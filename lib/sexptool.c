@@ -64,7 +64,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 					*(vp - 2) = '\0';
 					arg[j] =
 					    (sexparg_t *) Malloc(sizeof(sexparg_t));
-					arg[j]->var = strdup(sp);
+					arg[j]->var = Strdup(sp);
 					arg[j]->af = 0;
 					arg[j]->type = 'l';
 					arg[j]->dynamic = TRUE;
@@ -113,7 +113,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 
 	if (*sp) {		/* trailing string, which is quite ok */
 		arg[j] = (sexparg_t *) Malloc(sizeof(sexparg_t));
-		arg[j]->var = strdup(sp);
+		arg[j]->var = Strdup(sp);
 		arg[j]->af = 0;
 		arg[j]->type = 'l';
 	}

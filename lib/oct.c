@@ -562,6 +562,11 @@ void
 oct_free(octet_t * o)
 {
 	if (o) {
+#ifdef AVLUS
+		traceLog(LOG_INFO,"oct_free %p", o);
+		oct_print(LOG_INFO,"oct_free", o);
+		traceLog(LOG_INFO,"oct_free size:%d len:%d",o->size, o->len);
+#endif
 		if (o->val && o->size && o->len)
 			Free(o->val);
 		Free(o);
@@ -614,15 +619,16 @@ oct2strdup(octet_t * op, char ec)
 		strncpy(str, op->val, op->len);
 		str[op->len] = '\0';
 	}
+	else {
+		for (n = 1, i = 0, cp = op->val; i < op->len; i++, cp++) {
+			if (*cp >= 0x20 && *cp < 0x7E && *cp != 0x25)
+				n++;
+			else
+				n += 4;
+		}
 
-	for (n = 1, i = 0, cp = op->val; i < op->len; i++, cp++) {
-		if (*cp >= 0x20 && *cp < 0x7E && *cp != 0x25)
-			n++;
-		else
-			n += 4;
+		str = (char *) Malloc(n * sizeof(char));
 	}
-
-	str = (char *) Malloc(n * sizeof(char));
 
 	for (sp = str, i = 0, cp = op->val; i < op->len; i++) {
 		if (!ec)
@@ -854,11 +860,11 @@ char *str_esc( char *str, int len)
 	return oct2strdup( &oct, '\\');
 }
 
-void oct_print( char *tag, octet_t *o )
+void oct_print( int pri, char *tag, octet_t *o )
 {
 	char *tmp;
 
 	tmp = oct2strdup( o, '\\');
-	traceLog(LOG_DEBUG,"%s: %s", tag, tmp);
+	traceLog(pri,"%s: %s", tag, tmp);
 	Free(tmp);
 }

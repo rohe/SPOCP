@@ -82,7 +82,7 @@ as_read_rules( char *file, rule_t **rule)
 	 */
 
 	buf.fp = fp;
-	buf.str = (char *) calloc ( BUFSIZ, sizeof( char ));
+	buf.str = (char *) Calloc ( BUFSIZ, sizeof( char ));
 	buf.size = BUFSIZ;
 	buf.start = buf.str ; 
 
@@ -217,7 +217,7 @@ int main( int argc, char **argv )
 		switch (i) {
 
 		case 'f':
-			cnfg = strdup(optarg);
+			cnfg = Strdup(optarg);
 			break;
 
 		case 'd':
@@ -271,7 +271,7 @@ int main( int argc, char **argv )
 	
 	if (optind == argc) {
 		scb.fp = stdin;
-		scb.str = (char *) calloc ( BUFSIZ, sizeof( char ));
+		scb.str = (char *) Calloc ( BUFSIZ, sizeof( char ));
 		scb.size = BUFSIZ;
 		scb.start = scb.str ; 
 

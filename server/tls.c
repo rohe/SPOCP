@@ -101,7 +101,7 @@ THREAD_setup(void)
 	int             i;
 
 	mutex_buf =
-	    (MUTEX_TYPE *) malloc(CRYPTO_num_locks() * sizeof(MUTEX_TYPE));
+	    (MUTEX_TYPE *) Malloc(CRYPTO_num_locks() * sizeof(MUTEX_TYPE));
 	if (!mutex_buf)
 		return 0;
 
@@ -768,9 +768,9 @@ tls_start(conn_t * conn, ruleset_t * rs)
 
 	cipher = SSL_get_current_cipher(ssl);
 
-	conn->cipher = strdup(SSL_CIPHER_get_name(cipher));
+	conn->cipher = Strdup(SSL_CIPHER_get_name(cipher));
 
-	conn->ssl_vers = strdup(SSL_CIPHER_get_version(cipher));
+	conn->ssl_vers = Strdup(SSL_CIPHER_get_version(cipher));
 
 	if (server_access(conn) == 0) {
 		traceLog(LOG_ERR,"Client not allowed access");

@@ -168,7 +168,7 @@ mycpy(char *res, char *start, int len, int sofar)
 		strncpy(res, start, len);
 		res[len] = 0;
 	} else {
-		tmp = (char *) realloc(res, (sofar + len + 1) * sizeof(char));
+		tmp = (char *) Realloc(res, (sofar + len + 1) * sizeof(char));
 		res = tmp;
 		strncpy(&res[sofar], start, len);
 		sofar += len;

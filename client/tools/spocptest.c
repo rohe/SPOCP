@@ -32,7 +32,8 @@
 static void
 print_usage(char *prog)
 {
-	printf("Usage: %s -d spocpserver 1*( spocpquery )\n", prog);
+	printf("Usage: %s [-d] [-a] -s spocpserver 1*( spocpquery )\n", prog);
+	printf("\t or %s [-d] [-a] -s spocpserver < file \n", prog);
 }
 
 int
@@ -45,10 +46,11 @@ main(int argc, char **argv)
 	queres_t	qres;
 	octet_t		**o;
 	octet_t		*query, *path = 0;
+	int		advanced = 0;
 
 	spocpc_debug = 0;
 
-	while ((i = getopt(argc, argv, "ds:")) != EOF) {
+	while ((i = getopt(argc, argv, "adhs:")) != EOF) {
 		switch (i) {
 
 		case 'd':
@@ -58,6 +60,11 @@ main(int argc, char **argv)
 		case 's':
 			sserv = strdup(optarg);
 			break;
+
+		case 'a':
+			advanced = 1;
+			break;
+
 		case 'h':
 			print_usage(argv[0]);
 			exit(0);
@@ -81,7 +88,11 @@ main(int argc, char **argv)
 
 	if (argc) {
 		for (i = 0; i < argc; i++) {
-			query = sexp_normalize( argv[i] );
+			if (advanced)
+				query = oct_new(0,argv[i]);
+			else
+				query = sexp_normalize( argv[i] );
+
 			if( query == 0 ) {
 				fprintf(stderr,"[%s] not a s-expression\n", argv[i]);
 				continue ;
@@ -129,11 +140,16 @@ main(int argc, char **argv)
 				sp = buf;
 			}
 
-			query = sexp_normalize( buf );
+			if (advanced)
+				query = oct_new(0, buf);
+			else
+				query = sexp_normalize( buf );
+
 			if( query == 0 ) {
 				fprintf(stderr,"[%s] not a s-expression\n", buf);
 				continue ;
 			}
+
 			memset(&qres, 0, sizeof(queres_t));
 
 			/* this routine sends the query and will not return until it has 

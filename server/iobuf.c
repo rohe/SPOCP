@@ -351,7 +351,7 @@ iobuf_print( char *tag, spocp_iobuf_t *io )
 	if (io != 0 ) {
 		o.val = io->r;
 		o.len = io->w - io->r;
-		oct_print( tag, &o );
+		oct_print( LOG_DEBUG, tag, &o );
 	}
 	else 
 		traceLog(LOG_DEBUG,"%s: %s", tag, "Empty");

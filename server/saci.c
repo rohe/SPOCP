@@ -115,7 +115,7 @@ get_subject(void * vp)
 	if (conn->sri.sexp_subject == 0) {
 		sp = sexp_printv(sexp, &size, "o", conn->sri.subject);
 		if (sp)
-			conn->sri.sexp_subject = strdup(sexp);
+			conn->sri.sexp_subject = Strdup(sexp);
 	}
 
 	return (conn->sri.sexp_subject);
@@ -148,7 +148,7 @@ get_inv_host(void * vp)
 
 	sexp_printa(list, &size, format, (void **) arr);
 
-	conn->sri.invhost = strdup(list);
+	conn->sri.invhost = Strdup(list);
 
 	return (conn->sri.invhost);
 }

@@ -215,11 +215,11 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 			return SPOCP_SUCCESS;
 	}
 
-	/*
+#ifdef AVLUS
 	traceLog( LOG_INFO,
 		"opinitial(1): max=%d, min=%d, path=%d .. oparg->n=%d",
 		max,min,path, oparg->n);
-		*/
+#endif
 	/* Too many or few arguments? There might not be a max */
 	if (max && oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
 	if (oparg->n < min) return SPOCP_MISSING_ARG;
@@ -230,9 +230,11 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 	else 
 		wi->oppath = 0;
 	
+#ifdef AVLUS
 	traceLog( LOG_INFO,
 		"opinitial(2): max=%d, min=%d, path=%d .. oparg->n=%d",
 		max,min,path, oparg->n);
+#endif
 
 	if (oparg->n < min) return SPOCP_MISSING_ARG;
 
@@ -399,7 +401,7 @@ com_auth(work_info_t *wi)
 				  (const void **) &conn->sasl_username);
 		add_response_blob(out, SPOCP_MULTI, &blob);
 		r = SPOCP_SUCCESS;
-		msg = strdup("Authentication OK");
+		msg = Strdup("Authentication OK");
 		break;
 	case SASL_CONTINUE:
 		add_response_blob(out, SPOCP_AUTHDATA, &blob);
@@ -409,7 +411,7 @@ com_auth(work_info_t *wi)
 		LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %d",
 					sasl_errstring(wr, NULL, NULL));
 		r = SPOCP_AUTHERR;
-		msg = strdup("Authentication failed");
+		msg = Strdup("Authentication failed");
 	}
 	postop(wi, r, msg);
 
@@ -715,24 +717,31 @@ com_query(work_info_t *wi)
 		r = ss_allow(rs, wi->oparg->arr[0], &rset, SUBTREE);
 		pthread_rdwr_runlock(&rs->rw_lock);
 
-/*
-		if (0)
-			timestamp("ss_allow done");
-*/
+#ifdef AVLUS
+		timestamp("ss_allow done");
+#endif
 	}
 
-	DEBUG(SPOCP_DSRV) 
+	DEBUG(SPOCP_DSRV) { 
 		traceLog(LOG_DEBUG, "allow returned %d (%p)", r, rset);
+#ifdef AVLUS
+		if (rset)
+			resset_print( rset );
+#endif
+	}
 
 	if (r == SPOCP_SUCCESS && rset) {
 		resset_t *trs = rset;
 		octarr_t *on;
 
-		while( trs && trs->blob == 0)
-			trs = trs->next;
+		for( ; trs; trs = trs->next) {
+			if (trs->blob == 0)
+				continue;
 
-		if (trs) {
 			on = trs->blob;
+#ifdef AVLUS
+			octarr_print(LOG_DEBUG,on);
+#endif
 			while (on && (oct = octarr_pop(on))) {
 				if (add_response_blob(out, SPOCP_MULTI, oct)
 				    != SPOCP_SUCCESS) {
@@ -740,14 +749,17 @@ com_query(work_info_t *wi)
 					break;
 				}
 
-				str = oct2strdup(oct, '%');
 				DEBUG(SPOCP_DSRV) 
-					traceLog(LOG_DEBUG,"returns \"%s\"", str);
-				Free(str);
+					oct_print(LOG_DEBUG,"returns", oct);
+#ifdef AVLUS
+					oct_free(oct);
+#endif
 			}
 		}
-		resset_free(rset);
 	}
+
+	if (rset)
+		resset_free(rset);
 
 	return postop( wi, r, 0);
 }

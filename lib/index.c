@@ -31,6 +31,9 @@ index_new(int size)
 	if (size) {
 		new->size = size;
 		new->arr = (ruleinst_t **) Calloc(size, sizeof(ruleinst_t *));
+#ifdef AVLUS
+		traceLog(LOG_DEBUG,"index_new size %d -> %p", size, new->arr);
+#endif
 	} else {
 		new->size = 0;
 		new->arr = 0;
@@ -54,6 +57,9 @@ index_dup(spocp_index_t * id, ruleinfo_t * ri)
 	ruleinst_t	 *r;
 
 	new = index_new(id->size);
+#ifdef AVLUS
+	traceLog(LOG_DEBUG, "index_dup %p",id);
+#endif
 
 	for (i = 0; i < id->n; i++) {
 
@@ -88,7 +94,7 @@ index_free(spocp_index_t * id)
 
 /*!
  * \brief Shallow delete of a spocp_index, this means that the ruleinstance that
- * are pointed to will not be deleted. Only the basic structure will be.
+ * are pointed to will not be deleted. Only the basic structures will.
  * \param si The spocp_index
  */
 void index_delete( spocp_index_t *si)
@@ -111,6 +117,9 @@ index_add(spocp_index_t * id, ruleinst_t * ri)
 		DEBUG(SPOCP_DSTORE)
 			traceLog( LOG_INFO, "First rule of it's kind");
 		id = index_new(2);
+#ifdef AVLUS
+		traceLog(LOG_DEBUG, "index_add %p",id);
+#endif
 	}
 	else {
 		DEBUG(SPOCP_DSTORE)
@@ -178,6 +187,9 @@ index_and( spocp_index_t *a, spocp_index_t *b)
 		return NULL;
 
 	res = index_new(MAX(a->n, b->n));
+#ifdef AVLUS
+	traceLog(LOG_DEBUG, "index_and %p",res);
+#endif
 
 	for (i = 0; i < a->n; i++)
 		for( j = 0; j < b->n; j++)
@@ -229,6 +241,9 @@ index_cp( spocp_index_t *si )
 	int	i;
 
 	res = index_new( si->size );
+#ifdef AVLUS
+	traceLog(LOG_DEBUG, "index_cp %p",res);
+#endif
 	for (i = 0; i < si->n; i++ )
 		 res->arr[i] = si->arr[i];
 

@@ -69,8 +69,8 @@ octarr_dup(octarr_t * old)
  * \brief Add a octet struct to the octarr struct. If the octarr struct pointer is
  *   NULL a new will be created. If the storage array is to small it will be increased.
  * \param oa A pointer to the octarr struct in which the octet struct should be placed
- * \param op The octet struct that shgould be added
- * \return A pointer to the octarr strict
+ * \param op The octet struct that should be added
+ * \return A pointer to the octarr struct
  */
 octarr_t       *
 octarr_add(octarr_t * oa, octet_t * op)
@@ -156,6 +156,9 @@ octarr_free(octarr_t * oa)
 	int             i;
 
 	if (oa) {
+#ifdef AVLUS
+		traceLog(LOG_INFO,"octarr_free size:%d len:%d", oa->size, oa->n);
+#endif
 		if (oa->size) {
 			for (i = 0; i < oa->n; i++)
 				oct_free(oa->arr[i]);
@@ -311,13 +314,16 @@ oct_split(octet_t * o, char c, char ec, int flag, int max)
 }
 
 void
-octarr_print( octarr_t *oa)
+octarr_print( int pri, octarr_t *oa)
 {
 	char	leading[32];
 	int	i;
 
+#ifdef AVLUS
+	traceLog(LOG_INFO,"octarr at %p", oa);
+#endif
 	for (i = 0; i < oa->n ; i++) {
-		sprintf(leading,"octarr[%d]",i);
-		oct_print( leading ,oa->arr[i]);
+		sprintf(leading,"octarr[%d](%p)",i, oa->arr[i]);
+		oct_print(pri, leading ,oa->arr[i]);
 	}
 }

@@ -302,7 +302,7 @@ bucket_free(buck_t * bp)
 {
 	if (bp) {
 		DEBUG(SPOCP_DSTORE) {
-			oct_print("removing bucket with value",&bp->val);
+			oct_print(LOG_DEBUG,"removing bucket with value",&bp->val);
 		}
 		/*
 	 	* bp->val.val shouldn't be touched since it's pointing to
