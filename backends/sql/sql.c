@@ -13,7 +13,7 @@
 
 #include <config.h>
 
-#ifdef HAVE_LIBODBC
+#if defined(HAVE_LIBODBC) && defined(HAVE_SQLEXT_H)
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -298,4 +298,4 @@ plugin_t        sql_module = {
 };
 #else
 int             spocp_no_odbc;
-#endif
+#endif 

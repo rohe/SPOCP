@@ -197,6 +197,7 @@ fi
 
 if test "$sql" = "yes" ; then
   AC_CHECK_LIB([odbc], [SQLConnect], [AC_DEFINE(HAVE_LIBODBC)], [sql=no] )
+  AC_CHECK_HEADERS([sqlext.h])
 fi
 
 #if test "$spocp" = "yes" ; then
