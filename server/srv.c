@@ -754,6 +754,7 @@ L_DONE:
 
 /* --------------------------------------------------------------------------------- */
 
+/*
 spocp_result_t com_bcond( conn_t *conn )
 {
   spocp_result_t   r = SPOCP_DENIED ;
@@ -762,7 +763,7 @@ spocp_result_t com_bcond( conn_t *conn )
 
   LOG ( SPOCP_INFO ) traceLog( "BCOND requested" ) ;
 
-  /* while within a transaction I have a local copy */
+  * while within a transaction I have a local copy *
   if( conn->transaction ) rs = conn->rs ;
   else                    rs = conn->srv->root ;
 
@@ -771,7 +772,7 @@ spocp_result_t com_bcond( conn_t *conn )
   if( oct2strcmp( oa->arr[0], "ADD" ) == 0 )  {
     if( oa->n < 3 ) r = SPOCP_MISSING_ARG ;
     else {
-      if( bcdef_add( rs->db->plugins, oa->arr[1], oa->arr[2], &rs->db->bcdef ) == 0 )
+      if( bcdef_add( rs->db, oa->arr[1], oa->arr[2] ) == 0 )
         r = SPOCP_PROTOCOLERROR ;
       else
         r = SPOCP_SUCCESS ;
@@ -788,7 +789,7 @@ spocp_result_t com_bcond( conn_t *conn )
 
   return r ;
 }
- 
+*/ 
 /* --------------------------------------------------------------------------------- */
  
 /* incomming data should be of the form operationlen ":" operlen ":" oper *( arglen ":" arg ) 
@@ -833,7 +834,6 @@ spocp_result_t com_bcond( conn_t *conn )
 
    "24:7:SUBJECT12:(3:uid3:foo)"
 
- bcond        = "BCOND" ( "ADD" / "DELETE" / "REPLACE" / "LIST" ) name [ bcond ]
 */
 
 spocp_result_t get_operation( conn_t *conn, proto_op **oper )
@@ -897,10 +897,12 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
         *oper = &com_begin ; 
         l = 5 ;
       }
+/*
       else if( strncasecmp( op.val, "BCOND", 5 ) == 0 ) {
         *oper = &com_bcond ; 
         l = 5 ;
       }
+*/
       break ;
 
     case 7:
