@@ -31,11 +31,11 @@
  */
 
 spocp_result_t
-spocp_allowed(void *vp, octet_t * sexp, octarr_t ** on)
+spocp_allowed(void *vp, octet_t * sexp, resset_t **rs)
 {
 	db_t           *db = (db_t *) vp;
 
-	return dbapi_allowed(db, sexp, on);
+	return dbapi_allowed(db, sexp, rs);
 }
 
 void

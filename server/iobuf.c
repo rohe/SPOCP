@@ -74,11 +74,15 @@ iobuf_insert(spocp_iobuf_t * io, char *where, char *src, int srclen)
 spocp_result_t
 iobuf_add_len_tag( spocp_iobuf_t *io )
 {
-	unsigned int	len = io->w - io->p ;
+	unsigned int	len ;
 	char 		ldef[16];
 	int 		nr;
 	spocp_result_t	sr;
 
+	if (io == 0)
+		return SPOCP_SUCCESS;
+
+	len = io->w - io->p ;
 	nr = snprintf(ldef, 16, "%u:", len);
 
 	sr = iobuf_insert(io, io->p, ldef, nr);
@@ -209,6 +213,9 @@ iobuf_add(spocp_iobuf_t * io, char *s)
 	if (s == 0 || *s == 0)
 		return SPOCP_SUCCESS;	/* no error */
 
+	if (io == 0)
+		return SPOCP_SUCCESS; /* Eh ? */
+
 	n = strlen(s);
 
 	/*
@@ -232,6 +239,7 @@ iobuf_add(spocp_iobuf_t * io, char *s)
 	io->left -= n;
 
 	pthread_mutex_unlock(&io->lock);
+
 	return SPOCP_SUCCESS;
 }
 
@@ -271,6 +279,9 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 
 	if (s == 0 || s->len == 0)
 		return SPOCP_SUCCESS;	/* adding nothing is no error */
+
+	if (io == 0)
+		return SPOCP_SUCCESS; /* happens with native_server */ 
 
 	/*
 	 * the complete length of the bytestring, with length field 
@@ -330,4 +341,40 @@ iobuf_content(spocp_iobuf_t * io)
 	pthread_mutex_unlock(&io->lock);
 
 	return n;
+}
+
+void 
+iobuf_print( char *tag, spocp_iobuf_t *io )
+{
+	octet_t o;
+
+	if (io != 0 ) {
+		o.val = io->r;
+		o.len = io->w - io->r;
+		oct_print( tag, &o );
+	}
+	else 
+		traceLog(LOG_DEBUG,"%s: %s", tag, "Empty");
+
+}
+
+void
+iobuf_info( spocp_iobuf_t *io )
+{
+	traceLog(LOG_DEBUG,"----iobuf info----");
+	if (io) {
+		traceLog(LOG_DEBUG,"bsize: %d", io->bsize );
+		traceLog(LOG_DEBUG,"left: %d", io->left);
+		traceLog(LOG_DEBUG,"left: %d", io->w - io->r);
+
+		traceLog(LOG_DEBUG,"buf: %p", io->buf);
+		traceLog(LOG_DEBUG,"r: %p", io->r);
+		traceLog(LOG_DEBUG,"w: %p", io->w);
+		traceLog(LOG_DEBUG,"p: %p", io->p);
+		traceLog(LOG_DEBUG,"end: %p", io->end);
+	}
+	else {
+		traceLog(LOG_DEBUG,"NULL");
+	}
+	traceLog(LOG_DEBUG,"----end----");
 }

@@ -14,6 +14,8 @@
 #include "locl.h"
 RCSID("$Id$");
 
+int r_f = 0;
+
 static reply_t *
 reply_new( work_info_t *wi )
 {
@@ -95,10 +97,19 @@ gather_replies( spocp_iobuf_t *out, conn_t *conn )
 	spocp_result_t	sr;
 	int		r = 0;
 
+	if( r_f) 
+		timestamp("Getting Read lock on connection");
+
 	pthread_mutex_lock( &conn->rlock );
 	
-	if (conn->head == 0)
+	if( r_f) 
+		timestamp("Got it");
+
+	if (conn->head == 0) {
+		traceLog(LOG_INFO,"No result");
+		pthread_mutex_unlock( &conn->rlock );
 		return r;
+	}
 
 	while ( conn->head && conn->head->buf ) {
 		r++;
@@ -108,11 +119,11 @@ gather_replies( spocp_iobuf_t *out, conn_t *conn )
 		reply_free( rp );
 	}
 
-	if (r){
+	if (r) {
 		char *tmp;
 
 		tmp = str_esc( out->r, out->w - out->r );
-		traceLog(LOG_INFO, "Replies: [%s]", tmp );
+		traceLog(LOG_INFO, "Replies(%d): [%s]", r, tmp );
 		free( tmp );
 	}
 

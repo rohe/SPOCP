@@ -11,6 +11,8 @@
 #define ONELEVEL	0x02
 #define BASE		0x01
 
+#define ALL		0x10
+
 #define NATIVE	1
 #define SOAP	2
 
@@ -364,6 +366,8 @@ void		iobuf_flush( spocp_iobuf_t *io );
 int		iobuf_content( spocp_iobuf_t *io );
 void		conn_iobuf_clear( conn_t * );
 void		iobuf_free( spocp_iobuf_t *);
+void		iobuf_print( char *,spocp_iobuf_t *);
+void		iobuf_info( spocp_iobuf_t *);
 
 /* conn.c */
 
@@ -444,7 +448,7 @@ spocp_result_t	pathname_get( ruleset_t *rs, char *buf, int buflen );
 
 /* ss.c */
 
-spocp_result_t	ss_allow( ruleset_t *, octet_t *, octarr_t **, int );
+spocp_result_t	ss_allow( ruleset_t *, octet_t *, resset_t **, int );
 spocp_result_t	ss_del_rule( ruleset_t *rs, dbcmd_t *d, octet_t *op, int scope );
 spocp_result_t	skip_sexp( octet_t *sexp );
 /*

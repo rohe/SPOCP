@@ -20,6 +20,8 @@ int             conn_close(conn_t * conn);
 
 void            conn_iobuf_clear(conn_t * con);
 
+int x_f = 0;
+
 /*
  * ---------------------------------------------------------------------- 
  */
@@ -426,7 +428,7 @@ send_results(conn_t * conn)
 {
 	spocp_iobuf_t  *out = conn->out;
 
-	if (0)
+	if (x_f)
 		timestamp("Send results");
 
 	if (gather_replies( out, conn ) == 0)
@@ -440,7 +442,7 @@ send_results(conn_t * conn)
 		free( tmp );
 	}
 
-	if (0)
+	if (x_f)
 		timestamp("Result placed in outqueue");
 
 	conn->status = CNST_WRITE;

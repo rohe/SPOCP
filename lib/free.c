@@ -20,9 +20,9 @@
 #include <func.h>
 #include <wrappers.h>
 
-void            octet_free(octet_t * op);
-void            boundary_free(boundary_t * bp);
-void            branch_free(branch_t * bp);
+void	octet_free(octet_t * op);
+void	boundary_free(boundary_t * bp);
+void	branch_free(branch_t * bp);
 
 /*
  * ======================================================== 
@@ -150,7 +150,6 @@ void
 boundary_free(boundary_t * bp)
 {
 	if (bp) {
-
 		switch (bp->type & 0x07) {
 		case SPOC_ALPHA:
 		case SPOC_DATE:
@@ -176,12 +175,8 @@ boundary_free(boundary_t * bp)
 static void
 dset_free(dset_t * ds)
 {
-	junc_t         *jp;
-
 	if (ds) {
 		if (ds->va) {
-			while ((jp = varr_pop(ds->va)))
-				junc_free(jp);
 			varr_free(ds->va);
 		}
 		if (ds->next)
@@ -197,7 +192,7 @@ dset_free(dset_t * ds)
 void
 branch_free(branch_t * bp)
 {
-	int             i;
+	int	i;
 
 	if (bp) {
 		switch (bp->type) {
@@ -223,19 +218,19 @@ branch_free(branch_t * bp)
 			break;
 
 		}
-		free(bp);
 	}
 }
 
 void
 junc_free(junc_t * juncp)
 {
-	int             i;
+	int	i;
 
 	if (juncp) {
 		for (i = 0; i < NTYPES; i++) {
-			if (juncp->item[i])
+			if (juncp->item[i]) {
 				branch_free(juncp->item[i]);
+			}
 		}
 		free(juncp);
 	}

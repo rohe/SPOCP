@@ -325,12 +325,13 @@ saci_init(void)
 static spocp_result_t
 spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 {
-	spocp_result_t  res = SPOCP_DENIED;	/* the default */
-	ruleset_t      *rs = wi->conn->rs;
-	octet_t         oct;
-	char           *sexp;
-	element_t      *ep = 0;
-	comparam_t      comp;
+	spocp_result_t	res = SPOCP_DENIED;	/* the default */
+	ruleset_t	*rs = wi->conn->rs;
+	octet_t		oct;
+	char		*sexp;
+	element_t	*ep = 0;
+	resset_t	*rset = 0;
+	comparam_t	comp;
 
 	/* If I'm running on a unix domain socket I implicitly trust
 	 * processes on that machine
@@ -392,10 +393,11 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 	comp.head = ep;
 	comp.blob = 0;
 
-	res = allowed(rs->db->jp, &comp);
+	res = allowed(rs->db->jp, &comp, &rset);
 
 	free(sexp);
 	element_free(ep);
+	resset_free( rset );
 
 	return res;
 }

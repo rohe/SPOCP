@@ -310,3 +310,14 @@ oct_split(octet_t * o, char c, char ec, int flag, int max)
 	return oa;
 }
 
+void
+octarr_print( octarr_t *oa)
+{
+	char	leading[32];
+	int	i;
+
+	for (i = 0; i < oa->n ; i++) {
+		sprintf(leading,"octarr[%d]",i);
+		oct_print( leading ,oa->arr[i]);
+	}
+}

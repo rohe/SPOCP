@@ -296,21 +296,18 @@ phash_search(phash_t * ht, atom_t * ap, unsigned int key)
 	return 0;
 }
 
+/* Only called from phash_free, which means that everything should be removed */
 static void
 bucket_free(buck_t * bp)
 {
 	if (bp) {
 		DEBUG(SPOCP_DSTORE) {
-			char           *tmp;
-
-			tmp = oct2strdup(&bp->val, '\\');
-			traceLog(LOG_DEBUG,"removing bucket with value [%s]", tmp);
-			free(tmp);
+			oct_print("removing bucket with value",&bp->val);
 		}
 		/*
-		 * bp->val.val shouldn't be touched since it's pointing to
-		 * something that is freed elsewhere 
-		 */
+	 	* bp->val.val shouldn't be touched since it's pointing to
+	 	* something that is freed elsewhere 
+	 	*/
 		if (bp->next)
 			junc_free(bp->next);
 
@@ -337,6 +334,9 @@ phash_free(phash_t * ht)
 	}
 }
 
+/* removing values in one bucket means I have to recreate the hash struct
+ * since it might look different with that specific bucket empty 
+ */
 void
 bucket_rm(phash_t * ht, buck_t * bp)
 {

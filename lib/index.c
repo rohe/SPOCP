@@ -19,6 +19,8 @@
 #include <func.h>
 #include <wrappers.h>
 
+#define MAX(a,b) ((a) < (b) ? b : a)
+
 spocp_index_t	*
 index_new(int size)
 {
@@ -84,6 +86,19 @@ index_free(spocp_index_t * id)
 	}
 }
 
+/*!
+ * \brief Shallow delete of a spocp_index, this means that the ruleinstance that
+ * are pointed to will not be deleted. Only the basic structure will be.
+ * \param si The spocp_index
+ */
+void index_delete( spocp_index_t *si)
+{
+	if (si) {
+		free(si->arr);
+		free(si);
+	}
+}
+
 spocp_index_t		*
 index_add(spocp_index_t * id, ruleinst_t * ri)
 {
@@ -115,6 +130,13 @@ index_add(spocp_index_t * id, ruleinst_t * ri)
 	return id;
 }
 
+/*!
+ * \brief Tries to remove a ruleinst pointer from a spocp_index struct
+ * \param id The spocp_index struct
+ * \param ri The ruleinst
+ * \return Returns TRUE if the pointer was remove, FALSE is it was part of the 
+ * spocp_index
+ */
 int
 index_rm(spocp_index_t * id, ruleinst_t * ri)
 {
@@ -135,4 +157,90 @@ index_rm(spocp_index_t * id, ruleinst_t * ri)
 		return FALSE;
 	else
 		return TRUE;
+}
+
+/*!
+ * \brief Creates a spocp_index that contains the ruleinst pointers that appears in 
+ * both of the spocp_index'es given. Non-invasive, that is neither a not b is affected
+ * by the and'ing.
+ * \param a The first spocp_index
+ * \param b The second spocp_index
+ * \result A newly allocated spocp_index containing the the result, if there are no
+ * common ruleinst pointer NULL will be returned.
+ */
+spocp_index_t *
+index_and( spocp_index_t *a, spocp_index_t *b)
+{
+	spocp_index_t	*res;
+	int		i,j;
+
+	if (a == NULL || b == NULL ) 
+		return NULL;
+
+	res = index_new(MAX(a->n, b->n));
+
+	for (i = 0; i < a->n; i++)
+		for( j = 0; j < b->n; j++)
+			if (a->arr[i] == b->arr[j])
+				res->arr[res->n++] = a->arr[i];
+	
+	/* traceLog(LOG_DEBUG,"index_and => %d rules", res->n);*/
+
+	if (res->n == 0) {
+		index_delete( res );
+		return NULL;
+	}
+	else
+		return res;
+}
+
+/*!
+ * \brief Adds the set of ruleinst pointers that appears in a spocp_index struct
+ * to another spocp_index struct
+ * \param a The spocp_index struct to which the pointer should be added
+ * \param b The spocp_index struct which pointer should be added. Duplicates will be
+ * avoided
+ */
+void
+index_extend( spocp_index_t *a, spocp_index_t *b)
+{
+	int	i,j=0;
+
+	for (i = 0; i < b->n; i++) {
+		for( j = 0; j < a->n; j++)
+			if (a->arr[j] == b->arr[i])
+				break;
+		if (j == a->n)
+			index_add(a,b->arr[i]);
+	}
+}
+
+/*!
+ * \brief Makes a shallow copy of a spocp_index struct. The shallowness comes from the
+ * fact that the ruleinst structs that are pointed to are not duplicated. The pointers
+ * are only copied. 
+ * \param si The spocp_index struct to be copied
+ * \result A pointer to a spocp_index that is a shallow copy of the old
+ */
+spocp_index_t *
+index_cp( spocp_index_t *si )
+{
+	spocp_index_t	*res;
+	int	i;
+
+	res = index_new( si->size );
+	for (i = 0; i < si->n; i++ )
+		 res->arr[i] = si->arr[i];
+
+	res->n = si->n;
+
+	return res;
+}
+
+void index_print( spocp_index_t *si)
+{
+	int	i;
+
+	for( i = 0; i < si->n ; i++)
+		traceLog(LOG_DEBUG,"Rule: %p", si->arr[i]);
 }

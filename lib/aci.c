@@ -46,19 +46,27 @@ allowing_rule(junc_t * ap)
 }
 
 /*! The function which is the starting point for access control, that is
- * matching the query * against a specific ruleset. \param ap A pointer to
- * the start of the ruletree \param comp A set of command parameters \return
- * SPOCP_SUCCESS on success otherwise an appropriate error code 
+ * matching the query * against a specific ruleset.
+ * \param ap A pointer to the start of the ruletree
+ * \param comp A set of command parameters
+ * \return SPOCP_SUCCESS on success otherwise an appropriate error code 
  */
 spocp_result_t
-allowed(junc_t * ap, comparam_t * comp)
+allowed(junc_t * ap, comparam_t *comp, resset_t **rspp)
 {
-	spocp_result_t  res = SPOCP_DENIED;
+	resset_t	*rs;
 
-	if ((ap = element_match_r(ap, comp->head, comp)))
-		res = SPOCP_SUCCESS;
-	else if (comp->rc != SPOCP_SUCCESS)
-		res = comp->rc;
+	comp->rc = SPOCP_DENIED;
 
-	return res;
+	if ((rs = element_match_r(ap, comp->head, comp))) {
+		DEBUG(SPOCP_DSRV) {
+			traceLog(LOG_DEBUG,"Allowed returned Result Set");
+			resset_print(rs);
+			traceLog(LOG_DEBUG,"---------------------------");
+		}
+		comp->rc = SPOCP_SUCCESS ;
+		*rspp = rs ;
+	}
+
+	return comp->rc;
 }

@@ -70,8 +70,15 @@ junc_print(int lev, junc_t * jp)
 		traceLog(LOG_DEBUG,"Junction[%d]: RANGE", lev);
 	if (jp->item[6])
 		traceLog(LOG_DEBUG,"Junction[%d]: ENDOFLIST", lev);
-	if (jp->item[7])
+	if (jp->item[7]) {
+		spocp_index_t *id;
+		int i;
+
 		traceLog(LOG_DEBUG,"Junction[%d]: ENDOFRULE", lev);
+		id = jp->item[7]->val.id;
+		for (i = 0; i < id->n; i++) 
+			traceLog(LOG_DEBUG,"Rule: %p", id->arr[i]);
+	}
 	if (jp->item[8])
 		traceLog(LOG_DEBUG,"Junction[%d]: ExTREF", lev);
 	if (jp->item[9])

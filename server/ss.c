@@ -19,13 +19,16 @@
 int             ruleset_print(ruleset_t * rs);
 
 static          spocp_result_t
-rec_allow(ruleset_t * rs, element_t * ep, int scope, octarr_t ** on)
+rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 {
 	spocp_result_t  res = SPOCP_DENIED;
 	ruleset_t      *trs;
 	comparam_t      comp;
+	octarr_t	*oa=0;
+	resset_t	*xrs=0;
+	int		all = scope&0xF0 ;
 
-	switch (scope) {
+	switch (scope&0x0F) {
 	case SUBTREE:
 		if (rs->down) {
 			/*
@@ -37,29 +40,41 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, octarr_t ** on)
 			 * and over to the right side passing every node on
 			 * the way 
 			 */
-			for (; trs && res != SPOCP_SUCCESS; trs = trs->right)
-				res = rec_allow(trs, ep, scope, on);
+			for (; trs ; trs = trs->right) {
+				xrs = 0;
+				res = rec_allow(trs, ep, scope, &xrs);
+				if(xrs)
+					resset_join(*rset, xrs);
+				if( !all && res != SPOCP_SUCCESS)
+					break;
+			}
 		}
 
 	case BASE:
 		comp.rc = SPOCP_SUCCESS;
 		comp.head = ep;
-		comp.blob = on;
+		comp.blob = &oa;
+		comp.all = all;
+
 		if (rs->db)
-			res = allowed(rs->db->jp, &comp);
+			res = allowed(rs->db->jp, &comp, rset);
 		break;
 
 	case ONELEVEL:
 		if (rs->down) {
 			comp.rc = SPOCP_SUCCESS;
 			comp.head = ep;
-			comp.blob = on;
+			comp.blob = &oa;
+			comp.all = all;
 
 			for (trs = rs->down; trs->left; trs = trs->left);
 
 			for (; trs && res != SPOCP_SUCCESS; trs = trs->right) {
+				xrs = 0;
 				if (rs->db)
-					res = allowed(trs->db->jp, &comp);
+					res = allowed(trs->db->jp, &comp, &xrs);
+				if(xrs)
+					resset_join(*rset, xrs);
 			}
 		}
 		break;
@@ -86,7 +101,7 @@ skip_sexp(octet_t * sexp)
  */
 
 spocp_result_t
-ss_allow(ruleset_t * rs, octet_t * sexp, octarr_t ** on, int scope)
+ss_allow(ruleset_t * rs, octet_t * sexp, resset_t **rset, int scope)
 {
 	spocp_result_t  res = SPOCP_DENIED;	/* this is the default */
 	element_t      *ep = 0;
@@ -115,7 +130,7 @@ ss_allow(ruleset_t * rs, octet_t * sexp, octarr_t ** on, int scope)
 	octln(&dec, sexp);
 
 	if ((res = parse_canonsexp( &dec, &ep)) == SPOCP_SUCCESS) {
-		res = rec_allow(rs, ep, scope, on);
+		res = rec_allow(rs, ep, scope, rset);
 		element_free(ep);
 	}
 

@@ -82,6 +82,8 @@ typedef struct _strarr {
 /*********** where all the barnches starts *************/
 
 typedef struct _junc {
+	int	dynamic;
+	int	refc;
 	struct _branch *item[NTYPES];
 } junc_t;
 
@@ -135,6 +137,7 @@ typedef struct _bucket {
 } buck_t;
 
 typedef struct _phash {
+	unsigned int	refc;
 	unsigned char	pnr;
 	unsigned char	density;
 	unsigned int	size;
@@ -146,6 +149,7 @@ typedef struct _phash {
 /******************************************/
 
 typedef struct _dset {
+	char		*uid;
 	struct _varr	*va;
 	struct _dset	*next;
 } dset_t;
@@ -153,18 +157,18 @@ typedef struct _dset {
 /****** branches **********************/
 
 typedef struct _branch {
-	int		type;
-	int		count;
-	junc_t	 *parent;
+	int	type;
+	int	count;
+	junc_t	*parent;
 
 	union {
-		dset_t	 *set;
-		phash_t	*atom;
-		junc_t	 *list;
-		junc_t	 *next;
+		dset_t		*set;
+		phash_t		*atom;
+		junc_t		*list;
+		junc_t		*next;
 		ssn_t		*prefix;
 		ssn_t		*suffix;
-		slist_t	*range[DATATYPES];
+		slist_t		*range[DATATYPES];
 		spocp_index_t	*id;
 	} val;
 
@@ -178,7 +182,21 @@ typedef struct _com_param {
 	element_t	*head;
 	octarr_t	**blob;
 	spocp_result_t	rc;
+	int		all;
+	int		nobe;
 } comparam_t;
+
+typedef struct _res_set {
+	octarr_t	*blob;
+	spocp_index_t	*si;
+	struct _res_set	*next;
+} resset_t;
+
+typedef struct _qresult {
+	spocp_result_t	rc;
+	resset_t	*part;
+	struct _qresult	*next;
+} qresult_t ;
 
 /*
  * -------------------------------------------------- 

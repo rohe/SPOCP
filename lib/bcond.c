@@ -926,16 +926,18 @@ bcdef_replace(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 /*
  * ---------------------------------------------------------------------- 
  */
-/*! Given a boundary condition specification, return a pointer to the
+/*! \brief Given a boundary condition specification, return a pointer to the
  * internal representation. That includes returning a pointer to a already
  * existing stored boundary condition if this specification is a reference.
  * Or if the specification is not a simple reference, store it and return a
  * pointer to where it is stored. If the specification is equal to the string
- * "NULL" then a NULL pointer is returned. \param db A pointer to the
- * internal database \param o The boundary conditions specification \param p
- * Pointer to the set of plugins that is present \param dbc Command parameters 
- * connected to the persistent store \param rc Where the result code of the
- * operation should be stored \return A pointer to the internal representation 
+ * "NULL" then a NULL pointer is returned.
+ * \param db A pointer to the internal database
+ * \param o The boundary conditions specification
+ * \param p Pointer to the set of plugins that is present
+ * \param dbc Command parameters connected to the persistent store
+ * \param rc Where the result code of the * operation should be stored
+ * \return A pointer to the internal representation 
  * or NULL if it does not exist, is faulty or references unknown boundary
  * conditions.  If the boundary condition specification is equal to "NULL",
  * NULL is also returned but together with the result code SPOCP_SUCCESS. 
@@ -968,10 +970,12 @@ bcdef_get(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * o,
  */
 /*! \brief Checks whether a boundary condition is true or false. If the
  * backend that does the evaluation return true it might be accompanied by a
- * dynamic blob. \param ep A pointer to a internal representation of the
- * parsed query S-expression \param id A collection of a set of rules that are 
- * '<=' the query. \param oa An octarr struct. this is where the dynamic blob
- * will be placed if the backend wants to return one. \return A result code 
+ * dynamic blob.
+ * \param ep A pointer to a internal representation of the parsed query S-expression
+ * \param id A collection of a set of rules that are '<=' the query.
+ * \param oa An octarr struct. this is where the dynamic blob
+ * will be placed if the backend wants to return one.
+ * \return A result code 
  */
 
 spocp_result_t

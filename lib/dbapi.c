@@ -66,11 +66,12 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 }
 
 spocp_result_t
-dbapi_allowed(db_t * db, octet_t * sexp, octarr_t ** on)
+dbapi_allowed(db_t * db, octet_t * sexp, resset_t **rpp)
 {
 	element_t	*ep = 0;
 	spocp_result_t	res = SPOCP_SUCCESS;
 	comparam_t	comp;
+	octarr_t	*on = 0;
 
 	if (db == 0 || sexp == 0 || sexp->len == 0) {
 		if (db == 0) {
@@ -88,9 +89,9 @@ dbapi_allowed(db_t * db, octet_t * sexp, octarr_t ** on)
 
 		comp.rc = SPOCP_SUCCESS;
 		comp.head = ep;
-		comp.blob = on;
+		comp.blob = &on;
 
-		res = allowed(db->jp, &comp);
+		res = allowed(db->jp, &comp, rpp);
 
 		element_free(ep);
 	}

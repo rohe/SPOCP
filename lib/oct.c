@@ -725,7 +725,7 @@ oct2strcpy(octet_t * op, char *str, size_t len, char ec)
  */
 
 int
-oct_de_escape(octet_t * op, char e)
+oct_de_escape(octet_t * op, char ec)
 {
 	register char  *tp, *fp, *ep;
 	register char   c = 0;
@@ -738,12 +738,12 @@ oct_de_escape(octet_t * op, char e)
 	ep = op->val + len;
 
 	for (fp = tp = op->val; fp != ep; tp++, fp++) {
-		if (*fp == e) {
+		if (*fp == ec) {
 			fp++;
 			if (fp == ep)
 				return -1;
 
-			if (*fp == e) {
+			if (*fp == ec) {
 				*tp = *fp;
 				len--;
 			} else {
@@ -851,6 +851,14 @@ char *str_esc( char *str, int len)
 
 	oct.val = str;
 	oct.len = len;
-	return oct2strdup( &oct, '%');
+	return oct2strdup( &oct, '\\');
 }
 
+void oct_print( char *tag, octet_t *o )
+{
+	char *tmp;
+
+	tmp = oct2strdup( o, '\\');
+	traceLog(LOG_DEBUG,"%s: %s", tag, tmp);
+	free(tmp);
+}

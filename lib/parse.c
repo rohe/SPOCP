@@ -204,7 +204,7 @@ de_escape( char *str, int len )
   tmp.val = str ;
   tmp.len = len ;
 
-  oct_de_escape( &tmp ) ;
+  oct_de_escape( &tmp, '\\' ) ;
 
   return tmp.len ;
 }
@@ -510,11 +510,15 @@ get_quote( spocp_charbuf_t * io)
 	}
 
 	if (res) {
+		DEBUG(SPOCP_DSTORE)
+			traceLog(LOG_DEBUG,"quoted string:", res);
 		oct = str2oct( res, 1 );
 		/*
 		 * de escape 
 		 */
-		oct_de_escape(oct);
+		oct_de_escape(oct,'\\');
+		DEBUG(SPOCP_DSTORE)
+			traceLog(LOG_DEBUG,"quoted string (de_escaped):", oct->val);
 	}
 
 	if (res == 0 || oct->len == 0) { /* trusting the lazy evaluation here */
@@ -732,7 +736,7 @@ chunk2sexp( spocp_chunk_t *c )
 		else {
 			/* This is where deescaping should happen */
 			if ( octchr( ck->val, '\\' ) >= 0 ) 
-				oct_de_escape( ck->val );
+				oct_de_escape( ck->val, '\\' );
 			
 			snprintf( lf, 16, "%d:", (unsigned int) ck->val->len ) ;
 			memcpy( sp, lf, strlen(lf)) ;

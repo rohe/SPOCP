@@ -28,6 +28,7 @@ int	prefix_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
 int	suffix_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
 int	list_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
 int	element_rm(junc_t * ap, element_t * ep, ruleinst_t * rt);
+int	set_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
 
 int	rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt);
 int	rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt);
@@ -430,6 +431,40 @@ list_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
 	return 1;
 }
 
+
+/************************************************************
+*                                                           *
+************************************************************/
+
+int
+set_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
+{
+	dset_t	*ds,*ts;
+
+	if (bp->val.set == 0) 
+		return 1;
+
+	for( ds = bp->val.set; ds; ds=ds->next)
+		if (strcmp(ds->uid, rt->uid) == 0) 
+			break;
+
+	if (ds) {
+		varr_free(ds->va);
+		if (ds == bp->val.set)
+			bp->val.set = ds->next;
+		else {
+			for( ts = bp->val.set; ts; ts=ts->next)
+				if (ts->next == ds)
+					break;
+			ts->next = ds->next;
+		}
+
+		free(ds);
+	}
+
+	return 1;
+}
+
 /************************************************************
 *                                                           *
 ************************************************************/
@@ -558,3 +593,4 @@ rule_rm(junc_t * jp, octet_t * rule, ruleinst_t * rt)
 	else
 		return SPOCP_OPERATIONSERROR;
 }
+

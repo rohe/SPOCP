@@ -86,6 +86,10 @@ add_response_va(spocp_iobuf_t * out, int rc, const char *fmt, va_list ap)
 	char            buf[SPOCP_MAXLINE];
 	rescode_t      *rescode = find_rescode(rc);
 
+	/*
+	traceLog(LOG_DEBUG,"add_reponse_va (%d)(%p)", rc,fmt);
+	iobuf_info( out );
+	*/
 	if (rescode == NULL)
 		rescode = find_rescode(SPOCP_OTHER);
 
@@ -128,6 +132,9 @@ add_response_va(spocp_iobuf_t * out, int rc, const char *fmt, va_list ap)
 
 #endif
 
+	/*
+	iobuf_info( out );
+	*/
 	return sr;
 }
 
@@ -208,9 +215,11 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 			return SPOCP_SUCCESS;
 	}
 
+	/*
 	traceLog( LOG_INFO,
 		"opinitial(1): max=%d, min=%d, path=%d .. oparg->n=%d",
 		max,min,path, oparg->n);
+		*/
 	/* Too many or few arguments? There might not be a max */
 	if (max && oparg->n > (path+max)) return SPOCP_PARAM_ERROR;
 	if (oparg->n < min) return SPOCP_MISSING_ARG;
@@ -249,14 +258,22 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 static spocp_result_t
 postop( work_info_t *wi, spocp_result_t rc, const char *msg)
 {
+	int ar;
+
 	if( msg && *msg ) {
 		traceLog(LOG_INFO,"return message:%s", msg);
 		add_response(wi->buf, rc, msg);
 		free((char *) msg);
 	}
-	else
-		add_response(wi->buf, rc, 0);
+	else {
+		ar = add_response(wi->buf, rc, 0);
+		/*
+		traceLog( LOG_DEBUG, "add_response returned %d", ar);
+		*/
+	}
 
+	DEBUG(SPOCP_DSRV) 
+		iobuf_print("work buffer",wi->buf);
 	iobuf_shift(wi->conn->in);
 
 	return rc;
@@ -646,13 +663,14 @@ com_commit(work_info_t *wi)
 spocp_result_t
 com_query(work_info_t *wi)
 {
-	spocp_result_t  r = SPOCP_SUCCESS;
+	spocp_result_t	r = SPOCP_SUCCESS;
 	conn_t		*conn = wi->conn;
-	octarr_t       *on = 0;
-	octet_t        *oct;
-	spocp_iobuf_t  *out = wi->buf;
-	ruleset_t      *rs = conn->rs;
-	char           *str;
+	resset_t	*rset = 0;
+	octet_t		*oct;
+	spocp_iobuf_t	*out = wi->buf;
+	ruleset_t	*rs = conn->rs;
+	char		*str;
+
 	/*
 	 * struct timeval tv ;
 	 * 
@@ -694,7 +712,7 @@ com_query(work_info_t *wi)
 */
 
 		pthread_rdwr_rlock(&rs->rw_lock);
-		r = ss_allow(rs, wi->oparg->arr[0], &on, SUBTREE);
+		r = ss_allow(rs, wi->oparg->arr[0], &rset, SUBTREE);
 		pthread_rdwr_runlock(&rs->rw_lock);
 
 /*
@@ -704,22 +722,31 @@ com_query(work_info_t *wi)
 	}
 
 	DEBUG(SPOCP_DSRV) 
-		traceLog(LOG_DEBUG, "allow returned %d", r);
+		traceLog(LOG_DEBUG, "allow returned %d (%p)", r, rset);
 
-	if (r == SPOCP_SUCCESS && on) {
-		while ((oct = octarr_pop(on))) {
-			if (add_response_blob(out, SPOCP_MULTI, oct) != SPOCP_SUCCESS) {
-				r = SPOCP_OPERATIONSERROR;
-				break;
+	if (r == SPOCP_SUCCESS && rset) {
+		resset_t *trs = rset;
+		octarr_t *on;
+
+		while( trs && trs->blob == 0)
+			trs = trs->next;
+
+		if (trs) {
+			on = trs->blob;
+			while (on && (oct = octarr_pop(on))) {
+				if (add_response_blob(out, SPOCP_MULTI, oct)
+				    != SPOCP_SUCCESS) {
+					r = SPOCP_OPERATIONSERROR;
+					break;
+				}
+
+				str = oct2strdup(oct, '%');
+				DEBUG(SPOCP_DSRV) 
+					traceLog(LOG_DEBUG,"returns \"%s\"", str);
+				free(str);
 			}
-
-			str = oct2strdup(oct, '%');
-			DEBUG(SPOCP_DSRV) 
-				traceLog(LOG_DEBUG,"returns \"%s\"", str);
-			free(str);
 		}
-
-		octarr_free(on);
+		resset_free(rset);
 	}
 
 	return postop( wi, r, 0);
@@ -1263,6 +1290,23 @@ send_and_flush_results(conn_t * conn)
 	spocp_conn_write(conn);
 }
 
+static void work_info_init( work_info_t *wi )
+{
+	memset( wi, 0, sizeof( work_info_t ));
+	wi->buf = iobuf_new( 4096 );
+}
+
+static void work_info_reset( work_info_t *wi )
+{
+	wi->routine = 0;
+	wi->conn = 0;
+	wi->oparg = 0;
+	wi->oppath = 0;
+	wi->oper.val = 0;
+	wi->oper.len = 0;
+	iobuf_flush(wi->buf);
+}
+
 static int
 native_server(conn_t * con)
 {
@@ -1276,6 +1320,8 @@ native_server(conn_t * con)
 	in = con->in;
 	out = con->out;
 	time(&con->last_event);
+
+	work_info_init(&wi);
 
 	traceLog(LOG_INFO,"Running native server");
 
@@ -1306,7 +1352,7 @@ native_server(conn_t * con)
 		 * If no chars, obviously nothing for me to do 
 		 */
 		while (in->w - in->r) {
-			memset( &wi, 0, sizeof( work_info_t ));
+			work_info_reset(&wi);
 			wi.conn = con;
 			if ((r = get_operation(&wi))
 				== SPOCP_SUCCESS) {
@@ -1381,6 +1427,7 @@ native_server(conn_t * con)
       clearout:
 	conn_iobuf_clear(con);
 	DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"(%d) Closing the connection", con->fd);
+	iobuf_free(wi.buf);
 
 	return 0;
 }

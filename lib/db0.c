@@ -28,22 +28,22 @@
 
 static junc_t *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
 			    ruleinst_t * ri, int n);
-junc_t	 *rm_next(junc_t * ap, branch_t * bp);
-char	   *set_item_list(junc_t * dv);
-junc_t	 *atom_add(branch_t * bp, atom_t * ap);
-junc_t	 *extref_add(branch_t * bp, atom_t * ap);
-junc_t	 *list_end(junc_t * arr);
-junc_t	 *list_add(plugin_t * pl, branch_t * bp, list_t * lp,
-			 ruleinst_t * ri);
-junc_t	 *range_add(branch_t * bp, range_t * rp);
-junc_t	 *prefix_add(branch_t * bp, atom_t * ap);
-junc_t	 *rule_close(junc_t * ap, ruleinst_t * ri);
+junc_t	*rm_next(junc_t * ap, branch_t * bp);
+char	*set_item_list(junc_t * dv);
+junc_t	*atom_add(branch_t * bp, atom_t * ap);
+junc_t	*extref_add(branch_t * bp, atom_t * ap);
+junc_t	*list_end(junc_t * arr);
+junc_t	*list_add(plugin_t * pl, branch_t * bp, list_t * lp, ruleinst_t * ri);
+junc_t	*range_add(branch_t * bp, range_t * rp);
+junc_t	*prefix_add(branch_t * bp, atom_t * ap);
+junc_t	*rule_close(junc_t * ap, ruleinst_t * ri);
 
-static ruleinst_t *ruleinst_new(octet_t * rule, octet_t * blob, char *bcname);
+static	ruleinst_t *ruleinst_new(octet_t * rule, octet_t * blob, char *bcname);
 
-ruleinst_t     *ruleinst_dup(ruleinst_t * ri);
-void	    ruleinst_free(ruleinst_t * ri);
+ruleinst_t	*ruleinst_dup(ruleinst_t * ri);
+void	ruleinst_free(ruleinst_t * ri);
 
+static junc_t  *add_next(plugin_t *, junc_t *, element_t *, ruleinst_t *);
 /*
  * ------------------------------------------------------------ 
  */
@@ -458,6 +458,42 @@ suffix_add(branch_t * bp, atom_t * ap)
 	return ssn_insert(&bp->val.suffix, ap->val.val, BACKWARD);
 }
 
+static junc_t *
+set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
+{
+	int		n,i;
+	junc_t		*ap = 0;
+	varr_t		*va, *dsva;
+	element_t	*elem;
+	dset_t		*ds;
+	void		*v;
+
+	va = ep->e.set;
+	n = varr_len(va);
+	if (bp->val.set == 0)
+		ds = bp->val.set =
+		    (dset_t *) Calloc(1, sizeof(dset_t));
+	else {
+		for (ds = bp->val.set; ds->next; ds = ds->next);
+		ds->next = (dset_t *) Calloc(1, sizeof(dset_t));
+		ds = ds->next;
+	}
+	ds->uid = rt->uid;
+
+	for (v = varr_first(va), dsva = ds->va, i=0; v;
+	     v = varr_next(va, v), i++) {
+		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG, "set element %d", i);
+		elem = (element_t *) v;
+		if ((ap = element_add(pl, jp, elem, rt, 0)) == 0)
+			break;
+		dsva = varr_add(dsva, ap);
+		ap = add_next(pl, ap, ep, rt);
+	}
+	ds->va = dsva;
+
+	return ap;
+}
+
 /************************************************************
 *      Is this the last element in a S-expression ?	 *
 ************************************************************/
@@ -537,8 +573,15 @@ list_close(junc_t * ap, element_t **epp, ruleinst_t * ri, int *eor)
 		parent = ep->memberof;
 
 		DEBUG(SPOCP_DSTORE) {
-			traceLog(LOG_DEBUG,"end_list that started with \"%s\"",
-				 parent->e.list->head->e.atom->val.val);
+			if (parent->type == SPOC_LIST) {
+				traceLog(LOG_DEBUG,
+					"end_list that started with \"%s\"",
+					parent->e.list->head->e.atom->val.val);
+			}
+			else if(parent->type == SPOC_SET) 
+				traceLog(LOG_DEBUG,"Set end");
+			else
+				traceLog(LOG_DEBUG,"end of type=%d", parent->type); 
 		}
 
 		ep = parent;
@@ -599,13 +642,8 @@ junc_t	 *
 element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 	    int next)
 {
-	branch_t       *bp = 0;
-	junc_t	 *ap = 0;
-	int	     n, i;
-	varr_t	 *va, *dsva;
-	element_t      *elem;
-	dset_t	 *ds;
-	void	   *v;
+	branch_t	*bp = 0;
+	junc_t		*ap = 0;
 
 	bp = ARRFIND(jp, ep->type);
 
@@ -626,27 +664,7 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 		traceLog(LOG_DEBUG,"Branch [%d] [%d]", bp->type, bp->count);
 
 	if (ep->type == SPOC_SET){
-		va = ep->e.set;
-		n = varr_len(va);
-		if (bp->val.set == 0)
-			ds = bp->val.set =
-			    (dset_t *) Calloc(1, sizeof(dset_t));
-		else {
-			for (ds = bp->val.set; ds->next; ds = ds->next);
-			ds->next = (dset_t *) Calloc(1, sizeof(dset_t));
-			ds = ds->next;
-		}
-
-		for (v = varr_first(va), dsva = ds->va, i=0; v;
-		     v = varr_next(va, v), i++) {
-			/* traceLog(LOG_DEBUG, "set element %d", i); */
-			elem = (element_t *) v;
-			if ((ap = element_add(pl, jp, elem, rt, 0)) == 0)
-				break;
-			dsva = varr_add(dsva, ap);
-			ap = add_next(pl, ap, ep, rt);
-		}
-		ds->va = dsva;
+		ap = set_add(bp, ep, pl, jp, rt);
 	}
 	else {
 		switch (ep->type) {
