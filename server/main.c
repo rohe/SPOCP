@@ -182,6 +182,10 @@ int main( int  argc, char **argv )
       print_elapsed( "readrule time:", start, end ) ;
     }
   }
+  else {
+    LOG( SPOCP_INFO )
+      traceLog("Got the rules from the persistent store, will not read the rulefile" ) ;
+  }
 
   gettimeofday(&start,NULL) ;
 
