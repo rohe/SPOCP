@@ -113,7 +113,7 @@ int conn_setup( conn_t *conn, srv_t *srv, int fd, char *host )
 {
   conn->srv = srv ;
   conn->fd = fd ;
-  conn->status = CNST_LINGERING ;
+  conn->status = CNST_SETUP ;
   conn->con_type = NATIVE ;
   conn->sri.hostaddr = Strdup(host);
 

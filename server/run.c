@@ -32,7 +32,7 @@ int lutil_pair( int sds[2] )
         int sd;
 
         sd = socket( AF_INET, SOCK_DGRAM, 0 );
-        if ( sd == SPOCP_SOCKET_INVALID ) {
+        if ( sd == -1 ) {
                 return sd;
         }
 
@@ -42,19 +42,19 @@ int lutil_pair( int sds[2] )
         si.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
 
         rc = bind( sd, (struct sockaddr *)&si, len );
-        if ( rc == SPOCP_SOCKET_ERROR ) {
+        if ( rc == -1 ) {
                 close(sd);
                 return rc;
         }
 
         rc = getsockname( sd, (struct sockaddr *)&si, (socklen_t *) &len );
-        if ( rc == SPOCP_SOCKET_ERROR ) {
+        if ( rc == -1 ) {
                 close(sd);
                 return rc;
         }
 
         rc = connect( sd, (struct sockaddr *)&si, len );
-        if ( rc == SPOCP_SOCKET_ERROR ) {
+        if ( rc == -1 ) {
                 close(sd);
                 return rc;
         }
@@ -148,7 +148,7 @@ void spocp_srv_run( srv_t *srv )
         if( 0 ) traceLog("Next is %p", next ) ;
       }
       else { 
-        if(!conn->stop) {
+        if(!conn->stop && conn->status != CNST_SSL_NEG ) {
           maxfd = MAX( maxfd, conn->fd );
           FD_SET(conn->fd,&rfds);
           FD_SET(conn->fd,&wfds);
@@ -213,11 +213,13 @@ void spocp_srv_run( srv_t *srv )
         goto fdloop;
       }
 
+/*
       if( fcntl( client, F_SETFL, val|O_NONBLOCK ) == -1) {
         traceLog("Unable to set socket nonblock on fd=%d: %s",client,strerror(errno));
         close(client);
         goto fdloop;
       }
+*/
     
       /* Get address not hostname of the connection */
       if( (err = getnameinfo((struct sockaddr *)&client_addr, len, hostbuf, NI_MAXHOST,
@@ -286,6 +288,8 @@ fdloop:
       /* int            f = 0 ; */
     
       conn = ( conn_t *) pi->info ;
+
+      if( conn->status == CNST_SSL_NEG ) continue ;
 
       /* wasn't around when the select was done */
       if( conn->fd > maxfd ) {

@@ -62,11 +62,10 @@ typedef struct _ruleset {
 
 /* The connection states. */
 #define CNST_FREE      0
-#define CNST_READING   1
-#define CNST_SENDING   2
-#define CNST_PAUSING   3
-#define CNST_LINGERING 4
-#define CNST_STOP      5
+#define CNST_SETUP     1
+#define CNST_ACTIVE    2
+#define CNST_SSL_NEG   3
+#define CNST_STOP      4
 
 /* -------------------------------------- */
 

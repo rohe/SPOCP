@@ -83,10 +83,9 @@ void iobuf_shift( spocp_iobuf_t *io )
     *io->w = '\0' ;
   } 
 
-  /*
+  
   traceLog( "DONE Shifting buffer b:%p r:%p w:%p left:%d",
              io->buf, io->r, io->w, io->left ) ;
-  */
 
   pthread_mutex_unlock( &io->lock ) ;
 

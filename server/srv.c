@@ -12,116 +12,70 @@
 
 #include "locl.h"
 
-char *rc_working              = "3:10020:Working, please wait" ;
+typedef struct _rescode {
+  int code ;
+  char *txt ;
+} rescode_t ;
 
-char *rc_ok                   = "3:2002:Ok" ;
-char *rc_matched              = "3:2017:Matched" ;
-char *multiline               = "3:201" ;
-char *rc_denied               = "3:2026:Denied" ;
-char *rc_bye                  = "3:2033:Bye" ;
-char *rc_transaction_complete = "3:20420:Transaction complete" ;
+rescode_t rescode[] = {
+ { SPOCP_WORKING, "3:10020:Working, please wait" },
 
-char *rc_redirection          = "3:300" ;
-char *rc_auth_in_progress     = "3:30126:Authentication in progress" ;
+ { SPOCP_SUCCESS ,"3:2002:Ok" },
+ { SPOCP_MULTI , "3:201" },
+ { SPOCP_DENIED ,"3:2026:Denied" },
+ { SPOCP_CLOSE ,"3:2033:Bye" } ,
+ { SPOCP_TRANS_COMP, "3:20420:Transaction complete" },
+ { SPOCP_SSL_START ,"3:20518:Ready to start TLS" },
 
-char *rc_syntax_error         = "3:40012:Syntax error" ;
-char *rc_in_operation         = "3:40120:Already in operation" ;
-/*
-char *rc_too_many_arg         = "3:40218:Too many arguments" ;
-char *rc_line_to_long         = "3:40312:Line too long" ;
-char *rc_access_denied        = "3:40413:Access denied" ;
-*/
-char *rc_argument_err         = "3:40514:Argument error" ;
-char *rc_not_supported        = "3:40613:Not supported" ;
-char *rc_exists               = "3:40714:Already exists" ;
-char *rc_input_error          = "3:40811:Input error" ;
-char *rc_protocol_error       = "3:40914:Protocol error" ;
-char *rc_unknown_command      = "3:41015:Unknown command" ;
-char *rc_sizelimitexceeded    = "3:41118:Sizelimit exceeded" ;
+ { SPOCP_SASLBINDINPROGRESS ,"3:30126:Authentication in progress" },
 
-char *rc_operation_error         = "3:50015:Operation error" ;
-char *rc_service_not_available   = "3:50121:Service not available" ;
-char *rc_information_unavailable = "3:50223:Information unavailable" ;
-char *rc_unknown_id              = "3:50310:Unknown ID" ;
-char *rc_already_active          = "3:50414:Already active" ;
-char *rc_internal_error          = "3:50514:Internal error" ;
-char *rc_timelimitexceeded       = "3:50618:Timelimit exceeded" ;
-char *rc_other                   = "3:50711:Other error" ;
-char *rc_auth_error              = "3:50820:Authentication error" ;
-char *rc_unimplemented           = "3:50923:Command not implemented" ;
-char *rc_unwilling               = "3:51020:Unwilling to perform" ;
+ { SPOCP_BUSY, "3:4004:Busy" },
+ { SPOCP_TIMEOUT , "3:4017:Timeout" },
+ { SPOCP_TIMELIMITEXCEEDED ,"3:40218:Timelimit exceeded" },
+ { SPOCP_REDIRECT, "3:403" },
+
+ { SPOCP_SYNTAXERROR ,"3:50012:Syntax error" },
+ { SPOCP_MISSING_ARG,"3:50116:Missing Argument" },
+ { SPOCP_MISSING_CHAR ,"3:50211:Input error" },
+ { SPOCP_PROTOCOLERROR ,"3:50314:Protocol error" },
+ { SPOCP_UNKNOWNCOMMAND ,"3:50415:Unknown command" }, 
+ { SPOCP_PARAM_ERROR, "3:50514:Argument error" },
+ { SPOCP_SSL_ERR , "3:50616:SSL Accept error" },
+ { SPOCP_UNKNOWN_TYPE, "3:50717:Uknown range type" },
+
+ { SPOCP_SIZELIMITEXCEEDED ,"3:51118:Sizelimit exceeded" },
+ { SPOCP_OPERATIONSERROR ,"3:51215:Operation error" },
+ { SPOCP_UNAVAILABLE ,"3:51321:Service not available" },
+ { SPOCP_INFO_UNAVAIL,"3:51423:Information unavailable" },
+ { SPOCP_NOT_SUPPORTED , "3:51521:Command not supported" },
+ { SPOCP_SSLCON_EXIST ,"3:51618:SSL Already active" },
+ { SPOCP_OTHER ,"3:51711:Other error" },
+ { SPOCP_CERT_ERR ,"3:51820:Authentication error" },
+ { SPOCP_UNWILLING ,"3:51920:Unwilling to perform" },
+ { SPOCP_EXISTS ,"3:52014:Already exists" } ,
+
+ { 0, NULL }
+} ;
 
 /***************************************************************************
  ***************************************************************************/
 
 
-static void add_response( spocp_iobuf_t *out, int rc )
+static spocp_result_t add_response( spocp_iobuf_t *out, int rc )
 {
-  if( rc == SPOCP_SUCCESS ) {
-    iobuf_add( out, rc_ok ) ;
+  int i ;
+  spocp_result_t sr = SPOCP_SUCCESS ;
+
+  for( i = 0 ; rescode[i].txt ; i++ ) {
+    if( rescode[i].code == rc ) {
+      sr = iobuf_add( out, rescode[i].txt ) ;
+      break ;
+    }
   }
-  else if( rc == SPOCP_DENIED ) {
-    iobuf_add( out, rc_denied ) ;
-  }
-  else if( rc == SPOCP_CLOSE ) {
-    iobuf_add( out, rc_bye ) ;
-  }
-  else if( rc == SPOCP_EXISTS ) {
-    traceLog( "ERR: Already exists" ) ;
-    iobuf_add( out, rc_exists ) ;
-  }
-  else if( rc == SPOCP_OPERATIONSERROR ) {
-    traceLog( "ERR: Operation error" ) ;
-    iobuf_add( out, rc_operation_error ) ;
-  }
-  else if( rc == SPOCP_PROTOCOLERROR ) {
-    traceLog( "ERR: Protocol error" ) ;
-    iobuf_add( out, rc_protocol_error ) ;
-  }
-  else if( rc == SPOCP_UNKNOWNCOMMAND ) {
-    traceLog( "ERR: Unknown command" ) ;
-    iobuf_add( out, rc_unknown_command ) ;
-  }
-  else if( rc == SPOCP_SYNTAXERROR ) {
-    traceLog( "ERR: Syntax error" ) ;
-    iobuf_add( out, rc_syntax_error ) ;
-  }
-  else if( rc == SPOCP_TIMELIMITEXCEEDED ) {
-    traceLog( "ERR: Timelimit exceeded" ) ;
-    iobuf_add( out, rc_timelimitexceeded ) ;
-  }
-  else if( rc == SPOCP_SIZELIMITEXCEEDED ) {
-    traceLog( "ERR: Sizelimit exceeded" ) ;
-    iobuf_add( out, rc_sizelimitexceeded ) ;
-  }
-  else if( rc == SPOCP_UNAVAILABLE ) {
-    traceLog( "ERR: Unknown ID" ) ;
-    iobuf_add( out, rc_unknown_id ) ;
-  }
-  else if( rc == SPOCP_MISSING_ARG) {
-    traceLog( "ERR: Argument error" ) ;
-    iobuf_add( out, rc_argument_err ) ;
-  }
-  else if( rc == SPOCP_MISSING_CHAR ) {
-    traceLog( "ERR: Missing bytes in input" ) ;
-    iobuf_add( out, rc_input_error ) ;
-  }
-  else if( rc == SPOCP_OTHER ) {
-    traceLog( "ERR: Other error" ) ;
-    iobuf_add( out, rc_other ) ;
-  }
-  else if( rc == SPOCP_BUF_OVERFLOW ) {
-    traceLog( "ERR: Buffer overflow" ) ;
-    iobuf_add( out, rc_operation_error ) ;
-  }
-  else if( rc == SPOCP_UNIMPLEMENTED ) {
-    traceLog( "ERR: unimplemented command" ) ;
-    iobuf_add( out, rc_unimplemented ) ;
-  }
-  else {
-    traceLog( "ERR: errortype [%d]", rc ) ;
-    iobuf_add( out, rc_operation_error ) ;
-  }
+
+  if( rescode[i].txt == 0 ) sr = add_response( out, SPOCP_OTHER ) ;
+
+  return sr ;
 }
 
 /*
@@ -177,49 +131,41 @@ spocp_result_t com_starttls( conn_t *conn )
 {
   spocp_result_t  r = SPOCP_SUCCESS ;
   int             wr ;
-  spocp_iobuf_t  *out = conn->out ;
 
-  LOG( SPOCP_INFO ) traceLog("Attempting to start SSL/TLS") ;
+  traceLog("Attempting to start SSL/TLS") ;
 
 #ifndef HAVE_SSL
 
-  iobuf_add( out, rc_not_supported ) ;
-  LOG( SPOCP_ERR ) traceLog("SSL not supported") ;
-  wr = send_results( conn ) ;
-  return SPOCP_CLOSE ;
+  r = SPOCP_NOT_SUPPORTED ;
 
 #else
 
-  if( conn->ssl != NULL) {
-    LOG( SPOCP_ERR ) traceLog("SSL already in operation") ;
-    iobuf_add( out, rc_in_operation ) ;
-  }
-  else {
-    if(( r = operation_access( conn )) == SPOCP_SUCCESS ) iobuf_add( out, rc_ok ) ;
-    else add_response( conn->out, r ) ;
-  }
+  if( conn->ssl != NULL ) r = SPOCP_SSLCON_EXIST ;
+  else if(( r = operation_access( conn )) == SPOCP_SUCCESS ) {
 
-  if(( wr = send_results( conn )) == 0 ) return SPOCP_CLOSE ;
+    /* Ready to start TLS/SSL */
+    add_response( conn->out, SPOCP_SSL_START ) ;
+    if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
-  if( r == SPOCP_SUCCESS ) {
-    /* what ever is in the input buffert must not be used anymore */
-    conn_iobuf_clear( conn ) ;
+    conn->status = CNST_SSL_NEG ; /* Negotiation in progress */
+
+    /* whatever is in the input buffert must not be used anymore */
+    iobuf_flush( conn->in ) ;
 
     /* If I couldn't create a TLS connection fail completely */
     if(( r = tls_start( conn, conn->rs )) != SPOCP_SUCCESS ) {
       LOG( SPOCP_ERR ) traceLog("Failed to start SSL") ;
-      add_response( conn->out, r ) ;
       r = SPOCP_CLOSE ;
       conn->stop = 1 ;
     }
     else traceLog("SSL in operation") ;
 
-    if(( wr = send_results( conn )) == 0 ) {
-      r = SPOCP_CLOSE ;
-      conn->stop = 1 ;
-    }
+    conn->status = CNST_ACTIVE ; /* Negotiation in progress */
   }
 #endif
+
+  add_response( conn->out, r ) ;
+  if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
   return r ;
 }
@@ -447,7 +393,7 @@ spocp_result_t com_query( conn_t *conn )
 
   if( r == SPOCP_SUCCESS && on ) {
     while(( oct = octarr_pop( on ))) {
-      if( iobuf_add( out, multiline) != SPOCP_SUCCESS ) {
+      if( add_response( out, SPOCP_MULTI) != SPOCP_SUCCESS ) {
         r = SPOCP_OPERATIONSERROR ;
         break ;
       }
@@ -570,7 +516,7 @@ spocp_result_t com_subject( conn_t *conn )
       break ;
       
     case 2: /* auth token too */
-      r = SPOCP_UNIMPLEMENTED ;
+      r = SPOCP_NOT_SUPPORTED ;
       break ;
 
     default:
@@ -724,7 +670,7 @@ spocp_result_t com_list( conn_t *conn )
         free( str ) ;
       }
 
-      if((rc = iobuf_add( out, multiline )) != SPOCP_SUCCESS ) break ;
+      if((rc = add_response( out, SPOCP_MULTI )) != SPOCP_SUCCESS ) break ;
       if((rc = iobuf_add_octet( out, op )) != SPOCP_SUCCESS ) break ;
       if(( wr = send_results( conn )) == 0 ) {
         r = SPOCP_CLOSE ;
@@ -834,8 +780,25 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
   int            l = 0 ;
   /* char    *tmp ; */
  
+  DEBUG( SPOCP_DSRV ) {
+    int n ;
+
+    if(( n = iobuf_content( conn->in ))) 
+      traceLog( "%d bytes in input buffer" ) ;
+    else 
+      traceLog( "Empty input buffer" ) ;
+  }
+   
   arg.val = conn->in->r ;
   arg.len = conn->in->w - conn->in->r ;
+
+  DEBUG( SPOCP_DSRV ) {
+    char *tmp ;
+
+    tmp = oct2strdup( &arg, '%' ) ;
+    traceLog( "ARG. [%s]", tmp ) ;
+    free( tmp ) ;
+  }
 
   /* The whole operation with all the arguments */
   if(( r = get_str( &arg, &wo )) != SPOCP_SUCCESS ) return r ;

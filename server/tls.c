@@ -552,6 +552,7 @@ static int check_cert_chain( conn_t *conn, SSL *ssl, ruleset_t *rs)
     X509_NAME_get_text_by_NID( xn, NID_commonName, subject, 1024 ) ;
     subject[1023] = '\0' ;
 
+    traceLog( "\"%s\" = \"%s\" ?", subject, conn->sri.hostname ) ;
     if( strcasecmp( subject, conn->sri.hostname ) == 0 ) {
       r = TRUE ;
     }
@@ -577,7 +578,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
 { 
   SSL        *ssl ;
   SSL_CTX    *ctx = (SSL_CTX *) conn->srv->ctx ;
-  int        maxbits ;
+  int        maxbits, r, n ;
   char       *sid_ctx = "spocp" ;
   SSL_CIPHER *cipher ;
 
@@ -595,22 +596,55 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
 
   SSL_set_session_id_context( ssl, (unsigned char *) sid_ctx, strlen(sid_ctx));
 
-  SSL_set_fd( ssl, conn->fd ) ;
+  if( SSL_set_fd( ssl, conn->fd ) == 0 ) {
+    traceLog( "Couldn't set filedescriptor in SSL" ) ;
+    return SPOCP_OPERATIONSERROR ;
+  }
 
-  LOG( SPOCP_DEBUG) traceLog("Waiting for client to initiate handshake") ;
+  n = iobuf_content( conn->in ) ;
+  traceLog( "%d bytes in input buffer" ) ;
+  if( n ) {
+    traceLog( "%x%x%x%x", conn->in->r[0], conn->in->r[1], conn->in->r[2], conn->in->r[3]);
+  }
+
+  LOG( SPOCP_DEBUG)
+    traceLog("Waiting for client on %d to initiate handshake", conn->fd ) ;
 
   /* waits for the client to initiate the handshake */
-  if( SSL_accept( ssl ) <= 0 ) {
-    SSL_free( ssl ) ;
-    tls_error( SPOCP_ERR, conn, "SSL accept error") ; 
-    return SPOCP_SSL_ERR ;
+/*
+  {
+    fd_set rset ;
+    int retval ;
+
+    FD_ZERO( &rset ) ;
+    FD_SET( conn->fd, &rset ) ;
+    retval = select(conn->fd+1,&rset,NULL,NULL,0) ;
+
+*/
+    if(( r = SSL_accept( ssl )) <= 0 ) { 
+
+      if(( r = SSL_get_error( ssl, r )) == SSL_ERROR_WANT_READ ) {
+        traceLog( "Want_read" ) ;
+      }
+      else {
+        traceLog( "SSL_get_error: %d", SSL_get_error( ssl, r )) ;
+        tls_error( SPOCP_ERR, conn, "SSL accept error") ; 
+        SSL_free( ssl ) ;
+      }
+      conn->status = CNST_ACTIVE ;
+      return SPOCP_SSL_ERR ;
+    }
+/*
   }
+*/
 
   LOG( SPOCP_DEBUG) traceLog("SSL accept done") ;
   LOG( SPOCP_DEBUG) traceLog("Checking client certificate") ;
 
   if (!check_cert_chain( conn, ssl, rs )) {
+    traceLog( "Certificate chain check failed" ) ;
     SSL_free( ssl ) ;
+    conn->status = CNST_ACTIVE ;
     return SPOCP_CERT_ERR ;
   }
 
@@ -624,8 +658,10 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   conn->ssl_vers = strdup(SSL_CIPHER_get_version(cipher));
 
   if( server_access( conn ) == 0 ) {
+    traceLog( "Client not allowed access" ) ;
     SSL_free( ssl ) ;
 
+    conn->status = CNST_ACTIVE ;
     return SPOCP_CERT_ERR ;
   }
 
@@ -638,7 +674,8 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   conn->close = tls_close ;
 
   conn->ssl = (void *) ssl ;
-  conn->tls_ssf = SSL_CIPHER_get_bits( cipher , &maxbits ) ;
+  conn->ssf = SSL_CIPHER_get_bits( cipher , &maxbits ) ;
+  conn->status = CNST_ACTIVE ;
 
   return SPOCP_SUCCESS ;
 }
