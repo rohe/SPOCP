@@ -400,20 +400,22 @@ send_results(conn_t * conn)
 
 	if (0)
 		timestamp("Send results");
-	len = out->w - out->r;
+	len = out->w - out->p;
 
 	nr = snprintf(ldef, 16, "%d:", len);
-	iobuf_insert(out, 0, ldef, nr);
+	iobuf_insert(out, out->p, ldef, nr);
 
 	len += nr;
 
 	LOG(SPOCP_INFO) {
 		*out->w = '\0';
-		traceLog("[%d]SEND_RESULT: [%s]", conn->fd, out->r);
+		traceLog("[%d]SEND_RESULT: [%s]", conn->fd, out->p);
 	}
 
 	if (0)
 		timestamp("Result placed in outqueue");
+
+        out->p = out->w ;
 
 	return 1;
 }

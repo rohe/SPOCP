@@ -962,10 +962,10 @@ com_list(conn_t * conn)
 		rs = conn->srv->root;
 
 	/*
-	 * first argument might be ruleset name 
+	 * first argument, if any, might be ruleset name 
 	 */
 
-	if (*(conn->oparg->arr[0]->val) == '/') {	/* it's a ruleset */
+	if (conn->oparg && *(conn->oparg->arr[0]->val) == '/') {
 		conn->oppath = octarr_pop(conn->oparg);
 
 		trs = rs;
@@ -981,6 +981,7 @@ com_list(conn_t * conn)
 	} else
 		trs = rs;
 
+	oa = octarr_new( 32 ) ;
 	pthread_rdwr_rlock(&rs->rw_lock);
 	rc = treeList(trs, conn, oa, 1);
 	pthread_rdwr_runlock(&rs->rw_lock);
@@ -996,12 +997,11 @@ com_list(conn_t * conn)
 				free(str);
 			}
 
-			if ((rc =
-			     add_response(out, SPOCP_MULTI,
-					  0)) != SPOCP_SUCCESS)
+			if ((rc = add_response_blob(out, SPOCP_MULTI,
+					op)) != SPOCP_SUCCESS)
 				break;
-			if ((rc = iobuf_add_octet(out, op)) != SPOCP_SUCCESS)
-				break;
+			/* wake_listener(1) ; */
+
 			if ((wr = send_results(conn)) == 0) {
 				r = SPOCP_CLOSE;
 				break;
@@ -1325,7 +1325,7 @@ native_server(conn_t * con)
 					l = get_len(&attr);
 					if ((r =
 					     iobuf_resize(in,
-							  l - attr.len)) !=
+							  l - attr.len, 1)) !=
 					    SPOCP_SUCCESS) {
 						add_response(out, r, 0);
 						send_and_flush_results(con);

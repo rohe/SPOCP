@@ -1032,7 +1032,8 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 	if (n == 0)
 		return rc;
 
-	if ((oa->size - oa->n) < n)
+        /* resize if too small */
+	if ((oa && (oa->size - oa->n) < n))
 		octarr_mr(oa, n);
 
 	if (db->ri)
@@ -1053,7 +1054,7 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 			break;
 		}
 
-		octarr_add(oa, oct);
+		oa = octarr_add(oa, oct);
 	}
 
 	/*

@@ -21,7 +21,7 @@ iobuf_new(size_t size)
 
 	io = (spocp_iobuf_t *) Calloc(1, sizeof(spocp_iobuf_t));
 
-	io->w = io->r = io->buf = (char *) Calloc(size, sizeof(char));
+	io->p = io->w = io->r = io->buf = (char *) Calloc(size, sizeof(char));
 
 	io->left = size - 1;	/* leave place for a terminating '\0' */
 	io->bsize = size;
@@ -35,34 +35,36 @@ iobuf_new(size_t size)
 	return io;
 }
 
-void
-iobuf_insert(spocp_iobuf_t * io, int where, char *what, int len)
+spocp_result_t
+iobuf_insert(spocp_iobuf_t * io, char *where, char *src, int srclen)
 {
-	char           *dest, *src;
 	size_t          dlen;
+	spocp_result_t	rc = SPOCP_SUCCESS ;
 
 	pthread_mutex_lock(&io->lock);
-	src = io->r + where;
-	dest = src + len;
-	dlen = io->w - io->r;
 
-	io->w = io->r + dlen + len;
-	io->left = io->bsize - len - dlen;
+        if (io->left < (unsigned int) srclen )
+		if((rc = iobuf_resize( io, srclen, 0 )) != SPOCP_SUCCESS) 
+			return rc ;
 
-	/*
-	 * should check if there is place enough 
-	 */
-	memmove(dest, src, dlen);
-	memcpy(src, what, len);
+	/* the number of bytes to move */
+	dlen = io->w - where;
+
+	memmove(where + srclen, where, dlen);
+	memcpy(where, src, srclen);
+
+	io->w += srclen;
+	io->left -= srclen ;
 
 	pthread_mutex_unlock(&io->lock);
 
+	return rc ;
 }
 
 void
 iobuf_shift(spocp_iobuf_t * io)
 {
-	int             len;
+	int             len, last;
 
 	/*
 	 * LOG( SPOCP_DEBUG ) traceLog( "Shifting buffer b:%p r:%p w:%p
@@ -75,7 +77,7 @@ iobuf_shift(spocp_iobuf_t * io)
 		io->r++;
 
 	if (io->r >= io->w) {	/* nothing in buffer */
-		io->r = io->w = io->buf;
+		io->p = io->r = io->w = io->buf;
 		io->left = io->bsize - 1;
 		*io->w = 0;
 		/*
@@ -85,9 +87,11 @@ iobuf_shift(spocp_iobuf_t * io)
 	} else {		/* something in the buffer, shift it to the
 				 * front */
 		len = io->w - io->r;
+		last = io->w - io->p;
 		memmove(io->buf, io->r, len);
 		io->r = io->buf;
 		io->w = io->buf + len;
+		io->p = io->buf + last;
 		io->left = io->bsize - len;
 		*io->w = '\0';
 	}
@@ -101,9 +105,9 @@ iobuf_shift(spocp_iobuf_t * io)
 }
 
 spocp_result_t
-iobuf_resize(spocp_iobuf_t * io, int increase)
+iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 {
-	int             nr, nw;
+	int             nr, nw, np;
 	char           *tmp;
 
 	if (io == 0)
@@ -112,7 +116,8 @@ iobuf_resize(spocp_iobuf_t * io, int increase)
 	if (io->bsize == SPOCP_MAXBUF)
 		return SPOCP_BUF_OVERFLOW;
 
-	pthread_mutex_lock(&io->lock);
+	if (lock)
+		pthread_mutex_lock(&io->lock);
 
 	nr = io->bsize;
 
@@ -137,6 +142,7 @@ iobuf_resize(spocp_iobuf_t * io, int increase)
 
 	nr = io->r - io->buf;
 	nw = io->w - io->buf;
+	np = io->p - io->buf;
 
 	tmp = Realloc(io->buf, io->bsize);
 
@@ -145,8 +151,10 @@ iobuf_resize(spocp_iobuf_t * io, int increase)
 	*io->end = '\0';
 	io->r = io->buf + nr;
 	io->w = io->buf + nw;
+	io->p = io->buf + np;
 
-	pthread_mutex_unlock(&io->lock);
+	if (lock)
+		pthread_mutex_unlock(&io->lock);
 
 	return SPOCP_SUCCESS;
 }
@@ -167,14 +175,14 @@ iobuf_add(spocp_iobuf_t * io, char *s)
 	 * io->left) ; 
 	 */
 
+	pthread_mutex_lock(&io->lock);
+
 	/*
 	 * are the place enough ? If not make some 
 	 */
 	if ((int) io->left < n)
-		if ((rc = iobuf_resize(io, n - io->left)) != SPOCP_SUCCESS)
+		if ((rc = iobuf_resize(io, n - io->left, 0)) != SPOCP_SUCCESS)
 			return rc;
-
-	pthread_mutex_lock(&io->lock);
 
 	strcat(io->w, s);
 
@@ -208,7 +216,7 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 	 * are the place enough ? If not make some 
 	 */
 	if (io->left < l)
-		if ((rc = iobuf_resize(io, l - io->left)) != SPOCP_SUCCESS)
+		if ((rc = iobuf_resize(io, l - io->left, 0)) != SPOCP_SUCCESS)
 			return rc;
 
 	snprintf(lenfield, 8, "%d:", s->len);
@@ -232,7 +240,7 @@ iobuf_flush(spocp_iobuf_t * io)
 {
 	pthread_mutex_lock(&io->lock);
 
-	io->r = io->w = io->buf;
+	io->p = io->r = io->w = io->buf;
 	*io->w = 0;
 	io->left = io->bsize - 1;
 

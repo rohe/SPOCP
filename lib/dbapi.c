@@ -148,7 +148,7 @@ spocp_result_t
 dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
 		 char *rs)
 {
-	if (pattern->n == 0) {	/* get all */
+	if (pattern == 0 || pattern->n == 0) {	/* get all */
 		return get_all_rules(db, oa, rs);
 	} else
 		return get_matching_rules(db, pattern, oa, rs);
