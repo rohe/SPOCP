@@ -2,7 +2,8 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include
 lib_LTLIBRARIES = libspocp.la libspocpbasic.la
 
-libspocpbasic_la_SOURCES = string.c oct.c octarr.c sexp.c wrappers.c log.c
+libspocpbasic_la_SOURCES = string.c oct.c octarr.c sexp.c wrappers.c log.c \
+	sexptool.c
 
 libspocp_la_SOURCES =  \
 	db0.c hash.c hashfunc.c log.c ssn.c verify.c \
