@@ -248,7 +248,7 @@ void		oct_assign(octet_t * o, char *s);
 
 spocp_result_t	oct_resize(octet_t *, size_t);
 spocp_result_t	octcpy(octet_t *, octet_t *);
-void		octln(octet_t *, octet_t *);
+int		octln(octet_t *, octet_t *);
 octet_t 	*octcln(octet_t *);
 void		octclr(octet_t *);
 spocp_result_t	octcat(octet_t *, char *, size_t);
@@ -308,6 +308,8 @@ spocp_chunk_t	*get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp );
 spocp_chunk_t	*get_chunk(spocp_charbuf_t * io);
 spocp_chunk_t	*chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np );
 
+spocp_chunk_t	*get_sexp_from_str(char *);
+octet_t		*sexp_normalize(char *s);
 
 /*
  * =============================================================================== 
