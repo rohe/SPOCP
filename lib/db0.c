@@ -663,63 +663,6 @@ junc_t *element_add( plugin_t *pl, junc_t *jp, element_t *ep, ruleinst_t *rt, in
                  RULE INFO functions 
  ************************************************************/
  
-/* ----------  raci ------------ */
-/*
-raci_t *raci_new( )
-{
-  raci_t *sa = 0 ;
-
-  sa = ( raci_t * ) Calloc ( 1, sizeof( raci_t )) ;
-
-  return sa ;
-}
-
-raci_t *raci_dup( raci_t *sa, ruleinfo_t *ri )
-{
-  raci_t *new ;
-
-  if( sa == 0 ) return 0 ;
-
-  new = raci_new() ;
-
-  new->resource = subelement_dup( sa->resource ) ;
-  new->action   = sa->action ;
-  new->subject  = element_dup( sa->subject, 0 ) ;
-
-  return new ;
-}
-
-void *P_raci_dup( void *vp ) 
-{
-  return (void *) raci_dup( (raci_t *) vp, 0 ) ;
-}
-
-void raci_free( raci_t *ra )
-{
-  if( ra ) {
-    if( ra->resource ) subelem_free( ra->resource ) ;
-    if( ra->subject ) element_free( ra->subject ) ;
-    
-    free( ra ) ;
-  }
-}
-
-void P_raci_free( void *vp )
-{
-  raci_free( (raci_t *) vp ) ;
-}
-
-* mostly PLACEHOLDER *
-
-int P_raci_print( void *vp )
-{
-  raci_t *sa = ( raci_t * ) vp ;
-
-  traceLog( "action: %u", sa->action ) ;
-
-  return 0 ;
-}
-*/
 /* ---------------  ruleinst ----------------------------- */
 
 ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob )
@@ -913,33 +856,6 @@ ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob )
   return rt ;
 }
 
-/*
-ruleinst_t *aci_save( db_t *db, octet_t *rule )
-{
-  ruleinfo_t  *ri ;
-  ruleinst_t  *rt ;
-
-  if( db->raci == 0 ) db->raci = ri = ruleinfo_new() ;
-  else ri = db->raci ;
-
-  rt = ruleinst_new( rule, 0 ) ;
-
-  if( ri->rules == 0 ) 
-    ri->rules = rbt_init( &P_ruleinst_cmp, &P_ruleinst_free, &P_ruleinst_key,
-                        &P_ruleinst_dup, &P_ruleinst_print ) ; 
-  else {
-    if( ruleinst_find_by_uid( ri->rules, rt->uid ) != 0 ) {
-      ruleinst_free( rt ) ;
-      return 0 ;
-    }
-  }
-
-  rbt_insert( ri->rules, (item_t) rt ) ;
-
-  return rt ;
-}
-*/
-
 int nrules( ruleinfo_t *ri )
 {
   if( ri == 0 ) return 0 ;
@@ -1110,7 +1026,7 @@ Arguments:
 Returns:	TRUE if OK
 */
 
-spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri )
+spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd )
 {
   element_t      *ep ;
   octet_t        rule, blob, oct ;
@@ -1120,10 +1036,6 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri )
   /*
   LOG( SPOCP_WARNING ) traceLog("Adding new rule: \"%s\"", rp->val) ;
   */
-
-  if( *db == 0 ) {
-    *db = db_new( ) ;
-  }
 
   rule.len = rule.size = 0 ;
   rule.val = 0 ;
@@ -1162,6 +1074,9 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri )
       LOG( SPOCP_WARNING ) traceLog("Error while adding rule") ;
     }
 
+    rt->bcond = bcd ;
+    bcd->rules = varr_add( bcd->rules, (void *) rt ) ;
+ 
     *ri = rt ;
   }
   
