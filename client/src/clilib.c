@@ -57,7 +57,9 @@
 #define SPOCP_DEFAULT_CONN_WAIT		5
 
 /*! Should not have to define this here */
+/*
 char	*strndup(const char *old, size_t sz);
+*/
 
 /*! Local shothand alias */
 typedef struct sockaddr SA;
