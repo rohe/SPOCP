@@ -112,12 +112,16 @@ oct_assign(octet_t * oct, char *str)
  * another one \param a The target \param b The source 
  */
 
-void
+int
 octln(octet_t * a, octet_t * b)
 {
+	if( a == 0 || b == 0 )
+		 return -1;
+
 	a->len = b->len;
 	a->val = b->val;
 	a->size = 0;
+	return 1;
 }
 
 /*
@@ -255,6 +259,8 @@ oct2strcmp(octet_t * o, char *s)
 {
 	size_t          l, n;
 	int             r;
+
+	if( o == 0 ) return -1;
 
 	l = strlen(s);
 
@@ -566,7 +572,7 @@ oct2strdup(octet_t * op, char ec)
 	unsigned char   uc;
 	size_t          n, i;
 
-	if (op->len == 0)
+	if (op == 0 || op->len == 0)
 		return 0;
 
 	if (ec == 0) {
