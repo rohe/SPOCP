@@ -167,7 +167,7 @@ int main( int  argc, char **argv )
   oct.len = strlen(path) ;
   ruleset_create( &oct, &srv.root ) ;
 
-  if( init_server( &srv, cnfg ) < 0 ) exit(1) ;
+  if( srv_init( &srv, cnfg ) < 0 ) exit(1) ;
 
   if( srv.port && srv.uds ) {
     fprintf(stderr,
@@ -282,9 +282,9 @@ int main( int  argc, char **argv )
 
     DEBUG( SPOCP_DSRV ) traceLog("Creating threads") ;
     /* returns the pool the threads are picking work from */
-    srv.work = tpool_init( srv.threads, srv.threads, 1 ) ;
+    srv.work = tpool_init( srv.threads, 64, 1 ) ;
 
-    spocp_server_run( &srv )  ;
+    spocp_srv_run( &srv )  ;
     
   }
   else {
@@ -298,10 +298,8 @@ int main( int  argc, char **argv )
     conn = spocp_open_connection( STDIN_FILENO, &srv ) ;
     */
     /* this is much simpler */
-    conn = ( conn_t *) Calloc( 1, sizeof( conn_t )) ;
-    conn->fd = STDIN_FILENO ;
-    conn->srv = &srv ;
-    init_connection( conn ) ;
+    conn = conn_new() ;
+    conn_setup( conn, &srv, STDIN_FILENO, "localhost" ) ;
 
     LOG( SPOCP_INFO ) traceLog( "Running server" ) ;
 
