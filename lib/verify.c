@@ -73,7 +73,7 @@ is_ipv4(octet_t * op, struct in_addr * ia)
 
 	c = op->val[op->len];
 	op->val[op->len] = 0;
-#ifdef USE_IPV6
+#ifdef HAVE_INET_NTOP
 	if (inet_pton(AF_INET, op->val, ia) <= 0) {
 #else
 	if (inet_aton( op->val, ia) == 0) {
@@ -91,7 +91,7 @@ is_ipv4(octet_t * op, struct in_addr * ia)
 spocp_result_t
 is_ipv4_s(char *ip, struct in_addr * ia)
 {
-#ifdef USE_IPV6
+#ifdef HAVE_INET_NTOP
 	if (inet_pton(AF_INET, ip, ia) <= 0)
 #else
 	if (inet_aton( ip, ia) == 0) 

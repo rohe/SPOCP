@@ -382,7 +382,7 @@ sl_find(slist_t * slp, boundary_t * item)
 void
 boundary_print(boundary_t * bp)
 {
-	char            ip[65], *lte = "-";
+	char	ip[65], *lte = "-";
 
 	if (bp == 0)
 		return;
@@ -422,7 +422,15 @@ boundary_print(boundary_t * bp)
 		break;
 
 	case SPOC_IPV4:
+#ifdef HAVE_INET_NTOP
 		inet_ntop(AF_INET, (void *) &bp->v.v4, ip, 65);
+#else
+		{
+			char	*tmp;
+			tmp = inet_ntoa( bp->v.v4 );
+			strcat( ip, tmp);
+		}
+#endif
 		traceLog(" %x %s %s", bp->type, lte, ip);
 		break;
 

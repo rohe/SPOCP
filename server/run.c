@@ -16,6 +16,39 @@ typedef struct sockaddr SA;
  * ---------------------------------------------------------------------- 
  */
 
+static int
+spocp_getnameinfo( const struct sockaddr *sa, int len, char *name, int namelen)
+{
+        int rc;
+#if defined( HAVE_GETNAMEINFO )
+
+        rc = getnameinfo( sa, len, name, namelen, NULL, 0, 0 );
+
+#else /* !HAVE_GETNAMEINFO */
+        char *addr;
+        int alen;
+        struct hostent *hp = NULL;
+
+        if (sa->sa_family == AF_INET) {
+                struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+                addr = (char *)&sin->sin_addr;
+                alen = sizeof(sin->sin_addr);
+        } else 
+                rc = NO_RECOVERY;
+
+	hp = gethostbyaddr( addr, alen, sa->sa_family );
+	if (hp) {
+		strncpy( name, hp->h_name, namelen );
+		rc = 0;
+	} else 
+		rc = h_errno;
+
+
+#endif  /* !HAVE_GETNAMEINFO */
+
+        return rc;
+}
+
 /*
  * !!! This is borrowed from OpenLDAP !!!! 
  */
@@ -285,15 +318,8 @@ spocp_srv_run(srv_t * srv)
 			 * Get address not hostname of the connection 
 			 */
 			if ((err =
-			     getnameinfo((SA *) & client_addr, len, hname,
-					 NI_MAXHOST, NULL, 0, 0)) != 0
-			    || (err =
-				getnameinfo((SA *) & client_addr, len, ipaddr,
-					    64, NULL, 0,
-					    NI_NUMERICHOST)) != 0) {
-				traceLog
-				    ("Unable to getnameinfo for fd %d:%.100s",
-				     client, strerror(err));
+			     spocp_getnameinfo((SA *) & client_addr, len, hname,
+					 NI_MAXHOST)) != 0) {
 				close(client);
 				goto fdloop;
 			}

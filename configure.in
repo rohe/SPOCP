@@ -295,7 +295,7 @@ dnl *************************************************
 AC_CHECK_FUNCS([bzero fdatasync getcwd gethostbyaddr gethostbyname \
 	gethostname gettimeofday inet_ntoa localtime_r memmove memset \
 	select socket strcasecmp strdup strerror strncasecmp strndup \
-        strnlen strstr strtol uname])
+        strnlen strstr strtol uname getnameinfo inet_ntop fdatasync fsync])
 
 AC_CHECK_FUNCS([memchr])
 AC_CHECK_FUNCS([regcomp])

@@ -400,7 +400,7 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 spocp_result_t
 server_access(conn_t * con)
 {
-	char            path[NAME_MAX + 1];
+	char            path[MAXNAMLEN + 1];
 
 	sprintf(path, "%s/server", localcontext);
 
@@ -410,7 +410,7 @@ server_access(conn_t * con)
 spocp_result_t
 operation_access(conn_t * con)
 {
-	char            path[NAME_MAX + 1];
+	char            path[MAXNAMLEN + 1];
 	spocp_result_t  r;
 
 	sprintf(path, "%s/operation", localcontext);

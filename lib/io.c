@@ -67,7 +67,13 @@ Writen(int fd, size_t n, char *str)
 		}
 	}
 
+#ifdef HAVE_FDATASYNC
 	fdatasync(fd);
+#else
+#ifdef HAVE_FSYNC
+	fsync(fd);
+#endif
+#endif
 
 	/*
 	 * if( spocp_loglevel == SPOCP_DEBUG ) { gettimeofday( &stop, NULL ) ;

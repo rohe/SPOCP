@@ -1045,7 +1045,13 @@ spocpc_writen(SPOCP * spocp, char *str, ssize_t n )
 		}
 	}
 
+#ifdef HAVE_FDATASYNC
 	fdatasync(spocp->fd);
+#else
+#ifdef HAVE_FSYNC
+	fsync(spocp->fd);
+#endif
+#endif
 
 	return (n - nleft);
 }

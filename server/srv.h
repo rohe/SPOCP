@@ -14,6 +14,20 @@
 #define NATIVE	1
 #define SOAP	2
 
+#ifdef NAME_MAX
+#define MAXNAMLEN    NAME_MAX
+#else
+#define MAXNAMLEN    255
+#endif
+
+#ifndef NI_MAXHOST
+#define NI_MAXHOST	1025
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST	1
+#endif
+
 /* -------------------------------------- */
 
 #ifndef MAX
