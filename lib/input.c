@@ -48,7 +48,6 @@ spocp_result_t  is_atom( range_t *rp ) ;
 
 spocp_result_t  set_limit( boundary_t *bp, octet_t *op ) ;
 boundary_t     *set_delimiter( range_t *range, octet_t oct ) ;
-char           *print_len_spec( char *s, int n ) ;
 
 /* =============================================================== */
 
