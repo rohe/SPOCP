@@ -99,7 +99,7 @@ spocp_result_t localgroup_test(
     if( ( bc = becon_get( &loc, dyn->bcp )) == 0 ) {
       if (( fp = fopen(fn,"r")) == 0) rc = SPOCP_UNAVAILABLE ;
       else if( dyn->size ) {
-        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size ) ;
         bc = becon_push( &loc, &P_fclose, (void *) fp, dyn->bcp ) ;
       }
     }
@@ -185,7 +185,7 @@ spocp_result_t localgroup_init( confgetfn *cgf, void *conf, becpool_t *bcp )
   void      *vp ;
 
   /* using vp to avoid warnings about type-punned pointers */
-  cgf( conf, PLUGIN, "localgroup", &vp ) ;
+  cgf( conf, PLUGIN, "localgroup", 0,  &vp ) ;
   if( vp ) on = ( octarr_t *) vp ;
 
   LOG( SPOCP_DEBUG ) {
@@ -195,14 +195,14 @@ spocp_result_t localgroup_init( confgetfn *cgf, void *conf, becpool_t *bcp )
   }
   octarr_free( on ) ;
 
-  cgf( conf, TIMEOUT, 0, &vp ) ;
+  cgf( conf, TIMEOUT, 0, 0, &vp ) ;
   if( vp ) num = ( int *) vp ;
 
 /*
   traceLog( "TIMEOUT: [%d]", *num ) ;
 */
   
-  cgf( conf, CALIST, 0, &vp ) ;
+  cgf( conf, CALIST, 0, 0, &vp ) ;
   if( vp ) value = ( char *) vp ;
 
 /*

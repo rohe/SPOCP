@@ -84,7 +84,7 @@ spocp_result_t gdbm_test(
   
       if( !dbf )  r = SPOCP_UNAVAILABLE ;
       else if( dyn->size ) {
-        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size ) ;
         bc = becon_push( oct, &P_gdbm_close, (void *) dbf, dyn->bcp ) ;
       }
     }

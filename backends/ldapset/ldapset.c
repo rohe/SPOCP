@@ -1306,7 +1306,7 @@ spocp_result_t ldapset_test(
       
           if( ld == 0 ) r = SPOCP_UNAVAILABLE ;
           else if( dyn->size ) {
-            if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+            if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size ) ;
             bc = becon_push( o, &P_ldapclose, (void *) ld, dyn->bcp ) ;
           }
         }

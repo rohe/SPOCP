@@ -284,21 +284,22 @@ spocp_result_t cert_syntax( char *arg)
 
 
 spocp_result_t cert_init( confgetfn *cgf, void *conf, becpool_t *bcp ) {
-  octnode_t *on = 0 ;
-  void      *vp = 0;
-  char      *path = "/usr/local/spocp/conf/cert";
+  octarr_t   *oa = 0 ;
+  void       *vp = 0;
+  char       *path = "/usr/local/spocp/conf/cert";
   struct stat sts;
+  int         i ;
 
   LOG( SPOCP_DEBUG) traceLog( "cert_init" ) ;
 
-  /* If you are loking up a non-standard configuration attribute, cfg always
-     returns a pointer to a octnode struct */
+  /* If you are loking up a plugin configuration attribute, cfg will always
+     returns a pointer to a octarr struct */
   /* using vp to avoid warnings about type-punned pointers */
-  cgf( conf, PLUGIN, "cert:cadir", &vp ) ;
+  cgf( conf, PLUGIN, "cert", "cadir", &vp ) ;
   if( vp ) on = ( octnode_t *) vp ;
   
-  for( ; on ; on = on->next ) {
-    path = on->oct.val ;
+  for( i ; i < oa->n ; i ) {
+    path = oa->arr[i]->val ;
     if (stat(path, &sts) == -1 && errno == ENOENT) {
       DEBUG( SPOCP_DBCOND ){
         traceLog("The path specified: [%s] does not exist.",path);
@@ -307,7 +308,7 @@ spocp_result_t cert_init( confgetfn *cgf, void *conf, becpool_t *bcp ) {
     else break ; 
   }
 
-  if( vp && !on ) return SPOCP_UNAVAILABLE ;
+  if( vp && i == oa->n ) return SPOCP_UNAVAILABLE ;
 
   cert_ctx = initCertificateCheck(path);
 

@@ -114,7 +114,7 @@ spocp_result_t lastlogin_test(
     
         if( fp == 0 ) r = SPOCP_UNAVAILABLE ;
         else if( dyn->size ) {
-          if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+          if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size ) ;
           bc = becon_push( o, &P_fclose, (void *) fp, dyn->bcp ) ;
         }
       }

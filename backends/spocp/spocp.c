@@ -68,7 +68,7 @@ spocp_result_t spocp_test(
       r = SPOCP_UNAVAILABLE ;
     }
     else if( dyn->size ) {
-      if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+      if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size ) ;
       bc = becon_push( oct, &P_spocp_close, (void *) spocp, dyn->bcp ) ;
     }
   }

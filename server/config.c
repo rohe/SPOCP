@@ -86,7 +86,6 @@ spocp_result_t conf_get( void *vp, infotype_t arg, char *pl, char *key, void **r
           *res = ( void * ) pconf_get_keys_by_plugin( srv->root->db->plugins, pl ) ;
       }
 
-      free( pl ) ;
       break ;
 
     case RULEFILE :
@@ -223,8 +222,10 @@ int read_config( char *file, srv_t *srv )
 
     sp = cp ;
     for( *cp++ = '\0' ; *cp && ( *cp == ' ' || *cp == '\t' ) ; cp++ ) *cp = '\0' ;
-    while( *sp == ' ' || *sp == '\t' ) *sp-- = '\0' ;
+    for( sp-- ; sp != s && ( *sp == ' ' || *sp == '\t' ) ; sp-- ) *sp = '\0' ;
   
+    if( *s == '\0' ) continue ;
+
     switch( section ) {
       case SYSTEM:
         for( i = 1 ; keyword[i] ; i++ )
