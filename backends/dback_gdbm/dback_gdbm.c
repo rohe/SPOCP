@@ -3,9 +3,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <string.h>
 
 #include <spocp.h>
 #include <be.h>
+#include <dback.h>
 #include "../../server/srvconf.h"
 
 extern gdbm_error gdbm_errno ;
@@ -13,9 +15,21 @@ extern char *gdbm_version ;
 
 static char *gdbmfile = 0 ;
 
-/* function prototype
-void *db_gdbm_X( void *v0. void *v1, spocp_result_t *rc ) 
-*/
+/* function prototypes */
+
+dbackfn db_gdbm_init ;
+dbackfn db_gdbm_put ;
+dbackfn db_gdbm_replace ;
+dbackfn db_gdbm_get ;
+dbackfn db_gdbm_delete ;
+dbackfn db_gdbm_open ;
+dbackfn db_gdbm_close ;
+dbackfn db_gdbm_firstkey ;
+dbackfn db_gdbm_nextkey ;
+dbackfn db_gdbm_allkeys ;
+dbackfn db_gdbm_begin ;
+
+/*  */
 
 static octet_t *octnew( void ) 
 {
@@ -51,7 +65,7 @@ static void char2datum( datum *d, char *str )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_init( void *vcfg, void *conf, spocp_result_t *rc ) 
+void *db_gdbm_init( void *vcfg, void *conf, void *extr, spocp_result_t *rc ) 
 {
   confgetfn *cgf = ( confgetfn * ) vcfg ;
   void      *vp ;
@@ -196,7 +210,7 @@ void *db_gdbm_delete( void *handle, void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_open( void *v0, void *v1, spocp_result_t *rc )
+void *db_gdbm_open( void *v0, void *v1, void *v2, spocp_result_t *rc )
 {
   GDBM_FILE dbf ;
 
@@ -214,7 +228,7 @@ void *db_gdbm_open( void *v0, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_close( void *handle, void *v1, spocp_result_t *rc )
+void *db_gdbm_close( void *handle, void *v1, void *v2, spocp_result_t *rc )
 {
   GDBM_FILE dbf ;
 
@@ -231,7 +245,7 @@ void *db_gdbm_close( void *handle, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_firstkey( void *handle, void *v1, spocp_result_t *rc )
+void *db_gdbm_firstkey( void *handle, void *v1, void *v2, spocp_result_t *rc )
 {
   GDBM_FILE dbf = ( GDBM_FILE ) handle ;
   datum     key ;
@@ -246,7 +260,7 @@ void *db_gdbm_firstkey( void *handle, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_nextkey( void *handle, void *v1, spocp_result_t *rc )
+void *db_gdbm_nextkey( void *handle, void *v1, void *v2, spocp_result_t *rc )
 {
   GDBM_FILE dbf = ( GDBM_FILE ) handle ;
   datum     key, nextkey ;
@@ -263,7 +277,7 @@ void *db_gdbm_nextkey( void *handle, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_allkeys( void *handle, void *v1, spocp_result_t *rc )
+void *db_gdbm_allkeys( void *handle, void *v1, void *v2, spocp_result_t *rc )
 {
   GDBM_FILE dbf ;
   datum     key, nextkey ;
@@ -294,7 +308,7 @@ void *db_gdbm_allkeys( void *handle, void *v1, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 
-void *db_gdbm_begin( void *handle, void *v1, spocp_result_t *rc )
+void *db_gdbm_begin( void *handle, void *v1, void *v2, spocp_result_t *rc )
 {
   *rc = SPOCP_NOT_SUPPORTED ;
 
