@@ -208,13 +208,6 @@ void iobuf_flush( spocp_iobuf_t *io )
 
 }
 
-__attribute__((unused)) static void iobuf_print( char *s, spocp_iobuf_t *io )
-{
-  pthread_mutex_lock( &io->lock ) ;
-  traceLog( "[%s] %p:%p:%p %d/%d", s, io->buf, io->r, io->w, io->left, io->bsize ) ;
-  pthread_mutex_unlock( &io->lock ) ;
-}
-
 int iobuf_content( spocp_iobuf_t *io ) 
 {
   int n ;
