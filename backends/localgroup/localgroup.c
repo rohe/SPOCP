@@ -14,16 +14,18 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 #include <grp.h>
 #include <sys/types.h>
 
-#include "../../server/srvconf.h"
-#include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 #define ETC_GROUP "/etc/group"
 
-spocp_result_t localgroup_test( octet_t *arg, becpool_t *bcp, octet_t *blob ) ;
+befunc localgroup_test ;
 
 static int _ismember(octet_t *member,char *grp)
 {
@@ -50,65 +52,125 @@ static int _ismember(octet_t *member,char *grp)
 
       group_name:passwd:GID:user_list
 
-   The query arg should look like this group_name:user 
+   The query arg should look like this group_name:user[:file] 
 
 */
 
-spocp_result_t localgroup_test(octet_t *arg, becpool_t *bcp, octet_t *blob )
+spocp_result_t localgroup_test(
+  element_t *qp, element_t *rp, element_t *xp, octet_t *arg, pdyn_t *dyn, octet_t *blob )
 {
   spocp_result_t rc = SPOCP_DENIED ;
 
-  FILE    *fp;
-  octet_t **argv = NULL;
-  char    *fn = ETC_GROUP, *cp;
-  int     done, n ;
-  char    buf[BUFSIZ] ;
+  FILE     *fp;
+  octarr_t *argv ;
+  octet_t  *oct, cb, *group, *user, loc ;
+  char     *fn = ETC_GROUP, *cp;
+  int       done, cv ;
+  char      buf[BUFSIZ] ;
+  becon_t   *bc = 0 ;
 
-  argv = oct_split(arg,':',0,0,0,&n);
+  if( arg == 0 ) return SPOCP_MISSING_ARG ;
 
-  /* LOG( SPOCP_DEBUG ) traceLog("n=%d",n); */
+  if(( oct = element_atom_sub( arg, xp )) == 0 ) return SPOCP_SYNTAXERROR ;
 
-  if (n == 3) fn = argv[2]->val;
+  cv = cached( dyn->cv, oct, &cb ) ;
 
-  /* LOG( SPOCP_DEBUG ) traceLog("groupfile: %s",fn); */
+  if( cv ) {
+    /* traceLog( "localgroup: cache hit" ) ; */
 
-  if (( fp = fopen(fn,"r")) == 0) {
-    rc = SPOCP_UNAVAILABLE ;
-    goto DONE;
-  }
-  
-  /* LOG( SPOCP_DEBUG ) traceLog("open...%s",fn); */
-
-  done = 0;
-
-  while ( !done && fgets( buf, BUFSIZ, fp ) ) {
-    rmcrlf( buf ) ;
-    if(( cp = index( buf, ':' )) == 0 ) continue ; /* incorrect line */
-
-    *cp++ = '\0' ;
-
-    /* LOG( SPOCP_DEBUG ) traceLog("grp: %s", buf ); */
-
-    if(( oct2strcmp(argv[0], buf)) == 0) {
-      /* skip passwd */
-      if(( cp = index( cp, ':' )) == 0 ) continue ; /* incorrect line */ 
-      cp++ ;
-      /* skip GID */
-      if(( cp = index( cp, ':' )) == 0 ) continue ; /* incorrect line */ 
-      cp++ ;
-
-      if( _ismember(argv[1],cp) == TRUE ) rc = SPOCP_SUCCESS ;
-      done++;
+    if( cv == EXPIRED ) {
+      cached_rm( dyn->cv, oct ) ;
+      cv = 0 ;
     }
-
   }
+
+  if( cv == 0 ) {
+    argv = oct_split( oct, ':', 0, 0, 0 ) ;
   
-DONE:
-  if( fp ) fclose(fp);
+    /* LOG( SPOCP_DEBUG ) traceLog("n=%d",n); */
+  
+    if ( argv->n == 3 ) fn = oct2strdup( argv->arr[2], 0 ) ;
+  
+    /* LOG( SPOCP_DEBUG ) traceLog("groupfile: %s",fn); */
+  
+    oct_assign( &loc, fn ) ;
+  
+    if( ( bc = becon_get( &loc, dyn->bcp )) == 0 ) {
+      if (( fp = fopen(fn,"r")) == 0) rc = SPOCP_UNAVAILABLE ;
+      else if( dyn->size ) {
+        if( !dyn->bcp ) dyn->bcp = becpool_new( dyn->size, 0 ) ;
+        bc = becon_push( &loc, &P_fclose, (void *) fp, dyn->bcp ) ;
+      }
+    }
+    else {
+      fp = ( FILE * ) bc->con ;
+      if( fseek( fp, 0L, SEEK_SET) == -1 ) {
+        /* try to reopen */
+        fp = fopen(fn, "r") ;
+        if( fp == 0 ) { /* not available */
+          becon_rm( dyn->bcp, bc ) ;
+          bc = 0 ;
+          rc = SPOCP_UNAVAILABLE ;
+        }
+        else becon_update( bc, (void *) fp ) ;
+      }
+    }
+    
+    /* LOG( SPOCP_DEBUG ) traceLog("open...%s",fn); */
+  
+    if( rc == SPOCP_DENIED || argv->n < 2 ) {
+      done = 0;
+      group = argv->arr[0] ;
+      user  = argv->arr[1] ;
+  
+      while ( !done && fgets( buf, BUFSIZ, fp ) ) {
+        rmcrlf( buf ) ;
+        if(( cp = index( buf, ':' )) == 0 ) continue ; /* incorrect line */
+    
+        *cp++ = '\0' ;
+    
+        /* LOG( SPOCP_DEBUG ) traceLog("grp: %s", buf ); */
+    
+        if(( oct2strcmp(group, buf)) == 0) {
+          /* skip passwd */
+          if(( cp = index( cp, ':' )) == 0 ) continue ; /* incorrect line */ 
+          cp++ ;
+          /* skip GID */
+          if(( cp = index( cp, ':' )) == 0 ) continue ; /* incorrect line */ 
+          cp++ ;
+    
+          if( _ismember(user,cp) == TRUE ) rc = SPOCP_SUCCESS ;
+          done++;
+        }
+    
+      }
+    }
+    
+    if( bc ) becon_return( bc ) ;
+    else if( fp ) fclose(fp);
+  
+    if( fn != ETC_GROUP ) free( fn ) ;
+  
+    octarr_free( argv );
+  }
 
-  if (argv != NULL)
-    oct_freearr( argv );
+  if( cv == (CACHED|SPOCP_SUCCESS) ) {
+    if( cb.len ) octln( blob, &cb ) ;
+    rc = SPOCP_SUCCESS ;
+  }
+  else if( cv == ( CACHED|SPOCP_DENIED ) ) {
+    rc = SPOCP_DENIED ;
+  }
+  else {
+    if( dyn->ct && ( rc == SPOCP_SUCCESS || rc == SPOCP_DENIED )) {
+      time_t t ;
+      t = cachetime_set( oct, dyn->ct ) ;
+      dyn->cv = cache_value( dyn->cv, oct, t, (rc|CACHED) , 0 ) ;
+    }
+  }
 
+  if( oct != arg ) oct_free( oct ) ;
+  
   return rc;
 }
 
@@ -117,21 +179,20 @@ DONE:
 spocp_result_t localgroup_init( confgetfn *cgf, void *conf, becpool_t *bcp )
 {
   char      *value = 0 ;
-  int       *num = 0 ;
-  octnode_t *on ;
+  int       *num = 0, i ;
+  octarr_t  *on = 0 ;
   void      *vp ;
-
-  /* LOG( SPOCP_DEBUG) traceLog( "localgroup_init" ) ; */
 
   /* using vp to avoid warnings about type-punned pointers */
   cgf( conf, PLUGIN, "localgroup", &vp ) ;
-  if( vp ) on = ( octnode_t *) vp ;
+  if( vp ) on = ( octarr_t *) vp ;
 
-/*
-  for( ; on ; on = on->next ) {
-    traceLog( "localgroup[%d] : [%s]", i, on->oct->val ) ;
+  LOG( SPOCP_DEBUG ) {
+    for( i = 0 ; i < on->n ; i++ ) {
+      traceLog( "localgroup key[%d] : [%s]", i, on->arr[i]->val ) ;
+    }
   }
-*/
+  octarr_free( on ) ;
 
   cgf( conf, TIMEOUT, 0, &vp ) ;
   if( vp ) num = ( int *) vp ;
