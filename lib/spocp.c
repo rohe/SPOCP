@@ -165,6 +165,8 @@ spocp_result_t spocp_add_rule( void **vp, octarr_t *oa )
   spocp_result_t r ;
   db_t          *db ;
   ruleinst_t    *ri = 0 ;
+  bcdef_t       *bcd = 0 ;
+  octet_t       *o ;
 
   LOG( SPOCP_INFO ) traceLog( "spocp_add_rule" ) ; 
 
@@ -173,7 +175,16 @@ spocp_result_t spocp_add_rule( void **vp, octarr_t *oa )
   if( vp ) db = (db_t *) *vp ;
   else return SPOCP_UNWILLING ;
 
-  if(( r = add_right( &db, oa, &ri ))) 
+  if( db == 0 ) db = db_new( ) ;
+
+  if( oa->n > 1 ) {
+    /* pick out the second ( = index 1 ) octet */
+    o = octarr_rm( oa, 1 ) ;
+
+    bcd = bcdef_get( o, db, &r ) ;
+  }
+
+  if(( r = add_right( &db, oa, &ri, bcd ))) 
   
   *vp = (void *) db ;
  
