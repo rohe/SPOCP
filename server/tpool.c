@@ -18,6 +18,8 @@ typedef struct _ptharg {
 	int             id;
 } ptharg_t;
 
+static int VV=0;
+
 static int
 add_work_structs(pool_t * pool, int n)
 {
@@ -143,7 +145,7 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 	work_info_t    *workp;
 	pool_item_t    *pi;
 
-	if (0) {
+	if (VV) {
 		timestamp("tpool_add_work");
 		traceLog(LOG_DEBUG,"cur_queue_size:%d", tpool->cur_queue_size);
 		traceLog(LOG_DEBUG,"max_queue_size:%d", tpool->max_queue_size);
@@ -219,7 +221,7 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 
 	afpool_push_item(tpool->queue, pi);
 
-	if (0)
+	if (VV)
 		timestamp("Signal the workitem");
 	pthread_cond_signal(&(tpool->queue_not_empty));
 
@@ -311,7 +313,7 @@ tpool_thread(void *arg)
 		 */
 		afpool_lock(workqueue);
 
-		if(1) traceLog(LOG_DEBUG, "Thread %d looking for work", id ) ; 
+		if(VV) traceLog(LOG_DEBUG, "Thread %d looking for work", id ) ; 
 
 		/*
 		 * nothing in the queue, wait for something to appear 
@@ -332,7 +334,7 @@ tpool_thread(void *arg)
 
 		afpool_unlock(workqueue);
 
-		if(1) traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
+		if(VV) traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
 
 		/*
 		 * Has a shutdown started while I was sleeping? 
@@ -381,7 +383,7 @@ tpool_thread(void *arg)
 			iobuf_flush(conn->in);
 
 		/*
-		 * if(1) timestamp( "workitem done" ) ; 
+		 * if(VV) timestamp( "workitem done" ) ; 
 		 */
 
 		/*
@@ -391,7 +393,7 @@ tpool_thread(void *arg)
 		my_workp->routine = 0;
 
 		/*
-		 * if( 1 ) timestamp( "Return work item" ) ; 
+		 * if(VV) timestamp( "Return work item" ) ; 
 		 */
 
 		afpool_push_empty(workqueue, pi);
@@ -405,7 +407,7 @@ tpool_thread(void *arg)
 			pthread_cond_signal(&(tpool->queue_not_full));
 		}
 
-		if (0)
+		if (VV)
 			timestamp("loopturn done");
 	}
 

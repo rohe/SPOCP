@@ -253,6 +253,9 @@ postop( conn_t *conn, spocp_result_t rc, const char *msg)
 {
 	int wr;
 
+	if( msg && *msg ) {
+		traceLog(LOG_INFO,"return message:%s", msg);
+	}
 	add_response(conn->out, rc, msg);
 
 	if (msg != NULL)
@@ -690,6 +693,9 @@ com_query(conn_t * conn)
 */
 	}
 
+	DEBUG(SPOCP_DSRV) 
+		traceLog(LOG_DEBUG, "allow returned %d", r);
+
 	if (r == SPOCP_SUCCESS && on) {
 		while ((oct = octarr_pop(on))) {
 			if (add_response_blob(out, SPOCP_MULTI, oct) != SPOCP_SUCCESS) {
@@ -808,7 +814,7 @@ com_subject(conn_t * conn)
 }
 
 /*
- * --------------------------------------------------------------------------------- 
+ * ------------------------------------------------------------------------- 
  * * ADD [ruleset_def] s-exp [blob] add = "3:ADD" [l-path] l-s-expr [
  * bytestring ] moving toward add = "3:ADD" [l-path] l-s-expr [ bcond [
  * bytestring ]]
@@ -824,7 +830,8 @@ com_add(conn_t * conn)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ADD rule");
 
-	if ((rc = opinitial( conn, &rs, 1, 1, 3)) == (SPOCP_DENIED|UNKNOWN_RULESET)) {
+	if ((rc = opinitial( conn, &rs, 1, 1, 3)) ==
+	    (SPOCP_DENIED|UNKNOWN_RULESET)) {
 		ruleset_t	*trs ;
 
 		if ((trs = ruleset_create(conn->oppath, &rs))){

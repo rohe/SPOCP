@@ -99,7 +99,7 @@ varr_t         *
 get_rec_all_rules(junc_t * jp, varr_t * in)
 {
 	varr_t         *pa = 0;
-	index_t        *id;
+	spocp_index_t	*id;
 	int             i;
 
 	if (jp->item[SPOC_ENDOFRULE]) {

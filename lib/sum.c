@@ -7,7 +7,7 @@ element_t *
 get_indexes( junc_t *jp )
 {
 	element_t	*ea = 0, *res = 0, *ep = 0, *te;
-	index_t		*id;
+	spocp_index_t	*id;
 	octet_t		oct;
 	int		i = 0, j = 0;
 	varr_t		*pa = 0, *earr = 0;

@@ -86,10 +86,10 @@ dback_load(char *name, char *load)
 static octet_t *
 datum_make(octet_t * rule, octet_t * blob, char *bcname)
 {
-	octet_t        *oct = 0;
-	int             len = 0;
-	size_t          size;
-	char           *str;
+	octet_t		*oct = 0;
+	int		len = 0;
+	unsigned int	size;
+	char		*str;
 
 	len = rule->len + 1 + DIGITS(rule->len);
 	if (blob)

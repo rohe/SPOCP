@@ -1000,13 +1000,13 @@ ruleinst_print(ruleinst_t * r, char *rs)
 
 	octcat(oct, r->uid, 40);
 
-	snprintf(flen, 1024, "%d:", r->rule->len);
+	snprintf(flen, 1024, "%d:", (int) r->rule->len);
 	octcat(oct, flen, strlen(flen));
 
 	octcat(oct, r->rule->val, r->rule->len);
 
 	if (r->blob && r->blob->len) {
-		snprintf(flen, 1024, "%d:", r->blob->len);
+		snprintf(flen, 1024, "%d:", (int) r->blob->len);
 		octcat(oct, flen, strlen(flen));
 		octcat(oct, r->blob->val, r->blob->len);
 	}

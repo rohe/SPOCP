@@ -145,7 +145,7 @@ typedef struct _thread {
 	pthread_t	thread ;
 	long		count ; 
 	struct _conn	*conn ;
-} thread_t ;
+} spocp_thread_t ;
 
 /* -------------------------------------------------------------------- */
 

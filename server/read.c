@@ -108,7 +108,7 @@ recreate_sexp(octet_t * o, ptree_t * ptp)
 		*o->val++ = ')';
 		o->len++;
 	} else {
-		sprintf(o->val, "%d:", ptp->val.len);
+		sprintf(o->val, "%u:", (unsigned int) ptp->val.len);
 		len = DIGITS(ptp->val.len);
 		len++;
 		o->len += len;
@@ -295,8 +295,9 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 static octet_t *
 bcref_create(char *bcname)
 {
-	octet_t        *ref;
-	size_t          size, l = strlen(bcname);;
+	octet_t		*ref;
+	unsigned int	size;
+	size_t		l = strlen(bcname);;
 
 	size = l + DIGITS(l) + 1;
 	size += 8;

@@ -253,7 +253,7 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 		case 'o':	/* octet */
 			if ((o = (octet_t *) argv[argc++]) == 0);
 			if (o && o->len) {
-				n = snprintf(sp, bsize, "%d:", o->len);
+				n = snprintf(sp, bsize, "%d:", (int) o->len);
 				if (n < 0 || (unsigned int) n > bsize)
 					return 0;
 				bsize -= n;
@@ -275,7 +275,7 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 				o = oa[i];
 				if (o->len == 0)
 					continue;
-				n = snprintf(sp, bsize, "%d:", o->len);
+				n = snprintf(sp, bsize, "%dz:", (int) o->len);
 				if (n < 0 || (unsigned int) n > bsize)
 					return 0;
 				bsize -= n;
@@ -297,7 +297,7 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 				o = oarr->arr[i];
 				if (o->len == 0)
 					continue;
-				n = snprintf(sp, bsize, "%d:", o->len);
+				n = snprintf(sp, bsize, "%d:", (int) o->len);
 				if (n < 0 || (unsigned int) n > bsize)
 					return 0;
 				bsize -= n;
@@ -314,7 +314,7 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 		case 'a':	/* atom */
 			if ((s = (char *) argv[argc++]) == 0);
 			if (s && *s) {
-				n = snprintf(sp, bsize, "%d:%s", strlen(s), s);
+				n = snprintf(sp, bsize, "%d:%s", (int) strlen(s), s);
 				if (n < 0 || (unsigned int) n > bsize)
 					return 0;
 				bsize -= n;
@@ -327,7 +327,7 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 				return 0;
 			for (i = 0; arr[i]; i++) {
 				n = snprintf(sp, bsize, "%d:%s",
-					     strlen(arr[i]), arr[i]);
+					     (int) strlen(arr[i]), arr[i]);
 				if (n < 0 || (unsigned int) n > bsize)
 					return 0;
 				bsize -= n;
@@ -453,7 +453,7 @@ sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 		case 'o':	/* octet */
 			o = va_arg(ap, octet_t *);
 			if (o && o->len) {
-				n = snprintf(sp, bsize, "%d:", o->len);
+				n = snprintf(sp, bsize, "%d:", (int) o->len);
 				if (n < 0 || (unsigned int) n > bsize)
 					return 0;
 				bsize -= n;
@@ -474,7 +474,7 @@ sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 					o = oa[i];
 					if (o->len == 0)
 						continue;
-					n = snprintf(sp, bsize, "%d:", o->len);
+					n = snprintf(sp, bsize, "%d:", (int) o->len);
 					if (n < 0 || (unsigned int) n > bsize)
 						return 0;
 					bsize -= n;
@@ -492,7 +492,7 @@ sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 		case 'a':	/* atom */
 			s = va_arg(ap, char *);
 			if (s && *s) {
-				n = snprintf(sp, bsize, "%d:%s", strlen(s), s);
+				n = snprintf(sp, bsize, "%d:%s", (int) strlen(s), s);
 				if (n < 0 || (unsigned int) n > bsize)
 					return 0;
 				bsize -= n;
@@ -505,7 +505,7 @@ sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 			if (arr) {
 				for (i = 0; arr[i]; i++) {
 					n = snprintf(sp, bsize, "%d:%s",
-						     strlen(arr[i]), arr[i]);
+						     (int) strlen(arr[i]), arr[i]);
 					if (n < 0 || (unsigned int) n > bsize)
 						return 0;
 					bsize -= n;
@@ -572,7 +572,7 @@ sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 					o = oarr->arr[i];
 					if ( o == NULL || o->len == 0)
 						continue;
-					n = snprintf(sp, bsize, "%d:", o->len);
+					n = snprintf(sp, bsize, "%d:", (int) o->len);
 					if (n < 0 || (unsigned int) n > bsize)
 						return 0;
 					bsize -= n;

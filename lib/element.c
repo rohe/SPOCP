@@ -41,7 +41,7 @@ element_atom_print( octet_t *oct, element_t *ep)
 
 	if (!ep) return 1;
 
-	sprintf( len, "%d:", av->len );
+	sprintf( len, "%u:", (unsigned int) av->len );
 	
 	if (octcat( oct, len, strlen(len)) != SPOCP_SUCCESS)
 		return 0;;

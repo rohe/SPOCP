@@ -122,9 +122,9 @@ int
 spocp_unix_domain_socket(char *uds)
 {
 	int			fd;
-	struct sockaddr_un	sun_addr;
+	struct sockaddr_un	serv_addr;
 
-	if ((fd = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
+	if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
 		LOG(SPOCP_DEBUG)
 		    traceLog(LOG_ERR,"Unable to create socket: %s\n", strerror(errno));
 		return -1;
@@ -132,17 +132,17 @@ spocp_unix_domain_socket(char *uds)
 
 	unlink(uds);
 
-	memset(&sun_addr, 0, sizeof(struct sockaddr_un));
-	sun_addr.sun_family = AF_UNIX;
-	strcpy(sun_addr.sun_path, uds);
+	memset(&serv_addr, 0, sizeof(struct sockaddr_un));
+	serv_addr.sun_family = AF_UNIX;
+	strcpy(serv_addr.sun_path, uds);
 
-	if (bind(fd, (SA *) & sun_addr, sizeof(sun_addr)) == -1) {
+	if (bind(fd, (SA *) &serv_addr, sizeof(serv_addr)) < 0) {
 		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unable to bind to socket: %s",
 					strerror(errno));
 		return -1;
 	}
 
-	if (listen(fd, LISTENQ) == -1) {
+	if (listen(fd, LISTENQ) < 0) {
 		LOG(SPOCP_ERR)
 		    traceLog(LOG_ERR,"Unable to start listening on socket: %s",
 			     strerror(errno));

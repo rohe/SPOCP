@@ -74,12 +74,12 @@ iobuf_insert(spocp_iobuf_t * io, char *where, char *src, int srclen)
 spocp_result_t
 iobuf_add_len_tag( spocp_iobuf_t *io )
 {
-	size_t		len = io->w - io->p ;
+	unsigned int	len = io->w - io->p ;
 	char 		ldef[16];
 	int 		nr;
 	spocp_result_t	sr;
 
-	nr = snprintf(ldef, 16, "%d:", len);
+	nr = snprintf(ldef, 16, "%u:", len);
 
 	sr = iobuf_insert(io, io->p, ldef, nr);
 	if( sr == SPOCP_SUCCESS) 
@@ -260,7 +260,7 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 		if ((rc = iobuf_resize(io, l - io->left, 0)) != SPOCP_SUCCESS)
 			return rc;
 
-	snprintf(lenfield, 8, "%d:", s->len);
+	snprintf(lenfield, 8, "%u:", (unsigned int) s->len);
 
 	strcpy(io->w, lenfield);
 	io->w += lf;
