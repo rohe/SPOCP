@@ -91,7 +91,7 @@ static int base64_decode( char *str )
 
 /*--------------------------------------------------------------------------------*/
 
-char *get_more( iobuf_t *io ) 
+static char *get_more( iobuf_t *io ) 
 {
   char *r ;
   
@@ -176,7 +176,7 @@ static int de_escape( char *str, int len )
 
 /*--------------------------------------------------------------------------------*/
 
-octet_t *oct_cpy( octet_t *oct, char *val, int size, int len )
+static octet_t *oct_cpy( octet_t *oct, char *val, int size, int len )
 {
   oct->val = val ;
   oct->len = len ;
@@ -187,7 +187,7 @@ octet_t *oct_cpy( octet_t *oct, char *val, int size, int len )
 
 /*--------------------------------------------------------------------------------*/
 
-char *oct2strdup( octet_t *op, char ec )
+static char *oct2strdup( octet_t *op, char ec )
 {
   char          c, *str, *cp, *sp ;
   unsigned char uc ;
@@ -226,7 +226,7 @@ char *oct2strdup( octet_t *op, char ec )
 
 /*--------------------------------------------------------------------------------*/
 
-octet_t *get_token( octet_t *oct, iobuf_t *io )
+static octet_t *get_token( octet_t *oct, iobuf_t *io )
 {
   char *cp, *res = 0 ;
   int  len = 0 , sofar = 0 ;
@@ -255,7 +255,7 @@ octet_t *get_token( octet_t *oct, iobuf_t *io )
   return oct ;
 }
 
-octet_t *get_base64( octet_t *oct, iobuf_t *io )
+static octet_t *get_base64( octet_t *oct, iobuf_t *io )
 {
   char *cp, *res = 0 ;
   int  len, sofar = 0, done = 0 ;
@@ -296,7 +296,7 @@ octet_t *get_base64( octet_t *oct, iobuf_t *io )
   return oct ;
 }
 
-octet_t *get_hex( octet_t *oct, iobuf_t *io )
+static octet_t *get_hex( octet_t *oct, iobuf_t *io )
 {
   char         *cp, *res = 0, *rp ;
   unsigned char c ;
@@ -360,7 +360,7 @@ octet_t *get_hex( octet_t *oct, iobuf_t *io )
 #define SLASH   2
 #define HEXDUO  4
 
-octet_t *get_quote( octet_t *oct, iobuf_t *io )
+static octet_t *get_quote( octet_t *oct, iobuf_t *io )
 {
   char    *cp, *res = 0 ;
   int      len, sofar = 0 ;
@@ -444,7 +444,7 @@ static int skip_whites( iobuf_t *io )
   return 1 ;
 }
   
-ptree_t *get_list( iobuf_t *io ) 
+static ptree_t *get_list( iobuf_t *io ) 
 {
   ptree_t *ptp, *npt, *cpt = 0 ;
 

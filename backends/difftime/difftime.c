@@ -65,7 +65,7 @@ pt > gt && pt > gt + delta
  
  */
 
-time_t diff2seconds( octet_t *arg ) 
+static time_t diff2seconds( octet_t *arg ) 
 {
   time_t n, days = 0, sec = 0 ;
   char   *s = arg->val ;
