@@ -560,7 +560,6 @@ static char *bcname_make( octet_t *name )
  * ---------------------------------------------------------------------- */
 
 /*!
- * \fn int bcspec_is( octet_t *spec ) 
  * Is this a proper specification of a boundary condition ?
  * \param spec A pointer to the boundary condition specification
  * \return TRUE is true or FALSE if not
@@ -580,7 +579,6 @@ int bcspec_is( octet_t *spec )
 }
 
 /*!
- * \fn bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data ) 
  * \brief Adds a boundary condition definition to the list of others
  * \param db A link to the internal database 
  * \param name The name of the boundary condition specification
@@ -631,18 +629,18 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
     }
   }
 
-  /* create a bcond name that MUST differ from rule ids
-     Since rule ids are SHA1 hashes, it consists of lower case letters a-f and
-     numbers. So making the bcond name in the persistent store start with
-     "BCOND:" will make it absolutely diffrent.
-   */
+  if( db->dback ) {
+    /* create a bcond name that MUST differ from rule ids
+       Since rule ids are SHA1 hashes, it consists of lower case letters a-f and
+       numbers. So making the bcond name in the persistent store start with
+       "BCOND:" will make it absolutely diffrent.
+     */
 
-  oct_assign( &tmp, bcd->name ) ;
-
-  bcname = bcname_make( &tmp ) ;
-
-  dback_save( db->dback, db->dback->conhandle, bcname, data, 0, 0 ) ; 
-  free( bcname ) ;
+    oct_assign( &tmp, bcd->name ) ;
+    bcname = bcname_make( &tmp ) ;
+    dback_save( db->dback, db->dback->conhandle, bcname, data, 0, 0 ) ; 
+    free( bcname ) ;
+  }
 
   bcd->exp = bce ;
 
@@ -660,7 +658,6 @@ bcdef_t *bcdef_add( db_t *db, octet_t *name, octet_t *data )
 
 /* ---------------------------------------------------------------------- */
 /*!
- * \fn spocp_result_t bcdef_del( db_t *db, octet_t *name ) 
  * \brief Remove a boundary condition from the internal database. 
  * A boundary condition can not be removed if there is rules that uses it!
  * \param db A pointer to the internal database
@@ -695,7 +692,6 @@ spocp_result_t bcdef_del( db_t *db, octet_t *name )
 
 /* ---------------------------------------------------------------------- */
 /*!
- * \fn spocp_result_t bcdef_replace( db_t *db, octet_t *name, octet_t *data ) 
  * \brief Replaces on boundary condition with another without changing the name.
  * \param db A pointer to the internal database
  * \param name The name of the boundary condition
@@ -776,7 +772,6 @@ bcdef_t *bcdef_get( db_t *db, octet_t *o, spocp_result_t *rc )
 
 /* ---------------------------------------------------------------------- */
 /*!
- * \fn spocp_result_t bcond_check( element_t *ep, index_t *id, octarr_t **oa )
  * \brief Checks whether a boundary condition is true or false. If the backend 
  * that does the evaluation return true it might be accompanied by a dynamic
  * blob.
@@ -824,7 +819,6 @@ spocp_result_t bcond_check( element_t *ep, index_t *id, octarr_t **oa )
 
 /* ---------------------------------------------------------------------- */
 /*!
- * \fn varr_t *bcond_users( db_t *db, octet_t *bcname )
  * \brief A niffty function that allows you to find  all rules that are dependent
  * on a specific boundary condition.
  * \param db A pointer to the internal database

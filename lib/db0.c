@@ -736,21 +736,21 @@ void ruleinst_free( ruleinst_t *rt )
   }
 }
 
+/*
 static int uid_match( ruleinst_t *rt, char *uid )
 {
-  /* traceLog( "%s <> %s", rt->uid, uid ) ; */
+  * traceLog( "%s <> %s", rt->uid, uid ) ; *
 
   return strcmp( rt->uid, uid ) ;
 }
 
-/* --------- ruleinst functions ----------------------------- */
-
-/*
 static int P_match_uid( void  *vp, void *pattern )
 {
   return uid_match( (ruleinst_t *) vp, (char *) pattern ) ;
 }
 */
+
+/* --------- ruleinst functions ----------------------------- */
 
 static void P_ruleinst_free( void *vp )
 {
@@ -855,7 +855,8 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
     }
   }
 
-  dback_save( db->dback, db->dback->conhandle, rt->uid, rule, blob, bcondname ) ; 
+  if( db->dback )
+    dback_save( db->dback, db->dback->conhandle, rt->uid, rule, blob, bcondname ) ; 
 
   rbt_insert( ri->rules, (item_t) rt ) ;
 
@@ -1084,6 +1085,7 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd
   return rc ;
 }
 
+/*
 static int ruleinst_print( ruleinst_t *ri )
 {
   char *str ;
@@ -1103,6 +1105,7 @@ static int ruleinst_print( ruleinst_t *ri )
 
   return 0 ;
 }
+*/
 
 int ruleinfo_print( ruleinfo_t *r )
 {
