@@ -1,5 +1,5 @@
 /***************************************************************************
-                           n_srv.c  -  description
+                           srv.c  -  description
                              -------------------
     begin                : Sat Oct 12 2002
     copyright            : (C) 2002 by Umeå University, Sweden
@@ -72,69 +72,69 @@ char *rc_unwilling               = "3:51020:Unwilling to perform" ;
 void add_response( spocp_iobuf_t *out, int rc )
 {
   if( rc == SPOCP_SUCCESS ) {
-    add_to_iobuf( out, rc_ok ) ;
+    iobuf_add( out, rc_ok ) ;
   }
   else if( rc == SPOCP_DENIED ) {
-    add_to_iobuf( out, rc_denied ) ;
+    iobuf_add( out, rc_denied ) ;
   }
   else if( rc == SPOCP_CLOSE ) {
-    add_to_iobuf( out, rc_bye ) ;
+    iobuf_add( out, rc_bye ) ;
   }
   else if( rc == SPOCP_EXISTS ) {
     traceLog( "ERR: Already exists" ) ;
-    add_to_iobuf( out, rc_exists ) ;
+    iobuf_add( out, rc_exists ) ;
   }
   else if( rc == SPOCP_OPERATIONSERROR ) {
     traceLog( "ERR: Operation error" ) ;
-    add_to_iobuf( out, rc_operation_error ) ;
+    iobuf_add( out, rc_operation_error ) ;
   }
   else if( rc == SPOCP_PROTOCOLERROR ) {
     traceLog( "ERR: Protocol error" ) ;
-    add_to_iobuf( out, rc_protocol_error ) ;
+    iobuf_add( out, rc_protocol_error ) ;
   }
   else if( rc == SPOCP_UNKNOWNCOMMAND ) {
     traceLog( "ERR: Unknown command" ) ;
-    add_to_iobuf( out, rc_unknown_command ) ;
+    iobuf_add( out, rc_unknown_command ) ;
   }
   else if( rc == SPOCP_SYNTAXERROR ) {
     traceLog( "ERR: Syntax error" ) ;
-    add_to_iobuf( out, rc_syntax_error ) ;
+    iobuf_add( out, rc_syntax_error ) ;
   }
   else if( rc == SPOCP_TIMELIMITEXCEEDED ) {
     traceLog( "ERR: Timelimit exceeded" ) ;
-    add_to_iobuf( out, rc_timelimitexceeded ) ;
+    iobuf_add( out, rc_timelimitexceeded ) ;
   }
   else if( rc == SPOCP_SIZELIMITEXCEEDED ) {
     traceLog( "ERR: Sizelimit exceeded" ) ;
-    add_to_iobuf( out, rc_sizelimitexceeded ) ;
+    iobuf_add( out, rc_sizelimitexceeded ) ;
   }
   else if( rc == SPOCP_UNAVAILABLE ) {
     traceLog( "ERR: Unknown ID" ) ;
-    add_to_iobuf( out, rc_unknown_id ) ;
+    iobuf_add( out, rc_unknown_id ) ;
   }
   else if( rc == SPOCP_MISSING_ARG) {
     traceLog( "ERR: Argument error" ) ;
-    add_to_iobuf( out, rc_argument_err ) ;
+    iobuf_add( out, rc_argument_err ) ;
   }
   else if( rc == SPOCP_MISSING_CHAR ) {
     traceLog( "ERR: Missing bytes in input" ) ;
-    add_to_iobuf( out, rc_input_error ) ;
+    iobuf_add( out, rc_input_error ) ;
   }
   else if( rc == SPOCP_OTHER ) {
     traceLog( "ERR: Other error" ) ;
-    add_to_iobuf( out, rc_other ) ;
+    iobuf_add( out, rc_other ) ;
   }
   else if( rc == SPOCP_BUF_OVERFLOW ) {
     traceLog( "ERR: Buffer overflow" ) ;
-    add_to_iobuf( out, rc_operation_error ) ;
+    iobuf_add( out, rc_operation_error ) ;
   }
   else if( rc == SPOCP_UNIMPLEMENTED ) {
     traceLog( "ERR: unimplemented command" ) ;
-    add_to_iobuf( out, rc_unimplemented ) ;
+    iobuf_add( out, rc_unimplemented ) ;
   }
   else {
     traceLog( "ERR: errortype [%d]", rc ) ;
-    add_to_iobuf( out, rc_operation_error ) ;
+    iobuf_add( out, rc_operation_error ) ;
   }
 }
 
@@ -146,9 +146,9 @@ static int sexp_err( conn_t *conn, int l )
   else 
     traceLog( "Syntax error in S-EXP ") ; 
 
-  shift_buffer( conn->in ) ;
+  iobuf_shift( conn->in ) ;
 
-  add_to_iobuf( conn->out, rc_syntax_error ) ;
+  iobuf_add( conn->out, rc_syntax_error ) ;
   send_results( conn ) ;
 
   return -1 ;
@@ -197,7 +197,7 @@ spocp_result_t com_starttls( conn_t *conn )
 
 #ifndef HAVE_LIBSSL
 
-  add_to_iobuf( out, rc_not_supported ) ;
+  iobuf_add( out, rc_not_supported ) ;
   LOG( SPOCP_ERR ) traceLog("SSL not supported") ;
   wr = send_results( conn ) ;
   return SPOCP_CLOSE ;
@@ -206,10 +206,10 @@ spocp_result_t com_starttls( conn_t *conn )
 
   if( conn->tls >= 0) {
     LOG( SPOCP_ERR ) traceLog("SSL already in operation") ;
-    add_to_iobuf( out, rc_in_operation ) ;
+    iobuf_add( out, rc_in_operation ) ;
   }
   else {
-    if(( r = operation_access( conn )) == SPOCP_SUCCESS ) add_to_iobuf( out, rc_ok ) ;
+    if(( r = operation_access( conn )) == SPOCP_SUCCESS ) iobuf_add( out, rc_ok ) ;
     else add_response( conn->out, r ) ;
   }
 
@@ -217,7 +217,7 @@ spocp_result_t com_starttls( conn_t *conn )
 
   if( r == SPOCP_SUCCESS ) {
     /* what ever is in the input buffert must not be used anymore */
-    clear_buffers( conn ) ;
+    conn_iobuf_clear( conn ) ;
 
     /* If I couldn't create a TLS connection fail completely */
     if((r = tls_start( conn, rs )) != SPOCP_SUCCESS ) {
@@ -269,6 +269,8 @@ spocp_result_t com_logout( conn_t *conn )
 
   add_response( conn->out, r ) ;
     
+  conn->stop = 1 ;
+
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
   return r ;
@@ -400,7 +402,7 @@ spocp_result_t com_query( conn_t *conn )
 
   LOG( SPOCP_INFO ) {
     str = oct2strdup( conn->oparg->arr[0], '%' ) ;
-    traceLog("QUERY:%s", str) ;
+    traceLog("[%d]QUERY:%s", conn->fd, str) ;
     free( str ) ;
   }
 
@@ -440,7 +442,7 @@ spocp_result_t com_query( conn_t *conn )
       free( str ) ;
       r = SPOCP_DENIED ;
     }
-    else if(( r = get_pathname( trs, buf, 1024 )) == SPOCP_SUCCESS ) {
+    else if(( r = pathname_get( trs, buf, 1024 )) == SPOCP_SUCCESS ) {
   
       DEBUG( SPOCP_DPARSE ) traceLog( "Matching against ruleset \"%s\"", buf ) ;
 
@@ -454,8 +456,14 @@ spocp_result_t com_query( conn_t *conn )
 
   if( r == SPOCP_SUCCESS && on ) {
     while(( oct = octarr_pop( on ))) {
-      add_to_iobuf( out, multiline) ;
-      add_bytestr_to_iobuf( out, oct ) ;
+      if( iobuf_add( out, multiline) != SPOCP_SUCCESS ) {
+        r = SPOCP_OPERATIONSERROR ;
+        break ;
+      }
+      if( iobuf_add_octet( out, oct ) != SPOCP_SUCCESS ) {
+        r = SPOCP_OPERATIONSERROR ;
+        break ;
+      }
 
       str = oct2strdup( oct, '%' ) ;
       traceLog("returns \"%s\"", str) ;
@@ -463,6 +471,11 @@ spocp_result_t com_query( conn_t *conn )
 
       if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
       oct_free( oct ) ;
+
+      /*  wait for the master to empty the queue */
+      pthread_mutex_lock( &conn->out->lock ) ;
+      pthread_cond_wait( &conn->out->empty, &conn->out->lock ) ;
+      pthread_mutex_unlock( &conn->out->lock ) ;
     }
 
     octarr_free( on ) ;
@@ -470,7 +483,7 @@ spocp_result_t com_query( conn_t *conn )
 
   add_response( out, r ) ;
     
-  shift_buffer( conn->in ) ;
+  iobuf_shift( conn->in ) ;
   oparg_clear( conn ) ;
 
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
@@ -684,7 +697,7 @@ spocp_result_t com_add( conn_t *conn )
   pthread_mutex_unlock( &trs->transaction ) ;
     
   while( conn->in->r < conn->in->w && WHITESPACE( *conn->in->r )) conn->in->r++ ;
-  shift_buffer( conn->in ) ;
+  iobuf_shift( conn->in ) ;
    
 ADD_DONE: 
   add_response( out, rc ) ;
@@ -746,8 +759,8 @@ spocp_result_t com_list( conn_t *conn )
         free( str ) ;
       }
 
-      if((rc = add_to_iobuf( out, multiline )) != SPOCP_SUCCESS ) break ;
-      if((rc = add_bytestr_to_iobuf( out, op )) != SPOCP_SUCCESS ) break ;
+      if((rc = iobuf_add( out, multiline )) != SPOCP_SUCCESS ) break ;
+      if((rc = iobuf_add_octet( out, op )) != SPOCP_SUCCESS ) break ;
       if(( wr = send_results( conn )) == 0 ) {
         r = SPOCP_CLOSE ;
         break ;
@@ -969,7 +982,7 @@ int native_server( conn_t *con )
   traceLog( "Running native server" ) ;
 
 AGAIN:
-  while( wr && (n = spocp_io_read( con )) >= 0 ) {
+  while( wr && (n = spocp_conn_read( con )) >= 0 ) {
 
     time( &now ) ;
 
@@ -1005,13 +1018,8 @@ AGAIN:
           add_response( out, r ) ;
           wr = send_results( con ) ;
         }
-/*
-        else if( r == SPOCP_SYNTAXERROR ) { * totally screwed up, reset and start again *
-          clear_buffers( con ) ;
-        }
-*/
 
-        if( in->r == in->w ) flush_io_buffer( in ) ;
+        if( in->r == in->w ) iobuf_flush( in ) ;
       }
       else if( r == SPOCP_MISSING_CHAR ) {
         traceLog( "get more input" ) ;
@@ -1025,14 +1033,14 @@ AGAIN:
             add_response( out, r ) ;
             wr = send_results( con ) ;
             oparg_clear( con ) ;
-            clear_buffers( con ) ;
+            conn_iobuf_clear( con ) ;
           }
         }
         goto AGAIN ;
       }
       else {
         oparg_clear( con ) ;
-        clear_buffers( con ) ;
+        conn_iobuf_clear( con ) ;
       }
     }
     /* reset the timeout counter after the server is done with the operations */
@@ -1040,7 +1048,7 @@ AGAIN:
   }
 
 clearout:
-  clear_buffers( con ) ;
+  conn_iobuf_clear( con ) ;
   DEBUG( SPOCP_DSRV ) traceLog( "(%d) Closing the connection", con->fd ) ;
 
   return 0 ; 
