@@ -53,9 +53,11 @@ int spocp_writen( conn_t *ct, char *str, size_t n )
     oct.val = str ;
     oct.len = n ;
 
+   /*
     tmp = oct2strdup( &oct, '\\' ) ;
     traceLog( "REPLY: [%s]", tmp ) ;
     free( tmp ) ;
+   */
 
     return( n ) ;
   }
@@ -408,7 +410,7 @@ int send_results( conn_t *conn )
 
   len += nr ;
 
-  LOG( SPOCP_DEBUG ) {
+  LOG( SPOCP_INFO ) {
     *out->w = '\0' ; 
     traceLog( "SEND_RESULT: [%s]", out->r) ;
   }
@@ -459,5 +461,31 @@ char *next_line( conn_t *conn )
   io->r = s ;
 
   return b ;
+}
+
+void con_reset( conn_t *con ) 
+{
+  if( con ) {
+    if( con->subjectDN ) {
+      free( con->subjectDN ) ;
+      con->subjectDN = 0 ;
+    }
+    if( con->issuerDN ) {
+      free( con->issuerDN ) ;
+      con->issuerDN = 0 ;
+    }
+    if( con->cipher ) {
+      free( con->cipher ) ;
+      con->cipher = 0 ;
+    }
+    if( con->ssl_vers ){
+      free( con->ssl_vers ) ;
+      con->ssl_vers = 0 ;
+    }
+    if( con->transpsec ){
+      free( con->transpsec ) ;
+      con->transpsec = 0 ;
+    }
+  }
 }
 
