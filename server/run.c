@@ -470,7 +470,8 @@ spocp_srv_run(srv_t * srv)
 				 */
 				if (n == 0) {	/* connection probably
 						 * terminated by other side */
-					conn->stop = 1;
+					/* Are there a better check ? */
+					/*conn->stop = 1;*/
 					continue;
 				}
 				if (XYZ)
