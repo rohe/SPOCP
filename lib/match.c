@@ -395,7 +395,8 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 		} while (ep->next == 0 && ju->item[SPOC_ENDOFLIST]);
 
 		if (!ep->memberof) {	/* reached the end */
-			jp = ending(ju, ep, comp);
+			if ((jp = ending(ju, ep, comp)))
+				return jp;
 		}
 	}
 
