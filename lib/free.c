@@ -19,13 +19,8 @@
 #include <func.h>
 #include <wrappers.h>
 
-void junc_free( junc_t *juncp ) ;
-
 void octet_free( octet_t *op ) ;
 void boundary_free( boundary_t *bp ) ;
-void bucket_free( buck_t *bp )  ;
-void hashtable_free( phash_t *hp )  ;
-void ssn_free( ssn_t *ssp ) ;
 void branch_free( branch_t *bp ) ;
 
 /* ======================================================== */
