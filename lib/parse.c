@@ -151,7 +151,7 @@ get_more(spocp_charbuf_t * io)
 
 	do {
 		r = fgets(io->str, io->size, io->fp);
-	} while (r && *r == '#');
+	} while (r && *r == '#'); /* skip strings that starts with '#' */
 
 	if( r ) io->start = io->str;
 
@@ -195,7 +195,7 @@ rm_sp(char *str, int len)
 }
 
 /*--------------------------------------------------------------------------------*/
-
+/*
 static int
 de_escape( char *str, int len )
 {
@@ -208,7 +208,7 @@ de_escape( char *str, int len )
 
   return tmp.len ;
 }
-
+*/
 /*--------------------------------------------------------------------------------*/
 
 static octet_t *
@@ -453,7 +453,7 @@ get_quote( spocp_charbuf_t * io)
 	char           *cp, *res = 0;
 	int             len, sofar = 0;
 	int             expect = 0, done = 0;
-	octet_t 	*oct;
+	octet_t 	*oct = 0;
 
 	do {
 		for (cp = io->start; *cp; cp++) {
@@ -510,18 +510,17 @@ get_quote( spocp_charbuf_t * io)
 	}
 
 	if (res) {
+		oct = str2oct( res, 1 );
 		/*
 		 * de escape 
 		 */
-		sofar = de_escape(res, sofar);
+		oct_de_escape(oct);
 	}
 
-	if (res == 0) {
+	if (res == 0 || oct->len == 0) { /* trusting the lazy evaluation here */
 		traceLog(LOG_ERR,"Empty string encountered");
 		return 0;	/* not allowed */
 	}
-
-	oct = str2oct( res, 1 );
 
 	return oct;
 }
