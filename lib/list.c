@@ -541,13 +541,3 @@ spocp_result_t get_matching_rules( db_t *db, octarr_t *pat, octarr_t *oa, char *
 
   return SPOCP_SUCCESS ;
 }
-
-__attribute__((unused)) static char **get_by_uid( ruleinfo_t *ri, char *pat )
-{
-  char **res = 0 ;
- 
-  return res ;
-}
-
-/********************************************************************/
-
