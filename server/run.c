@@ -10,7 +10,7 @@ RCSID("$Id$");
 
 typedef struct sockaddr SA;
 
-#define XYZ 1
+#define XYZ 0
 
 /*
  * ---------------------------------------------------------------------- 
@@ -113,9 +113,9 @@ spocp_srv_run(srv_t * srv)
 		int             f, a;
 		f = number_of_free(srv->connections);
 		a = number_of_active(srv->connections);
-		traceLog("Active: %d, Free: %d", a, f);
+		DEBUG(SPOCP_DSRV) traceLog("Active: %d, Free: %d", a, f);
 	} else {
-		traceLog("NO connection pool !!!");
+		DEBUG(SPOCP_DSRV) traceLog("NO connection pool !!!");
 	}
 
 	while (!stop_loop) {
@@ -246,7 +246,7 @@ spocp_srv_run(srv_t * srv)
 
 		if (FD_ISSET(srv->listen_fd, &rfds)) {
 
-			if (1)
+			if (XYZ)
 				timestamp("New connection");
 
 			len = sizeof(client_addr);
@@ -360,7 +360,7 @@ spocp_srv_run(srv_t * srv)
 					pe++;
 				}
 			}
-			if (1)
+			if (XYZ)
 				timestamp("Done with new connection setup");
 		}
 
@@ -423,7 +423,7 @@ spocp_srv_run(srv_t * srv)
 					timestamp("read con");
 
 				res = get_operation(conn, &operation);
-				if (1)
+				if (XYZ)
 					traceLog("Getops returned %d", res);
 				if (res != SPOCP_SUCCESS)
 					continue;

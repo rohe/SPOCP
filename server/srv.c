@@ -1166,7 +1166,7 @@ get_operation(conn_t * conn, proto_op ** oper)
 	if ((r = get_str(&arg, &wo)) != SPOCP_SUCCESS)
 		return r;
 
-        traceLog("OpLen: %d", wo.len ) ;
+        DEBUG(SPOCP_DSRV) traceLog("OpLen: %d", wo.len ) ;
         octln( &oa, &wo) ;
 
 	/*

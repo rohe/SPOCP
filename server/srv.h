@@ -296,13 +296,13 @@ int  spocp_send_results( conn_t *conn ) ;
 
 /* iobuf.c */
 
-spocp_result_t iobuf_resize( spocp_iobuf_t *io, int increase ) ;
+spocp_iobuf_t *iobuf_new( size_t size ) ;
+spocp_result_t iobuf_resize( spocp_iobuf_t *io, int increase, int lock ) ;
 spocp_result_t iobuf_add( spocp_iobuf_t *io, char *s ) ;
 spocp_result_t iobuf_add_octet( spocp_iobuf_t *io, octet_t *o ) ;
-spocp_iobuf_t *iobuf_new( size_t size ) ;
+spocp_result_t iobuf_insert( spocp_iobuf_t *io, char *where, char *what, int len ) ;
 void           iobuf_shift( spocp_iobuf_t *io ) ;
 void           iobuf_flush( spocp_iobuf_t *io ) ;
-void           iobuf_insert( spocp_iobuf_t *io, int where, char *what, int len ) ;
 int            iobuf_content( spocp_iobuf_t *io ) ;
 void           conn_iobuf_clear( conn_t * ) ;
 
