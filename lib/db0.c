@@ -1,10 +1,10 @@
 
 /***************************************************************************
-                          db0.c  -  description
-                             -------------------
-    begin                : Sat Oct 12 2002
-    copyright            : (C) 2002 by Umeå University, Sweden
-    email                : roland@catalogix.se
+			  db0.c  -  description
+			     -------------------
+    begin		: Sat Oct 12 2002
+    copyright	    : (C) 2002 by Umeå University, Sweden
+    email		: roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
    of this package for details.
@@ -28,30 +28,30 @@
 
 static junc_t *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
 			    ruleinst_t * ri, int n);
-junc_t         *rm_next(junc_t * ap, branch_t * bp);
-char           *set_item_list(junc_t * dv);
-junc_t         *atom_add(branch_t * bp, atom_t * ap);
-junc_t         *extref_add(branch_t * bp, atom_t * ap);
-junc_t         *list_end(junc_t * arr);
-junc_t         *list_add(plugin_t * pl, branch_t * bp, list_t * lp,
+junc_t	 *rm_next(junc_t * ap, branch_t * bp);
+char	   *set_item_list(junc_t * dv);
+junc_t	 *atom_add(branch_t * bp, atom_t * ap);
+junc_t	 *extref_add(branch_t * bp, atom_t * ap);
+junc_t	 *list_end(junc_t * arr);
+junc_t	 *list_add(plugin_t * pl, branch_t * bp, list_t * lp,
 			 ruleinst_t * ri);
-junc_t         *range_add(branch_t * bp, range_t * rp);
-junc_t         *prefix_add(branch_t * bp, atom_t * ap);
-junc_t         *rule_close(junc_t * ap, ruleinst_t * ri);
+junc_t	 *range_add(branch_t * bp, range_t * rp);
+junc_t	 *prefix_add(branch_t * bp, atom_t * ap);
+junc_t	 *rule_close(junc_t * ap, ruleinst_t * ri);
 
 static ruleinst_t *ruleinst_new(octet_t * rule, octet_t * blob, char *bcname);
 
 ruleinst_t     *ruleinst_dup(ruleinst_t * ri);
-void            ruleinst_free(ruleinst_t * ri);
+void	    ruleinst_free(ruleinst_t * ri);
 
 /*
  * ------------------------------------------------------------ 
  */
 
-char            item[NTYPES + 1];
+char	    item[NTYPES + 1];
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -60,10 +60,10 @@ char            item[NTYPES + 1];
  * Returns: 
  */
 
-junc_t         *
+junc_t	 *
 junc_new()
 {
-	junc_t         *ap;
+	junc_t	 *ap;
 
 	ap = (junc_t *) Calloc(1, sizeof(junc_t));
 
@@ -71,7 +71,7 @@ junc_new()
 }
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -80,7 +80,7 @@ junc_new()
  * Returns: 
  */
 
-junc_t         *
+junc_t	 *
 branch_add(junc_t * ap, branch_t * bp)
 {
 	if (ap == 0)
@@ -93,7 +93,7 @@ branch_add(junc_t * ap, branch_t * bp)
 }
 
 /************************************************************
-*                                                   &P_match_uid        *
+*						   &P_match_uid	*
 ************************************************************/
 /*
  * 
@@ -102,12 +102,12 @@ branch_add(junc_t * ap, branch_t * bp)
  * Returns: 
  */
 
-junc_t         *
+junc_t	 *
 junc_dup(junc_t * jp, ruleinfo_t * ri)
 {
-	junc_t         *new;
+	junc_t	 *new;
 	branch_t       *nbp, *obp;
-	int             i, j;
+	int	     i, j;
 
 	if (jp == 0)
 		return 0;
@@ -168,7 +168,7 @@ junc_dup(junc_t * jp, ruleinfo_t * ri)
 }
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -177,10 +177,10 @@ junc_dup(junc_t * jp, ruleinfo_t * ri)
  * Returns: 
  */
 
-char           *
+char	   *
 set_item_list(junc_t * dv)
 {
-	int             i;
+	int	     i;
 
 	for (i = 0; i < NTYPES; i++) {
 		if (dv && dv->item[i])
@@ -195,7 +195,7 @@ set_item_list(junc_t * dv)
 }
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -205,7 +205,7 @@ set_item_list(junc_t * dv)
  */
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -214,10 +214,10 @@ set_item_list(junc_t * dv)
  * Returns: 
  */
 
-junc_t         *
+junc_t	 *
 atom_add(branch_t * bp, atom_t * ap)
 {
-	buck_t         *bucket = 0;
+	buck_t	 *bucket = 0;
 
 	if (bp->val.atom == 0)
 		bp->val.atom = phash_new(3, 50);
@@ -261,10 +261,10 @@ any_add(branch_t * bp)
 
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 
-varr_t         *
+varr_t	 *
 varr_ruleinst_add(varr_t * va, ruleinst_t * ju)
 {
 	return varr_add(va, (void *) ju);
@@ -283,7 +283,7 @@ varr_ruleinst_nth(varr_t * va, int n)
 }
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -292,7 +292,7 @@ varr_ruleinst_nth(varr_t * va, int n)
  * Returns: 
  */
 
-junc_t         *
+junc_t	 *
 list_end(junc_t * arr)
 {
 	branch_t       *db;
@@ -317,7 +317,7 @@ list_end(junc_t * arr)
 }
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -326,11 +326,11 @@ list_end(junc_t * arr)
  * Returns: 
  */
 
-junc_t         *
+junc_t	 *
 list_add(plugin_t * pl, branch_t * bp, list_t * lp, ruleinst_t * ri)
 {
 	element_t      *elp;
-	junc_t         *jp;
+	junc_t	 *jp;
 
 	if (bp->val.list == 0) {
 		jp = bp->val.list = junc_new();
@@ -351,14 +351,14 @@ list_add(plugin_t * pl, branch_t * bp, list_t * lp, ruleinst_t * ri)
 }
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 
 static void
 list_clean(junc_t * jp, list_t * lp)
 {
 	element_t      *ep = lp->head, *next;
-	buck_t         *buck;
+	buck_t	 *buck;
 	branch_t       *bp;
 
 	for (; ep; ep = next) {
@@ -396,7 +396,7 @@ list_clean(junc_t * jp, list_t * lp)
 }
 
 /************************************************************
-*                                                           *
+*							   *
 ************************************************************/
 /*
  * 
@@ -405,11 +405,11 @@ list_clean(junc_t * jp, list_t * lp)
  * Returns: 
  */
 
-junc_t         *
+junc_t	 *
 range_add(branch_t * bp, range_t * rp)
 {
-	int             i = rp->lower.type & 0x07;
-	junc_t         *jp;
+	int	     i = rp->lower.type & 0x07;
+	junc_t	 *jp;
 
 	if (bp->val.range[i] == 0) {
 		bp->val.range[i] = sl_init(4);
@@ -421,7 +421,7 @@ range_add(branch_t * bp, range_t * rp)
 }
 
 /************************************************************
-*            adds a prefix to a prefix branch               *
+*	    adds a prefix to a prefix branch	       *
 ************************************************************/
 /*
  * 
@@ -430,7 +430,7 @@ range_add(branch_t * bp, range_t * rp)
  * Returns: pointer to next node in the tree 
  */
 
-junc_t         *
+junc_t	 *
 prefix_add(branch_t * bp, atom_t * ap)
 {
 	/*
@@ -440,7 +440,7 @@ prefix_add(branch_t * bp, atom_t * ap)
 }
 
 /************************************************************
-*            adds a suffix to a suffix branch               *
+*	    adds a suffix to a suffix branch	       *
 ************************************************************/
 /*
  * 
@@ -459,7 +459,7 @@ suffix_add(branch_t * bp, atom_t * ap)
 }
 
 /************************************************************
-*      Is this the last element in a S-expression ?         *
+*      Is this the last element in a S-expression ?	 *
 ************************************************************/
 /*
  * assumes list as most basic unit
@@ -475,7 +475,7 @@ suffix_add(branch_t * bp, atom_t * ap)
  */
 
 /************************************************************
-*           Adds end-of-rule marker to the tree             *
+*	   Adds end-of-rule marker to the tree	     *
 ************************************************************/
 /*
  * 
@@ -515,7 +515,7 @@ rule_end(junc_t * ap, ruleinst_t * ri)
 }
 
 /************************************************************
-*           Adds end-of-list marker to the tree             *
+*	   Adds end-of-list marker to the tree	     *
 ************************************************************/
 /*
  * 
@@ -527,9 +527,9 @@ rule_end(junc_t * ap, ruleinst_t * ri)
  */
 
 static junc_t  *
-list_close(junc_t * ap, element_t * ep, ruleinst_t * ri, int *eor)
+list_close(junc_t * ap, element_t **epp, ruleinst_t * ri, int *eor)
 {
-	element_t      *parent;
+	element_t      *parent, *ep = *epp;
 
 	do {
 		ap = list_end(ap);
@@ -544,6 +544,7 @@ list_close(junc_t * ap, element_t * ep, ruleinst_t * ri, int *eor)
 		ep = parent;
 	} while (ep->type == SPOC_LIST && ep->next == 0 && ep->memberof != 0);
 
+	*epp = parent;
 	if (parent->memberof == 0) {
 		rule_end(ap, ri);
 		*eor = 1;
@@ -556,23 +557,30 @@ list_close(junc_t * ap, element_t * ep, ruleinst_t * ri, int *eor)
 static junc_t  *
 add_next(plugin_t * plugin, junc_t * jp, element_t * ep, ruleinst_t * ri)
 {
-	int             eor = 0;
+	int	     eor = 0;
 
-	if (ep->next)
+	if (ep->next) {
+		/* traceLog( LOG_DEBUG, "next exists"); */
 		jp = element_add(plugin, jp, ep->next, ri, 1);
+	}
 	else if (ep->memberof) {
 		/*
 		 * if( ep->memberof->type == SPOC_SET ) ; 
 		 */
 		if (ep->type != SPOC_LIST)	/* a list never closes itself */
-			jp = list_close(jp, ep, ri, &eor);
+			jp = list_close(jp, &ep, ri, &eor);
+
+		if ( !eor && ep->next) {
+			/*traceLog( LOG_DEBUG, "next exists");*/
+			jp = element_add(plugin, jp, ep->next, ri, 1);
+		}
 	}
 
 	return jp;
 }
 
 /************************************************************
-*           Add a s-expression element                      *
+*	   Add a s-expression element		      *
 ************************************************************/
 /*
  * The representation of the S-expression representing rules are as a tree. A
@@ -587,17 +595,17 @@ add_next(plugin_t * plugin, junc_t * jp, element_t * ep, ruleinst_t * ri)
  */
 
 
-junc_t         *
+junc_t	 *
 element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 	    int next)
 {
 	branch_t       *bp = 0;
-	junc_t         *ap = 0;
-	int             n;
-	varr_t         *va, *dsva;
+	junc_t	 *ap = 0;
+	int	     n, i;
+	varr_t	 *va, *dsva;
 	element_t      *elem;
-	dset_t         *ds;
-	void           *v;
+	dset_t	 *ds;
+	void	   *v;
 
 	bp = ARRFIND(jp, ep->type);
 
@@ -617,38 +625,7 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 	DEBUG(SPOCP_DSTORE)
 		traceLog(LOG_DEBUG,"Branch [%d] [%d]", bp->type, bp->count);
 
-	switch (ep->type) {
-	case SPOC_ATOM:
-		if ((ap = atom_add(bp, ep->e.atom)) && next)
-			ap = add_next(pl, ap, ep, rt);
-		break;
-
-	case SPOC_PREFIX:
-		if ((ap = prefix_add(bp, ep->e.atom)) && next)
-			ap = add_next(pl, ap, ep, rt);
-		break;
-
-	case SPOC_SUFFIX:
-		if ((ap = suffix_add(bp, ep->e.atom)) && next)
-			ap = add_next(pl, ap, ep, rt);
-		break;
-
-	case SPOC_RANGE:
-		if ((ap = range_add(bp, ep->e.range)) && next)
-			ap = add_next(pl, ap, ep, rt);
-		break;
-
-	case SPOC_LIST:
-		if ((ap = list_add(pl, bp, ep->e.list, rt)) && next)
-			ap = add_next(pl, ap, ep, rt);
-		break;
-
-	case SPOC_ANY:
-		if ((ap = any_add(bp)) && next)
-			ap = add_next(pl, ap, ep, rt);
-		break;
-
-	case SPOC_SET:
+	if (ep->type == SPOC_SET){
 		va = ep->e.set;
 		n = varr_len(va);
 		if (bp->val.set == 0)
@@ -660,8 +637,9 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 			ds = ds->next;
 		}
 
-		for (v = varr_first(va), dsva = ds->va; v;
-		     v = varr_next(va, v)) {
+		for (v = varr_first(va), dsva = ds->va, i=0; v;
+		     v = varr_next(va, v), i++) {
+			/* traceLog(LOG_DEBUG, "set element %d", i); */
 			elem = (element_t *) v;
 			if ((ap = element_add(pl, jp, elem, rt, 0)) == 0)
 				break;
@@ -669,8 +647,37 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 			ap = add_next(pl, ap, ep, rt);
 		}
 		ds->va = dsva;
+	}
+	else {
+		switch (ep->type) {
+		case SPOC_ATOM:
+			ap = atom_add(bp, ep->e.atom);
+			break;
 
-		break;
+		case SPOC_PREFIX:
+			ap = prefix_add(bp, ep->e.atom);
+			break;
+
+		case SPOC_SUFFIX:
+			ap = suffix_add(bp, ep->e.atom);
+			break;
+
+		case SPOC_RANGE:
+			ap = range_add(bp, ep->e.range);
+			break;
+
+		case SPOC_LIST:
+			ap = list_add(pl, bp, ep->e.list, rt);
+			break;
+
+		case SPOC_ANY:
+			ap = any_add(bp);
+			break;
+		}
+
+		if (ap && next)
+			ap = add_next(pl, ap, ep, rt);
+
 	}
 
 	if (ap == 0 && bp != 0) {
@@ -689,7 +696,7 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 }
 
 /************************************************************
-                 RULE INFO functions 
+		 RULE INFO functions 
  ************************************************************/
 
 /*
@@ -702,7 +709,7 @@ ruleinst_new(octet_t * rule, octet_t * blob, char *bcname)
 	struct sha1_context ctx;
 	ruleinst_t     *rip;
 	unsigned char   sha1sum[21], *ucp;
-	int             j;
+	int	     j;
 
 	if (rule == 0 || rule->len == 0)
 		return 0;
@@ -978,9 +985,9 @@ get_rule(ruleinfo_t * ri, octet_t *oct)
 octet_t	*
 ruleinst_print(ruleinst_t * r, char *rs)
 {
-	octet_t        *oct;
-	int             l, lr;
-	char            flen[1024];
+	octet_t	*oct;
+	int	     l, lr;
+	char	    flen[1024];
 
 
 	if (rs) {
@@ -1022,10 +1029,10 @@ ruleinst_print(ruleinst_t * r, char *rs)
 spocp_result_t
 get_all_rules(db_t * db, octarr_t * oa, char *rs)
 {
-	int             i, n;
+	int	     i, n;
 	ruleinst_t     *r;
-	varr_t         *pa = 0;
-	octet_t        *oct;
+	varr_t	 *pa = 0;
+	octet_t	*oct;
 	spocp_result_t  rc = SPOCP_SUCCESS;
 
 	n = nrules(db->ri);
@@ -1033,7 +1040,7 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 	if (n == 0)
 		return rc;
 
-        /* resize if too small */
+	/* resize if too small */
 	if ((oa && (oa->size - oa->n) < n))
 		octarr_mr(oa, n);
 
@@ -1082,7 +1089,7 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 	return rc;
 }
 
-octet_t        *
+octet_t	*
 get_blob(ruleinst_t * ri)
 {
 
@@ -1092,10 +1099,10 @@ get_blob(ruleinst_t * ri)
 		return ri->blob;
 }
 
-db_t           *
+db_t	   *
 db_new()
 {
-	db_t           *db;
+	db_t	   *db;
 
 	db = (db_t *) Calloc(1, sizeof(db_t));
 	db->jp = junc_new();
@@ -1128,7 +1135,7 @@ db_free( db_t *db)
 }
 
 /************************************************************
-*    Add a rightdescription to the rules database           *
+*    Add a rightdescription to the rules database	   *
 ************************************************************/
 /*
  * 
@@ -1141,7 +1148,7 @@ db_free( db_t *db)
 static spocp_result_t
 store_right(db_t * db, element_t * ep, ruleinst_t * rt)
 {
-	int             r;
+	int	     r;
 	element_t	*ec;
 
 	if (db->jp == 0)
@@ -1160,7 +1167,7 @@ store_right(db_t * db, element_t * ep, ruleinst_t * rt)
 }
 
 /************************************************************
-*    Store a rights description in the rules database           *
+*    Store a rights description in the rules database	   *
 ************************************************************/
 /*
  * 
@@ -1174,7 +1181,7 @@ add_right(db_t ** db, dbcmd_t * dbc, octarr_t * oa, ruleinst_t ** ri,
 	  bcdef_t * bcd)
 {
 	element_t      *ep;
-	octet_t         rule, blob, oct;
+	octet_t	 rule, blob, oct;
 	ruleinst_t     *rt;
 	spocp_result_t  rc = SPOCP_SUCCESS;
 
