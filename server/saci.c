@@ -24,10 +24,12 @@ static char * get_ssl_issuer( conn_t *c ) ;
 #endif
 static char * get_transpsec( conn_t *r ) ;
 
-#define TPSEC_X509 0
-#define TPSEC_KERB 1
+#define TPSEC_X509	0
+#define TPSEC_X509_WCC	1
+#define TPSEC_KERB	2
 
 char *tpsec[] = {
+  "(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher}))", 
   "(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher})(7:autname4:X509(7:subject%{ssl_subject})(6:issuer%{ssl_issuer})))", 
   "(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))"
 } ;
@@ -36,23 +38,9 @@ char *srvquery = "(6:server(2:ip%{ip})(4:host%{host})%{transportsec})" ;
 char *operquery = "(9:operation%{operation}(4:path%{path})(6:server(2:ip%{ip})(4:host%{host})%{transportsec}))" ;
 
 arg_t **tpsec_X509 ;
+arg_t **tpsec_X509_wcc ;
 arg_t **srvq ;
 arg_t **operq ;
-
-/* you should get this as output of parse_format( tpsec[TPSEC_X509] ) 
-arg_t transpsec_x509[] = {
-  { "(12:TransportSec(4:vers", 0, 'l' },
-  { NULL, get_ssl_vers, 'a' },
-  { ")(12:chiphersuite", 0, 'l' },
-  { NULL, get_ssl_cipher, 'a' },
-  { ")(7:autname4:x509(7:subject", 0, 'l' },
-  { NULL, get_ssl_subject, 'a' },
-  { ")(6:issuer", 0, 'l' },
-  { NULL, get_ssl_issuer, 'a' },
-  { ")))", 0, 'l' },
-  { NULL, NULL, 0 }
-} ;
-*/
 
 arg_t transf[] = {
   { "ip", get_ip, 'a', FALSE },
@@ -282,8 +270,12 @@ static char *get_transpsec( conn_t *conn )
 /* XXX fixa SPOCP_LAYER-jox här */
 #ifdef HAVE_SSL
   if( conn->ssl != NULL  ) {
-    if( conn->transpsec == 0 ) conn->transpsec = sexp_constr( conn, tpsec_X509 ) ;
-
+    if( conn->transpsec == 0 ) {
+      if( conn->subjectDN )
+        conn->transpsec = sexp_constr( conn, tpsec_X509_wcc ) ;
+      else
+        conn->transpsec = sexp_constr( conn, tpsec_X509 ) ;
+    }
     return conn->transpsec ;
   }
   else 
@@ -384,6 +376,11 @@ void saci_init( void )
   tpsec_X509 = parse_format( tpsec[TPSEC_X509] ) ;
   if( tpsec_X509 == 0 ) traceLog( "Could not parse TPSEC_X509" ) ;
   else LOG(SPOCP_DEBUG) traceLog( "Parsed TPSEC_X509 OK" ) ;
+
+  tpsec_X509_wcc = parse_format( tpsec[TPSEC_X509_WCC] ) ;
+  if( tpsec_X509_wcc == 0 ) traceLog( "Could not parse TPSEC_X509_WCC" ) ;
+  else LOG(SPOCP_DEBUG) traceLog( "Parsed TPSEC_X509_WCC OK" ) ;
+
 /*
   tpsec_kerb = parse_format( tpsec[TPSEC_KERB] ) ;
 */

@@ -8,6 +8,8 @@ RCSID("$Id$");
  */
 
 
+typedef struct sockaddr SA ;
+
 /* ---------------------------------------------------------------------- */
 
 /* !!! This is borrowed from OpenLDAP !!!! */
@@ -41,19 +43,19 @@ int lutil_pair( int sds[2] )
         si.sin_port = 0;
         si.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
 
-        rc = bind( sd, (struct sockaddr *)&si, len );
+        rc = bind( sd, (SA *)&si, len );
         if ( rc == -1 ) {
                 close(sd);
                 return rc;
         }
 
-        rc = getsockname( sd, (struct sockaddr *)&si, (socklen_t *) &len );
+        rc = getsockname( sd, (SA *)&si, (socklen_t *) &len );
         if ( rc == -1 ) {
                 close(sd);
                 return rc;
         }
 
-        rc = connect( sd, (struct sockaddr *)&si, len );
+        rc = connect( sd, (SA *)&si, len );
         if ( rc == -1 ) {
                 close(sd);
                 return rc;
@@ -80,14 +82,14 @@ void wake_listener(int w)
 
 void spocp_srv_run( srv_t *srv )
 {
-  int                 val, err, maxfd, client, nready, stop_loop = 0, n;
+  int                 val, err = 0, maxfd, client, nready, stop_loop = 0, n;
   socklen_t           len ;
   conn_t              *conn ;
   pool_item_t         *pi, *next ;
   struct sockaddr_in  client_addr;
   fd_set              rfds,wfds;
   struct timeval      noto;
-  char                hostbuf[NI_MAXHOST+1];
+  char                ipaddr[65], hname[NI_MAXHOST+1];
   int                 pe = 1 ;
   
   signal(SIGPIPE,SIG_IGN);
@@ -196,7 +198,7 @@ void spocp_srv_run( srv_t *srv )
       if(1) timestamp( "New connection" ) ;
 
       len = sizeof(client_addr);
-      client = accept( srv->listen_fd, (struct sockaddr *)&client_addr, &len);
+      client = accept( srv->listen_fd, (SA *)&client_addr, &len);
       
       if( client < 0) {
         if(errno != EINTR) traceLog( "Accept error: %.100s",strerror(errno));
@@ -222,12 +224,16 @@ void spocp_srv_run( srv_t *srv )
 */
     
       /* Get address not hostname of the connection */
-      if( (err = getnameinfo((struct sockaddr *)&client_addr, len, hostbuf, NI_MAXHOST,
-                            NULL, 0, 0 )) ) {
+      if(( err = getnameinfo((SA *)&client_addr, len, hname, NI_MAXHOST, NULL, 0, 0 )) != 0 ||
+         ( err = getnameinfo((SA *)&client_addr, len, ipaddr, 64, NULL, 0, NI_NUMERICHOST )) != 0 ) {
         traceLog("Unable to getnameinfo for fd %d:%.100s",client,strerror(err));
         close(client);
         goto fdloop;
       }
+
+      if( strcmp(hname, "localhost" ) == 0 ) {
+        strcpy(hname, srv->hostname ) ;
+      } 
 
       if( srv->connections ) {
         int f, a ;
@@ -252,14 +258,13 @@ void spocp_srv_run( srv_t *srv )
       else {
         /* initialize all the conn values */
 
-        DEBUG( SPOCP_DSRV )traceLog( "Initializing connection to %s", hostbuf ) ;
-        conn_setup( conn, srv, client, hostbuf ) ;
+        DEBUG( SPOCP_DSRV )traceLog( "Initializing connection to %s", hname ) ;
+        conn_setup( conn, srv, client, hname, ipaddr ) ;
 
         LOG( SPOCP_DEBUG ) traceLog( "Doing server access check" ) ;
 
         if( server_access( conn ) != SPOCP_SUCCESS ) {
-          traceLog( "connection from %s(%s) DISALLOWED", conn->fd, hostbuf,
-                           conn->sri.hostaddr ) ; 
+          traceLog( "connection from %s(%s) DISALLOWED", conn->fd, hname, ipaddr) ; 
   
           conn_reset( conn ) ;
           /* unlocks the conn struct as a side effect */
@@ -267,7 +272,7 @@ void spocp_srv_run( srv_t *srv )
           close( client ) ;
         }
         else {
-          traceLog( "Accepted connection from %s on fd=%d",hostbuf,client);
+          traceLog( "Accepted connection from %s on fd=%d",hname,client);
           afpool_push_item( srv->connections, pi ) ;
 
           pe++ ;

@@ -109,7 +109,7 @@ void conn_free( conn_t *con )
 
 /* ---------------------------------------------------------------------- */
 
-int conn_setup( conn_t *conn, srv_t *srv, int fd, char *ipaddr, char *hostname )
+int conn_setup( conn_t *conn, srv_t *srv, int fd, char *hostname, char *ipaddr )
 {
   conn->srv = srv ;
   conn->fd = fd ;

@@ -93,6 +93,11 @@ int main( int  argc, char **argv )
   pthread_mutex_init( &(srv.mlock), NULL ) ;
 
   gethostname( localhost, NAME_MAX ) ;
+  getdomainname( path, NAME_MAX ) ;
+
+  printf( "Domain: %s\n", path) ;
+
+  srv.hostname = strdup( localhost ) ;
 
   localcontext = ( char *) Calloc( strlen(localhost)+strlen( "//" ) + 1,
                                    sizeof( char) ) ;
@@ -308,7 +313,7 @@ int main( int  argc, char **argv )
     */
     /* this is much simpler */
     conn = conn_new() ;
-    conn_setup( conn, &srv, STDIN_FILENO, "localhost" ) ;
+    conn_setup( conn, &srv, STDIN_FILENO, "localhost", "127.0.0.1" ) ;
 
     LOG( SPOCP_INFO ) traceLog( "Running server" ) ;
 

@@ -312,7 +312,7 @@ void    conn_free( conn_t *c ) ;
 void    conn_reset( conn_t *c ) ;
 conn_t *conn_new( void ) ;
 void    conn_init( conn_t *con ) ;
-int     conn_setup( conn_t *con, srv_t *srv, int fd, char *host ) ;
+int     conn_setup( conn_t *con, srv_t *srv, int fd, char *host, char *ipaddr ) ;
 int     spocp_conn_write( conn_t *conn ) ;
 int     spocp_conn_read( conn_t *conn ) ;
 

@@ -14,8 +14,8 @@
 
 typedef struct _rescode {
   int code ;
-  char *rc;
-  char *default;
+  char *rc ;
+  char *def;
 } rescode_t ;
 
 rescode_t rescode[] = {
@@ -49,8 +49,7 @@ rescode_t rescode[] = {
  { SPOCP_UNAVAILABLE ,"3:513", "21:Service not available" },
  { SPOCP_INFO_UNAVAIL,"3:514", "23:Information unavailable" },
  { SPOCP_NOT_SUPPORTED , "3:515", "21:Command not supported" },
- /* Ändra till SPOCP_STATE_VIOLATION */
- { SPOCP_SSLCON_EXIST ,"3:516", "18:SSL Already active" },
+ { SPOCP_STATE_VIOLATION ,"3:516", "18:SSL Already active" },
  { SPOCP_OTHER ,"3:517", "11:Other error" },
  { SPOCP_CERT_ERR ,"3:518", "20:Authentication error" },
  { SPOCP_UNWILLING ,"3:519", "20:Unwilling to perform" },
@@ -63,19 +62,33 @@ rescode_t rescode[] = {
  ***************************************************************************/
 
 
-static spocp_result_t add_response( spocp_iobuf_t *out, int rc, ... )
+static spocp_result_t add_response( spocp_iobuf_t *out, int rc, char *fmt, ... )
 {
-  int i ;
+  va_list ap ;
+  int     i, n ;
   spocp_result_t sr = SPOCP_SUCCESS ;
+  char    buf[SPOCP_MAXLINE] ;
 
-  for( i = 0 ; rescode[i].txt ; i++ ) {
+  for( i = 0 ; rescode[i].rc ; i++ ) {
     if( rescode[i].code == rc ) {
-      sr = iobuf_add( out, rescode[i].txt ) ;
+      sr = iobuf_add( out, rescode[i].rc ) ;
+      if( fmt ) {
+        va_start( ap, fmt ) ;
+        n = vsnprintf( buf, SPOCP_MAXLINE, fmt, ap ) ;
+        if( n >= SPOCP_MAXLINE )  /* OUTPUT truncated */
+          sr = SPOCP_LOCAL_ERROR ;
+        else 
+          sr = iobuf_add( out, buf ) ;
+        va_end( ap ) ;
+      }
+      else
+        sr = iobuf_add( out, rescode[i].def ) ;
       break ;
     }
   }
 
-  if( rescode[i].txt == 0 ) sr = add_response( out, SPOCP_OTHER ) ;
+  /* unknown response code */
+  if( rescode[i].rc == 0 ) sr = add_response( out, SPOCP_OTHER, NULL ) ;
 
   return sr ;
 }
@@ -175,8 +188,6 @@ spocp_result_t com_auth( conn_t *conn )
   r = SPOCP_NOT_SUPPORTED;
 #endif
 
- err:
-
   add_response( conn->out, r, msg ) ;
 
   if (msg != NULL)
@@ -196,20 +207,25 @@ spocp_result_t com_starttls( conn_t *conn )
 
   traceLog("Attempting to start SSL/TLS") ;
 
-#ifndef HAVE_SSL
-
+#if !(defined(HAVE_SSL) || defined(HAVE_SASL))
   r = SPOCP_NOT_SUPPORTED ;
-
 #else
+
+#ifdef HAVE_SASL
   if ( conn->sasl != NULL) {
     LOG( SPOCP_ERR ) traceLog("Layering violation: SASL already in operation") ;
     r = SPOCP_STATE_VIOLATION ; /* XXX definiera och ... */
-  } else if( conn->ssl != NULL ) {
+  } else
+#endif
+#ifdef HAVE_SSL
+  if( conn->ssl != NULL ) {
     LOG( SPOCP_ERR ) traceLog("Layering violation: SSL already in operation") ;
     r = SPOCP_STATE_VIOLATION ; /* XXX ... fixa informativt felmeddleande */
-  } else if(( r = operation_access( conn )) == SPOCP_SUCCESS ) {
+  } else
+#endif
+  if(( r = operation_access( conn )) == SPOCP_SUCCESS ) {
   /* Ready to start TLS/SSL */
-    add_response( conn->out, SPOCP_SSL_START ) ;
+    add_response( conn->out, SPOCP_SSL_START, 0 ) ;
     if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
     
     conn->status = CNST_SSL_NEG ; /* Negotiation in progress */
@@ -230,7 +246,7 @@ spocp_result_t com_starttls( conn_t *conn )
   }
 #endif
 
-  add_response( conn->out, r ) ;
+  add_response( conn->out, r, 0 ) ;
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
   return r ;
@@ -254,7 +270,7 @@ spocp_result_t com_rollback( conn_t *conn )
   conn->rs = ss_dup( conn->srv->root, SUBTREE ) ;
   pthread_rdwr_runlock( &conn->srv->root->rw_lock ) ;
 
-  add_response( conn->out, r ) ;
+  add_response( conn->out, r, 0 ) ;
     
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
@@ -270,7 +286,7 @@ spocp_result_t com_logout( conn_t *conn )
 
   LOG( SPOCP_INFO ) traceLog("LOGOUT requested ") ;
 
-  add_response( conn->out, r ) ;
+  add_response( conn->out, r, 0 ) ;
     
   conn->stop = 1 ;
 
@@ -341,7 +357,7 @@ static spocp_result_t com_delete( conn_t *conn )
   }
 
 D_DONE :
-  add_response( conn->out, r ) ;
+  add_response( conn->out, r, 0 ) ;
 
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
  
@@ -377,7 +393,7 @@ spocp_result_t com_commit( conn_t *conn )
     conn->transaction = 0 ;
   }
 
-  add_response( conn->out, r ) ;
+  add_response( conn->out, r, 0 ) ;
 
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
  
@@ -459,7 +475,7 @@ spocp_result_t com_query( conn_t *conn )
 
   if( r == SPOCP_SUCCESS && on ) {
     while(( oct = octarr_pop( on ))) {
-      if( add_response( out, SPOCP_MULTI) != SPOCP_SUCCESS ) {
+      if( add_response( out, SPOCP_MULTI, 0) != SPOCP_SUCCESS ) {
         r = SPOCP_OPERATIONSERROR ;
         break ;
       }
@@ -484,7 +500,7 @@ spocp_result_t com_query( conn_t *conn )
     octarr_free( on ) ;
   }
 
-  add_response( out, r ) ;
+  add_response( out, r, 0 ) ;
     
   iobuf_shift( conn->in ) ;
   oparg_clear( conn ) ;
@@ -515,7 +531,7 @@ spocp_result_t com_login( conn_t *conn )
 
   LOG( SPOCP_WARNING ) traceLog("LOGIN: not supported") ;
 
-  add_response( conn->out, r ) ;
+  add_response( conn->out, r, 0 ) ;
 
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
@@ -551,7 +567,7 @@ spocp_result_t com_begin( conn_t *conn )
       conn->transaction = 1 ;
   }
   
-  add_response( conn->out, rc ) ;
+  add_response( conn->out, rc, 0 ) ;
 
   if(( wr = send_results( conn )) == 0 ) rc = SPOCP_CLOSE ;
 
@@ -594,7 +610,7 @@ spocp_result_t com_subject( conn_t *conn )
   if( operation_access( conn ) != SPOCP_SUCCESS ) goto S_DONE ;
   */
 
-  add_response( conn->out, r ) ;
+  add_response( conn->out, r, 0 ) ;
 
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
@@ -677,7 +693,7 @@ spocp_result_t com_add( conn_t *conn )
   iobuf_shift( conn->in ) ;
    
 ADD_DONE: 
-  add_response( out, rc ) ;
+  add_response( out, rc, 0 ) ;
 
   if(( wr = send_results( conn )) == 0 ) rc = SPOCP_CLOSE ;
 
@@ -736,7 +752,7 @@ spocp_result_t com_list( conn_t *conn )
         free( str ) ;
       }
 
-      if((rc = add_response( out, SPOCP_MULTI )) != SPOCP_SUCCESS ) break ;
+      if((rc = add_response( out, SPOCP_MULTI, 0 )) != SPOCP_SUCCESS ) break ;
       if((rc = iobuf_add_octet( out, op )) != SPOCP_SUCCESS ) break ;
       if(( wr = send_results( conn )) == 0 ) {
         r = SPOCP_CLOSE ;
@@ -748,7 +764,7 @@ spocp_result_t com_list( conn_t *conn )
   }
 
 L_DONE:
-  add_response( out, rc ) ;
+  add_response( out, rc, 0 ) ;
   
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 
@@ -1028,7 +1044,7 @@ AGAIN:
           break ; /* I've got the whole package but it had internal deficienses */
         }
         else if( r == SPOCP_UNKNOWNCOMMAND ) {  /* Unknown keyword */
-          add_response( out, r ) ;
+          add_response( out, r, 0 ) ;
           send_and_flush_results( con ) ;
         }
 
@@ -1043,7 +1059,7 @@ AGAIN:
           attr.len = in->w - in->r ;
           l = get_len( &attr ) ;
           if(( r = iobuf_resize( in, l - attr.len )) != SPOCP_SUCCESS ) {
-            add_response( out, r ) ;
+            add_response( out, r, 0 ) ;
             send_and_flush_results( con ) ;
             oparg_clear( con ) ;
             conn_iobuf_clear( con ) ;

@@ -462,6 +462,9 @@ SSL_CTX *tls_init( srv_t *srv )
     }
   }
 
+/*
+  SSL_CTX_set_verify( ctx, SSL_VERIFY_NONE, verify_callback ) ;
+ */
   SSL_CTX_set_verify( ctx, SSL_VERIFY_PEER|SSL_VERIFY_CLIENT_ONCE, verify_callback ) ;
 
   SSL_CTX_set_verify_depth( ctx, srv->sslverifydepth ) ;
@@ -474,15 +477,10 @@ SSL_CTX *tls_init( srv_t *srv )
     return 0 ;
   }
 
-  /* Finally, set the timeout, and we are done */
-
-  /*SSL_CTX_set_timeout(ctx, session_timeout); */
-
   LOG(SPOCP_DEBUG) traceLog("Initialised TLS");
 
   return ctx ;
 }
-
 
 /************************************************
 ************************************************/
@@ -571,9 +569,6 @@ static int check_cert_chain( conn_t *conn, SSL *ssl, ruleset_t *rs)
 /************************************************
 ************************************************/
 
-/************************************************
-************************************************/
-
 spocp_result_t tls_start( conn_t *conn, ruleset_t *rs ) 
 { 
   SSL        *ssl ;
@@ -584,7 +579,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
 
   if( conn->ssl != NULL )  {
     tls_error( SPOCP_WARNING, conn, "STARTTLS received on already encrypted connection" );
-    return SPOCP_SSLCON_EXIST ;
+    return SPOCP_STATE_VIOLATION;
   } 
 
   if(!( ssl = SSL_new( ctx ))) {
