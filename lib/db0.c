@@ -41,6 +41,8 @@ junc_t  *list_close( junc_t *ap, element_t *ep, ruleinst_t *ri, int *eor ) ;
 static int  last_element( element_t *ep ) ;
 */
 
+static ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob, char *bcname ) ;
+
 ruleinst_t *ruleinst_dup( ruleinst_t *ri )  ;
 void       ruleinst_free( ruleinst_t *ri ) ;
 
@@ -665,7 +667,7 @@ junc_t *element_add( plugin_t *pl, junc_t *jp, element_t *ep, ruleinst_t *rt, in
  
 /* ---------------  ruleinst ----------------------------- */
 
-ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob )
+static ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob, char *bcname )
 {
   struct sha1_context ctx ;
   ruleinst_t          *rip ;
@@ -684,7 +686,7 @@ ruleinst_t *ruleinst_new( octet_t *rule, octet_t *blob )
   sha1_starts( &ctx ) ;
 
   sha1_update( &ctx, (uint8 *) rule->val, rule->len ) ;
-  if( blob ) sha1_update( &ctx, (uint8 *) blob->val, blob->len ) ;
+  if( bcname ) sha1_update( &ctx, (uint8 *) bcname, strlen( bcname )) ;
 
   sha1_finish( &ctx, (unsigned char *) sha1sum ) ;
 
@@ -705,7 +707,8 @@ ruleinst_t *ruleinst_dup( ruleinst_t *ri )
 
   if( ri == 0 ) return 0 ;
 
-  new = ruleinst_new( ri->rule, ri->blob ) ;
+  if( ri->bcond ) new = ruleinst_new( ri->rule, ri->blob, ri->bcond->name ) ;
+  else  new = ruleinst_new( ri->rule, ri->blob, 0 ) ;
 
   new = ( ruleinst_t *) Calloc ( 1, sizeof( ruleinst_t )) ;
 
@@ -839,7 +842,7 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
   if( db->ri == 0 ) db->ri = ri = ruleinfo_new() ;
   else ri = db->ri ;
 
-  rt = ruleinst_new( rule, blob ) ;
+  rt = ruleinst_new( rule, blob, bcondname ) ;
 
   if( ri->rules == 0 ) 
     ri->rules = rbt_init( &P_ruleinst_cmp, &P_ruleinst_free, &P_ruleinst_key,
@@ -851,7 +854,7 @@ static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcon
     }
   }
 
-  /* dback_insert( db->dback, rt->uid, rule, blob, bcondname ) ; */
+  dback_save( db->dback, rt->uid, rule, blob, bcondname ) ; 
 
   rbt_insert( ri->rules, (item_t) rt ) ;
 
