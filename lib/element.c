@@ -118,6 +118,20 @@ element_print( octet_t *oct, element_t *ep)
 	return r;
 }
 
+char *
+element2str( element_t *e )
+{
+	octet_t *o;
+	char *tmp;
+
+	o = oct_new( 512, NULL);
+	element_print( o, e );
+	tmp = oct2strdup(o, 0);
+	oct_free(o);
+
+	return tmp;
+}
+
 /*
  * ----------------------------------------------------------------------
  */
