@@ -35,8 +35,8 @@
 char *keyword[] = {
   "__querty__", "rulefile", "port", "unixdomainsocket", "certificate",
   "privatekey", "calist", "dhfile", "entropyfile",
-  "passwd", "threads", "timeout", "logfile", "clients",  "sslverifydepth", 
-  "pidfile", "maxconn", "cachetime", NULL } ;
+  "passwd", "threads", "timeout", "logfile", "sslverifydepth", 
+  "pidfile", "maxconn", NULL } ;
 
 
 #define DEFAULT_PORT    9953 /* we should register one with IANA */
@@ -86,23 +86,44 @@ other_t *add_another( other_t *other, char *key, char *value )
 
 *------------------------------------------------------------------ */
 
-spocp_result_t conf_get( void *vp, int arg, char *pl, void **res )
+void conf_clear( srv_t *srv )
+{
+  ruleset_free( srv->root ) ;
+  
+  /* no more new connections until I'm done */
+  pthread_mutex_lock(&srv->mlock); 
+
+  
+  pthread_mutex_unlock(&srv->mlock); 
+}
+
+/*------------------------------------------------------------------ */
+
+spocp_result_t conf_get( void *vp, int arg, char *plk, void **res )
 {
   srv_t     *srv = (srv_t *) vp ;
-  octnode_t *on ;
-  char      *key = 0 ;
+  octarr_t  *on ;
+  char      *pl, *key = 0 ;
 
   switch( arg ) {
     case PLUGIN :
+      pl = strdup(plk) ;
       if(( key = index( pl, ':' )) != 0 ) {
         *key++ = '\0'  ;
       }
+
       if( srv->root == 0 || srv->root->db == 0 || srv->root->db->plugins == 0 ) *res = 0 ;
       else {
-        on = pconf_get_keyval_by_plugin( srv->root->db->plugins , pl, key ) ; 
-        if( on ) *res = ( void * ) on ;
-        else *res = 0 ;
+        if( key ) {
+          on = pconf_get_keyval_by_plugin( srv->root->db->plugins, pl, key ) ; 
+          if( on ) *res = ( void * ) on ;
+          else *res = 0 ;
+        }
+        else 
+          *res = ( void * ) pconf_get_keys_by_plugin( srv->root->db->plugins, pl ) ;
       }
+
+      free( pl ) ;
       break ;
 
     case RULEFILE :
@@ -153,10 +174,6 @@ spocp_result_t conf_get( void *vp, int arg, char *pl, void **res )
       *res = ( void * ) srv->logfile ;
       break ;
 
-    case CLIENTS :
-      *res = ( void * ) srv->clients ;
-      break ;
-
     case SSLVERIFYDEPTH :
       *res = ( void * ) srv->sslverifydepth ;
       break ;
@@ -167,10 +184,6 @@ spocp_result_t conf_get( void *vp, int arg, char *pl, void **res )
 
     case MAXCONN :
       *res = ( void * ) &srv->nconn ;
-      break ;
-
-    case CACHETIME :
-      *res = ( void * ) srv->ctime ;
       break ;
 
   }
@@ -193,8 +206,8 @@ int read_config( char *file, srv_t *srv )
   int             i ;
   plugin_t        *plugins, *pl ;
 
-  if( !srv->root ) 
-    srv->root = new_ruleset( "", 0 ) ;
+  /* should never be necessary */
+  if( !srv->root ) srv->root = ruleset_new( 0 ) ;
   
   if( !srv->root->db )
     srv->root->db = db_new() ;
@@ -297,14 +310,6 @@ int read_config( char *file, srv_t *srv )
         srv->logfile = Strdup( s ) ;
         break ;
 
-      case CLIENTS :
-        if( add_client_aci( s, &(srv->root) ) <= 0 )
-          fprintf( stderr, "Error in client specification\n" ) ;
-        else
-          srv->clients = strarr_add( srv->clients, s ) ;
-
-        break ;
-
       case TIMEOUT  :
         if( numstr( s, &lval ) == SPOCP_SUCCESS )
         {
@@ -396,11 +401,6 @@ int read_config( char *file, srv_t *srv )
         else {
           fprintf(stderr,"[nconn] Non numeric value given for port\n" ) ;
         }
-        break ;
-
-      case CACHETIME :
-        srv->ctime = strarr_add( srv->ctime, s ) ;
-        /* cachetime_new( s ) ; */
         break ;
 
     }
