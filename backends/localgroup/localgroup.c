@@ -75,7 +75,7 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 	octarr_t       *argv;
 	octet_t        *oct, cb, *group, *user, loc;
 	char           *fn = ETC_GROUP, *cp;
-	int             done, cv;
+	int             done, cv = 0;
 	char            buf[BUFSIZ];
 	becon_t        *bc = 0;
 	pdyn_t         *dyn = cpp->pd;
@@ -86,14 +86,15 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 	if ((oct = element_atom_sub(cpp->arg, cpp->x)) == 0)
 		return SPOCP_SYNTAXERROR;
 
-	cv = cached(dyn->cv, oct, &cb);
+	if (dyn) 
+		cv = cached(dyn->cv, oct, &cb);
 
 	if (cv) {
 		/*
-		 * traceLog( "localgroup: cache hit" ) ; 
+		 * traceLog(LOG_DEBUG, "localgroup: cache hit" ) ; 
 		 */
 
-		if (cv == EXPIRED) {
+		if (cv == EXPIRED && dyn) {
 			cached_rm(dyn->cv, oct);
 			cv = 0;
 		}
@@ -103,22 +104,22 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 		argv = oct_split(oct, ':', 0, 0, 0);
 
 		/*
-		 * LOG( SPOCP_DEBUG ) traceLog("n=%d",n); 
+		 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG,"n=%d",n); 
 		 */
 
 		if (argv->n == 3)
 			fn = oct2strdup(argv->arr[2], 0);
 
 		/*
-		 * LOG( SPOCP_DEBUG ) traceLog("groupfile: %s",fn); 
+		 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG,"groupfile: %s",fn); 
 		 */
 
 		oct_assign(&loc, fn);
 
-		if ((bc = becon_get(&loc, dyn->bcp)) == 0) {
+		if ( dyn == 0 || (bc = becon_get(&loc, dyn->bcp)) == 0) {
 			if ((fp = fopen(fn, "r")) == 0)
 				rc = SPOCP_UNAVAILABLE;
-			else if (dyn->size) {
+			else if (dyn && dyn->size) {
 				if (!dyn->bcp)
 					dyn->bcp = becpool_new(dyn->size);
 				bc = becon_push(&loc, &P_fclose, (void *) fp,
@@ -132,7 +133,8 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 				 */
 				fp = fopen(fn, "r");
 				if (fp == 0) {	/* not available */
-					becon_rm(dyn->bcp, bc);
+					if (dyn)
+						becon_rm(dyn->bcp, bc);
 					bc = 0;
 					rc = SPOCP_UNAVAILABLE;
 				} else
@@ -141,7 +143,7 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 		}
 
 		/*
-		 * LOG( SPOCP_DEBUG ) traceLog("open...%s",fn); 
+		 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG,"open...%s",fn); 
 		 */
 
 		if (rc == SPOCP_DENIED || argv->n < 2) {
@@ -157,7 +159,7 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 				*cp++ = '\0';
 
 				/*
-				 * LOG( SPOCP_DEBUG ) traceLog("grp: %s", buf
+				 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG,"grp: %s", buf
 				 * ); 
 				 */
 
@@ -203,7 +205,7 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 	} else if (cv == (CACHED | SPOCP_DENIED)) {
 		rc = SPOCP_DENIED;
 	} else {
-		if (dyn->ct && (rc == SPOCP_SUCCESS || rc == SPOCP_DENIED)) {
+		if (dyn && dyn->ct && (rc == SPOCP_SUCCESS || rc == SPOCP_DENIED)) {
 			time_t          t;
 			t = cachetime_set(oct, dyn->ct);
 			dyn->cv =
