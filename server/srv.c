@@ -61,10 +61,32 @@ rescode_t rescode[] = {
 /***************************************************************************
  ***************************************************************************/
 
-
-static spocp_result_t add_response( spocp_iobuf_t *out, int rc, char *fmt, ... )
+static spocp_result_t add_response( spocp_iobuf_t *out, int rc, const char *fmt, ... )
 {
-  va_list ap ;
+  va_list ap;
+  spocp_result_t res;
+
+  va_start(ap,fmt);
+  res = add_response_blob_va(out,rc,NULL,fmt,ap);
+  va_end(ap);
+
+  return res;
+}
+
+static spocp_result_t add_response_blob( spocp_iobuf_t *out, int rc, octet_t *data, const char *fmt, ... )
+{
+  va_list ap;
+  spocp_result_t res;
+
+  va_start(ap,fmt);
+  res = add_response_blob_va(out,rc,data,fmt,ap);
+  va_end(ap);
+
+  return res;
+}
+
+static spocp_result_t add_response_blob_va( spocp_iobuf_t *out, int rc, octet_t *data, const char *fmt, va_list ap )
+{
   int     i, n ;
   spocp_result_t sr = SPOCP_SUCCESS ;
   char    buf[SPOCP_MAXLINE] ;
@@ -73,13 +95,11 @@ static spocp_result_t add_response( spocp_iobuf_t *out, int rc, char *fmt, ... )
     if( rescode[i].code == rc ) {
       sr = iobuf_add( out, rescode[i].rc ) ;
       if( fmt ) {
-        va_start( ap, fmt ) ;
         n = vsnprintf( buf, SPOCP_MAXLINE, fmt, ap ) ;
         if( n >= SPOCP_MAXLINE )  /* OUTPUT truncated */
           sr = SPOCP_LOCAL_ERROR ;
         else 
           sr = iobuf_add( out, buf ) ;
-        va_end( ap ) ;
       }
       else
         sr = iobuf_add( out, rescode[i].def ) ;
@@ -140,11 +160,63 @@ static void oparg_clear( conn_t *con )
   con->oppath = 0 ;
 }
 
+spocp_result_t com_capa(conn_t *conn)
+{
+  spocp_result_t  r = SPOCP_SUCCESS ;
+  const char     *msg = NULL;
+  int             wr ;
+
+  LOG (SPOCP_INFO ) traceLog("Attempt to authenticate");
+
+#ifdef HAVE_SASL
+  if (conn->sasl == NULL) {
+    wr = sasl_server_new("spocp",
+			 conn->srv->hostname,
+			 NULL,
+			 NULL,
+			 NULL,
+			 NULL,
+			 0,
+			 &conn->sasl);
+    if (wr != SASL_OK) {
+      LOG (SPOCP_ERR) traceLog("Failed to create SASL context");
+      r = SPOCP_OTHER;
+      goto err;
+    }
+  }
+  
+  if (conn->oparg->n == 0) { /* list auth mechs */
+    const char *mechs;
+    size_t mechlen;
+    int count;
+
+    wr = sasl_listmech(conn->sasl,NULL,NULL," ",NULL,&mechs,&mechlen,&count);
+    if (wr != SASL_OK) {
+      LOG (SPOCP_ERR) traceLog("Failed to generate SASL mechanism list");
+      r = SPOCP_OTHER;
+    } else {
+      msg = mechs;
+    }
+  }
+#endif
+  
+  add_response( conn->out, r, msg ) ;
+
+  if (msg != NULL)
+    free((char *)msg);
+
+  if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
+
+  return r ;
+}
+
 spocp_result_t com_auth( conn_t *conn )
 {
   spocp_result_t  r = SPOCP_SUCCESS ;
-  char           *msg = NULL;
+  const char     *msg = NULL;
   int             wr ;
+  char            data[8192];
+  size_t          len;
 
   LOG (SPOCP_INFO ) traceLog("Attempt to authenticate");
 
@@ -160,38 +232,45 @@ spocp_result_t com_auth( conn_t *conn )
 			 0,
 			 &conn->sasl);
     if (wr != SASL_OK) {
-      LOG (SPOCP_ERR) traceLog("Failed to create sasl server context");
-      r = SPOCP_OTHER;
-      goto err;
+      LOG (SPOCP_ERR) traceLog("Failed to create SASL context");
+      goto check;
     }
   }
 
-  if (conn->oparg->n == 0) { /* list auth mechs */
-    char *mechs;
-    int mechlen,count;
+  if (conn->sasl_mech == NULL) { /* start */
+    conn->sasl_mech = oct2strdup(conn->oparg->arr[0],'%');
+    wr = sasl_server_start(conn->sasl,
+			   conn->sasl_mech,
+			   conn->oparg->n > 1 ? conn->oparg->arr[1].val : NULL,
+			   conn->oparg->n > 1 ? conn->oparg->arr[1].len : 0,
+			   &data,
+			   &len);
+  } else { /* step */
+    wr  = sasl_server_step(conn->sasl,
+			   conn->oparg->n > 0 ? conn->oparg->arr[0].val : NULL,
+			   conn->oparg->n > 0 ? conn->oparg->arr[0].len : 0,
+			   &data,
+			   &len);
+  }
 
-    wr = sasl_listmech(conn->sasl,NULL,NULL," ",NULL,&mechs,&mechlen,&count);
-    if (wr != SASL_OK) {
-      LOG (SPOCP_ERR) traceLog("Failed to generate SASL mechanism list");
-      r = SPOCP_OTHER;
-    } else {
-      msg = mechs;
-    }
-  } else if (conn->oparg->n != 2) { /* bad bad */
-    r = SPOCP_SYNTAXERROR;
-    msg = strdup("You must provide a mechanism and data you clutz");
-  } else { /* start or continue negotiation: AUTH <mech> <data> */
-    
+ check:
+
+  switch (wr) {
+  case SASL_OK:
+    wr = sasl_getprop(conn->sasl,SASL_USERNAME,(const void **)&conn->sasl_username);
+    add_response_blob( conn->out, SPOCP_SUCCESS, data, NULL ) ;
+    break;
+  case SASL_CONTINUE:
+    add_response_blob( conn->out, SPOCP_SASLBINDINPROGRESS, data, NULL ) ;
+    break;
+  default:
+    LOG (SPOCP_ERR) traceLog("SASL start/step failed: %d",sasl_errstring(wr,NULL,NULL));
+    add_response(conn->out,SPOCP_AUTH,"Authentication failed");
   }
 
 #else
-  r = SPOCP_NOT_SUPPORTED;
+  add_response(conn->out,SPOCP_NOTSUPPORTED,NULL);
 #endif
-
-  add_response( conn->out, r, msg ) ;
-
-  if (msg != NULL)
-    free(msg);
 
   if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
 

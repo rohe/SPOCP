@@ -79,6 +79,20 @@ static void conn_env_reset( conn_t *con )
       con->transpsec = 0 ;
     }
 #endif
+#ifdef HAVE_SASL
+    if (con->sasl_mech) {
+      free(con->sasl_mech);
+      con->sasl_mech = 0;
+    }
+    if (con->sasl) {
+      sasl_dispose(&con->sasl);
+      con->sasl = 0;
+    }
+    if (con->sasl_username) {
+      free(con->sasl_username);
+      con->sasl_username = 0;
+    }
+#endif
   }
 }
 
@@ -123,11 +137,6 @@ int conn_setup( conn_t *conn, srv_t *srv, int fd, char *hostname, char *ipaddr )
   conn->stop = 0 ;
 #ifdef HAVE_SSL
   conn->ssl = NULL;
-#endif
-#ifdef HAVE_SASL
-  if (conn->sasl)
-     sasl_dispose(&conn->sasl);
-  conn->sasl = NULL;
 #endif
 
   time( &conn->last_event ) ;
