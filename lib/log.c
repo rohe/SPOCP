@@ -28,6 +28,10 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+#endif 
+
 #include <struct.h>
 #include <spocp.h>
 
