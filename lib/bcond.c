@@ -1,5 +1,4 @@
-/*
- * ! \file lib/bcond.c \author Roland Hedberg <roland@catalogix.se> 
+/*! \file lib/bcond.c \author Roland Hedberg <roland@catalogix.se> 
  */
 
 #include <string.h>
@@ -14,10 +13,15 @@
 #include <proto.h>
 #include <dback.h>
 
+/*! Local struct used to store parsed information about bcond s-expressions */
 typedef struct _stree {
+	/*! Is this a list/set or not */
 	int             list;
+	/*! The atom */
 	octet_t         val;
+	/*! Next element */
 	struct _stree  *next;
+	/*! Previous element */
 	struct _stree  *part;
 } stree_t;
 
@@ -680,8 +684,7 @@ bcname_make(octet_t * name)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! Is this a proper specification of a boundary condition ? \param spec A
+/*! Is this a proper specification of a boundary condition ? \param spec A
  * pointer to the boundary condition specification \return TRUE is true or
  * FALSE if not 
  */
@@ -705,8 +708,7 @@ bcspec_is(octet_t * spec)
 		return FALSE;
 }
 
-/*
- * ! \brief Adds a boundary condition definition to the list of others \param
+/*! \brief Adds a boundary condition definition to the list of others \param
  * db A link to the internal database \param p Pointer to the linked list of
  * registered plugins \param dbc Command parameters connected to the
  * persistent store \param name The name of the boundary condition
@@ -789,8 +791,7 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Remove a boundary condition from the internal database. A
+/*! \brief Remove a boundary condition from the internal database. A
  * boundary condition can not be removed if there is rules that uses it!
  * \param db A pointer to the internal database \param dbc Command parameters
  * connected to the persistent store \param name The name of the boundary
@@ -830,8 +831,7 @@ bcdef_del(db_t * db, dbcmd_t * dbc, octet_t * name)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Replaces on boundary condition with another without changing the
+/*! \brief Replaces on boundary condition with another without changing the
  * name. \param db A pointer to the internal database \param p Pointer to the
  * set of plugins that is present \param dbc Command parameters connected to
  * the persistent store \param name The name of the boundary condition \param
@@ -878,8 +878,7 @@ bcdef_replace(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Given a boundary condition specification, return a pointer to the
+/*! Given a boundary condition specification, return a pointer to the
  * internal representation. That includes returning a pointer to a already
  * existing stored boundary condition if this specification is a reference.
  * Or if the specification is not a simple reference, store it and return a
@@ -919,8 +918,7 @@ bcdef_get(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * o,
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief Checks whether a boundary condition is true or false. If the
+/*! \brief Checks whether a boundary condition is true or false. If the
  * backend that does the evaluation return true it might be accompanied by a
  * dynamic blob. \param ep A pointer to a internal representation of the
  * parsed query S-expression \param id A collection of a set of rules that are 
@@ -973,8 +971,7 @@ bcond_check(element_t * ep, index_t * id, octarr_t ** oa)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! \brief A niffty function that allows you to find all rules that are
+/*! \brief A niffty function that allows you to find all rules that are
  * dependent on a specific boundary condition. \param db A pointer to the
  * internal database \param bcname The name of the boundary condition \return
  * A array of pointers to the rules that uses, directly of indirectly, this

@@ -53,10 +53,13 @@ atom_dup(atom_t * ap)
  */
 /*! \brief Joins a set of atoms with a separator in betweem into one string
  * of bytes. If given a list which contains both atoms and other elements all
- * non-atom elements will just be silently ignores. \param e A pointer to a
+ * non-atom elements will just be silently ignored.
+ * \param e A pointer to a
  * element structure which should contain either a set or a list of elements
- * each containing a atom. \param sep The separator which is to be placed
- * between the atom values \return A pointer to a a octet struct which
+ * each containing a atom.
+ * \param sep The separator which is to be placed
+ * between the atom values
+ * \return A pointer to a a octet struct which
  * contains the result of the concatenation 
  */
 octet_t        *

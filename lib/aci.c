@@ -1,5 +1,4 @@
-/*
- * ! \file lib/aci.c \author Roland Hedberg <roland@catalogix.se> 
+/*! \file lib/aci.c \author Roland Hedberg <roland@catalogix.se> 
  */
 #include <string.h>
 
@@ -10,8 +9,7 @@
 #include <wrappers.h>
 #include <macros.h>
 
-/*
- * ! A successfull matching of a query against the ruledatabase returns a
+/*! A successfull matching of a query against the ruledatabase returns a
  * pointer to a junction where one of the branches is a array of pointer to
  * rule instances. Presently this array will never contain more than one
  * pointer, since the software does not allow several identical rules to be
@@ -47,8 +45,7 @@ allowing_rule(junc_t * ap)
 	return 0;
 }
 
-/*
- * ! The function which is the starting point for access control, that is
+/*! The function which is the starting point for access control, that is
  * matching the query * against a specific ruleset. \param ap A pointer to
  * the start of the ruletree \param comp A set of command parameters \return
  * SPOCP_SUCCESS on success otherwise an appropriate error code 
