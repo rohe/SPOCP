@@ -511,23 +511,6 @@ int rbt_remove( rbt_t *rh, Key v )
   return 1 ;
 }
 
-__attribute__((unused)) static int BST_cmp( Key a, Key b )
-{
-  return ( (int) a - (int) b ) ;
-}
-
-__attribute__((unused)) static void BST_free( item_t a )
-{
-  if( a ) free( a ) ;
-}
-
-/*
-__attribute__((unused)) static Key BST_keycalc( item_t a )
-{
-  return lhash( (unsigned char *) a, strlen(( char *) a), 0 ) ;
-}
-*/
-
 static void rb_print( rbnode_t *h, char *path, pfunc *pf ) 
 {
   int  l = strlen( path ) ;
