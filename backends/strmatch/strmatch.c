@@ -55,7 +55,8 @@ strmatch_test(cmd_param_t * cpp, octet_t * blob)
 		if (oct != cpp->arg)
 			oct_free(oct);
 
-	} else {
+	} /*
+	else {
 		ce[0] = element_nth(cpp->x, 0);
 		ce[1] = element_nth(cpp->x, 1);
 
@@ -77,6 +78,7 @@ strmatch_test(cmd_param_t * cpp, octet_t * blob)
 				r = SPOCP_SUCCESS;
 		}
 	}
+	*/
 
 	return r;
 }
