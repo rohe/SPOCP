@@ -952,12 +952,12 @@ static octarr_t *parse_path( octet_t *o )
  *
  * //D - The list/-s with the tag D 
  *
- * ..A/* all elements in the list with tag A, except the tag == 1,...,last 
+ * ..A* all elements in the list with tag A, except the tag == 1,...,last 
  *
  * ..A[n-m] elements n to m
  * allowed formats [n], [-m], [n-m], [n-], ["last"], [-"last"], [n-"last"]
  * first element has index 0
- * ..A/* and ..A[1-] is equivalent
+ * ..A* and ..A[1-] is equivalent
  *
  * //A | //B All list starting with either A or B
  *
