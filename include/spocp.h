@@ -25,11 +25,11 @@
 #define  SPOCP_DSRV    0x100
 
 
-#if !defined(FALSE)
-#define FALSE 0
+#ifndef FALSE
+#define FALSE          0
 #endif
-#if !defined(TRUE)
-#define TRUE !FALSE
+#ifndef TRUE
+#define TRUE           1
 #endif
 
 /*

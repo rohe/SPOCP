@@ -17,8 +17,12 @@
 
 #include <spocp.h>
 
+#ifndef FALSE
 #define FALSE          0
+#endif
+#ifndef TRUE
 #define TRUE           1
+#endif
 
 #define SPOC_ATOM      0
 #define SPOC_LIST      1
