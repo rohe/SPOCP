@@ -219,7 +219,7 @@ int main( int argc, char **argv )
 			break;
 
 		case 'd':
-			debug = atoi(optarg);
+			spocp_debug = debug = atoi(optarg);
 			if (debug < 0)
 				debug = 0;
 			break;
@@ -235,7 +235,7 @@ int main( int argc, char **argv )
 		case 'h':
 		default:
 			fprintf(stderr,
-				"Usage: %s [-f configfile] [-d debuglevel]\n",
+				"Usage: %s [-f configfile] [-b] [-x] [-d debuglevel]\n",
 				argv[0]);
 			exit(0);
 		}

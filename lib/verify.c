@@ -79,6 +79,7 @@ is_ipv4(octet_t * op, struct in_addr * ia)
 		return SPOCP_SYNTAXERROR;
 	} else {
 		op->val[op->len] = c;
+		ia->s_addr = htonl( ia->s_addr );
 		return SPOCP_SUCCESS;
 	}
 }

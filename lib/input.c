@@ -109,18 +109,18 @@ set_memberof(varr_t * va, element_t * group)
 int
 ipv4cmp(struct in_addr *ia1, struct in_addr *ia2)
 {
-	return ia2->s_addr - ia1->s_addr;
+	return ia1->s_addr - ia2->s_addr;
 }
 
 int
 ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2)
 {
-	uint32_t       *lw = (uint32_t *) ia1;
-	uint32_t       *uw = (uint32_t *) ia2;
+	uint8_t		*la = &(ia1->s6_addr[15]) ;
+	uint8_t		*lb = &(ia2->s6_addr[15]) ;
 	int             r, i;
 
-	for (i = 0; i < 4; i++, lw++, uw++) {
-		r = *uw - *lw;
+	for (i = 15; i >= 0; i++, la--, lb--) {
+		r = *la - *lb;
 		if (r)
 			return r;
 	}
@@ -455,11 +455,11 @@ is_valid_range(range_t * rp)
 			break;
 
 		case SPOC_IPV4:
-			c = ipv4cmp(&rp->lower.v.v4, &rp->upper.v.v4);
+			c = ipv4cmp(&rp->upper.v.v4, &rp->lower.v.v4);
 			break;
 
 		case SPOC_IPV6:
-			c = ipv6cmp(&rp->lower.v.v6, &rp->upper.v.v6);
+			c = ipv6cmp(&rp->upper.v.v6, &rp->lower.v.v6);
 			break;
 
 		case SPOC_ALPHA:
