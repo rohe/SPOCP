@@ -433,7 +433,9 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 	long            li, lv = 0, uv = 0;
 
 	struct in_addr *v4l, *v4u, ia;
+#ifdef USE_IPV6
 	struct in6_addr *v6l, *v6u, i6a;
+#endif
 
 	switch (dtype) {
 	case SPOC_NUMERIC:
@@ -453,10 +455,12 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 		v4u = &rp->upper.v.v4;
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:
 		v6l = &rp->lower.v.v6;
 		v6u = &rp->upper.v.v6;
 		break;
+#endif
 	}
 
 	for (i = 0; i < (int) ht->size; i++) {
@@ -554,6 +558,7 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 				 */
 				break;
 
+#ifdef USE_IPV6
 			case SPOC_IPV6:
 				if (is_ipv6(op, &i6a) != SPOCP_SUCCESS)
 					break;
@@ -561,6 +566,7 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 				 * MISSING CODE 
 				 */
 				break;
+#endif
 			}
 
 			if (r)

@@ -126,12 +126,14 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 			v = b1p->type - b2p->type;
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:	/* Can be viewed as a array of unsigned ints */
 		v = ipv6cmp(&b1p->v.v6, &b2p->v.v6);
 
 		if (!v)
 			v = b1p->type - b2p->type;
 		break;
+#endif
 	}
 
 	/*
@@ -424,10 +426,12 @@ boundary_print(boundary_t * bp)
 		traceLog(" %x %s %s", bp->type, lte, ip);
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:
 		inet_ntop(AF_INET6, (void *) &bp->v.v6, ip, 65);
 		traceLog(" %s %s", lte, ip);
 		break;
+#endif
 
 	}
 }
@@ -772,18 +776,20 @@ boundary_dup(boundary_t * bp)
 		break;
 
 	case SPOC_IPV4:
-		a = (char *) &nbp->v.v6;
-		b = (char *) &bp->v.v6;
+		a = (char *) &nbp->v.v4;
+		b = (char *) &bp->v.v4;
 		for (i = 0; i < (int) sizeof(struct in_addr); i++)
 			*a++ = *b++;
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:
 		a = (char *) &nbp->v.v6;
 		b = (char *) &bp->v.v6;
 		for (i = 0; i < (int) sizeof(struct in6_addr); i++)
 			*a++ = *b++;
 		break;
+#endif
 	}
 
 	nbp->type = bp->type;

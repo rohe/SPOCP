@@ -222,6 +222,7 @@ typedef struct {
 
 octet_t		*octdup(octet_t * oct);
 int		octcmp(octet_t * a, octet_t * b);
+int		octrcmp(octet_t * a, octet_t * b);
 void		octmove(octet_t * a, octet_t * b);
 int		octncmp(octet_t * a, octet_t * b, size_t i);
 int		octstr(octet_t * val, char *needle);

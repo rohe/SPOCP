@@ -161,8 +161,10 @@ typedef struct _boundary {
 		long int        num;
 		/*! IP version 4 representation */
 		struct in_addr  v4;
+#ifdef USE_IPV6
 		/*! IP version 6 representation */
 		struct in6_addr v6;
+#endif
 		/*! byte string */
 		octet_t         val;
 	} v;

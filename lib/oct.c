@@ -337,7 +337,6 @@ int
 octrcmp(octet_t *a, octet_t *b)
 {
 	size_t	n;
-	int	r;
 	char	*s, *c;
 
 	n = MIN(a->len, b->len);

@@ -15,19 +15,23 @@
 spocp_result_t  is_numeric(octet_t * op, long *l);
 spocp_result_t  numstr(char *s, long *l);
 spocp_result_t  is_ipv4(octet_t * op, struct in_addr *ia);
-spocp_result_t  is_ipv6(octet_t * op, struct in6_addr *ia);
 spocp_result_t  is_date(octet_t * op);
 spocp_result_t  is_time(octet_t * op);
 spocp_result_t  is_extref(octet_t * op);
 spocp_result_t  is_ipv4_s(char *ip, struct in_addr *ia);
+#ifdef USE_IPV6
 spocp_result_t  is_ipv6_s(char *ip, struct in6_addr *ia);
+spocp_result_t  is_ipv6(octet_t * op, struct in6_addr *ia);
+#endif
 
 /*
  *
  */
 
-int             ipv4cmp(struct in_addr *ia1, struct in_addr *ia2);
+#ifdef USE_IPV6
 int             ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2);
+#endif
+int             ipv4cmp(struct in_addr *ia1, struct in_addr *ia2);
 spocp_result_t  element_get(octet_t * oct, element_t ** epp);
 
 extern int debug;
@@ -70,7 +74,9 @@ atom2boundarycmp( atom_t *a, boundary_t *b, int *dir, octet_t *str)
 {
 	int		res = 0, v = 0;
 	struct in_addr	ia4;
+#ifdef USE_IPV6
 	struct in6_addr	ia6;
+#endif
 	long		l;
 	
 	switch (b->type & 0x07) {
@@ -108,12 +114,14 @@ atom2boundarycmp( atom_t *a, boundary_t *b, int *dir, octet_t *str)
 		}
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:	/* Can be viewed as a array of unsigned ints */
 		if (is_ipv6( &a->val, &ia6) == SPOCP_SUCCESS) {
 			v = ipv6cmp(&ia6, &b->v.v6);
 			res = 0;
 		}
 		break;
+#endif
 
 	default:
 		res = 1;
@@ -148,9 +156,11 @@ boundarycmp( boundary_t *a, boundary_t *b)
 		v = ipv4cmp(&a->v.v4, &b->v.v4);
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:	/* Can be viewed as a array of unsigned ints */
 		v = ipv6cmp(&a->v.v6, &b->v.v6);
 		break;
+#endif
 	}
 
 	return v;

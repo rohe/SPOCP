@@ -208,18 +208,20 @@ boundary_cpy(boundary_t * dest, boundary_t * src)
 		break;
 
 	case SPOC_IPV4:
-		a = (char *) &dest->v.v6;
-		b = (char *) &src->v.v6;
+		a = (char *) &dest->v.v4;
+		b = (char *) &src->v.v4;
 		for (i = 0; i < (int) sizeof(struct in_addr); i++)
 			*a++ = *b++;
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:
 		a = (char *) &dest->v.v6;
 		b = (char *) &src->v.v6;
 		for (i = 0; i < (int) sizeof(struct in6_addr); i++)
 			*a++ = *b++;
 		break;
+#endif
 	}
 
 	dest->type = src->type;

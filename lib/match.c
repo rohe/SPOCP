@@ -128,10 +128,12 @@ atom2range_match(atom_t * ap, slist_t * slp, int vtype, spocp_result_t * rc)
 			r = 0;
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:
 		if (is_ipv6(&ap->val, &value.v.v6) != SPOCP_SUCCESS)
 			r = 0;
 		break;
+#endif
 
 	case SPOC_ALPHA:
 		vo->val = ap->val.val;

@@ -112,6 +112,7 @@ ipv4cmp(struct in_addr *ia1, struct in_addr *ia2)
 	return ia1->s_addr - ia2->s_addr;
 }
 
+#ifdef USE_IPV6
 int
 ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2)
 {
@@ -127,7 +128,7 @@ ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2)
 
 	return 0;
 }
-
+#endif
 
 /*
  * =============================================================== 
@@ -425,9 +426,11 @@ set_limit(boundary_t * bp, octet_t * op)
 		r = is_ipv4(op, &bp->v.v4);
 		break;
 
+#ifdef USE_IPv6
 	case SPOC_IPV6:
 		r = is_ipv6(op, &bp->v.v6);
 		break;
+#endif
 	}
 
 	return r;
@@ -458,9 +461,11 @@ is_valid_range(range_t * rp)
 			c = ipv4cmp(&rp->upper.v.v4, &rp->lower.v.v4);
 			break;
 
+#ifdef USE_IPV6
 		case SPOC_IPV6:
 			c = ipv6cmp(&rp->upper.v.v6, &rp->lower.v.v6);
 			break;
+#endif
 
 		case SPOC_ALPHA:
 		case SPOC_DATE:
@@ -510,6 +515,7 @@ is_atom(range_t * rp)
 			sr = SPOCP_SUCCESS;
 		break;
 
+#ifdef USE_IPV6
 	case SPOC_IPV6:
 		l = (uint32_t *) & rp->lower.v.v6;
 		u = (uint32_t *) & rp->upper.v.v6;
@@ -517,6 +523,7 @@ is_atom(range_t * rp)
 		    && l[3] == u[3])
 			sr = SPOCP_SUCCESS;
 		break;
+#endif
 
 	case SPOC_ALPHA:
 	case SPOC_DATE:
@@ -562,8 +569,10 @@ do_range(octet_t * op, element_t * ep)
 			rp->lower.type = SPOC_DATE;
 		else if (strncasecmp(oct.val, "ipv4", 4) == 0)
 			rp->lower.type = SPOC_IPV4;
+#ifdef USE_IPv6
 		else if (strncasecmp(oct.val, "ipv6", 4) == 0)
 			rp->lower.type = SPOC_IPV6;
+#endif
 		else if (strncasecmp(oct.val, "time", 4) == 0)
 			rp->lower.type = SPOC_TIME;
 		else {
