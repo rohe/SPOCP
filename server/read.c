@@ -1,5 +1,5 @@
 #include "locl.h"
-RCSID("$Id$");
+/* RCSID("$Id$"); */
 
 typedef struct _ptree {
   int list ;
@@ -541,8 +541,8 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
   octarr_t       *oa = 0, *roa = 0 ;
   spocp_result_t  r ;
   int             i, f = 0, n = 0 ;
-  octet_t         tmp, dat0, dat1, *bcond;
-  char           *bcname = 0 ;
+  octet_t         dat0, dat1, *bcond, name;
+  char           *bcname = 0, *tmp ;
   ruleset_t      *rs ;
 
   oa = dback_all_keys( dback, dback->conhandle, &r ) ;
@@ -561,14 +561,16 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
       if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) != 0 ) continue ;
 
       if( bcspec_is( oa->arr[i] ) == TRUE ) {
-        tmp.val = oa->arr[i]->val + 6 ;
-        tmp.len = oa->arr[i]->len - 6 ;
+        tmp = lstrndup( oa->arr[i]->val + 6, oa->arr[i]->len - 6 ) ;
 
-        r = dback_read( dback, dback->conhandle, oa->arr[i], &dat0, &dat1, &bcname ) ;
+        r = dback_read( dback, dback->conhandle, tmp, &dat0, &dat1, &bcname ) ;
+
         if( dat0.len ) {
-          bcdef_add( rs->db, &tmp, &dat0) ;
+          oct_assign( &name, tmp ) ;
+          bcdef_add( rs->db, &name, &dat0) ;
           octclr( &dat0 ) ;
         }
+        free( tmp ) ;
       }
     } 
     /* the second for compound bconds */
@@ -576,22 +578,25 @@ int dback_read_rules( dback_t *dback, ruleset_t **rspp, spocp_result_t *rc )
       if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) != 0 ) continue ;
 
       if( bcspec_is( oa->arr[i] ) == FALSE ) {
-        tmp.val = oa->arr[i]->val + 6 ;
-        tmp.len = oa->arr[i]->len - 6 ;
+        tmp = lstrndup( oa->arr[i]->val + 6, oa->arr[i]->len - 6 ) ;
 
-        r = dback_read( dback, dback->conhandle, oa->arr[i], &dat0, &dat1, &bcname ) ;
+        r = dback_read( dback, dback->conhandle, tmp, &dat0, &dat1, &bcname ) ;
 
         if( dat0.len ) {
-          bcdef_add( rs->db, &tmp, &dat0) ;
+          oct_assign( &name, tmp ) ;
+          bcdef_add( rs->db, &name, &dat0) ;
           octclr( &dat0 ) ;
         }
+
+        free( tmp ) ;
       }
     } 
     /* and the third for rules */
     for( i = 0 ; i < oa->n ; i++ ) {
       if( strncmp( oa->arr[i]->val, "BCOND:", 6 ) == 0 ) continue ;
-
-      r = dback_read( dback, dback->conhandle, oa->arr[i], &dat0, &dat1, &bcname ) ;
+      tmp = oct2strdup( oa->arr[i], 0 ) ;
+      r = dback_read( dback, dback->conhandle, tmp, &dat0, &dat1, &bcname ) ;
+      free( tmp ) ;
 
       roa = octarr_add( roa, octdup(&dat0) ) ;
       octclr( &dat0 ) ;
