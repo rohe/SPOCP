@@ -683,7 +683,7 @@ com_query(work_info_t *wi)
 		}
 	}
 
-	ruleset_tree( rs, 0 );
+	/* ruleset_tree( rs, 0 ); */
 	r = opinitial( wi, &rs, 1, 1, 1);
 	if (r == SPOCP_SUCCESS) {
 /*

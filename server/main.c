@@ -316,7 +316,7 @@ main(int argc, char **argv)
 	if ( get_rules( &srv ) != SPOCP_SUCCESS ) 
 		exit(1);
 
-	ruleset_tree( srv.root, 0);
+	/*ruleset_tree( srv.root, 0);*/
 
 	/* If only testing configuration and rulefile this is as far as I go */
 	if (conftest) {
