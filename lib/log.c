@@ -143,7 +143,7 @@ spocp_open_log(char *file, int level)
 	if (strcmp(file, "syslog") == 0) {
 		log_syslog = 1;
 		lev = find_value( cp, syslogvals );
-		openlog( "spocp", LOG_NDELAY|LOG_CONS, lev);
+		openlog( "spocp", LOG_NDELAY|LOG_CONS|LOG_PID, lev);
 		return SPOCP_SUCCESS;
 	}
 	else if (strcmp( file, "file") == 0 ) {
