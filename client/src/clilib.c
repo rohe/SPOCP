@@ -17,6 +17,10 @@
 
 #include <config.h>
 
+#ifdef GLIBC2
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>

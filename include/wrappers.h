@@ -37,6 +37,14 @@ char           *Strndup(char *s, size_t n);
 char           *strndup(const char *old, size_t sz);
 #endif
 
+#ifndef HAVE_STRLCAT
+char           *strlcat(char *dst, const char *old, size_t sz);
+#endif
+
+#ifndef HAVE_STRLCPY
+char           *strlcpy(char *dst, const char *old, size_t sz);
+#endif
+
 /*================================================*/
 
 void           *xMalloc(size_t size);

@@ -23,6 +23,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include <wrappers.h>
 
 /*
  * ============================================================== 

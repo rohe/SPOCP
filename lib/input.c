@@ -15,7 +15,9 @@
 
  ***************************************************************************/
 
-#ifdef X_OPEN
+#include <config.h>
+
+#ifdef GLIBC2
 #define _XOPEN_SOURCE
 #endif
 
@@ -24,8 +26,6 @@
 #include <strings.h>
 #include <sys/types.h>
 #include <time.h>
-
-#include <config.h>
 
 #include <macros.h>
 #include <wrappers.h>
