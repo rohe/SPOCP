@@ -81,6 +81,7 @@ char *sexp_printa( char *sexp, unsigned int *size, char *format, void **argv )
   octet_t     *o, **oa ;
   int          i, n, argc = 0 ;
   unsigned int bsize = *size ;
+  octarr_t    *oarr ;
 
   if( format == 0 || *format == '\0' ) return 0 ;
 
@@ -121,6 +122,24 @@ char *sexp_printa( char *sexp, unsigned int *size, char *format, void **argv )
 
         for( i = 0 ; oa[i] ; i++ ) {
           o = oa[i] ;
+          if( o->len == 0 ) continue ;
+          n = snprintf( sp, bsize, "%d:", o->len);
+          if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
+          bsize -= n ;
+          sp += n ;
+
+          if( o->len > bsize ) return 0 ;
+          memcpy( sp, o->val, o->len ) ;
+          bsize -= o->len ;
+          sp += o->len ;
+        }
+        break;
+
+      case 'X':           /* ocarr */
+        if(( oarr = ( octarr_t *) argv[argc++] ) == 0 ) return 0 ;
+
+        for( i = 0 ; i < oarr->n ; i++ ) {
+          o = oarr->arr[i] ;
           if( o->len == 0 ) continue ;
           n = snprintf( sp, bsize, "%d:", o->len);
           if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
@@ -216,6 +235,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
   octet_t *o, **oa ;
   int     n, i ;
   unsigned int bsize = *size ;
+  octarr_t *oarr ;
  
   if( fmt == 0 ) return 0 ;
 
@@ -335,6 +355,24 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
             bsize -= o->len ;
             sp += o->len ;
           }
+        }
+        break;
+
+      case 'X':           /* ocarr */
+        if(( oarr = va_arg( ap, octarr_t *)) == 0 ) return 0 ;
+
+        for( i = 0 ; i < oarr->n ; i++ ) {
+          o = oarr->arr[i] ;
+          if( o->len == 0 ) continue ;
+          n = snprintf( sp, bsize, "%d:", o->len);
+          if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
+          bsize -= n ;
+          sp += n ;
+
+          if( o->len > bsize ) return 0 ;
+          memcpy( sp, o->val, o->len ) ;
+          bsize -= o->len ;
+          sp += o->len ;
         }
         break;
 
