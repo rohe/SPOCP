@@ -64,7 +64,10 @@ dnl * dynamic modules?
 have_modules=no
 MODULE_LIBS=""
 
-AC_CHECK_LIB([dl], [dlopen], [have_modules=yes MODULE_LIBS="-export-dynamic -ldl"  ])
+AC_CHECK_FUNC([dlopen],
+   [have_modules=yes MODULE_LIBS="-export-dynamic"],
+   [AC_CHECK_LIB([dl], [dlopen],
+       [have_modules=yes MODULE_LIBS="-export-dynamic -ldl"])])
 
 if test $have_modules = yes ; then
   AC_DEFINE(HAVE_LIBDL,1)
