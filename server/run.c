@@ -83,8 +83,6 @@ void spocp_srv_run( srv_t *srv )
 
 #ifdef HAVE_LIBWRAP
   int        allow;
-  extern int allow_severity;
-  extern int deny_severity;
   struct request_info req;
 #endif /* HAVE_LIBWRAP */
 
