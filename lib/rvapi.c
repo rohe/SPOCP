@@ -28,7 +28,7 @@
 #define TAGCHAR(c)  ( ALPHA(c) || DIGIT(c) || (c) == '-' || (c) == '_' || (c) == '.' )
 
 static varr_t *list_search( element_t *e, octet_t *tag, varr_t *r) ;
-/* static element_t *element_dup( element_t *ep, element_t *memberof ) ; */
+element_t *element_dup( element_t *ep, element_t *memberof ) ; 
 /* from input.c */
 void set_memberof( varr_t *va, element_t *group ) ;
 
@@ -47,7 +47,9 @@ atom_t *atom_dup( atom_t *ap )
 
 /* ====================================================================== */
 /*!
- * Joins a set of atoms with a separator inbetweem into one string of bytes
+ * Joins a set of atoms with a separator in betweem into one string of bytes.
+ * If given a list which contains both atoms and other elements all non-atom
+ * elements will just be silently ignores.
  * \param e A pointer to a element structure which should contain either a set or
  * a list of elements each containing a atom.
  * \param sep The separator which is to be placed between the atom values
@@ -281,12 +283,12 @@ element_t *element_dup( element_t *ep, element_t *memberof )
 
 /* ====================================================================== */
 /*!
- * Add a element to a list of elements, the element is added to the end of the
+ * Adds a element to a list of elements, the element is added to the end of the
  * list. If the list is empty a new list is created and the element is added as
- * the first in the list.
+ * the first of the list.
  * The S-expression restriction that the first element in a list has to be a atom
  * is not inforced in this case. Any type of element can be added anywhere.
- * \param le A pointer to the element list
+ * \param le A pointer to the element list, might be NULL
  * \param e The element that is to be added to the list
  * \return A pointer to the possibly newly created list
  */
@@ -320,7 +322,10 @@ element_t *element_list_add( element_t *le, element_t *e )
 
 /*!
  * Adds a element to an array of elements. The difference between this and 
- * element_add_lsit is that the array is unsorted.
+ * element_add_list is that the array is by definition unsorted, so the added
+ * element might end up anywhere in the array. Array differs from Set in that the
+ * special restrictions that are valid for sets are not so for arrays. An array can
+ * for instance contain two lists with the same tag.
  * \param le A pointer to the element array
  * \param e A pointer to the element to be added
  * \return A pointer to the array, which might be created by the function
@@ -432,6 +437,11 @@ static varr_t *list_search( element_t *e, octet_t *tag, varr_t *r)
 
 /* ---------------------------------------------------------------------- */
 /*!
+ * This function finds all lists in a S-expression that has a specific tag 
+ * \param e The parsed respresentation of the S-exxpression that should be searched
+ * \param tag the list tag
+ * \return An element array containing the list/lists or NULL if no list with that
+ *         tag was found. 
  */
 element_t *element_find_list( element_t *e, octet_t *tag ) 
 {
@@ -449,7 +459,7 @@ element_t *element_find_list( element_t *e, octet_t *tag )
   
   if( varr ) {
     re = element_new() ;
-    re->type = SPOC_SET ;
+    re->type = SPOC_ARRAY ;
     re->e.set = varr ;
   }
 
@@ -457,7 +467,13 @@ element_t *element_find_list( element_t *e, octet_t *tag )
 }
 
 /* ---------------------------------------------------------------------- */
-
+/*!
+ * Given a path specification find the element list that matches that description
+ * \param e The element to be searched
+ * \param oa An octarr_t struct representing the path specification
+ * \param i The level in the tree to which the search has reached
+ * \return A Pointer to the matching list or NULL if no list was found
+ */
 element_t *element_traverse( element_t *e, octarr_t *oa, int i )
 {
   element_t  *ep, *rep ;
@@ -496,21 +512,35 @@ element_t *element_traverse( element_t *e, octarr_t *oa, int i )
 
 /* ---------------------------------------------------------------------- */
 
+/*!
+ * Gives you the first element in a list, or one element from a array or set element
+ * \param e A pointer to the element from which the element should be picked
+ * \return A pointer to the subelement or if the element given was not a list, array
+ *         or set NULL.
+ */
 element_t *element_first( element_t *e ) 
 {
-  if( e == 0 ) return 0 ;
+  if( e == 0 ) return NULL ;
 
   if( e->type == SPOC_LIST ) return e->e.list->head ;
   else if( e->type == SPOC_SET || e->type == SPOC_ARRAY )
     return (element_t *) varr_nth( e->e.set, 0 ) ;
-  else return e ;
+  else return NULL ;
 }
 
 /* ---------------------------------------------------------------------- */
 
+/*!
+ * Gives you the last element in a list, or one element from a array or set element
+ * If you use this function on a array or set it should not return the same element as
+ * element_first() provided that the array or set element contains more than one element.
+ * \param e A pointer to the element from which the element should be picked
+ * \return A pointer to the subelement or if the element given was not a list, array
+ *         or set NULL.
+ */
 element_t *element_last( element_t *e )
 {
-  if( e == 0 ) return 0 ;
+  if( e == 0 ) return NULL ;
 
   if( e->type == SPOC_LIST ) {
     for( e = e->e.list->head ; e->next ; e = e->next ) ;
@@ -518,11 +548,17 @@ element_t *element_last( element_t *e )
   }
   else if( e->type == SPOC_SET || e->type == SPOC_ARRAY )
     return (element_t *) varr_nth( e->e.set, varr_len( e->e.set ) -1 ) ;
-  else return e ;
+  else return NULL ;
 }
 
 /* ---------------------------------------------------------------------- */
 
+/*!
+ * Gives you the nth element in a list, or one element from a array or set element
+ * \param e A pointer to the element from which the element should be picked
+ * \return A pointer to the subelement . If the element given is a atom alement
+ *         and the index was set to 0, the element itself will be returned.
+ */
 element_t *element_nth( element_t *e, int n )
 {
   int i ;
@@ -536,17 +572,32 @@ element_t *element_nth( element_t *e, int n )
   else if( e->type == SPOC_SET || e->type == SPOC_ARRAY ) {
     return (element_t *) varr_nth( e->e.set, n ) ;
   }
-  else if( n > 1 ) return 0 ;
-  else return e ;
+  else if( e->type == SPOC_ATOM && n == 0 ) return e ;
+  else return 0 ;
 }
 
 /* ---------------------------------------------------------------------- */
-/* If start is negative then the starting point is counted from the end of
-   the list (e, -2, 2 ), gives you the last two elements in the list */
+/*!
+ * This routine only works on lists !
+ * It allows you to pick a sublist by specifying with which subelement the 
+ * sublist should start and then the number of subelements it should contain.
+ * If start is negative then the starting point is counted from the end of
+ * the list element_perl_intervall(e, -2, 2 ), gives you the last two elements 
+ * of the list. The first element in the list has index 0.
+ * \param The list element
+ * \param The index of the starting subelement, this might be a negative number
+ * \param The number of subelements that should be extracted.
+ * \return A element list or one element if the sublist length was given as one.
+ *         Either newly created, with copies of the subelements 
+ *         from the original list. If the element given to the function was not a 
+ *         list element, NULL is returned. The same happens if the starting index 
+ *         is outside the range of subelements or if the intervall picked is larger
+ *         than the list of available subelements.
+ */
 
 element_t *element_perl_intervall( element_t *e, int start, int nr )
 {
-  element_t *re = 0, *ep, *next, *head ;
+  element_t *re = 0, *ep, *next ;
   int        i, n ;
 
   if( e == 0 ) return 0 ;
@@ -554,40 +605,37 @@ element_t *element_perl_intervall( element_t *e, int start, int nr )
   /* only works on lists */
   if( e->type != SPOC_LIST ) return 0 ;
 
-  for( n = 0, ep = e->e.list->head  ; ep ; ep = ep->next ) n++ ;
+  n = element_size( e ) ;
 
   if( start >= 0 ) {
     if( start+nr <= n ) {
-      re = element_new() ;
-      re->type = SPOC_LIST ;
+      /* pick the starting element */
       for( i = 0, ep = e->e.list->head ;  i < start ; ep = ep->next, i++ ) ;
 
-      re->e.list = list_new() ;
-      re->e.list->head = head = element_dup( ep, re ) ;      
+      if( nr == 1 ) {
+        re = element_dup( ep, 0 ) ;
+      }
+      else {
+        re = element_list_add( re, ep ) ;
 
-      head->memberof = re ;
-      for( i = 0, next = ep->next ; i < nr ; next = next->next, i++ ) {
-        head->next = element_dup( next, re ) ;
-        head = head->next ;
-        head->memberof = re ;
-      }  
+        /* add the rest */
+        for( i = 0, next = ep->next ; i < nr ; next = next->next, i++ ) 
+          re = element_list_add( re, next ) ;
+      }
     }
   }
-  else {
-    if( start + nr <= 0 && nr <= n ) {
-      re = element_new() ;
-      re->type = SPOC_LIST ;
+  else { /* start < 0 */
+    if( (start + nr) <= 0 && ( n + start ) >= 0 ) {
 
       for( i = 0, ep = e->e.list->head ;  i < n + start ; ep = ep->next, i++ ) ;
 
-      re->e.list = list_new() ;
-      re->e.list->head = head = element_dup( ep, re ) ;      
-      head->memberof = re ;
+      if( nr == 1 ) 
+        re = element_dup( ep, 0 ) ;
+      else {
+        re = element_list_add( re, ep ) ;
 
-      for( i = 0, next = ep->next ; i < nr ; next = next->next, i++ ) {
-        head->next = element_dup( next, re ) ;
-        head = head->next ;
-        head->memberof = re ;
+        for( i = 0, next = ep->next ; i < nr ; next = next->next, i++ ) 
+          re = element_list_add( re, next ) ;
       }  
     }
   }
@@ -597,9 +645,21 @@ element_t *element_perl_intervall( element_t *e, int start, int nr )
 
 /* ---------------------------------------------------------------------- */
 
+/*!
+ * Another function that lets you pick a list of subelements.
+ * Here you specify the index of the first and the last subelement.
+ * -1 denotes that last subelement in the list.
+ * \param e A pointer to the list element
+ * \param start The starting index
+ * \param end The ending index.
+ * \return A pointer to a copy of the sublist or subelement depending on 
+ *         whether the range contained more than one or just one element. 
+ *         If the range doesn't make sense, NULL is returned.
+ */
+
 element_t *element_intervall( element_t *e, int start, int end )
 {
-  element_t *re = 0, *ep, *next, *head ;
+  element_t *re = 0, *ep, *next ;
   int        i, n ;
 
   if( e == 0 ) return 0 ;
@@ -607,34 +667,31 @@ element_t *element_intervall( element_t *e, int start, int end )
   /* only works on lists */
   if( e->type != SPOC_LIST ) return 0 ;
 
+  if( start < -1 || end < -1 ) return 0 ;
+
   /* The total number of elements in the list */
-  for( n = 0, ep = e->e.list->head  ; ep ; ep = ep->next ) n++ ;
+  n = element_size( e ) ;
 
   /* -1 == last */
   if( start == -1 ) start = n - 1;
   if( end == -1 ) end = n - 1;
 
-  if( start >= 0 ) {
-    if( end == start ) {
-      for( i = 0, ep = e->e.list->head ;  i < start ; ep = ep->next, i++ ) ;
-      re = element_dup( ep, 0 ) ;      
-    }
-    else if( end < n ) {
-      re = element_new() ;
-      re->type = SPOC_LIST ;
+  /* bogus intervalls */
+  if( end < start ) return 0 ;
+  if( end >= n || start >= n ) return 0 ;
 
-      /* get the starting point */
-      for( i = 0, ep = e->e.list->head ;  i < start ; ep = ep->next, i++ ) ;
+  if( end == start ) {
+    for( i = 0, ep = e->e.list->head ;  i < start ; ep = ep->next, i++ ) ;
+    re = element_dup( ep, 0 ) ;      
+  }
+  else {
+    /* get the starting point */
+    for( i = 0, ep = e->e.list->head ;  i < start ; ep = ep->next, i++ ) ;
 
-      re->e.list = list_new() ;
-      re->e.list->head = head = element_dup( ep, re ) ;      
-      head->memberof = re ;
-      for( next = ep->next ; i < end ; next = next->next, i++ ) {
-        head->next = element_dup( next, re ) ;
-        head = head->next ;
-        head->memberof = re ;
-      }  
-    }
+    re = element_list_add( re, ep ) ;
+
+    for( next = ep->next ; i < end ; next = next->next, i++ ) 
+      re = element_list_add( re, ep ) ;
   }
   
   return re ;
@@ -642,6 +699,12 @@ element_t *element_intervall( element_t *e, int start, int end )
 
 /* ---------------------------------------------------------------------- */
 
+/*! 
+ * This function compares two elements and decides whether they are equal or not
+ * Only atom or list elements can be compared at present.
+ * \param e0, e1 the two elements that are to be compared.
+ * \return Returns 0 if the elements are equal and non zero if they are not.
+ */
 int element_cmp( element_t *e0, element_t *e1 )
 {
   int t, i, n, r = 0 ;
@@ -681,7 +744,12 @@ int element_cmp( element_t *e0, element_t *e1 )
 }
 
 /* ---------------------------------------------------------------------- */
-
+/*!
+ * Swaps the places of the subelements in a list scuh that the first subelement 
+ * becomes the last and the last the first.
+ * This function only works on element lists.
+ * \param e The element list to be reversed.
+ */
 void element_reverse( element_t *e ) 
 {
   if( e == 0 ) return ;
@@ -711,6 +779,17 @@ void element_reverse( element_t *e )
 void element_free( element_t *e ) defined in lib/free.c
 * ---------------------------------------------------------------------- */
 
+/*!
+ * The element struct is a container which within itself holds the value bound
+ * to the element. This function will return a pointer to the element data itself.
+ * If the element is of the type SPOCP_ATOM,SPOCP_SUFFiX or SPOCP_PREFIX the
+ * returned pointer will point to a octet_t struct. If the element is of the type
+ * SPOCP_RANGE it will point to a range_t struct. If SPOCP_SET or SPOCP_ARRAY a
+ * varr_t struct is return. And if of type SPOCP_LIST a pointer
+ * to the first element in the list will be returned.
+ * \param e A pointer to a element
+ * \return A void pointer
+ */
 void *element_data( element_t *e ) 
 {
   if( e == 0 ) return 0 ;
@@ -744,6 +823,12 @@ void *element_data( element_t *e )
 
 /* ---------------------------------------------------------------------- */
 
+/*!
+ * For transversals in a tree, this function will give you the parent of the
+ * element you supply it with.
+ * \param e A element
+ * \return A pointer to the parent element if it exists, otherwise NULL.
+ */
 element_t *element_parent( element_t *e )
 {
   if( e == 0 ) return 0 ;
@@ -755,7 +840,7 @@ element_t *element_parent( element_t *e )
 /* allowed formats 
  [n], [-m], [n-m], [n-], ["last"], [-"last"], [n-"last"]
  */
-char *parse_intervall( octet_t *o, int *start, int *end )
+static char *parse_intervall( octet_t *o, int *start, int *end )
 {
   char *sp ;
   int  n, i = 0 ;
@@ -810,7 +895,7 @@ char *parse_intervall( octet_t *o, int *start, int *end )
 
 /* ---------------------------------------------------------------------- */
 
-octarr_t *parse_path( octet_t *o )
+static octarr_t *parse_path( octet_t *o )
 {
   char         *sp, *np = 0;
   unsigned int i ;
@@ -845,23 +930,30 @@ octarr_t *parse_path( octet_t *o )
 
 /* ---------------------------------------------------------------------- */
 
-/* allowed syntax
-  /A/B/C - the list with tag 'C' within the list with tag 'B' within the list 
-  with tag 'A'
-
-  //D - The list/-s with the tag D in the tree
-
-  /A/* all elements in that list except the tag == 1,...,last 
-
-  ..A[n] The nth element, first == 0 
-
-  ..A[n-m] elements n to m
-
-  ..A[n,m,k] elements n,m and k
-
-  //A | //B All list starting with either A or B
-
-  //a[2] | /a/b/c/* is valid  
+/*!
+ * This function allows you to pick specific elements from a element representing
+ * a parsed S-expression.
+ *
+ * \param spec The specification of which element to pick
+ * allowed syntax
+ * /A/B/C - the list with tag 'C' within the list with tag 'B' within the list 
+ * with tag 'A'
+ *
+ * //D - The list/-s with the tag D 
+ *
+ * ..A/* all elements in the list with tag A, except the tag == 1,...,last 
+ *
+ * ..A[n-m] elements n to m
+ * allowed formats [n], [-m], [n-m], [n-], ["last"], [-"last"], [n-"last"]
+ * first element has index 0
+ * ..A/* and ..A[1-] is equivalent
+ *
+ * //A | //B All list starting with either A or B
+ *
+ * \param e The element representing the parsed S-expression
+ * \param rc A pointer to a int, this is where the error code will be placed
+ *           if some problem was encountered will doing the picking
+ * \result A pointer to a element containing the picked element/-s
 */
 
 element_t *element_eval( octet_t *spec, element_t *e, int *rc )
@@ -1009,8 +1101,17 @@ NEXTpart:
 
 /* ---------------------------------------------------------------------- */
 
-/* takes a 'string' containing ${0}, ${1} and so on, where a substitution should 
-   be made */
+/*! 
+ * This function takes a 'string' containing ${0}, ${1} and so on, where substitutions should 
+ * be made and a list of ATOM elements that should be inserted at the substitution
+ * points.
+ * The number within the "${" "}" refers to the index of the element in the elementlist.
+ * If the element provided to the function is a atom element, then it goes without 
+ * saying the the only index allowed within a variablereference can be 0.
+ * \param val The 'string' containing substitution points is any
+ * \param xp An element list or a atom element 
+ * \return The string after variable substitutions 
+ */
 
 octet_t *element_atom_sub( octet_t *val, element_t *xp )
 {
