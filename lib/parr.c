@@ -112,11 +112,14 @@ parr_t *parr_dup( parr_t *ap, item_t ref )
 
 /* --------------------------------------------------------------- */
 
-parr_t *parr_join( parr_t *to, parr_t *from )
+parr_t *parr_join( parr_t *to, parr_t *from, int dup )
 {
   int i ;
 
-  if( !to ) to = parr_dup( from, 0 ) ;
+  if( !to ) {
+    if( dup ) to = parr_dup( from, 0 ) ;
+    else to = from ;
+  } 
   else if( from ) {
     for( i = 0 ; i < from->n ; i++ )
       to = parr_add_nondup( to, from->vect[i] ) ;
@@ -128,11 +131,14 @@ parr_t *parr_join( parr_t *to, parr_t *from )
 /* produce a array of items that appear in either of the arrays
    if it appears in both remove it from the 'to' array */
 
-parr_t *parr_xor( parr_t *to, parr_t *from )
+parr_t *parr_xor( parr_t *to, parr_t *from, int dup )
 {
   int i, r ;
 
-  if( !to ) to = parr_dup( from, 0 ) ;
+  if( !to ) {
+    if( dup ) to = parr_dup( from, 0 ) ;
+    else to = from ;
+  }
   else if( from ) {
     for( i = 0 ; i < from->n ; i++ ) {
       if( to && ( r = parr_find_index( to, from->vect[i] )) >= 0 ) {
@@ -198,7 +204,7 @@ parr_t *parr_and( parr_t *a1, parr_t *a2 )
 
   res = parr_dup( a1, 0 ) ;
 
-  return parr_join( res, a2 ) ;
+  return parr_join( res, a2, 1 ) ;
 }
 
 /* =============================================================== */
@@ -295,7 +301,7 @@ item_t parr_find( parr_t *pp, item_t pattern )
 
 /* ---------------------------------------------------------------- */
 
-item_t parr_get_item_by_index( parr_t *pp, int i )
+item_t parr_nth( parr_t *pp, int i )
 {
   if( pp == 0 ) return 0 ;
 
@@ -303,6 +309,7 @@ item_t parr_get_item_by_index( parr_t *pp, int i )
 
   return pp->vect[i] ;
 }
+
 
 /* ---------------------------------------------------------------- */
 
