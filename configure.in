@@ -337,7 +337,6 @@ AC_CONFIG_FILES([Makefile
 		backends/dback_gdbm/Makefile
 		client/Makefile
 		client/src/Makefile
-		client/include/Makefile
 		client/tools/Makefile
 		server/Makefile])
 AC_OUTPUT
