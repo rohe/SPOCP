@@ -13,7 +13,6 @@ EXTRA_DIST = \
 	install-sh \
 	ltmain.sh \
 	missing \
-	mkinstalldirs \
 	Setup.mk \
 	spocp.doxy
 
