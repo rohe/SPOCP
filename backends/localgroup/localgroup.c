@@ -18,8 +18,8 @@
 #include <grp.h>
 #include <sys/types.h>
 
+#include "../../server/srvconf.h"
 #include <spocp.h>
-#include <srvconf.h>
 
 #define ETC_GROUP "/etc/group"
 
