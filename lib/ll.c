@@ -91,7 +91,7 @@ void *ll_pop( ll_t *lp )
   void   *vp ;
   node_t *np ;
 
-  if( lp->head == NULL ) return NULL ; /* empty list */
+  if( lp == 0 || lp->n == 0 ) return NULL ; /* empty list */
   else {
     np = lp->head ;
     lp->head = np->next ;
