@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
 	<META NAME="CREATED" CONTENT="20040428;16411600">
 	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
-	<META NAME="CHANGED" CONTENT="20040428;17322800">
+	<META NAME="CHANGED" CONTENT="20040428;17332100">
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H1>Spocp client implementer manual</H1>
@@ -127,7 +127,7 @@ indicated a success, look for the return info if any.</P>
 If the query failed due to connection problems ( the server wasn't
 there anymore) try to reconnect. If more than one server was defined
 in the server definition, all of them will be tried in a round-robin
-fashion before giving up. Again, the client will not more than 1
+fashion before giving up. Again, the client will wait not more than 1
 second before giving up on one server.</P>
 <P><BR><BR>
 </P>

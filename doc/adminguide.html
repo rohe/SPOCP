@@ -28,9 +28,7 @@ you would do well to read <A HREF="draft-hedberg-spocp-sexp-00.html">Introductio
 to S-expressions</A> before you dwell deeper into this document.<BR>The
 next thing is that you will probably not be interested in all of this
 document since someone already have decided which authorization setup
-you should use. If that is not the case, please read <A HREF="implement.html">The
-implementers guide</A> to get more information on pro and cons of
-choosing one setup before another.<BR>If you are still with me at
+you should use. If you are still with me at
 this point you are definitely interested in how to set up a
 authorization system for you application. So after reading through
 <A HREF="rules.html">creating rules</A> you can skip to the section
@@ -40,12 +38,15 @@ format when describing exactly what is produced. In duscussions on
 transformations in some case I have choosen to use the advanced
 format since that is easier to read. 
 </P>
-<P>All of the different implementations sofar loads the rules they
-are going to work with from a textfile when they start. If you are
+<P>The server loads the rules it is
+going to start with from a textfile when starting. If you are
 not using the administrative interface to keep the rules updated, you
 have to modify the text file and then restart the server when you
 want to update the rule set. 
 </P>
+<p><em>Note:</em> If you are using a persistent datastore for the rules that
+will be used and the rule file defined in the configuration will silently be
+ignored</p>
 <H1><A NAME="native"></A>1. Configuring the SPOCP serve</H1>
 <H2>1.0 Introduction</H2>
 <P>The Spocd server can listen on Internet ports as well as unix
