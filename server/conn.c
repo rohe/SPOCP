@@ -167,31 +167,6 @@ int spocp_send_results( conn_t *conn )
   return send_results( conn ) ;
 }
 
-/* this is only used when reading from stdin */
-__attribute__((unused)) static conn_t *spocp_conn_open( int fd, srv_t *srv )
-{
-  conn_t *con ;
-  pool_item_t *pi ;
-
-  pi = item_get( srv->connections ) ;
-  if( pi == 0 ) {
-    traceLog( "No items" ) ;
-    return 0 ;
-  }
-
-  con = (conn_t *) pi->info ;
-
-  if( con ) {
-    con->fd = fd ;
-    if( fd == STDIN_FILENO ) con->fdw = STDOUT_FILENO ; 
-    else con->fdw = -1 ;
-
-    con->srv = srv ;
-  }
-
-  return con ;
-}
-
 /* ---------------------------------------------------------------------- */
 
 int conn_writen( conn_t *ct, char *str, size_t n )
@@ -289,29 +264,6 @@ int conn_readn( conn_t *ct, char *str, size_t max )
 }
 
 /* ---------------------------------------------------------------------- */
-
-/* times out if it doesn't receive any bytes in 15 seconds */
-__attribute__((unused)) static void spocp_read_and_drop( conn_t *conn, unsigned int num )
-{
-  char buf[4096] ;
-  int n, lc = 0 ;
-
-  do {
-    if( num > 4096 ) n = conn->readn( conn, buf, 4096 ) ;
-    else n = conn->readn( conn, buf, num ) ;
-
-    if( n == 0 ) {
-      lc++ ;
-      continue ;
-    }
-    else lc = 0 ;
-
-    num -= n ;
-    fprintf( stderr, "Got %d, remains %d\n", n, num ) ;
-  } while( num && lc < 5 ) ;
-
-  return ;
-}
 
 int spocp_conn_read( conn_t *conn )
 {
