@@ -496,13 +496,14 @@ ssl_socket_writen(SSL * ssl, char *buf, size_t len)
 
 SPOCP *spocpc_cpy( SPOCP *copy, SPOCP *old )
 {
-	if( old == 0 )
+	if( old == 0 || copy == 0)
 		return 0;
 
 	copy->contype = 0;
 	copy->srv = old->srv;
 	copy->cursrv = 0;
-	copy->com_timeout = old->com_timeout;
+	copy->com_timeout.tv_sec = old->com_timeout.tv_sec;
+	copy->com_timeout.tv_usec = old->com_timeout.tv_usec;
 	copy->rc = 0;
 
 #ifdef HAVE_SSL
@@ -571,8 +572,6 @@ spocpc_clr(SPOCP * s)
 			octarr_free(s->srv);
 		}
 
-		if (s->com_timeout)
-			free( s->com_timeout );
 #ifdef HAVE_SSL
 		if (s->copy == 0) {
 			SSL_CTX_free(s->ctx);
@@ -957,9 +956,8 @@ spocpc_set_timeout( SPOCP *spocp, long sec, long usec)
 	if (sec == 0L && usec == 0L)
 		return spocp;
 
-	spocp->com_timeout = (struct timeval *) Malloc (sizeof(struct timeval));
-	spocp->com_timeout->tv_sec = sec;
-	spocp->com_timeout->tv_usec = usec;
+	spocp->com_timeout.tv_sec = sec;
+	spocp->com_timeout.tv_usec = usec;
 
 	return spocp;
 }
@@ -1162,7 +1160,7 @@ spocpc_writen(SPOCP * spocp, char *str, ssize_t n )
 
 	while (nleft > 0) {
 		FD_SET(spocp->fd, &wset);
-		retval = select(spocp->fd + 1, NULL, &wset, NULL, spocp->com_timeout);
+		retval = select(spocp->fd + 1, NULL, &wset, NULL, &spocp->com_timeout);
 
 		if (retval) {
 #ifdef HAVE_SSL
@@ -1220,7 +1218,7 @@ spocpc_readn(SPOCP * spocp, char *buf, ssize_t size)
 	spocp->rc = 0;
 
 	FD_SET(spocp->fd, &rset);
-	retval = select(spocp->fd + 1, &rset, NULL, NULL, spocp->com_timeout);
+	retval = select(spocp->fd + 1, &rset, NULL, NULL, &spocp->com_timeout);
 
 	if (retval) {
 #ifdef HAVE_SSL

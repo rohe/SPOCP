@@ -62,7 +62,7 @@ typedef struct _spocp
 	int		fd;
 	octarr_t	*srv;
 	int		cursrv;
-	struct timeval	*com_timeout;
+	struct timeval	com_timeout;
 	int		rc;
 
 	char		*sslEntropyFile;
