@@ -1269,12 +1269,19 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 	 */
 
 	for (; dn; dn = dn->next) {
+
 		base = lsln_get_val(dn);
 		res = 0;
 
-		LOG( SPOCP_DEBUG )
+		LOG( SPOCP_DEBUG ) {
+			char *ftmp, *btmp;
+			ftmp = str_esc(filter, strlen(filter));
+			btmp = str_esc(base, strlen(base));
 			traceLog(LOG_DEBUG,"Using filter: %s, base: %s, scope: %d",
-				filter, base, scope ) ; 
+				ftmp, btmp, scope ) ; 
+			free(ftmp);
+			free(btmp);
+		}
 
 		if ((rc =
 			 ldap_search_s(ld, base, scope, filter, attr, 0, &res))) {
