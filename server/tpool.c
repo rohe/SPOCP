@@ -225,6 +225,7 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
 	workp->oparg = wi->oparg;
 	workp->oper = wi->oper;
 	workp->buf = iobuf_new( 1024 );
+	workp->conn->ops_pending++;
 
 	add_reply_queuer( wi->conn, workp );
 
@@ -382,6 +383,12 @@ tpool_thread(void *arg)
 		reply_add( conn->head, my_workp );
 		if ( send_results(conn) == 0)
 			res = SPOCP_CLOSE;
+
+		conn->ops_pending-- ;
+		/*
+		if (conn->stop == 1 && iobuf_content(conn->out) == 0 )
+			res = SPOCP_CLOSE;
+		*/
 
 		DEBUG( SPOCP_DSRV )
 			print_elapsed("Elapsed time", conn->op_start,

@@ -188,9 +188,9 @@ typedef struct _server
 
 #ifdef HAVE_SSL
 	int		clientcert ;
-#define NONE	0
+#define HARD	0
 #define DEMAND	1
-#define HARD	2
+#define NONE	2
 
 	void		*ctx;
 	void		*ssl;

@@ -284,29 +284,39 @@ spocp_srv_run(srv_t * srv)
 			next = pi->next;
 
 			/* only close if output queue is empty */
-			if (conn->stop && conn->ops_pending <= 0 && 
-			    iobuf_content(conn->out) == 0 ) {
-				run_stop( srv, conn, pi);
-				pe--;
-			} else {
-				if (!conn->stop) {
-					if (conn->status == CNST_WRITE){
-						maxfd = MAX(maxfd, conn->fd);
-						FD_SET(conn->fd, &wfds);
-					}
-				    	if (conn->status != CNST_SSL_NEG) {
-						maxfd = MAX(maxfd, conn->fd);
-						FD_SET(conn->fd, &rfds);
-					}
+			/*if (conn->stop && !conn->ops_pending && */
+			if (conn->stop) {
+				int nr = 0;
+
+				traceLog(LOG_INFO,"Pending stop on %d, ops undone %d",
+					conn->fd, conn->ops_pending);
+				if(conn->ops_pending ||
+				    (nr = iobuf_content(conn->out))) {
+					traceLog(LOG_INFO,
+					    "Not done yet, %d bytes in queue", nr);
+					maxfd = MAX(maxfd, conn->fd);
 				}
-
-				if ((err =
-				     pthread_mutex_unlock(&conn->clock)) != 0)
-					traceLog(LOG_ERR,
-					    "Panic: unable to release lock on connection: %s",
-					     strerror(err));
-
+				else {
+					run_stop( srv, conn, pi);
+					pe--;
+					continue;
+				}
+			} else {
+				if (conn->status == CNST_WRITE){
+					maxfd = MAX(maxfd, conn->fd);
+					FD_SET(conn->fd, &wfds);
+				}
+			    	if (conn->status != CNST_SSL_NEG) {
+					maxfd = MAX(maxfd, conn->fd);
+					FD_SET(conn->fd, &rfds);
+				}
 			}
+
+			if ((err = pthread_mutex_unlock(&conn->clock)) != 0)
+				traceLog(LOG_ERR,
+				  "Panic: unable to release lock on connection: %s",
+				  strerror(err));
+
 		}
 
 		/*
@@ -315,8 +325,10 @@ spocp_srv_run(srv_t * srv)
 		noto.tv_sec = 0;
 		noto.tv_usec = 1000;
 
-		if (XYZ)
+		if (XYZ) {
 			timestamp("before select");
+			traceLog(LOG_INFO, "Maxfd:%d", maxfd);
+		}
 		/*
 		 * Select on all file descriptors, wait forever 
 		 */
@@ -499,7 +511,8 @@ spocp_srv_run(srv_t * srv)
 			 */
 			if (conn->fd > maxfd) {
 				if (XYZ)
-					traceLog(LOG_DEBUG,"Not this time ! Too young");
+					traceLog(LOG_DEBUG,
+					    "%d Not this time ! Too young", conn->fd);
 				continue;
 			}
 

@@ -1118,7 +1118,7 @@ open_conn(char *server, spocp_result_t * ret)
 	if ((ld = ldap_init(server, 0)) == 0) {
 		LOG( SPOCP_WARNING )
 			traceLog(LOG_DEBUG, "Error: Couldn't initialize the LDAP server") ; 
-		*ret = SPOCP_INFO_UNAVAIL;
+		*ret = SPOCP_UNAVAILABLE;
 		return 0;
 	}
 
@@ -1131,7 +1131,7 @@ open_conn(char *server, spocp_result_t * ret)
 		LDAP_SUCCESS) {
 		LOG( SPOCP_WARNING )
 			traceLog(LOG_WARNING, "Error: Couldn't set the version") ; 
-		*ret = SPOCP_INFO_UNAVAIL;
+		*ret = SPOCP_UNAVAILABLE;
 		ldap_unbind(ld);
 		return 0;
 	}
@@ -1143,7 +1143,7 @@ open_conn(char *server, spocp_result_t * ret)
 		LDAP_SUCCESS) {
 		LOG( SPOCP_WARNING )
 			traceLog(LOG_WARNING, "Error: Couldn't set follow referrals") ; 
-		*ret = SPOCP_INFO_UNAVAIL;
+		*ret = SPOCP_UNAVAILABLE;
 		ldap_unbind(ld);
 		return 0;
 	}
@@ -1152,7 +1152,7 @@ open_conn(char *server, spocp_result_t * ret)
 	if ((rc = ldap_simple_bind_s(ld, user, passwd)) != LDAP_SUCCESS) {
 		LOG( SPOCP_WARNING )
 			traceLog(LOG_WARNING, "LDAP bind failed to %s", server ) ; 
-		*ret = SPOCP_INFO_UNAVAIL;
+		*ret = SPOCP_UNAVAILABLE;
 		ldap_unbind(ld);
 		return 0;
 	}

@@ -42,7 +42,7 @@ rescode_t       rescode[] = {
 	{SPOCP_SYNTAXERROR, "3:500", "12:Syntax error"},
 	{SPOCP_MISSING_ARG, "3:501", "16:Missing Argument"},
 	{SPOCP_MISSING_CHAR, "3:502", "11:Input error"},
-	{SPOCP_PROTOCOLERROR, "3:503", "14:Protocol error"},
+	/*{SPOCP_PROTOCOLERROR, "3:503", "14:Protocol error"},*/
 	{SPOCP_UNKNOWNCOMMAND, "3:504", "15:Unknown command"},
 	{SPOCP_PARAM_ERROR, "3:505", "14:Argument error"},
 	{SPOCP_SSL_ERR, "3:506", "16:SSL Accept error"},
@@ -51,7 +51,6 @@ rescode_t       rescode[] = {
 	{SPOCP_SIZELIMITEXCEEDED, "3:511", "18:Sizelimit exceeded"},
 	{SPOCP_OPERATIONSERROR, "3:512", "15:Operation error"},
 	{SPOCP_UNAVAILABLE, "3:513", "21:Service not available"},
-	{SPOCP_INFO_UNAVAIL, "3:514", "23:Information unavailable"},
 	{SPOCP_NOT_SUPPORTED, "3:515", "21:Command not supported"},
 	{SPOCP_STATE_VIOLATION, "3:516", "18:SSL Already active"},
 	{SPOCP_OTHER, "3:517", "11:Other error"},
@@ -269,7 +268,10 @@ return_busy( work_info_t *wi )
 	return postop( wi, SPOCP_BUSY, NULL );
 }
 
-/* ---------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------- *
+ * Get the SASL capabilities
+ * ---------------------------------------------------------------------- */
+
 
 spocp_result_t
 com_capa(work_info_t *wi)
@@ -788,7 +790,9 @@ com_begin(work_info_t *wi)
 }
 
 /*
- * --------------------------------------------------------------------------------- 
+ * ----------------------------------------------------------------------------- 
+ *  Setting the subject definition, that is 'who' is trying to run the command
+ * -----------------------------------------------------------------------------
  */
 
 spocp_result_t
@@ -866,7 +870,7 @@ com_add(work_info_t *wi)
 }
 
 /*
- * --------------------------------------------------------------------------------- 
+ * ---------------------------------------------------------------------------- 
  */
 /*
  * list = "4:LIST" [l-path] *( length ":" "+"/"-" s-expr ) 
@@ -935,7 +939,9 @@ com_list(work_info_t *wi)
 }
 
 /*
- * --------------------------------------------------------------------------------- 
+ * --------------------------------------------------------------------------- 
+ *  Provides you with a list of all the rule indeces
+ * --------------------------------------------------------------------------- 
  */
 
 spocp_result_t
@@ -984,6 +990,7 @@ com_summary(work_info_t *wi)
  * 
  * show = "SHOW" l-path ruleid
  * 
+ * Present information about a specific rule, given the rule id
  */
 spocp_result_t
 com_show(work_info_t *wi)
@@ -1016,7 +1023,7 @@ com_show(work_info_t *wi)
 }
 
 /*
- * --------------------------------------------------------------------------------- 
+ * ----------------------------------------------------------------------------- 
  */
 
 spocp_result_t
@@ -1050,7 +1057,7 @@ do_reread_rulefile( work_info_t *wi)
 }
 
 /*
- * --------------------------------------------------------------------------------- 
+ * ----------------------------------------------------------------------------- 
  */
 
 /*

@@ -620,7 +620,7 @@ read_config(char *file, srv_t * srv)
 	}
 
 	if (srv->pidfile == 0)
-		srv->pidfile = Strdup("spocp.pid");
+		srv->pidfile = Strdup("spocd.pid");
 	if (srv->timeout == 0)
 		srv->timeout = DEFAULT_TIMEOUT;
 	if (srv->threads == 0)
