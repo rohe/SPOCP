@@ -1,0 +1,999 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html lang="en"><head><title>Simple Policy Control Protocol</title>
+<meta name="description" content="Simple Policy Control Protocol">
+<meta name="generator" content="xml2rfc v1.21 (http://xml.resource.org/)">
+<style type='text/css'>
+<!--
+    body {
+        font-family: verdana, charcoal, helvetica, arial, sans-serif;
+        font-size: small ; color: #000000 ; background-color: #ffffff ; }
+    .title { color: #990000; font-size: x-large ;
+        font-weight: bold; text-align: right;
+        font-family: helvetica, monaco, "MS Sans Serif", arial, sans-serif;
+        background-color: transparent; }
+    .filename { color: #666666; font-size: 18px; line-height: 28px;
+        font-weight: bold; text-align: right;
+        font-family: helvetica, arial, sans-serif;
+        background-color: transparent; }
+    td.rfcbug { background-color: #000000 ; width: 30px ; height: 30px ; 
+        text-align: justify; vertical-align: middle ; padding-top: 2px ; }
+    td.rfcbug span.RFC { color: #666666; font-weight: bold; text-decoration: none;
+        background-color: #000000 ;
+        font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+        font-size: x-small ; }
+    td.rfcbug span.hotText { color: #ffffff; font-weight: normal; text-decoration: none;
+        text-align: center ;
+        font-family: charcoal, monaco, geneva, "MS Sans Serif", helvetica, verdana, sans-serif;
+        font-size: x-small ; background-color: #000000; }
+
+     A { font-weight: bold; }
+     A:link { color: #990000; background-color: transparent ; }
+     A:visited { color: #333333; background-color: transparent ; }
+     A:active { color: #333333; background-color: transparent ; }
+
+    p { margin-left: 2em; margin-right: 2em; }
+    p.copyright { font-size: x-small ; }
+    p.toc { font-size: small ; font-weight: bold ; margin-left: 3em ;}
+
+    span.emph { font-style: italic; }
+    span.strong { font-weight: bold; }
+    span.verb { font-family: "Courier New", Courier, monospace ; }
+
+    ol.text { margin-left: 2em; margin-right: 2em; }
+    ul.text { margin-left: 2em; margin-right: 2em; }
+    li { margin-left: 3em;  }
+
+    pre { margin-left: 3em; color: #333333;  background-color: transparent;
+        font-family: "Courier New", Courier, monospace ; font-size: small ;
+        }
+
+    h3 { color: #333333; font-size: medium ;
+        font-family: helvetica, arial, sans-serif ;
+        background-color: transparent; }
+    h4 { font-size: small; font-family: helvetica, arial, sans-serif ; }
+
+    table.bug { width: 30px ; height: 15px ; }
+    td.bug { color: #ffffff ; background-color: #990000 ;
+        text-align: center ; width: 30px ; height: 15px ;
+         }
+    td.bug A.link2 { color: #ffffff ; font-weight: bold;
+        text-decoration: none;
+        font-family: monaco, charcoal, geneva, "MS Sans Serif", helvetica, sans-serif;
+        font-size: x-small ; background-color: transparent }
+
+    td.header { color: #ffffff; font-size: x-small ;
+        font-family: arial, helvetica, sans-serif; vertical-align: top;
+        background-color: #666666 ; width: 33% ; }
+    td.author { font-weight: bold; margin-left: 4em; font-size: x-small ; }
+    td.author-text { font-size: x-small; }
+    table.data { vertical-align: top ; border-collapse: collapse ;
+        border-style: solid solid solid solid ;
+        border-color: black black black black ;
+        font-size: small ; text-align: center ; }
+    table.data th { font-weight: bold ;
+        border-style: solid solid solid solid ;
+        border-color: black black black black ; }
+    table.data td {
+        border-style: solid solid solid solid ;
+        border-color: #333333 #333333 #333333 #333333 ; }
+
+    hr { height: 1px }
+-->
+</style>
+</head>
+<body>
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<table summary="layout" width="66%" border="0" cellpadding="0" cellspacing="0"><tr><td><table summary="layout" width="100%" border="0" cellpadding="2" cellspacing="1">
+<tr><td class="header">Network Working Group</td><td class="header">R. Hedberg</td></tr>
+<tr><td class="header">Internet-Draft</td><td class="header">Stockholm university</td></tr>
+<tr><td class="header">Expires: July 1, 2004</td><td class="header">January 2004</td></tr>
+</table></td></tr></table>
+<div align="right"><span class="title"><br />Simple Policy Control Protocol</span></div>
+<div align="right"><span class="title"><br />draft-hedberg-spocp-00</span></div>
+
+<h3>Status of this Memo</h3>
+<p>
+This document is an Internet-Draft and is in full conformance with all provisions of Section 10 of RFC2026.</p>
+<p>
+Internet-Drafts are working documents of the Internet Engineering
+Task Force (IETF), its areas, and its working groups.
+Note that other groups may also distribute working documents as
+Internet-Drafts.</p>
+<p>
+Internet-Drafts are draft documents valid for a maximum of six months
+and may be updated, replaced, or obsoleted by other documents at any time.
+It is inappropriate to use Internet-Drafts as reference material or to cite
+them other than as "work in progress."</p>
+<p>
+The list of current Internet-Drafts can be accessed at
+<a href='http://www.ietf.org/ietf/1id-abstracts.txt'>http://www.ietf.org/ietf/1id-abstracts.txt</a>.</p>
+<p>
+The list of Internet-Draft Shadow Directories can be accessed at
+<a href='http://www.ietf.org/shadow.html'>http://www.ietf.org/shadow.html</a>.</p>
+<p>
+This Internet-Draft will expire on July 1, 2004.</p>
+
+<h3>Copyright Notice</h3>
+<p>
+Copyright (C) The Internet Society (2004). All Rights Reserved.</p>
+<a name="toc"></a><br /><hr />
+<h3>Table of Contents</h3>
+<p class="toc">
+<a href="#anchor1">1.</a>&nbsp;
+Abstract<br />
+<a href="#anchor2">2.</a>&nbsp;
+Introduction<br />
+<a href="#anchor3">3.</a>&nbsp;
+The SPOCP model<br />
+<a href="#anchor4">4.</a>&nbsp;
+SPOCP functions<br />
+<a href="#anchor5">4.1</a>&nbsp;
+Input grammar<br />
+<a href="#anchor6">4.2</a>&nbsp;
+Output grammar<br />
+<a href="#QUERY">4.3</a>&nbsp;
+QUERY<br />
+<a href="#STARTTLS">4.4</a>&nbsp;
+STARTTLS<br />
+<a href="#ADD">4.5</a>&nbsp;
+ADD<br />
+<a href="#DELETE">4.6</a>&nbsp;
+DELETE<br />
+<a href="#LIST">4.7</a>&nbsp;
+LIST<br />
+<a href="#LOGOUT">4.8</a>&nbsp;
+LOGOUT<br />
+<a href="#BEGIN">4.9</a>&nbsp;
+BEGIN<br />
+<a href="#COMMIT">4.10</a>&nbsp;
+COMMIT<br />
+<a href="#ROLLBACK">4.11</a>&nbsp;
+ROLLBACK<br />
+<a href="#SUBJECT">4.12</a>&nbsp;
+SUBJECT<br />
+<a href="#AUTH">4.13</a>&nbsp;
+AUTH<br />
+<a href="#CAPABILITY">4.14</a>&nbsp;
+CAPABILITY<br />
+<a href="#BCOND">4.15</a>&nbsp;
+BCOND<br />
+<a href="#anchor7">5.</a>&nbsp;
+The theory behind return-info<br />
+<a href="#anchor8">6.</a>&nbsp;
+Security considerations<br />
+<a href="#rfc.references1">&#167;</a>&nbsp;
+References<br />
+<a href="#rfc.authors">&#167;</a>&nbsp;
+Author's Address<br />
+<a href="#reply codes">A.</a>&nbsp;
+SPOCP Reply Codes<br />
+<a href="#rfc.copyright">&#167;</a>&nbsp;
+Intellectual Property and Copyright Statements<br />
+</p>
+<br clear="all" />
+
+<a name="anchor1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.1"></a><h3>1.&nbsp;Abstract</h3>
+
+<a name="anchor2"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.2"></a><h3>2.&nbsp;Introduction</h3>
+
+<p>
+The objective of SPOCP is to support the use of a generalized access control
+service (as defined in <a href="#RFC2828" title="Shirey, R., Internet Security Glossary, May 2000.">[RFC2828]</a>) by a multitude of applications.
+ The protocol not only supports querying for access control
+decisions but also for administration of security policies. The significance
+of the term generalized is that SPOCP is not written to support a specific
+set of applications but should be possible to use by almost any application.
+And one SPOCP server should be able to service a set of applications simultaneously.
+
+</p>
+<p>
+SPOCP is independent of the particular transmission subsystem and
+requires only a reliable ordered data stream channel. A companion
+document <a href="#SPOCP/TCP" title="Hedberg, R., The Simple Policy Control Protocol over TCP/IP, .">[SPOCP/TCP]</a> describes one implementation
+of SPOCP over TCP.
+
+</p>
+<a name="anchor3"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.3"></a><h3>3.&nbsp;The SPOCP model</h3>
+
+<p>
+ The SPOCP design is based on the 'PULL sequence' as described in RFC 2904
+<a href="#RFC2904" title="Vollbrecht, J., Calhoun, P., Farrell, S., Gommans, L., Gross, G., de Bruijn, B., de Laat, C., Holdrege, M. and D. Spence, AAA Authorization Framework, August 2000.">[RFC2904]</a>. That is, a application/some service equipment 
+queries the access control service
+as to the permission for a specific user to access/use a specific resource. 
+
+</p>
+<p>
+This has some consequences; one of them being that it is in fact the service
+equipment that makes the decision whether a specific user shall be allowed to
+perform a specific operation or not. The access control service can only return a 
+recommendation, it can not enforce anything.
+
+</p>
+<p>
+One of the design criteria behind Spocp is that it is not uncommon that a
+simple yes/no answer is sufficient. There are lots of cases where a yes, but..
+answer is more appropriate. Hence we have added the concept of return-info, some
+information that can be returned together with a positive reply. A negative reply
+is never ackompanied by any return information.
+
+</p>
+<p>
+Another design criteria was that we did not want to copy lots of information that
+are already present in different information resources (like a enterprise directory,
+a whois server, DNS or what have you). This service should be able to use the information
+where it is and not demand a local copy. Now, we do acknowledge that there are
+cases where due to security of performance concerns you might have to keep local 
+copies but our aim was to make this a optimization and not the standard. To 
+solve this equation we have added boundary conditions. Boundary conditions, which might
+be things like; the time has to be between 0800 and 1700 on a working day or
+the entity that wants to do this has to belong to the group 'admin' as defined in
+the enterprise directory, are evaluated after a request for a permission has match
+a policy stored in the authorization server.
+
+</p>
+<p>
+And finally, any rule placed in the server represents a permission for someone
+to use some resource. There are no negative rules, that is rules that says that
+someone are not allowed to access a resource. The reason for this was that 
+the system compexity increases substantially if negative rules are allowed.
+
+</p>
+<p>
+How the service equipment finds the right access control service
+to ask is outside the scope of this document but will be specified in
+a separate draft where a access control service location mechanism
+based on DNS is described. 
+
+</p>
+<a name="anchor4"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.4"></a><h3>4.&nbsp;SPOCP functions</h3>
+
+<p>A SPOCP connection consists of the establishment of a client/server network
+connection, and subsequent client/server interactions. These client/server 
+interactions consist of a client command and a server response
+</p>
+<p>Commands in SPOCP consists of a keyword possibly followed by one or more
+arguments. Keywords consists of printable ASCII characters.
+</p>
+<p>Server data are only sent as a result of a client command
+</p>
+<p>If the traffic between a client and a server, happens over TCP/IP, then it
+can be protected by the use of TLS/SSL <a href="#RFC2246" title="Dierks, T. and C. Allen, The TLS Protocol Version 1.0, January 1999.">[RFC2246]</a> and/or
+SASL <a href="#RFC2222" title="Myers, J., Simple Authentication and Security Layer (SASL), October 1997.">[RFC2222]</a> The STARTTLS and AUTH commands are used to
+initialize the TLS and SASL handshakes.
+
+</p>
+<a name="rfc.section.4.1"></a><h4><a name="anchor5">4.1</a>&nbsp;Input grammar</h4>
+
+<p></p>
+<blockquote class="text">
+<p>command       = starttls / query / add / delete / list / bcondcom
+   logout / begin / commit / rollback / subjectcom / capability / saslauth
+</p>
+<p>starttls     = "STARTTLS"
+</p>
+<p>query        = "QUERY" [path] s-expr
+</p>
+<p>add          = "ADD" [path] s-expr [ bcond [ return-info ]]
+</p>
+<p>delete       = "DELETE" [path] ruleid
+</p>
+<p>list         = "LIST" [path] *( "+"/"-" s-expr ) 
+</p>
+<p>logout       = "LOGOUT"
+</p>
+<p>begin        = "BEGIN"
+</p>
+<p>commit       = "COMMIT"
+</p>
+<p>rollback     = "ROLLBACK"
+</p>
+<p>subjectcom   = "SUBJECT" [ s-exp [ token ]]
+</p>
+<p>capability   = "CAPABILITY"
+</p>
+<p>saslauth     = "AUTH" mech token
+</p>
+<p>bcondcom     = "BCOND" ( "ADD" / "DELETE" / "REPLACE" ) bcondname [ bcond ]
+</p>
+<p>bcond        = bcondexpr / bcondspec 
+</p>
+<p>bcondexpr    = bcondor / bcondand / bcondnot / bcondref
+</p>
+<p>bcondspec    = bcondname ":" typespecific
+</p>
+<p>bcondname    = 1*dirchar
+</p>
+<p>typespecific = octetstring
+</p>
+<p>bcondref     = "(" "ref" 1*dirchar ")"
+</p>
+<p>bcondand     = "(" "and" 1*bcondexpr ")"
+</p>
+<p>bcondor      = "(" "or" 1*bcondexpr ")"
+</p>
+<p>bcondnot     = "(" "not" bcondexpr ")"
+</p>
+<p>mech         = 1*pchar
+</p>
+<p>ruleid       = 1*pchar
+</p>
+<p>path         = "/" / 1*( "/" pathpart )
+</p>
+<p>pathpart     = 1*dirchar
+</p>
+<p>dirchar      = pchar / '-' / '_' / '.' 
+</p>
+<p>pchar        = %x30-39 / %x41-5A / %x61-7A
+</p>
+<p>token        = octet-string
+</p>
+<p>s-expr       =   ; defined in <a href="#SPOCP Sexp" title="Hedberg, R. and O. Bandmann, Restricted S-expressions for usage in a generalized access control service, .">[SPOCP Sexp]</a> with one
+restriction that the tag of a list consists solely of dirchar's
+</p>
+</blockquote>
+
+<a name="rfc.section.4.2"></a><h4><a name="anchor6">4.2</a>&nbsp;Output grammar</h4>
+
+<p></p>
+<blockquote class="text">
+<p>spocp-response  = *(multiline) singleline
+</p>
+<p>multiline       = multi-response 
+</p>
+<p>multi-response  = "201" m-info
+</p>
+<p>singleline      = response
+</p>
+<p>response        = replycode [ octetstring ]
+</p>
+<p>                  ; replycode 201 can not appear in singleline responses
+</p>
+<p>replycode       = ( "2" / "3" / "4" / "5" ) digit digit [ octetstring ]
+</p>
+<p>m-info          = return-info / list-info
+</p>
+<p>list-info       = path ruleid s-expr [ return-info ]
+</p>
+<p>return-info     = [ mimecontenttype ] octetstring
+</p>
+<p>mimecontenttype = ; as defined in <a href="#RFC2045" title="Freed, N. and N. Borenstein, Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies, November 1996.">[RFC2045]</a>
+</p>
+<p>octet-string    = 1*byte
+</p>
+<p>byte            = %x00-FF
+</p>
+</blockquote>
+
+<p>
+The MIME content-type attribute is an optional attribute which describes the
+return-info data.  This is a string with values defined by <a href="#RFC2045" title="Freed, N. and N. Borenstein, Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies, November 1996.">[RFC2045]</a>.  
+This attribute is purely advisory; no validation of the mime type
+information is required by this specification.
+
+</p>
+<p>
+The format of the reply codes follows the common IETF principal as used in
+SMTP <a href="#RFC0821" title="Postel, J., Simple Mail Transfer Protocol, August 1982.">[RFC0821]</a> and HTTP <a href="#RFC1945" title="Berners-Lee, T., Fielding, R. and H. Nielsen, Hypertext Transfer Protocol -- HTTP/1.0, May 1996.">[RFC1945]</a> to mention a few.
+
+</p>
+<p>
+The first digit of the Status-Code defines the class of response. The
+last two digits do not have any categorization role. There are 5
+values for the first digit:
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>1xx: Informational - Not used, but reserved for future use
+</p>
+<p>2xx: Success - The action was successfully received, understood, and accepted.
+</p>
+<p>3xx: Redirection - Further action must be taken in order to complete the request or an
+authentication handshake are in progress
+</p>
+<p>4xx: Client Error - The request contains bad syntax or cannot be fulfilled
+</p>
+<p>5xx: Server Error - The server failed to fulfill an apparently valid request
+</p>
+</blockquote><p>
+A complete list of reply codes are given in <a href="#reply codes">Appendix A</a>
+</p>
+<a name="rfc.section.4.3"></a><h4><a name="QUERY">4.3</a>&nbsp;QUERY</h4>
+
+<p>
+This command takes one argument, a S-expression representing the access permission 
+that is in question.
+
+</p>
+<p>
+If a rule in the server matched the given S-expression and there is return information
+coupled to that rule, the return information will be returned together with the
+positive response, in the multipart. If there are more than one rule that matches,
+only one of them will be used to construct the response.
+
+</p>
+<p>
+The upshot of this is that if there are more than one rule giving a certain
+permission and all of these return different return-info then a sequence of 
+consecutive queries for this permission, might not necessarily result
+in the return-info being the same in each reply.
+That is, you can not assume that there exists
+any well defined and consistent order between the rules.
+
+</p>
+<p>
+Overlapping rules should therefore if possible be avoided, especially if there are
+return information coupled to them. 
+
+</p>
+<p><span class="emph">Note:</span>
+When a permission is checked, it is not checked against the union of all the rules
+but against each rule separately.
+
+</p>
+<a name="rfc.section.4.4"></a><h4><a name="STARTTLS">4.4</a>&nbsp;STARTTLS</h4>
+
+<p>This command takes as of now, no arguments
+</p>
+<p>
+If SSL/TLS is used the client is also expected to authenticate. If the authentication
+fails the connection is immediately closed. Downgrading to not use TLS/SSL is not possible,
+
+</p>
+<p>
+Any commands sent by the client after the server has received this command and before
+the TLS/SSL negotiation is completed will be silently ignored.
+
+</p>
+<p> 
+The client as well as the server MUST check its understanding of the opponent's
+host name against its identity as presented in the opponent's Certificate
+message, in order to prevent man-in-the-middle attacks. 
+
+</p>
+<p>
+Matching from the clients point of view is performed according to these rules: 
+</p>
+<blockquote class="text">
+<p>
+The client MUST use the server host name it used to open the SPOCP connection as
+the value to compare against the server name as expressed in the server's
+certificate. The client MUST NOT use the server's canonical DNS name or any other
+derived form of name. 
+
+</p>
+<p>
+If a subjectAltName extension of type dNSName is present in the certificate, it
+SHOULD be used as the source of the server's identity.
+
+</p>
+<p>
+ If more than one identity of a given type is present in the certificate (e.g. more
+than one dNSName name), a match in any one of the set is considered acceptable. 
+
+</p>
+</blockquote>
+
+<p>
+Matching is case-insensitive. 
+If the host name does not match the dNSName-based identity in the certificate per
+the above check, user-oriented clients SHOULD either notify the user (clients MAY
+give the user the opportunity to continue with the connection in any case) or
+terminate the connection and indicate that the server's identity is suspect.
+Automated clients SHOULD close the connection, returning and/or logging an error
+indicating that the server's identity is suspect. 
+
+</p>
+<p>
+Beyond the server identity checks described in this section, clients SHOULD be
+prepared to do further checking to ensure that the server is authorized to provide
+the service it is observed to provide. The client MAY need to make use of local
+policy information. 
+
+</p>
+<a name="rfc.section.4.5"></a><h4><a name="ADD">4.5</a>&nbsp;ADD</h4>
+
+<p>
+The command has at least one argument and at the most three. The first argument is
+the S-expression that the administrator wants to store in the rule database.
+The other arguments, if present, is the boundary condition connected to this rules
+and possible also static return information.
+
+</p>
+<p>
+The second argument, if present, can either be a name, which then refers to a
+boundary condition stored somewhere on the server, or it can be a direct specification
+of a boundary condition. If there is the need to define some return info but no
+boundary condition the second argument should be the string "NULL" which then signifies
+the null boundary condition.
+
+</p>
+<p>
+The third argument, if present, really consists of two parts; a optional mime content-type
+specification and then the information which is treated by the server as a
+number of bytes and never interpreted in any way. It will be returned to the client
+exactly as given.
+
+</p>
+<a name="rfc.section.4.6"></a><h4><a name="DELETE">4.6</a>&nbsp;DELETE</h4>
+
+<p>
+Only one argument and that is the ruleID of the rule to be deleted.
+
+</p>
+<p>
+Every rule in the server MUST have a ruleID and if exactly the same rule appears
+in several servers the ruleID should be the same. To accomplish this the MD5 
+<a href="#RFC1321" title="Rivest, R., The MD5 Message-Digest Algorithm, April 1992.">[RFC1321]</a> message-digest of the S-expression is used as the ruleID.
+
+</p>
+<a name="rfc.section.4.7"></a><h4><a name="LIST">4.7</a>&nbsp;LIST</h4>
+
+<p>
+The arguments are a list of sub elements.
+
+</p>
+<p>
+The less permissive comparison, as specified in <a href="#SPOCP Sexp" title="Hedberg, R. and O. Bandmann, Restricted S-expressions for usage in a generalized access control service, .">[SPOCP Sexp]</a>, is used
+here. The difference, compared to usage in connection with other commands, is that
+you are able to define different directions for the comparison with this command.
+If you use '+' as order specifier the order is the same as used in the query
+command, that is you search for a rule that is more permissive than the S-expression
+specified in the query. If on the other hand you specify the '-' as order specifier,
+you will look for rules that are less permissive than the specification. The syntax
+for this command allows you to specify different directions for each sub element,
+hence you can specify: 
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>LIST +spocp -(8:resource) +(6:action4:read) -(7:subject(3:uid)) 
+</p>
+</blockquote>
+
+<p>
+Which then will match rules like: 
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>(5:spocp(8:resource(4:file3:etc6:groups))(6:action4:read)(7:subject(3:uid3:100)))
+</p>
+<p>(5:spocp(8:resource(4:file3:etc6:passwd))(6:action4:read)(7:subject(3:uid3:50)))
+</p>
+</blockquote>
+
+<p> 
+Since every rule in the SPOCP server MUST be a list S-expression, the sub elements that
+we are talking about here are the first level elements of that list.
+
+</p>
+<p><span class="emph">Note:</span>
+that since the less permissive comparison is used, you can not easily list all rules
+that are valid for ranges of values. If you for instance have sub elements in rules
+that look like this: 
+
+</p>
+<p></p>
+<blockquote class="text">
+<p>(age (* range numeric le 6))
+</p>
+<p>(age (* range numeric ge 7 le 18))
+</p>
+<p>(age (* range numeric gt 18 le 40))
+</p>
+<p>(age (* range numeric ge 41 lt 65))
+</p>
+<p>(age (* range numeric ge 65))
+</p>
+</blockquote>
+
+<p>
+Then "LIST +3:age -(1:*5:range2:le2:10)" will match rule 1 but not rule 2. One of
+two partly overlapping ranges can never be regarded as less permissive than the other.
+If you really want to know every rule that concerns entities who's age are less than or
+equal to 10, then you have to combine the result of several queries: for instance
+the one specified above and "LIST +3:age +2:10". 
+
+</p>
+<a name="rfc.section.4.8"></a><h4><a name="LOGOUT">4.8</a>&nbsp;LOGOUT</h4>
+
+<p>
+No argument.
+When the server receives this command it will immediately close down the connection.
+
+</p>
+<a name="rfc.section.4.9"></a><h4><a name="BEGIN">4.9</a>&nbsp;BEGIN</h4>
+
+<p>No argument.
+</p>
+<p>Marks the start of a transaction, that is a number of commands that should be 
+applied as 'one'
+</p>
+<a name="rfc.section.4.10"></a><h4><a name="COMMIT">4.10</a>&nbsp;COMMIT</h4>
+
+<p> No argument.
+</p>
+<p>Applies all the commands that has been specified within a transaction.
+</p>
+<a name="rfc.section.4.11"></a><h4><a name="ROLLBACK">4.11</a>&nbsp;ROLLBACK</h4>
+
+<p>No argument.
+</p>
+<p>Clears the list of commands that has been added since the 'begin' commands was issued
+</p>
+<a name="rfc.section.4.12"></a><h4><a name="SUBJECT">4.12</a>&nbsp;SUBJECT</h4>
+
+<p>
+One or two arguments, the first being the 'user' name, the other a token that 
+proves to the server that the user really is who she says she is.
+
+</p>
+<a name="rfc.section.4.13"></a><h4><a name="AUTH">4.13</a>&nbsp;AUTH</h4>
+
+<p>
+This command takes two arguments: an authentication mechanism and an
+initial authentication handshake token. This document only specified
+SASL handshakes but other may be defined in the future. SASL-mechanisms
+are named using the "SASL:"-prefix; eg SASL:GSSAPI or SASL:SCRAM-MD5.
+A list of supported authentication mechanisms are listed (among other
+things) in the output of the CAPABILITY command.
+
+<p>
+</p>
+If the server supports and is willing to use the requested mechanism
+the server sends the token to the underlying mechanism and returns a
+301 (Authentication in progress) with a return token for the client
+mechanism. The client must either continue the handshake with a new
+AUTH command using the same mechanism or a LOGOUT command. If the
+handshake fails the server must issue a 508 (Authentication error)
+and close the connection. If the server does not support the requested
+mechanism a 405 (Argument error) is returned and the connection is
+closed.
+
+<p>
+</p>
+After a success full handshake the client and server uses whatever
+protection layer has been negotiated (integrity and/or confidentiality)
+and sends SASL-wrapped tokens instead of the raw bytes.
+
+
+<a name="rfc.section.4.14"></a><h4><a name="CAPABILITY">4.14</a>&nbsp;CAPABILITY</h4>
+
+<p>
+This command takes no arguments. The return is a 200 with an token
+containing a space (ascii 32)-separated list of capitalized ascii
+strings signifying server capabilities. Currently the only capabilities
+supported are "SASL:"-prefixed SASL <a href="#RFC2222" title="Myers, J., Simple Authentication and Security Layer (SASL), October 1997.">[RFC2222]</a> authentication mechanism
+eg "SASL:GSSAPI".
+
+</p>
+<a name="rfc.section.4.15"></a><h4><a name="BCOND">4.15</a>&nbsp;BCOND</h4>
+
+<p>
+This command takes two or three arguments: and action to perform a name of
+a boundary condition and depending on the action a third which would be a
+specification of a boundary condition.
+
+</p>
+<p>
+Boundary conditions are tests that are run when the rule they are connected to
+is more permissive than the query. Boundary conditions can return TRUE or FALSE, which 
+means that even though the rule matches the final decision is based on the result
+of the boundary condition evaluation. 
+
+</p>
+<a name="anchor7"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.5"></a><h3>5.&nbsp;The theory behind return-info</h3>
+
+<blockquote class="text">
+<p>The user is permitted to access the resource, but if she does so special care
+should be taken as to logging
+</p>
+<p>The user is permitted to access the resource, but belongs to a set of users that
+should use a special instance of the resource.
+</p>
+<p>The user is permitted to access the resource, and the application can cache this
+information for a specified amount of time
+</p>
+<p>If the application is a proxy, and the user has the permission to use the end resource
+the proxy should use the one-time-password returned in the return-info when
+accessing the resource
+</p>
+</blockquote>
+<p>
+As has been described earlier, an administrator can set the return-info when a
+access rule is added to the access control service. This kind of return-info is
+static and will not be changed before it is returned to a application. 
+
+</p>
+<p>
+To support dynamic construction of return-info in our implementation of a SPOCP server
+we are allowing back ends that handle boundary conditions to construct and return
+return-info when condition is evaluated to TRUE. This has meant that we have a 
+couple of back ends connected with boundary conditions that are there more for the
+side effect that they produce dynamic return-info then for really checking a necessary
+boundary condition.
+
+</p>
+<a name="anchor8"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.6"></a><h3>6.&nbsp;Security considerations</h3>
+
+<p>
+Introducing middleware components have a lot of benefits but also opens new ways
+of attacking applications. Making a application dependent on a middleware component
+disregarding which service it provides means that the application is not more secure
+than the least secure of the services it is using. There for the aim of any
+implementer of or user of a middleware service must be to make it safer than
+any of the applications it is serving.
+
+</p>
+<p>
+If boundary conditions are used the information that they use for their evaluation
+is as important to protect and verify as the rules that the server is using.
+
+</p>
+<a name="rfc.references1"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>References</h3>
+<table width="99%" border="0">
+<tr><td class="author-text" valign="top"><a name="RFC0821">[RFC0821]</a></td>
+<td class="author-text">Postel, J., "<a href="ftp://ftp.isi.edu/in-notes/rfc821.txt">Simple Mail Transfer Protocol</a>", STD 10, RFC 821, August 1982.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC1321">[RFC1321]</a></td>
+<td class="author-text"><a href="mailto:rivest@theory.lcs.mit.edu">Rivest, R.</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc1321.txt">The MD5 Message-Digest Algorithm</a>", RFC 1321, April 1992.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC1945">[RFC1945]</a></td>
+<td class="author-text"><a href="mailto:timbl@w3.org">Berners-Lee, T.</a>, <a href="mailto:fielding@ics.uci.edu">Fielding, R.</a> and <a href="mailto:frystyk@w3.org">H. Nielsen</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc1945.txt">Hypertext Transfer Protocol -- HTTP/1.0</a>", RFC 1945, May 1996.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2222">[RFC2222]</a></td>
+<td class="author-text"><a href="mailto:jgmyers@netscape.com">Myers, J.</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2222.txt">Simple Authentication and Security Layer (SASL)</a>", RFC 2222, October 1997 (<a href="http://xml.resource.org/public/rfc/html/rfc2222.html">HTML</a>, <a href="http://xml.resource.org/public/rfc/xml/rfc2222.xml">XML</a>).</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2246">[RFC2246]</a></td>
+<td class="author-text"><a href="mailto:tdierks@certicom.com">Dierks, T.</a> and <a href="mailto:callen@certicom.com">C. Allen</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2246.txt">The TLS Protocol Version 1.0</a>", RFC 2246, January 1999.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2828">[RFC2828]</a></td>
+<td class="author-text">Shirey, R., "<a href="ftp://ftp.isi.edu/in-notes/rfc2828.txt">Internet Security Glossary</a>", RFC 2828, May 2000.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2904">[RFC2904]</a></td>
+<td class="author-text">Vollbrecht, J., Calhoun, P., Farrell, S., Gommans, L., Gross, G., de Bruijn, B., de Laat, C., Holdrege, M. and D. Spence, "<a href="ftp://ftp.isi.edu/in-notes/rfc2904.txt">AAA Authorization Framework</a>", RFC 2904, August 2000.</td></tr>
+<tr><td class="author-text" valign="top"><a name="RFC2045">[RFC2045]</a></td>
+<td class="author-text"><a href="mailto:ned@innosoft.com">Freed, N.</a> and <a href="mailto:nsb@nsb.fv.com">N. Borenstein</a>, "<a href="ftp://ftp.isi.edu/in-notes/rfc2045.txt">Multipurpose Internet Mail Extensions (MIME) Part One: Format of Internet Message Bodies</a>", RFC 2045, November 1996.</td></tr>
+<tr><td class="author-text" valign="top"><a name="SPOCP/TCP">[SPOCP/TCP]</a></td>
+<td class="author-text"><a href="mailto:roland@it.su.se">Hedberg, R.</a>, "The Simple Policy Control Protocol over TCP/IP".</td></tr>
+<tr><td class="author-text" valign="top"><a name="SPOCP Sexp">[SPOCP Sexp]</a></td>
+<td class="author-text"><a href="mailto:roland@it.su.se">Hedberg, R.</a> and <a href="mailto:olav@L4i.se">O. Bandmann</a>, "Restricted S-expressions for usage in a generalized access control service".</td></tr>
+</table>
+
+<a name="rfc.authors"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>Author's Address</h3>
+<table width="99%" border="0" cellpadding="0" cellspacing="0">
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Roland Hedberg</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Stockholm university</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Kasamark 114</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Umea  90586</td></tr>
+<tr><td class="author-text">&nbsp;</td>
+<td class="author-text">Sweden</td></tr>
+<tr><td class="author" align="right">Phone:&nbsp;</td>
+<td class="author-text">+46 90 147275</td></tr>
+<tr><td class="author" align="right">EMail:&nbsp;</td>
+<td class="author-text"><a href="mailto:roland@it.su.se">roland@it.su.se</a></td></tr>
+</table>
+
+<a name="reply codes"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<a name="rfc.section.A"></a><h3>Appendix A.&nbsp;SPOCP Reply Codes</h3>
+
+<p>
+</p><table class="data" align="center" border="1" cellpadding="2" cellspacing="2">
+<tr>
+<th align="center" width="10%">Response code</th>
+<th align="left" width="25%">Response text (might be present)</th>
+<th align="left" width="65%">Description</th>
+</tr>
+<tr>
+<td align="center">200</td>
+<td align="left">Ok</td>
+<td align="left">Command accepted and executed </td>
+</tr>
+<tr>
+<td align="center">201</td>
+<td align="left">&nbsp;</td>
+<td align="left">Multi line response </td>
+</tr>
+<tr>
+<td align="center">202</td>
+<td align="left">Denied</td>
+<td align="left">Query did not match any stored policy </td>
+</tr>
+<tr>
+<td align="center">203</td>
+<td align="left">Bye</td>
+<td align="left">Server is closing connection </td>
+</tr>
+<tr>
+<td align="center">204</td>
+<td align="left">Transaction complete</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">301</td>
+<td align="left">Authentication in progress</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">400</td>
+<td align="left">Syntax error</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">401</td>
+<td align="left">Already in operation</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">402</td>
+<td align="left">Too many arguments</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">403</td>
+<td align="left">Line too long </td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">404</td>
+<td align="left">Access denied</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">405</td>
+<td align="left">Argument error</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">406</td>
+<td align="left">Not supported</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">407</td>
+<td align="left">Already exits</td>
+<td align="left">Rules or client specifications can not be overwritten </td>
+</tr>
+<tr>
+<td align="center">408</td>
+<td align="left">Input error</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">409</td>
+<td align="left">Protocol error</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">410</td>
+<td align="left">Unknown command</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">411</td>
+<td align="left">Size limit exceeded</td>
+<td align="left">The total number of bytes in the command exceeded the limit set by the server</td>
+</tr>
+<tr>
+<td align="center">500</td>
+<td align="left">Operations error</td>
+<td align="left">Permanent operations error </td>
+</tr>
+<tr>
+<td align="center">501</td>
+<td align="left">Service not available</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">502</td>
+<td align="left">Information unavailable </td>
+<td align="left">When a remote service is not available, this is when a boundary condition can not be checked. </td>
+</tr>
+<tr>
+<td align="center">503</td>
+<td align="left">Unknown ID</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">504</td>
+<td align="left">Already active</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">505</td>
+<td align="left">Internal error</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">506</td>
+<td align="left">Time limit exceeded</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">507</td>
+<td align="left">Other error</td>
+<td align="left">For example error encountered while using back ends</td>
+</tr>
+<tr>
+<td align="center">509</td>
+<td align="left">Authentication error</td>
+<td align="left">&nbsp;</td>
+</tr>
+<tr>
+<td align="center">510</td>
+<td align="left">Not implemented</td>
+<td align="left">&nbsp;</td>
+</tr>
+</table>
+<a name="rfc.copyright"></a><br /><hr />
+<table summary="layout" cellpadding="0" cellspacing="2" class="bug" align="right"><tr><td class="bug"><a href="#toc" class="link2">&nbsp;TOC&nbsp;</a></td></tr></table>
+<h3>Intellectual Property Statement</h3>
+<p class='copyright'>
+The IETF takes no position regarding the validity or scope of
+any intellectual property or other rights that might be claimed
+to  pertain to the implementation or use of the technology
+described in this document or the extent to which any license
+under such rights might or might not be available; neither does
+it represent that it has made any effort to identify any such
+rights. Information on the IETF's procedures with respect to
+rights in standards-track and standards-related documentation
+can be found in BCP-11. Copies of claims of rights made
+available for publication and any assurances of licenses to
+be made available, or the result of an attempt made
+to obtain a general license or permission for the use of such
+proprietary rights by implementors or users of this
+specification can be obtained from the IETF Secretariat.</p>
+<p class='copyright'>
+The IETF invites any interested party to bring to its
+attention any copyrights, patents or patent applications, or
+other proprietary rights which may cover technology that may be
+required to practice this standard. Please address the
+information to the IETF Executive Director.</p>
+<h3>Full Copyright Statement</h3>
+<p class='copyright'>
+Copyright (C) The Internet Society (2004). All Rights Reserved.</p>
+<p class='copyright'>
+This document and translations of it may be copied and furnished to
+others, and derivative works that comment on or otherwise explain it
+or assist in its implementation may be prepared, copied, published and
+distributed, in whole or in part, without restriction of any kind,
+provided that the above copyright notice and this paragraph are
+included on all such copies and derivative works. However, this
+document itself may not be modified in any way, such as by removing
+the copyright notice or references to the Internet Society or other
+Internet organizations, except as needed for the purpose of
+developing Internet standards in which case the procedures for
+copyrights defined in the Internet Standards process must be
+followed, or as required to translate it into languages other than
+English.</p>
+<p class='copyright'>
+The limited permissions granted above are perpetual and will not be
+revoked by the Internet Society or its successors or assignees.</p>
+<p class='copyright'>
+This document and the information contained herein is provided on an
+&quot;AS IS&quot; basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING
+TASK FORCE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING
+BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
+HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.</p>
+<h3>Acknowledgment</h3>
+<p class='copyright'>
+Funding for the RFC Editor function is currently provided by the
+Internet Society.</p>
+</body></html>

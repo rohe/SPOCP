@@ -6,7 +6,7 @@
 	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
 	<META NAME="CREATED" CONTENT="20040223;15245900">
 	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
-	<META NAME="CHANGED" CONTENT="20040223;15272900">
+	<META NAME="CHANGED" CONTENT="20040428;15562700">
 </HEAD>
 <BODY LANG="en-US" DIR="LTR">
 <H1>Boundary conditions</H1>
@@ -45,6 +45,11 @@
 	<LI><P><A HREF="#difftime">11. The difftime boundary condition</A> 
 	</P>
 </UL>
+<H2>1. The general boundary condition format</H2>
+<P ALIGN=LEFT>boundary-condition = type &ldquo;;&rdquo;  *unitsel &ldquo;;&rdquo;
+typespecific</P>
+<P ALIGN=LEFT>Complete specification in the <A HREF="adminguide.html#rulefile">rulefile
+format definition</A>.</P>
 <H2><A NAME="flatfile"></A>2. The flat file boundary condition</H2>
 <P>Building on the definition in 2.5, this boundary condition is
 described by: 
@@ -190,7 +195,7 @@ Example:
 	</DD></DL>
 <PRE STYLE="margin-bottom: 0.2in">{\0$mail &amp; &quot;sven.svensson@minorg.se&quot;}/title &amp; &quot;mib&quot;</PRE>
 <DL>
-	<DD>
+	<DD STYLE="margin-bottom: 0.2in">
 	Can be thought of as being evaluated in two steps: 
 	</DD></DL>
 <OL>
@@ -199,7 +204,7 @@ Example:
 	the first searchbase DN in the LDAP boundary condition and that has
 	&quot;sven.svensson@minorg.se&quot; as an attribute value for the
 	attribute &quot;mail&quot;. 
-	</DD><LI><DD>
+	</DD><LI><DD STYLE="margin-bottom: 0.2in">
 	Among that set of objects, find the object that has &quot;mib&quot;
 	as an attribute value for the attribute &quot;title&quot;. 
 	</DD></OL>
@@ -209,7 +214,7 @@ Example:
 		</DD></DL>
 <PRE STYLE="margin-bottom: 0.2in">{\0$mail &amp; &quot;sven.svensson@minorg.se&quot;}/title,personalTitle &amp; &quot;mib&quot;</PRE>
 <DL>
-	<DD>
+	<DD STYLE="margin-bottom: 0.2in">
 	Can be thought of as being evaluated in two steps: 
 	</DD></DL>
 <OL>
@@ -218,7 +223,7 @@ Example:
 	the first searchbase DN in the LDAP boundary condition and that has
 	&quot;sven.svensson@minorg.se&quot; as an attribute value for the
 	attribute &quot;mail&quot;. 
-	</DD><LI><DD>
+	</DD><LI><DD STYLE="margin-bottom: 0.2in">
 	Among that set of objects, find the object that has &quot;mib&quot;
 	as an attribute value for either the attributes &quot;title&quot; or
 	&quot;personalTitle&quot;. 
@@ -329,9 +334,9 @@ Compares two strings The format of the boundary conditions:
 <A NAME="difftime"></A><FONT FACE="Times New Roman, serif"><FONT SIZE=5><B>10. The difftime boundary condition</B></FONT></FONT>
 Checks the present time agains some given time. There are four different conditions that can be checked: </PRE>
 <UL>
-	<LI><PRE>If the present time is after a specifed time and if the different exceeds a certain value. </PRE>
-	<LI><PRE>If the present time is after a specifed time and if the different is less than a certain value. </PRE>
-	<LI><PRE>If the present time is before a specifed time and if the different exceeds a certain value. </PRE>
+	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is after a specifed time and if the different exceeds a certain value. </PRE>
+	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is after a specifed time and if the different is less than a certain value. </PRE>
+	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is before a specifed time and if the different exceeds a certain value. </PRE>
 	<LI><PRE STYLE="margin-bottom: 0.2in">If the present time is before a specifed time and if the different is less than a certain value. </PRE>
 </UL>
 <PRE STYLE="margin-bottom: 0.2in">The format of the boundary condition is: 
@@ -344,6 +349,8 @@ after    = &quot;+&quot;
 how_much = less / more
 less     = &quot;-&quot;
 more     = &quot;+&quot;
-For instance, <BR>000007_00:00:00;2003-10-09T08:00:00;-+<BR>is TRUE if now is before 08:00:00 the 2003-09-09 and if now is more then 7 days before 08:00:00 the 2003-09-09. </PRE>
+For instance, 
+000007_00:00:00;2003-10-09T08:00:00;-+
+is TRUE if now is before 08:00:00 the 2003-09-09 and if now is more then 7 days before 08:00:00 the 2003-09-09. </PRE>
 </BODY>
 </HTML>
