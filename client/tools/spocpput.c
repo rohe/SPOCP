@@ -19,6 +19,7 @@
 
 #include <string.h>
 
+#include <spocp.h>
 #include "spocpcli.h"
 
 int tls;
@@ -29,28 +30,165 @@ char *privatekey = 0;
 char *calist = 0;
 char *passwd = 0;
 
+/*--------------------------------------------------------------------------------*/
+
+typedef struct _ruledef {
+	spocp_chunk_t	*rule;
+	spocp_chunk_t	*bcond;
+	spocp_chunk_t	*blob;
+} spocp_ruledef_t;
+
 /*--------------------------------------------------------------------------------*
 
-  format of the file
-  line = [path 1*SP] s-expr [SP "=>" SP bcondexp]
-
-  path         = '/' [ 1*pathpart ]
-  pathpart     = 1*dirchar '/'
-  dirchar      = %x30-39 / %x41-5A / %x61-7A / '-' / '_'
-
-  s-expr       = "(" bytestring *s-part ")"
- 
-  bcondexp     = s-expr
+  format of the file, same as for the server rule file
 
  *--------------------------------------------------------------------------------*/
+
+static spocp_chunk_t        *
+get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
+{
+	spocp_chunk_t        *np = 0, *pp;
+	char		c;
+
+	if (head == 0)
+		head = pp = get_chunk(ib);
+	else
+		for (pp = head; pp->next; pp = pp->next);
+
+	if (pp == 0)
+		return 0;
+
+	/* It's a S-expression */
+	if (*pp->val->val == '/' || oct2strcmp(pp->val, "(") == 0) {
+
+		/* starts with a path specification */
+		if( *pp->val->val == '/' )
+			pp = chunk_add( pp, get_chunk( ib )) ;
+
+		np = get_sexp(ib, pp);
+
+		/*
+		 * So do I have the whole S-expression ? 
+		 */
+		if (np == 0) {
+			traceLog(LOG_ERR, "Error in rulefile" ) ;
+			chunk_free(head);
+			return 0;
+		}
+
+		for (; pp->next; pp = pp->next);
+
+		c = charbuf_peek(ib);
+
+		if( c == '=' ) {
+			np = get_chunk(ib);
+			if (oct2strcmp(np->val, "=>") == 0) { /* boundary condition */
+				pp = chunk_add(pp, np);
+	
+				np = get_chunk(ib);
+
+				if (oct2strcmp(np->val, "(") == 0) 
+					pp = get_sexp( ib, chunk_add(pp, np));
+
+				if (pp == 0) {
+					traceLog(LOG_ERR, "Error in rulefile" ) ;
+					chunk_free(head);
+					return 0;
+				}
+
+				for (; pp->next; pp = pp->next);
+
+				if( charbuf_peek(ib) == '=' ) 
+					np = get_chunk(ib);
+			}
+
+			if (oct2strcmp(np->val, "==") == 0) { /* blob */
+				pp = chunk_add(pp, np);
+				pp = chunk_add( pp, get_chunk( ib ));
+			}
+		}
+	} else if ( oct2strcmp(pp->val, ";include" ) == 0 ) {
+		pp = chunk_add( pp, get_chunk( ib )) ;
+	} else {	/* should be a boundary condition definition,
+			 * has three or more chunks
+			 */
+		pp = chunk_add( pp, get_chunk( ib ));
+		if( pp && oct2strcmp(pp->val, ":=") == 0 ) {
+			pp = chunk_add( pp, get_chunk( ib ));
+			if( oct2strcmp( pp->val, "(" ) == 0 ) {
+				pp = get_sexp( ib, pp);
+			}
+		}
+		else {
+			traceLog(LOG_ERR,"Error in rulefile") ;
+			chunk_free(head);
+			return 0;
+		}
+	}
+
+	if (pp)
+		return head;
+	else {
+		chunk_free( head );
+		return 0;
+	}
+}
+
+/*--------------------------------------------------------------------------------*/
+
+static void
+ruledef_return( spocp_ruledef_t *rd, spocp_chunk_t *c )
+{
+	spocp_chunk_t *ck = c;
+	int	p = 0;
+
+	rd->rule = c ;
+
+	do {
+		if( oct2strcmp( ck->val, "(" ) == 0 )
+			p++;
+		else if( oct2strcmp( ck->val, ")" ) == 0 )
+			p--;
+
+		ck = ck->next;
+	} while( p ) ;
+ 
+        if( ck && oct2strcmp( ck->val, "=>") == 0 ) {
+		ck = ck->next;
+		rd->bcond = ck;
+		do {
+			if( oct2strcmp( ck->val, "(" ) == 0 )
+				p++;
+			else if( oct2strcmp( ck->val, ")" ) == 0 )
+				p--;
+
+			ck = ck->next;
+		} while( p );
+	}
+	else
+		rd->bcond = 0;
+
+        if( ck && oct2strcmp( ck->val, "==") == 0 ) {
+		rd->blob = ck->next;
+	}
+	else
+		rd->blob = 0;
+}
+
+/*--------------------------------------------------------------------------------*/
+
 
 static int
 spocp_add(SPOCP * spocp, char *file, char *subject)
 {
-	char resp[BUFSIZ], line[BUFSIZ], *cp, *path = 0, *rule, *bcexp;
+	char		resp[BUFSIZ];
 	FILE		*fp;
-	spocp_result_t	rc;
+	spocp_result_t	rc = SPOCP_SUCCESS;
 	queres_t	qres;
+	octet_t		*rule, *bcond, *blob, *path;
+	spocp_chunk_t	*chunk, *ck;
+	spocp_charbuf_t	*buf;
+	spocp_ruledef_t	rdef;
 
 	memset(resp, 0, BUFSIZ);
 	memset(&qres, 0, sizeof(queres_t));
@@ -62,7 +200,7 @@ spocp_add(SPOCP * spocp, char *file, char *subject)
 	if (file == 0)
 		fp = stdin;
 	else if ((fp = fopen(file, "r")) == NULL) {
-		traceLog("Couldn't open %s", file);
+		traceLog(LOG_INFO,"Couldn't open %s", file);
 		exit(1);
 	}
 #ifdef HAVE_SSL
@@ -84,42 +222,61 @@ spocp_add(SPOCP * spocp, char *file, char *subject)
 
 	/* lines should be [path] 1*SP rule *SP "=>" *SP bcondexp */
 
-	while (fgets(line, BUFSIZ, fp)) {
+	path = 0;
+	bcond = 0;
+	blob = 0;
+	rule = 0;
 
-		if (*line == '#')
-			continue;
+	buf = charbuf_new( fp, BUFSIZ );
 
-		cp = &line[strlen(line) - 1];
-		while (*cp == '\r' || *cp == '\n' || *cp == ' ')
-			*cp-- = '\0';
+	if (get_more(buf) == 0) return 0;
 
-		if (*line == 0)
-			continue;	/* empty line */
+	while (rc == SPOCP_SUCCESS && ( chunk = get_object( buf, 0 )) != 0 ) {
+	
+		if (*chunk->val->val == '/' || *chunk->val->val == '(') {
+			if (*chunk->val->val == '/') {
+				path = chunk->val;
+				ck = chunk->next;
+			}
+			else 
+				ck = chunk;
 
-		if (*line != '(') {
-			path = line;
-			rule = index(path, ' ');
-			while( *rule == ' ' || *rule == '\t' ) *rule++ = '\0';
-		} else {
-			rule = line;
-			path = 0;
+			ruledef_return( &rdef, ck ) ;
+			if( rdef.rule ) 
+				rule = chunk2sexp( rdef.rule ) ;
+			
+			if( rdef.bcond) 
+				bcond = chunk2sexp( rdef.bcond ) ;
+			
+			if( rdef.blob ) {
+				if (!rdef.bcond)
+					bcond =  str2oct("NULL", 0) ;
+
+				blob = rdef.blob->val ;
+			}
+			
+			memset(&qres, 0, sizeof(queres_t));
+
+			if ((rc =
+				spocpc_send_add(spocp, path, rule, bcond, blob,
+				    &qres)) != SPOCPC_OK)
+				printf("COMMUNICATION PROBLEM [%d]\n", rc);
+
+			if (qres.rescode != SPOCP_SUCCESS)
+				printf("SPOCP PROBLEM [%d]\n", qres.rescode);
+
+			if( rule ) {
+				oct_free( rule );
+				rule = 0;
+			}
+			if( bcond ) {
+				oct_free( bcond );
+				bcond = 0;
+			}
+			path = blob = 0;
 		}
-
-		if(( bcexp = strstr( rule, " => ")) != 0 ) {
-			*bcexp = '\0' ;
-			bcexp += 4 ;
-		}
-		
-		memset(&qres, 0, sizeof(queres_t));
-
-		if ((rc =
-			spocpc_str_send_add(spocp, path, line, bcexp, 0,
-			    &qres)) != SPOCPC_OK)
-			printf("COMMUNICATION PROBLEM [%d]\n", rc);
-
-		if (qres.rescode != SPOCP_SUCCESS)
-			printf("SPOCP PROBLEM [%d]\n", qres.rescode);
 	}
+
 
 	memset(&qres, 0, sizeof(queres_t));
 

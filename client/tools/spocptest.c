@@ -32,17 +32,18 @@
 static void
 print_usage(char *prog)
 {
-	printf("Usage: %s spocpserver [ spocpquery ]\n", prog);
+	printf("Usage: %s spocpserver 1*( spocpquery )\n", prog);
 }
 
 int
 main(int argc, char **argv)
 {
-	char	buf[BUFSIZ], *cp, *rule, *path, *sp, *tmp;
-	int	i, ok = 0, r, j;
+	char	buf[BUFSIZ], *cp, *sp, *tmp;
+	int	i = 0, ok = 0, r, j;
 	SPOCP	*spocp;
 	queres_t	qres;
 	octet_t		**o;
+	octet_t		*query, *path = 0;
 
 	spocpc_debug = 0;
 
@@ -64,19 +65,15 @@ main(int argc, char **argv)
 
 	if (argc > 2) {
 		for (i = 2; i < argc; i++) {
-			if (*argv[i] != '(') {
-				path = argv[i];
-				rule = index(path, ' ');
-				if(rule)
-					*rule++ = '\0';
-			} else {
-				rule = argv[i];
-				path = 0;
+			query = sexp_normalize( argv[i] );
+			if( query == 0 ) {
+				fprintf(stderr,"[%s] not a s-expression\n", argv[i]);
+				continue ;
 			}
 
 			memset(&qres, 0, sizeof(queres_t));
 
-			r = spocpc_str_send_query(spocp, path, rule, &qres) ;
+			r = spocpc_send_query(spocp, path, query, &qres) ;
 
 			if ( r == SPOCPC_OK && qres.rescode == SPOCP_SUCCESS) {
 				if (qres.blob) {
@@ -92,6 +89,7 @@ main(int argc, char **argv)
 			} else
 				printf("DENIED\n");
 
+			oct_free(query);
 		}
 	} else {
 		if (spocpc_debug)
@@ -115,25 +113,24 @@ main(int argc, char **argv)
 				sp = buf;
 			}
 
-			if (*sp != '(') {
-				path = sp;
-				rule = index(path, ' ');
-				*rule++ = '\0';
-			} else {
-				rule = sp;
-				path = 0;
+			query = sexp_normalize( buf );
+			if( query == 0 ) {
+				fprintf(stderr,"[%s] not a s-expression\n", buf);
+				continue ;
 			}
-
 			memset(&qres, 0, sizeof(queres_t));
 
-			r = spocpc_str_send_query(spocp, path, rule, &qres);
+			r = spocpc_send_query(spocp, path, query, &qres);
 
 			if (r == SPOCPC_OK) {
 				if (qres.rescode != ok) {
+					tmp = oct2strdup(query, 0);
 					printf("%d != %d on %s\n",
-					    qres.rescode, ok,  rule);
+					    qres.rescode, ok,  tmp);
+					free(tmp);	
 				}
 			}
+			oct_free(query);
 		}
 	}
 

@@ -1369,6 +1369,32 @@ argv_make( char *arg1, char *arg2, char *arg3, char *arg4, char *arg5 )
 	return oa;
 }
  
+static int
+spocpc_oct_send( SPOCP *spocp, char *type, octet_t **oa, int n, queres_t *qr)
+{
+	octarr_t	*argv;
+	octet_t		*op;
+	int		ret, i;
+
+	argv = octarr_new(n+1);
+
+	op = str2oct(type,0);
+	octarr_add( argv, op);
+
+	for (i = 0; i < n ; i++) {
+		if (oa[i])
+			op = octdup(oa[i]);
+		else
+			op = oct_new(0,0);
+
+		octarr_add( argv, op);
+	}
+
+	ret = spocpc_send_X(spocp, argv, qr);
+	octarr_free( argv );
+	return ret;
+}
+
 /*--------------------------------------------------------------------------------*/
 /*!
  * Send a Spocp query to a spocp server
@@ -1409,24 +1435,12 @@ spocpc_str_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
 int
 spocpc_send_query(SPOCP * spocp, octet_t *path, octet_t *query, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		*arr[3], op;
+	octet_t	*oa[3];
 
-	argv.arr = arr;
-	argv.size = 0;
-	argv.n = 3;
+	oa[0] = path;
+	oa[1] = query;
 
-	oct_assign(&op, "QUERY");
-	arr[0] = &op;
-
-	if (path)
-		arr[1] = path;
-	else
-		arr[1] = 0;
-
-	arr[2] = query;
-
-	return spocpc_send_X(spocp, &argv, qr);
+	return spocpc_oct_send( spocp, "QUERY", oa, 2, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1470,24 +1484,12 @@ spocpc_str_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 int
 spocpc_send_delete(SPOCP * spocp, octet_t *path, octet_t *rule, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		*arr[3], op;
+	octet_t	*oa[3];
 
-	argv.arr = arr;
-	argv.size = 0;
-	argv.n = 3;
+	oa[0] = path;
+	oa[1] = rule;
 
-	oct_assign(&op, "DELETE");
-	arr[0] = &op;
-
-	if (path)
-		arr[1] = path;
-	else
-		arr[1] = 0;
-
-	arr[2] = rule;
-
-	return spocpc_send_X(spocp, &argv, qr);
+	return spocpc_oct_send( spocp, "DELETE", oa, 2, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1530,22 +1532,11 @@ spocpc_str_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
 int
 spocpc_send_subject(SPOCP * spocp, octet_t *subject, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		*arr[3], op;
+	octet_t	*oa[3];
 
-	argv.arr = arr;
-	argv.size = 0;
-	argv.n = 1;
+	oa[0] = subject;
 
-	oct_assign(&op, "SUBJECT");
-	arr[0] = &op;
-
-	if (subject) {
-		arr[1] = subject;
-		argv.n = 2;
-	}
-
-	return spocpc_send_X(spocp, &argv, qr);
+	return spocpc_oct_send( spocp, "SUBJECT", oa, 1, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1596,42 +1587,17 @@ int
 spocpc_send_add(SPOCP * spocp, octet_t *path, octet_t *rule, octet_t *bcond,
 	octet_t *info, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		*arr[5], op, bc;
+	octet_t	*oa[3];
 
 	if (rule == 0 )
 		return SPOCPC_PARAM_ERROR;
 
-	argv.arr = arr;
-	argv.size = 0;
-	argv.n = 3;
+	oa[0] = path;
+	oa[1] = rule;
+	oa[2] = bcond;
+	oa[3] = info;
 
-	oct_assign(&op, "ADD");
-	arr[0] = &op;
-
-	if (path)
-		arr[1] = path;
-	else
-		arr[1] = 0;
-
-	arr[2] = rule;
-
-	if (bcond) {
-		arr[3] = bcond;
-		argv.n = 4;
-	}
-
-	if (info) {
-		if (bcond == 0) {
-			oct_assign(&bc, "NULL");
-			arr[3] = &bc;
-		}
-
-		arr[4] = info;
-		argv.n = 5;
-	}
-
-	return spocpc_send_X(spocp, &argv, qr);
+	return spocpc_oct_send( spocp, "DELETE", oa, 4, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1644,19 +1610,11 @@ spocpc_send_add(SPOCP * spocp, octet_t *path, octet_t *rule, octet_t *bcond,
 int
 spocpc_send_logout(SPOCP * spocp)
 {
-	octarr_t	argv;
-	octet_t		arr[1], *ap = arr;
 	queres_t	qres;
-
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 1;
-
-	oct_assign(&arr[0], "LOGOUT");
 
 	memset( &qres, 0, sizeof( queres_t));
 
-	return spocpc_send_X(spocp, &argv, &qres);
+	return spocpc_oct_send( spocp, "LOGOUT", NULL, 0, &qres); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1671,16 +1629,7 @@ spocpc_send_logout(SPOCP * spocp)
 int
 spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		arr[1], *ap = arr;
-
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 1;
-
-	oct_assign(&arr[0], "BEGIN");
-
-	return spocpc_send_X(spocp, &argv, qr);
+	return spocpc_oct_send( spocp, "BEGIN", NULL, 0, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1695,16 +1644,7 @@ spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 int
 spocpc_commit(SPOCP * spocp, queres_t * qr)
 {
-	octarr_t	argv;
-	octet_t		arr[1], *ap = arr;
-
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 1;
-
-	oct_assign(&arr[0], "COMMIT");
-
-	return spocpc_send_X(spocp, &argv, qr);
+	return spocpc_oct_send( spocp, "COMMIT", NULL, 0, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1721,19 +1661,10 @@ spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
 {
 	int res = SPOCPC_OK;
 #ifdef HAVE_SSL
-	octarr_t	argv;
-	octet_t		arr[1], *ap = arr;
-
 	if (spocp->contype == SSL_TLS)
 		return SPOCPC_STATE_VIOLATION;
 
-	argv.arr = &ap;
-	argv.size = 0;
-	argv.n = 1;
-
-	oct_assign(&arr[0], "STARTTLS");
-
-	return spocpc_send_X(spocp, &argv, qr);
+	res = spocpc_oct_send( spocp, "STARTTLS", NULL, 0, qr); 
 #else
 	res = SPOCPC_NOSUPPORT;
 #endif

@@ -44,9 +44,9 @@ print_usage(char *prog)
 int
 main(int argc, char **argv)
 {
-	char buf[BUFSIZ], *cp, *path = 0, *tmp;
-	char **arr = 0, *filename = 0, *server = 0;
-	char *certificate = 0, *privatekey = 0, *calist = 0, *passwd = 0;
+	char		buf[BUFSIZ], *cp, *tmp;
+	char		*filename = 0, *server = 0;
+	char		*certificate = 0, *privatekey = 0, *calist = 0, *passwd = 0;
 	int		tls = 0;
 	int		i, j, k, nq = 512, nc = 1, repeat = 0, n = 0;
 	SPOCP		*spocp;
@@ -54,7 +54,8 @@ main(int argc, char **argv)
 	FILE 		*fp;
 	pid_t		pid;
 	queres_t	qres;
-	octet_t		**o;
+	octet_t		**o, path, *query;
+	octarr_t	*arr = 0;
 
 	spocpc_debug = 0;
 
@@ -118,7 +119,7 @@ main(int argc, char **argv)
 	}
 
 	if (repeat) {
-		arr = (char **) calloc(nq, sizeof(char *));
+		arr = octarr_new(nq);
 		i = 0;
 	}
 
@@ -180,15 +181,24 @@ main(int argc, char **argv)
 
 	gettimeofday(&start, NULL);
 
+	memset( &path,0, sizeof( octet_t ));
+
 	while (fgets(buf, 512, fp)) {
 		cp = &buf[strlen(buf) - 1];
 		while (*cp == '\n' || *cp == ' ')
 			*cp-- = '\0';
+
+		query = sexp_normalize( buf );
+		if( query == 0 ) {
+			fprintf(stderr,"[%s] not a s-expression\n", buf);
+			continue ;
+		}
+
 		if (repeat)
-			arr[i++] = strdup(buf);
+			octarr_add(arr, query);
 
 		memset(&qres, 0, sizeof(queres_t));
-		if (spocpc_str_send_query(spocp, path, buf, &qres) == SPOCPC_OK &&
+		if (spocpc_send_query(spocp, &path, query, &qres) == SPOCPC_OK &&
 		    qres.rescode == SPOCP_SUCCESS) {
 			if (qres.blob) {
 				int l;
@@ -206,9 +216,9 @@ main(int argc, char **argv)
 	}
 
 	for (j = 0; j < repeat; j++) {
-		for (k = 0; k < i; k++) {
+		for (k = 0; k < arr->n; k++) {
 			memset(&qres, 0, sizeof(queres_t));
-			if (spocpc_str_send_query(spocp, path, arr[k],
+			if (spocpc_send_query(spocp, &path, arr->arr[k],
 				&qres) == SPOCP_SUCCESS) {
 				if (qres.blob) {
 					int l;
