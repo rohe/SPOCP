@@ -369,6 +369,7 @@ static junc_t *atom_match(
   slist_t  **slp ;
   int        i ;
   atom_t    *atom ;
+  char      *tmp ;
 
   if( ep == 0 ) return 0 ;
 
@@ -377,14 +378,21 @@ static junc_t *atom_match(
 
   if(( bp = ARRFIND( db, SPOC_ATOM )) != 0 ) {
     if(( ju = atom2atom_match( atom, bp->val.atom ))) {
-      DEBUG( SPOCP_DMATCH ) traceLog("Matched atom %s", atom->val.val ) ;
-
+      DEBUG( SPOCP_DMATCH ) {
+        tmp = oct2strdup( &atom->val, '%' ) ;
+        traceLog("Matched atom %s", tmp ) ;
+        free( tmp ) ;
+      }
       jp = next( ju, ep, rc, head, on ) ;
 
       if( jp ) return jp ;
     }
     else {
-      DEBUG( SPOCP_DMATCH ) traceLog("Failed to matched atom %s", atom->val.val ) ;
+      DEBUG( SPOCP_DMATCH ) {
+        tmp = oct2strdup( &atom->val, '%' ) ;
+        traceLog("Failed to matched atom %s", tmp ) ;
+        free( tmp ) ;
+      }
     }
   }
 
