@@ -17,9 +17,13 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <spocp.h>
+#include <be.h>
+#include <plugin.h>
+#include <rvapi.h>
 
 #include <sqlext.h>
 
@@ -45,13 +49,13 @@ befunc          sql_test;
 spocp_result_t
 sql_test(cmd_param_t * cpp, octet_t * blob)
 {
-	octet_t       **argv;
-	octet_t       **argv_ident;
-	octet_t       **argv_uid = 0;
+	octarr_t      *argv;
+	octarr_t      *argv_ident;
+	octarr_t      *argv_uid = 0;
 	/*
 	 * octet_t **sql_constraint; 
 	 */
-	int             n, n_ident, n_uid, i;
+	int             n, i;
 	/*
 	 * int n_constraint; 
 	 */
@@ -69,30 +73,26 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	/*
 	 * Split into sqlserver and vset parts 
 	 */
-	argv = oct_split(cpp->arg, ';', 0, 0, 0, &n);
-	argv[0]->val[argv[0]->len] = 0;
+	argv = oct_split(cpp->arg, ';', 0, 0, 0);
 	/*
 	 * Get the dsn and ident parts 
 	 */
-	argv_ident = oct_split(argv[0], '@', 0, 0, 0, &n_ident);
+	argv_ident = oct_split(argv->arr[0], '@', 0, 0, 0);
 
-	if (n_ident == 0) {
-		dsn = argv[0]->val;
+	if (argv_ident->n == 0) {
+		dsn = oct2strdup(argv->arr[0], 0);
 	} else {
-		argv_ident[0]->val[argv_ident[0]->len] = 0;
-		argv_ident[1]->val[argv_ident[1]->len] = 0;
-		dsn = argv_ident[1]->val;
+		dsn = oct2strdup(argv->arr[1], 0);
 		/*
 		 * Get uid and pwd parts 
 		 */
-		argv_uid = oct_split(argv_ident[0], ':', 0, 0, 0, &n_uid);
-		if (n == 0) {
-			uid = argv_ident[0]->val;
+		argv_uid = oct_split(argv_ident->arr[0], ':', 0, 0, 0);
+
+		if (argv_uid->n == 0) {
+			uid = oct2strdup(argv_ident->arr[0], 0);
 		} else {
-			argv_uid[0]->val[argv_uid[0]->len] = 0;
-			argv_uid[1]->val[argv_uid[1]->len] = 0;
-			uid = argv_uid[0]->val;
-			pwd = argv_uid[1]->val;
+			uid = oct2strdup(argv_uid->arr[0], 0);
+			pwd = oct2strdup(argv_uid->arr[1], 0);
 		}
 	}
 
@@ -107,9 +107,12 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		DEBUG(SPOCP_DBCOND) {
 			traceLog("Could not SQLAllocEnv.");
 		}
-		oct_freearr(argv);
-		oct_freearr(argv_ident);
-		oct_freearr(argv_uid);
+		octarr_free(argv);
+		octarr_free(argv_ident);
+		octarr_free(argv_uid);
+		if (*dsn != 0) free(dsn);
+		if (*uid != 0) free(uid);
+		if (*pwd != 0) free(pwd);
 		return SPOCP_OPERATIONSERROR;
 	}
 
@@ -120,9 +123,12 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		DEBUG(SPOCP_DBCOND) {
 			traceLog("Could not SQLAllocConnect.");
 		}
-		oct_freearr(argv);
-		oct_freearr(argv_ident);
-		oct_freearr(argv_uid);
+		octarr_free(argv);
+		octarr_free(argv_ident);
+		octarr_free(argv_uid);
+		if (*dsn != 0) free(dsn);
+		if (*uid != 0) free(uid);
+		if (*pwd != 0) free(pwd);
 		SQLFreeEnv(hEnv);
 		return SPOCP_OPERATIONSERROR;
 	}
@@ -137,9 +143,12 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		DEBUG(SPOCP_DBCOND) {
 			traceLog("Could not SQLConnect.");
 		}
-		oct_freearr(argv);
-		oct_freearr(argv_ident);
-		oct_freearr(argv_uid);
+		octarr_free(argv);
+		octarr_free(argv_ident);
+		octarr_free(argv_uid);
+		if (*dsn != 0) free(dsn);
+		if (*uid != 0) free(uid);
+		if (*pwd != 0) free(pwd);
 		SQLFreeConnect(hDbc);
 		SQLFreeEnv(hEnv);
 		return SPOCP_OPERATIONSERROR;
@@ -148,12 +157,10 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	/*
 	 * For each sql 
 	 */
-	for (i = 1; i <= n; i++) {
-		sql = "";
+	for (i = 1; i <= argv->n; i++) {
 		negate = FALSE;
-		argv[i]->val[argv[i]->len] = 0;
 
-		sql = argv[i]->val;
+		sql = oct2strdup( argv->arr[i], 0);
 
 		if (*sql == '-') {
 			negate = TRUE;
@@ -171,9 +178,13 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 			DEBUG(SPOCP_DBCOND) {
 				traceLog("Could not SQLAllocStmt.");
 			}
-			oct_freearr(argv);
-			oct_freearr(argv_ident);
-			oct_freearr(argv_uid);
+			octarr_free(argv);
+			octarr_free(argv_ident);
+			octarr_free(argv_uid);
+			if (*dsn != 0) free(dsn);
+			if (*uid != 0) free(uid);
+			if (*pwd != 0) free(pwd);
+			free(sql);
 			SQLFreeConnect(hDbc);
 			SQLFreeEnv(hEnv);
 			return SPOCP_OPERATIONSERROR;
@@ -186,9 +197,13 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 			DEBUG(SPOCP_DBCOND) {
 				traceLog("Could not SQLPrepare.");
 			}
-			oct_freearr(argv);
-			oct_freearr(argv_ident);
-			oct_freearr(argv_uid);
+			octarr_free(argv);
+			octarr_free(argv_ident);
+			octarr_free(argv_uid);
+			if (*dsn != 0) free(dsn);
+			if (*uid != 0) free(uid);
+			if (*pwd != 0) free(pwd);
+			free(sql);
 			SQLFreeStmt(hStmt, SQL_DROP);
 			SQLFreeConnect(hDbc);
 			SQLFreeEnv(hEnv);
@@ -205,9 +220,13 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 				traceLog("SQLExecute returned SQL_NO_DATA.");
 			}
 			if (negate == FALSE) {
-				oct_freearr(argv);
-				oct_freearr(argv_ident);
-				oct_freearr(argv_uid);
+				octarr_free(argv);
+				octarr_free(argv_ident);
+				octarr_free(argv_uid);
+				if (*dsn != 0) free(dsn);
+				if (*uid != 0) free(uid);
+				if (*pwd != 0) free(pwd);
+				free(sql);
 				return FALSE;
 			}
 		} else if (ret == SQL_SUCCESS_WITH_INFO) {
@@ -225,9 +244,13 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 			SQLFreeStmt(hStmt, SQL_DROP);
 			SQLFreeConnect(hDbc);
 			SQLFreeEnv(hEnv);
-			oct_freearr(argv);
-			oct_freearr(argv_ident);
-			oct_freearr(argv_uid);
+			octarr_free(argv);
+			octarr_free(argv_ident);
+			octarr_free(argv_uid);
+			if (*dsn != 0) free(dsn);
+			if (*uid != 0) free(uid);
+			if (*pwd != 0) free(pwd);
+			free(sql);
 			return SPOCP_OPERATIONSERROR;
 		}
 
@@ -236,6 +259,8 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		DEBUG(SPOCP_DBCOND) {
 			traceLog("Got %d rows", nRows);
 		}
+
+		free(sql);
 
 		if (nRows > 0 && negate == TRUE) {
 			return SPOCP_DENIED;
@@ -252,9 +277,12 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	SQLFreeConnect(hDbc);
 	SQLFreeEnv(hEnv);
 
-	oct_freearr(argv);
-	oct_freearr(argv_ident);
-	oct_freearr(argv_uid);
+	octarr_free(argv);
+	octarr_free(argv_ident);
+	octarr_free(argv_uid);
+	if (*dsn != 0) free(dsn);
+	if (*uid != 0) free(uid);
+	if (*pwd != 0) free(pwd);
 
 	return SPOCP_SUCCESS;
 }
