@@ -48,6 +48,7 @@ rescode_t rescode[] = {
  { SPOCP_UNAVAILABLE ,"3:51321:Service not available" },
  { SPOCP_INFO_UNAVAIL,"3:51423:Information unavailable" },
  { SPOCP_NOT_SUPPORTED , "3:51521:Command not supported" },
+ /* Ändra till SPOCP_STATE_VIOLATION */
  { SPOCP_SSLCON_EXIST ,"3:51618:SSL Already active" },
  { SPOCP_OTHER ,"3:51711:Other error" },
  { SPOCP_CERT_ERR ,"3:51820:Authentication error" },
@@ -125,6 +126,65 @@ static void oparg_clear( conn_t *con )
   con->oppath = 0 ;
 }
 
+spocp_resut_t com_auth( conn_t *conn )
+{
+  spocp_result_t  r = SPOCP_SUCCESS ;
+  const char     *msg = NULL;
+  int             wr ;
+
+  LOG (SPOCP_INFO ) traceLog("Attempt to authenticate");
+
+#ifdef HAVE_SASL
+
+  if (conn->sasl == NULL) {
+    wr = sasl_server_new("spocp",
+			 conn->srv->sri.hostname,
+			 NULL,
+			 NULL,
+			 NULL,
+			 0,
+			 &conn->sasl);
+    if (wr != SASL_OK) {
+      LOG (SPOCP_ERR) traceLog("Failed to create sasl server context");
+      r = SPOCP_OTHER;
+      goto err;
+    }
+  }
+
+  if (conn->oparg->n == 0) { /* list auth mechs */
+    const char *mechs;
+    int mechlen,count;
+
+    wr = sasl_listmech(conn,NULL,NULL," ",NULL,&mechs,&mechlen,&count);
+    if (wr != SASL_OK) {
+      LOG (SPOCP_ERR) traceLog("Failed to generate SASL mechanism list");
+      r = SPOCP_OTHER;
+    } else {
+      msg = mechs;
+    }
+  } else if (conn->oparg->n != 2) { /* bad bad */
+    r = SPOCP_SYNTAXERROR;
+    msg = strdup("You must provide a mechanism and data you clutz");
+  } else { /* start or continue negotiation: AUTH <mech> <data> */
+    
+  }
+
+#else
+  r = SPOCP_NOT_SUPPORTED;
+#endif
+
+ err:
+
+  add_response( conn->out, r, msg ) ;
+
+  if (msg != NULL)
+    free(msg);
+
+  if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
+
+  return r ;
+}
+
 /* --------------------------------------------------------------------------------- */
 
 spocp_result_t com_starttls( conn_t *conn )
@@ -139,14 +199,17 @@ spocp_result_t com_starttls( conn_t *conn )
   r = SPOCP_NOT_SUPPORTED ;
 
 #else
-
-  if( conn->ssl != NULL ) r = SPOCP_SSLCON_EXIST ;
+  if ( conn->sasl != NULL) {
+    LOG( SPOCP_ERR ) traceLog("Layering violation: SASL already in operation") ;
+    r = SPOCP_STATE_VIOLATION ; /* XXX definiera och ... */
+  } else if( conn->ssl != NULL )
+    LOG( SPOCP_ERR ) traceLog("Layering violation: SSL already in operation") ;
+    r = SPOCP_STATE_VIOLATION ; /* XXX ... fixa informativt felmeddleande */
   else if(( r = operation_access( conn )) == SPOCP_SUCCESS ) {
-
     /* Ready to start TLS/SSL */
     add_response( conn->out, SPOCP_SSL_START ) ;
     if(( wr = send_results( conn )) == 0 ) r = SPOCP_CLOSE ;
-
+    
     conn->status = CNST_SSL_NEG ; /* Negotiation in progress */
 
     /* whatever is in the input buffert must not be used anymore */
@@ -158,7 +221,8 @@ spocp_result_t com_starttls( conn_t *conn )
       r = SPOCP_CLOSE ;
       conn->stop = 1 ;
     }
-    else traceLog("SSL in operation") ;
+    else 
+      traceLog("SSL in operation") ;
 
     conn->status = CNST_ACTIVE ; /* Negotiation in progress */
   }
@@ -876,6 +940,10 @@ spocp_result_t get_operation( conn_t *conn, proto_op **oper )
     case 4:
       if( strncasecmp( op.val, "LIST", 4 ) == 0 ) {
         *oper = &com_list ;
+        l = 4 ;
+      }
+      else if( strncasecmp( op.val, "AUTH", 4 ) == 0 ) {
+        *oper = &com_auth ;
         l = 4 ;
       }
       break ;
