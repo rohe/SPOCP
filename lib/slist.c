@@ -173,9 +173,13 @@ slist_t *sl_init( int max )
 
 void sl_free_slist( slist_t *slp )
 {
-  slnode_t *np = slp->head , **ne ;
+  slnode_t *np, **ne ;
 
-  while( 1 ) {
+  if( slp == 0 ) return ;
+
+  np = slp->head ;
+
+  while( np ) {
     ne = np->next ;
     sl_free_node( np ) ;
     if( ne == 0 ) break ; 
@@ -192,6 +196,8 @@ int sl_rand( slist_t *slp )
   int i, j, r = rand() ;
   int randmax = RAND_MAX, n ;
  
+  if( slp == 0 ) return 0 ;
+
   for( i = 1, j = 2 ; i < slp->lgnmax ; i++, j += j ) {
     n = randmax >> j ;
     if( r > n ) break ;
