@@ -94,6 +94,7 @@ becpool_t *becpool_dup( becpool_t *bcp )
     else {
       new->tail->next = cpy ;
       cpy->prev = new->tail ;
+      cpy->next = 0 ;
       new->tail = cpy ;
     } 
   }
@@ -168,6 +169,7 @@ becon_push( char *type, char *arg, closefn *close, void *con, becpool_t *bcp )
   if( bcp->tail ) {
     bcp->tail->next = bc ;
     bc->prev = bcp->tail ;
+    bc->next = 0 ;
     bcp->tail = bc ;
   }
   else bcp->head = bcp->tail = bc ;
@@ -213,6 +215,7 @@ becon_t *becon_get( char *type, char *arg, becpool_t *bcp )
         
         bcp->tail->next = bc ;
         bc->prev = bcp->tail ;
+        bc->next = 0 ;
         bcp->tail = bc ;
       }
 
