@@ -192,8 +192,8 @@ int add_client_aci( char *str, ruleset_t **rs )
   if( sp && *sp ) oct.len = strlen( sp ) ;
   else oct.len = 0 ;
 
-  if(( rp = find_ruleset( &oct, *rs )) == 0 )
-    rp = create_ruleset( &oct, rs ) ;
+  /* will not create something that already exists */
+  rp = ruleset_create( &oct, rs ) ;
 
   /* next the access rights */
 
@@ -338,3 +338,5 @@ spocp_result_t rs_access_allowed( ruleset_t *rs, spocp_req_info_t *sri, char typ
 
   return r ;
 }
+
+
