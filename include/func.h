@@ -48,6 +48,7 @@ junc_t *
 int             get_len( octet_t *oct ) ;
 spocp_result_t  get_str( octet_t *oct, octet_t *str ) ;
 char           *sexp_to_canonical( char *sexp ) ;
+int             ipv4cmp( struct in_addr *ia1, struct in_addr *ia2 ) ;
 int             ipv6cmp( struct in6_addr *ia1, struct in6_addr *ia2 ) ;
 
 spocp_result_t  element_get( octet_t *oct, element_t **epp ) ;
@@ -155,8 +156,11 @@ int            rules( db_t *db ) ;
 
 void       ruleinst_free( ruleinst_t *rt ) ;
 
+ruleinfo_t *ruleinfo_new( void ) ;
+void	    ruleinfo_free( ruleinfo_t * ) ;
 ruleinfo_t *ruleinfo_dup( ruleinfo_t *old ) ;
 int        ruleinfo_print( ruleinfo_t *r ) ;
+ruleinst_t *ruleinst_find_by_uid( rbt_t *rules, char *uid ) ;
 
 void       *read_rules( void *vp, char *file, int *rc, keyval_t **globals ) ;
 
