@@ -1,5 +1,5 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(spocd, 2.1.5, roland@catalogix.se)
+AC_INIT(spocd, 2.1.6.rc1, roland@catalogix.se)
 AM_INIT_AUTOMAKE([foreign no-dependencies 1.7])
 AC_CONFIG_SRCDIR(include/wrappers.h)
 AM_CONFIG_HEADER(include/config.h)
@@ -370,7 +370,6 @@ AC_HEADER_STDC
 
 CHECK_SSL
 CHECK_SASL2
-CHECK_UINT
 
 AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h limits.h \
    netdb.h netinet/in.h stdlib.h string.h strings.h \
