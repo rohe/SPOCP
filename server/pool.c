@@ -123,7 +123,7 @@ void pool_add( pool_t *pool, pool_item_t *item )
   pthread_mutex_unlock( &pool->lock ) ;
 }
 
-int pool_size( pool_t *pool )
+static int pool_size( pool_t *pool )
 {
   int          i ;
   pool_item_t *pi ;
