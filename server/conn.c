@@ -36,6 +36,8 @@ conn_init(conn_t * conn)
 	conn->readn = conn_readn;
 	conn->writen = conn_writen;
 	conn->close = conn_close;
+	if( pthread_mutex_init(&conn->clock, 0) != 0 )
+		traceLog(LOG_WARNING, "mutex init of connection lock failed"); 
 }
 
 conn_t         *
@@ -134,6 +136,7 @@ conn_free(conn_t * con)
 		conn_reset(con);
 		iobuf_free(con->in);
 		iobuf_free(con->out);
+		pthread_mutex_destroy(&con->clock);
 		free(con);
 	}
 }
