@@ -35,43 +35,6 @@
 
 /* -------------------------------------- */
 
-/* result codes 
-typedef enum {
-  SPOCP_RESULT_SUCCESS ,
-  SPOCP_RESULT_OPERATIONSERROR ,
-  SPOCP_RESULT_PROTOCOLERROR ,
-  SPOCP_RESULT_UNKNOWNCOMMAND ,
-  SPOCP_RESULT_SYNTAXERROR ,
-  SPOCP_RESULT_TIMELIMITEXCEEDED ,
-  SPOCP_RESULT_SIZELIMITEXCEEDED ,
-  SPOCP_RESULT_AUTHMETHODNOTSUPPORTED ,
-  SPOCP_RESULT_STRONGAUTHREQUIRED ,
-  SPOCP_RESULT_REFERRAL ,
-  SPOCP_RESULT_ADMINLIMITEXCEEDED ,
-  SPOCP_RESULT_SASLBINDINPROGRESS ,
-  SPOCP_RESULT_NOSUCHRESULTSET ,
-  SPOCP_RESULT_ALIASPROBLEM ,
-  SPOCP_RESULT_ALIASDEREFERENCINGPROBLEM ,
-  SPOCP_RESULT_INSUFFICIENTACCESSRIGHTS ,
-  SPOCP_RESULT_BUSY ,
-  SPOCP_RESULT_UNAVAILABLE ,
-  SPOCP_RESULT_UNWILLINGTOPERFORM ,
-  SPOCP_RESULT_OTHER ,
-  SPOCP_SERVER_DOWN ,
-  SPOCP_LOCAL_ERROR ,
-  SPOCP_TIMEOUT ,
-  SPOCP_AUTH_UNKNOWN ,
-  SPOCP_FILTER_ERROR ,
-  SPOCP_PARAM_ERROR ,
-  SPOCP_NO_MEMORY ,
-  SPOCP_CONNECT_ERROR ,
-  SPOCP_NOT_SUPPORTED ,
-  SPOCP_BUF_OVERFLOW 
-} spocp_result_t;
-*/
-
-/* -------------------------------------- */
-
 #ifndef MAX
 #define MAX(a,b) ((a) < (b) ? b : a)
 #endif /* MAX */
@@ -87,13 +50,6 @@ typedef spocp_result_t (proto_op)( struct _conn * ) ;
 
 /* -------------------------------------- */
 
-typedef struct _rdwr_var {
-  int readers_reading ;
-  int writer_writing ;
-  pthread_mutex_t mutex ;
-  pthread_cond_t lock_free ;
-} pthread_rdwr_t ;
-
 typedef struct _spocp_iobuf {
   char    *buf ;
   char    *r ;     /* Where in the buffer reading should start */
@@ -108,20 +64,21 @@ typedef struct _regexp {
   char         *regex ;
 } regexp_t ;
   
+/*
 typedef struct _aci {
-  char          access ;   /* bitmap */ 
+  char          access ;   * bitmap *
   char          *string ;
   char          *net ;
   char          *mask ;
   regexp_t      *cert ; 
   struct _aci   *next ;
 } aci_t ;
+*/
 
 typedef struct _ruleset {
   pthread_rdwr_t   rw_lock;
   pthread_mutex_t  transaction ;
   db_t             *db ;
-  aci_t            *aci ;
   char             *name ;
   struct _ruleset  *left ;
   struct _ruleset  *right ;
@@ -236,7 +193,8 @@ typedef struct _conn {
   spocp_iobuf_t    *out ;
 
   octet_t          oper ;
-  octet_t          oparg ;
+  octet_t          *oppath ;
+  octarr_t         *oparg ;
 
   hconn_t          http ;
 
@@ -244,6 +202,11 @@ typedef struct _conn {
   void             *ssl;
   int              ssf ;      /* security strength factor, placeholder */
 #endif
+  char             *subjectDN ;
+  char             *issuerDN ;
+  char             *cipher ; 
+  char             *ssl_vers ;
+  char             *transpsec ;
 
   int (*readn) (struct _conn *conn, char *buf, size_t len);
   int (*writen)(struct _conn *conn, char *buf, size_t count);
@@ -316,25 +279,14 @@ regexp_t  *new_pattern( char *s ) ;
 int       match_pattern( regexp_t *regp, char *s ) ;
 void      rm_pattern( regexp_t *regp ) ;
 
+/*
 int     add_client_aci( char *str, ruleset_t **rs ) ;
 int     rm_aci( char *str, ruleset_t *rs ) ;
 int     print_aci( conn_t *conn, ruleset_t *rs ) ;
 aci_t   *aci_dup( aci_t *old ) ;
+*/
 
-int pthread_rdwr_init( pthread_rdwr_t *rdwrp ) ;
-int pthread_rdwr_rlock( pthread_rdwr_t *rdwrp ) ;
-int pthread_rdwr_wlock( pthread_rdwr_t *rdwrp ) ;
-int pthread_rdwr_runlock( pthread_rdwr_t *rdwrp ) ;
-int pthread_rdwr_wunlock( pthread_rdwr_t *rdwrp ) ;
-int pthread_rdwr_destroy( pthread_rdwr_t *p ) ;
-
-int treeList( ruleset_t *rs, octet_t *arg, spocp_req_info_t *sri, octarr_t *oa, int f ) ;
-
-/* aci.c */
-
-spocp_result_t rs_access_allowed( ruleset_t *rs, spocp_req_info_t *sri, char type ) ;
-void           free_aci( aci_t *a ) ;
-void           free_aci_chain( aci_t *a ) ;
+spocp_result_t treeList( ruleset_t *rs, conn_t *con, octarr_t *oa, int f ) ;
 
 /* util.c */
 
@@ -343,22 +295,20 @@ char      *rm_lt_sp( char *s, int shift ) ;
 
 /* ruleset.c */
 
-void free_ruleset( ruleset_t *rs ) ;
-ruleset_t *new_ruleset( char *name, int len ) ;
-ruleset_t *create_ruleset( octet_t *name, ruleset_t **root ) ;
-ruleset_t *find_ruleset( octet_t *name, ruleset_t *rs ) ;
+void       ruleset_free( ruleset_t *rs ) ;
+ruleset_t *ruleset_new( octet_t *name ) ;
+ruleset_t *ruleset_create( octet_t *name, ruleset_t **root ) ;
+int        ruleset_find( octet_t *name, ruleset_t **rs ) ;
 
 spocp_result_t get_rs_name( octet_t *orig, octet_t *rsn ) ;
 spocp_result_t search_in_tree( ruleset_t *, octet_t *, octet_t *, spocp_req_info_t *, int ) ;
 spocp_result_t get_pathname( ruleset_t *rs, char *buf, int buflen ) ;
 
-int       print_ruleset( ruleset_t *r ) ;
-
 /* ss.c */
 
-spocp_result_t ss_allow( ruleset_t *, octet_t *, octnode_t **, spocp_req_info_t *, int ) ;
-spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope, spocp_req_info_t *sri ) ;
-spocp_result_t ss_add_rule( ruleset_t *rs, octet_t **argv, spocp_req_info_t *sri ) ;
+spocp_result_t ss_allow( ruleset_t *, octet_t *, octarr_t **, int ) ;
+spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope ) ;
+spocp_result_t ss_add_rule( ruleset_t *rs, octarr_t *oa, bcdef_t *b ) ;
 spocp_result_t skip_sexp( octet_t *sexp ) ;
 
 void      ss_del_db( ruleset_t *rs, int scope ) ;
@@ -378,7 +328,6 @@ spocp_result_t com_logout( conn_t *conn ) ;
 spocp_result_t com_query( conn_t *conn ) ;
 spocp_result_t com_starttls( conn_t *conn ) ;
 spocp_result_t com_remove( conn_t *conn ) ;
-spocp_result_t com_aci( conn_t *conn ) ;
 spocp_result_t com_add( conn_t *conn ) ;
 spocp_result_t com_list( conn_t *conn ) ;
 
@@ -419,6 +368,7 @@ void free_connection( conn_t *conn ) ;
 /* con.c */
 
 char *next_line( conn_t *conn ) ;
+void con_reset( conn_t *con ) ;
 
 /* httpd_lite.c */
 
@@ -432,6 +382,16 @@ int send_authz_response( conn_t *c, int reqid, int response, octet_t *blob ) ;
 /* soap.c */
 
 int soap_server( conn_t *con, spocp_req_info_t *sri, ruleset_t *rs ) ;
+
+/* init.c */
+
+int run_plugin_init( srv_t *srv ) ;
+
+/* saci.c */
+
+void           saci_init( void ) ;
+spocp_result_t server_access( conn_t *con ) ;
+spocp_result_t operation_access( conn_t *con ) ;
 
 /* -------------------------------------------*/
 
@@ -447,6 +407,7 @@ int THREAD_cleanup( void ) ;
 int            spocp_err ;
 extern srv_t   srv ;
 struct utsname myname ;
+char           *localcontext ;
 
 /* ssl stuff 
 extern char *SslEntropyFile ;
