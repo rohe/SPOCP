@@ -20,7 +20,7 @@
 extern int debug ;
 befunc spocp_test ;
 
-int P_spocp_close( void *vp )
+static int P_spocp_close( void *vp )
 {
   SPOCP *spocp ;
 
