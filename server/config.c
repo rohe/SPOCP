@@ -36,7 +36,7 @@ extern char *pidfile ;
 
 /*------------------------------------------------------------------ */
 
-void conf_clear( srv_t *srv )
+__attribute__((unused)) static void conf_clear( srv_t *srv )
 {
   ruleset_free( srv->root ) ;
   
