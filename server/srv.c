@@ -14,55 +14,56 @@
 
 typedef struct _rescode {
   int code ;
-  char *txt ;
+  char *rc;
+  char *default;
 } rescode_t ;
 
 rescode_t rescode[] = {
- { SPOCP_WORKING, "3:10020:Working, please wait" },
+ { SPOCP_WORKING, "3:100", "20:Working, please wait" },
 
- { SPOCP_SUCCESS ,"3:2002:Ok" },
- { SPOCP_MULTI , "3:201" },
- { SPOCP_DENIED ,"3:2026:Denied" },
- { SPOCP_CLOSE ,"3:2033:Bye" } ,
- { SPOCP_TRANS_COMP, "3:20420:Transaction complete" },
- { SPOCP_SSL_START ,"3:20518:Ready to start TLS" },
+ { SPOCP_SUCCESS ,"3:200","2:Ok" },
+ { SPOCP_MULTI , "3:201", NULL },
+ { SPOCP_DENIED ,"3:202", "6:Denied" },
+ { SPOCP_CLOSE ,"3:203", "3:Bye" } ,
+ { SPOCP_TRANS_COMP, "3:204", "20:Transaction complete" },
+ { SPOCP_SSL_START ,"3:205", "18:Ready to start TLS" },
 
- { SPOCP_SASLBINDINPROGRESS ,"3:30126:Authentication in progress" },
+ { SPOCP_SASLBINDINPROGRESS ,"3:301", "26:Authentication in progress" },
 
- { SPOCP_BUSY, "3:4004:Busy" },
- { SPOCP_TIMEOUT , "3:4017:Timeout" },
- { SPOCP_TIMELIMITEXCEEDED ,"3:40218:Timelimit exceeded" },
- { SPOCP_REDIRECT, "3:403" },
+ { SPOCP_BUSY, "3:400", "4:Busy" },
+ { SPOCP_TIMEOUT , "3:401", "7:Timeout" },
+ { SPOCP_TIMELIMITEXCEEDED ,"3:402", "18:Timelimit exceeded" },
+ { SPOCP_REDIRECT, "3:403", NULL },
 
- { SPOCP_SYNTAXERROR ,"3:50012:Syntax error" },
- { SPOCP_MISSING_ARG,"3:50116:Missing Argument" },
- { SPOCP_MISSING_CHAR ,"3:50211:Input error" },
- { SPOCP_PROTOCOLERROR ,"3:50314:Protocol error" },
- { SPOCP_UNKNOWNCOMMAND ,"3:50415:Unknown command" }, 
- { SPOCP_PARAM_ERROR, "3:50514:Argument error" },
- { SPOCP_SSL_ERR , "3:50616:SSL Accept error" },
- { SPOCP_UNKNOWN_TYPE, "3:50717:Uknown range type" },
+ { SPOCP_SYNTAXERROR ,"3:500", "12:Syntax error" },
+ { SPOCP_MISSING_ARG,"3:501", "16:Missing Argument" },
+ { SPOCP_MISSING_CHAR ,"3:502", "11:Input error" },
+ { SPOCP_PROTOCOLERROR ,"3:503", "14:Protocol error" },
+ { SPOCP_UNKNOWNCOMMAND ,"3:504", "15:Unknown command" }, 
+ { SPOCP_PARAM_ERROR, "3:505", "14:Argument error" },
+ { SPOCP_SSL_ERR , "3:506", "16:SSL Accept error" },
+ { SPOCP_UNKNOWN_TYPE, "3:507", "17:Uknown range type" },
 
- { SPOCP_SIZELIMITEXCEEDED ,"3:51118:Sizelimit exceeded" },
- { SPOCP_OPERATIONSERROR ,"3:51215:Operation error" },
- { SPOCP_UNAVAILABLE ,"3:51321:Service not available" },
- { SPOCP_INFO_UNAVAIL,"3:51423:Information unavailable" },
- { SPOCP_NOT_SUPPORTED , "3:51521:Command not supported" },
+ { SPOCP_SIZELIMITEXCEEDED ,"3:511", "18:Sizelimit exceeded" },
+ { SPOCP_OPERATIONSERROR ,"3:512", "15:Operation error" },
+ { SPOCP_UNAVAILABLE ,"3:513", "21:Service not available" },
+ { SPOCP_INFO_UNAVAIL,"3:514", "23:Information unavailable" },
+ { SPOCP_NOT_SUPPORTED , "3:515", "21:Command not supported" },
  /* Ändra till SPOCP_STATE_VIOLATION */
- { SPOCP_SSLCON_EXIST ,"3:51618:SSL Already active" },
- { SPOCP_OTHER ,"3:51711:Other error" },
- { SPOCP_CERT_ERR ,"3:51820:Authentication error" },
- { SPOCP_UNWILLING ,"3:51920:Unwilling to perform" },
- { SPOCP_EXISTS ,"3:52014:Already exists" } ,
+ { SPOCP_SSLCON_EXIST ,"3:516", "18:SSL Already active" },
+ { SPOCP_OTHER ,"3:517", "11:Other error" },
+ { SPOCP_CERT_ERR ,"3:518", "20:Authentication error" },
+ { SPOCP_UNWILLING ,"3:519", "20:Unwilling to perform" },
+ { SPOCP_EXISTS ,"3:520", "14:Already exists" } ,
 
- { 0, NULL }
+ { 0, NULL, NULL }
 } ;
 
 /***************************************************************************
  ***************************************************************************/
 
 
-static spocp_result_t add_response( spocp_iobuf_t *out, int rc )
+static spocp_result_t add_response( spocp_iobuf_t *out, int rc, ... )
 {
   int i ;
   spocp_result_t sr = SPOCP_SUCCESS ;

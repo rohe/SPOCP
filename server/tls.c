@@ -674,7 +674,7 @@ spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )
   conn->close = tls_close ;
 
   conn->ssl = (void *) ssl ;
-  conn->ssf = SSL_CIPHER_get_bits( cipher , &maxbits ) ;
+  conn->tls_ssf = SSL_CIPHER_get_bits( cipher , &maxbits ) ;
   conn->status = CNST_ACTIVE ;
 
   return SPOCP_SUCCESS ;

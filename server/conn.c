@@ -109,13 +109,14 @@ void conn_free( conn_t *con )
 
 /* ---------------------------------------------------------------------- */
 
-int conn_setup( conn_t *conn, srv_t *srv, int fd, char *host )
+int conn_setup( conn_t *conn, srv_t *srv, int fd, char *ipaddr, char *hostname )
 {
   conn->srv = srv ;
   conn->fd = fd ;
   conn->status = CNST_SETUP ;
   conn->con_type = NATIVE ;
-  conn->sri.hostaddr = Strdup(host);
+  conn->sri.hostaddr = Strdup(ipaddr);
+  conn->sri.hostname = Strdup(hostname);
 
   conn->rs = srv->root ;
   conn->layer = SPOCP_LAYER_NONE;

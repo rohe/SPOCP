@@ -223,7 +223,7 @@ void spocp_srv_run( srv_t *srv )
     
       /* Get address not hostname of the connection */
       if( (err = getnameinfo((struct sockaddr *)&client_addr, len, hostbuf, NI_MAXHOST,
-                            NULL, 0, NI_NUMERICHOST)) ) {
+                            NULL, 0, 0 )) ) {
         traceLog("Unable to getnameinfo for fd %d:%.100s",client,strerror(err));
         close(client);
         goto fdloop;
