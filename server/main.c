@@ -26,6 +26,7 @@ RCSID("$Id$");
 typedef void    Sigfunc(int);
 void            sig_pipe(int signo);
 void            sig_chld(int signo);
+int 		received_sigterm = 0;
 
 /*
  * used by libwrap if it's there 
@@ -77,11 +78,18 @@ sig_chld(int signo)
 	return;
 }
 
+static void
+sig_term( int signo )
+{
+	received_sigterm = signo;
+	wake_listener(1);
+}
+
 int
 main(int argc, char **argv)
 {
-	int             debug = 0, conftest = 0;
-	int             i = 0, nrules = 0;
+	int             debug = 0, conftest = 0, nodaemon = 0;
+	int             i = 0, nrules = 0, r;
 	unsigned int    clilen;
 	struct sockaddr_in cliaddr;
 	struct timeval  start, end;
@@ -127,8 +135,12 @@ main(int argc, char **argv)
 		if (strlen(argv[i]) > 512)
 			argv[i][512] = '\0';
 
-	while ((i = getopt(argc, argv, "htf:d:")) != EOF) {
+	while ((i = getopt(argc, argv, "Dhtf:d:")) != EOF) {
 		switch (i) {
+
+		case 'D':
+			nodaemon = 1;
+			break;
 
 		case 'f':
 			cnfg = Strdup(optarg);
@@ -234,10 +246,12 @@ main(int argc, char **argv)
 		dbc.dback = srv.dback;
 		dbc.handle = 0;
 
-		if (srv.rulefile
-		    && read_rules(&srv, srv.rulefile, &dbc) != 0) {
-			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error while reading rules");
-			exit(1);
+		if (srv.rulefile) {
+			r = read_rules(&srv, srv.rulefile, &dbc) ;
+			if( r == -1 ) {
+	 			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error while reading rules");
+				exit(1);
+			}
 		}
 
 		if (0) {
@@ -306,14 +320,16 @@ main(int argc, char **argv)
 #endif
 
 		saci_init();
+		if( nodaemon == 0 ) { 
 #ifdef HAVE_DAEMON
-		if (daemon(1, 1) < 0) {
-			fprintf(stderr, "couldn't go daemon\n");
-			exit(1);
-		}
+			if (daemon(1, 1) < 0) {
+				fprintf(stderr, "couldn't go daemon\n");
+				exit(1);
+			}
 #else
-		daemon_init("spocp", 0);
+			daemon_init("spocp", 0);
 #endif
+		}
 
 		if (srv.pidfile) {
 			/*
@@ -358,6 +374,7 @@ main(int argc, char **argv)
 
 		signal(SIGCHLD, sig_chld);
 		signal(SIGPIPE, sig_pipe);
+		signal(SIGTERM, sig_term);
 
 		clilen = sizeof(cliaddr);
 
