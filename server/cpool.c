@@ -3,7 +3,7 @@ RCSID("$Id$");
 
 #define MAX_NUMBER_OF_CONNECTIONS 64
 
-afpool_t *cpool_new( int nc )
+static afpool_t *cpool_new( int nc )
 {
   afpool_t    *afpool = 0 ;
   pool_item_t *pi ;
@@ -37,7 +37,7 @@ afpool_t *cpool_new( int nc )
   return afpool ;
 }
 
-void cpool_free( afpool_t *afp )
+__attribute__((unused)) static void cpool_free( afpool_t *afp )
 {
   conn_t *con ;
   pool_t *pool ;
