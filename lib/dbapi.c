@@ -85,6 +85,8 @@ dbapi_allowed(db_t * db, octet_t * sexp, resset_t **rpp)
 		return res;
 	}
 
+	memset(&comp,0, sizeof(comparam_t)) ;
+
 	if ((res = parse_canonsexp( sexp, &ep )) == SPOCP_SUCCESS) {
 
 		comp.rc = SPOCP_SUCCESS;

@@ -28,6 +28,8 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 	resset_t	*xrs=0;
 	int		all = scope&0xF0 ;
 
+	memset(&comp,0,sizeof(comparam_t));
+
 	switch (scope&0x0F) {
 	case SUBTREE:
 		if (rs->down) {

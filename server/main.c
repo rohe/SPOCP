@@ -91,6 +91,18 @@ sig_term( int signo )
 }
 
 static void
+sig_int( int signo )
+{
+	srv_free( &srv );
+	/*
+	if (cnfg != DEF_CNFG)
+		Free( cnfg );
+		*/
+
+	exit(0);
+}
+
+static void
 sig_usr1( int signo )
 {
 	struct stat	statbuf;
@@ -429,6 +441,7 @@ main(int argc, char **argv)
 
 		signal(SIGCHLD, sig_chld);
 		signal(SIGPIPE, sig_pipe);
+		signal(SIGINT, sig_int);
 		signal(SIGTERM, sig_term);
 		signal(SIGUSR1, sig_usr1);
 

@@ -49,6 +49,8 @@
 #include <wrappers.h>
 #include <spocpcli.h>
 
+#define AVLUSNING 1
+
 #if!defined(MAXHOSTNAMELEN) || (MAXHOSTNAMELEN < 64)
 #undef MAXHOSTNAMELEN
 /*! The max size of a FQDN */
@@ -1212,13 +1214,23 @@ spocpc_readn(SPOCP * spocp, char *buf, ssize_t size)
 	fd_set rset;
 	int retval;
 	ssize_t n = 0;
+	struct timeval *tv = &spocp->com_timeout;
 
 	FD_ZERO(&rset);
 
 	spocp->rc = 0;
 
 	FD_SET(spocp->fd, &rset);
-	retval = select(spocp->fd + 1, &rset, NULL, NULL, &spocp->com_timeout);
+
+#ifdef AVLUSNING
+	traceLog(LOG_DEBUG,"Waiting %ld seconds and %ld milliseconds",
+				tv->tv_sec, tv->tv_usec) ;
+#endif
+
+	if (tv->tv_sec == 0L && tv->tv_usec == 0L) 
+		retval = select(spocp->fd + 1, &rset, NULL, NULL, NULL);
+	else
+		retval = select(spocp->fd + 1, &rset, NULL, NULL, &spocp->com_timeout);
 
 	if (retval) {
 #ifdef HAVE_SSL
@@ -1427,6 +1439,8 @@ spocpc_just_send_X(SPOCP * spocp, octarr_t *argv)
 
 /* ============================================================================== */
 
+/* ============================================================================== */
+
 static int
 spocpc_get_result(SPOCP * spocp, queres_t * qr)
 {
@@ -1434,6 +1448,8 @@ spocpc_get_result(SPOCP * spocp, queres_t * qr)
 	int	ret, n;
 
 	if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0) {
+		traceLog(LOG_DEBUG,"Couldn't read anything");
+
 		if (!spocp->rc)
 			return SPOCPC_OTHER;
 		else

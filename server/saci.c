@@ -398,6 +398,8 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 		return SPOCP_DENIED;
 	}
 
+	memset(&comp, 0, sizeof(comparam_t));
+
 	comp.rc = SPOCP_SUCCESS;
 	comp.head = ep;
 	comp.blob = 0;

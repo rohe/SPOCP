@@ -319,7 +319,7 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 
 			} else if (vl->item[SPOC_ENDOFRULE]) {
 				DEBUG(SPOCP_DMATCH) 
-					traceLog(LOG_DEBUG,"ENDOFRULE marker(3)");
+					traceLog(LOG_DEBUG,"ENDOFRULE marker(3) nobe:%d", comp->nobe);
 				/*
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */

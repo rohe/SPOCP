@@ -66,6 +66,9 @@
 #include <rvapi.h>
 #include <func.h>
 
+/*
+#define AVLUS 1
+*/
 
 typedef struct _scnode {
 	char	 *str;
@@ -558,6 +561,8 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 			sp++;
 			l--;
 
+		case '&':
+		case '|':
 			if ((*sp != '&' && *sp != '|') || *(sp + 1) != ' ') {
 				*rc = SC_SYNTAXERROR;
 				scnode_free(tree_top(psc));
@@ -652,9 +657,16 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 				for (cp = ++sp, j = --l; j && *cp != '>';
 					 cp++, j--);
 
-			} else
+			} else {
+#ifdef AVLUS
+				traceLog(LOG_DEBUG, "Just a string: %s", sp);
+#endif
 				for (cp = sp, j = l; j && !SC_SPEC(*cp);
 					 cp++, j--);
+#ifdef AVLUS
+				traceLog(LOG_DEBUG,"- %s -", cp );
+#endif
+			}
 
 			if (c == '"' || c == '<') {
 				if (j == 0) {
@@ -1618,8 +1630,8 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 	char	 *ldaphost, *tmp;
 	octet_t	  *oct, *o, cb;
 	LDAP	 *ld = 0;
-	becon_t	  *bc = 0;
-	octarr_t	 *argv;
+	becon_t		*bc = 0;
+	octarr_t	*argv;
 	int	   cv = 0;
 	pdyn_t	   *dyn = cpp->pd;
 
@@ -1658,19 +1670,24 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 
 		argv = oct_split(oct, ';', '\\', 0, 0);
 
-		/*
-		 * LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG, "filter: \"%s\"", arg->val ) ; 
-		 */
+#ifdef AVLUS
+		octarr_print(argv);
+#endif
 
 		o = argv->arr[argv->n - 1];
 
 		if ((scp = scnode_get(o, &rc)) != 0) {
+#ifdef AVLUS
+			traceLog(LOG_DEBUG,"scnode_get done");
+#endif
 			if ((vset = vset_get(scp, SC_UNDEF, argv, &rc)) != 0) {
 				while (vset->up)
 					vset = vset->up;
 
-				if (0)
-					vset_print(vset, 0);
+#ifdef AVLUS
+				traceLog(LOG_DEBUG, "vset");
+				vset_print(vset, 0);
+#endif
 
 				o = argv->arr[0];
 
