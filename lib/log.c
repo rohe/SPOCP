@@ -1,6 +1,7 @@
 /*!
  * \file lib/log.c
  * \author Roland Hedberg <roland@catalogix.se
+ * \brief Function for handling loggin of different types
  */
 /***************************************************************************
                           log.c  -  description

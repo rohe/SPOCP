@@ -26,7 +26,7 @@
 #include <rbtree.h>
 #include <dback.h>
 
-junc_t         *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
+static junc_t *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
 			    ruleinst_t * ri, int n);
 junc_t         *rm_next(junc_t * ap, branch_t * bp);
 char           *set_item_list(junc_t * dv);
@@ -39,23 +39,10 @@ junc_t         *range_add(branch_t * bp, range_t * rp);
 junc_t         *prefix_add(branch_t * bp, atom_t * ap);
 junc_t         *rule_close(junc_t * ap, ruleinst_t * ri);
 
-/*
- * erset_t *erset_dup( erset_t *old, ruleinfo_t *ri ) ; 
- */
-
-/*
- * junc_t *list_close( junc_t *ap, element_t *ep, ruleinst_t *ri, int *eor ) ;
- * static int last_element( element_t *ep ) ; 
- */
-
 static ruleinst_t *ruleinst_new(octet_t * rule, octet_t * blob, char *bcname);
 
 ruleinst_t     *ruleinst_dup(ruleinst_t * ri);
 void            ruleinst_free(ruleinst_t * ri);
-
-/*
- * ------------------------------------------------------------ 
- */
 
 /*
  * ------------------------------------------------------------ 

@@ -1,5 +1,6 @@
-/*
- * ! \file lib/be_cpool.c \author Roland Hedberg <roland@catalogix.se> 
+/*!
+ * \file lib/be_cpool.c \author Roland Hedberg <roland@catalogix.se> 
+ * \brief Function needed to use the backend connection pool
  */
 #include <string.h>
 #include <pthread.h>
@@ -81,8 +82,7 @@ becpool_full(becpool_t * bcp)
  * ====================================================================== 
  */
 
-/*
- * ! \fn void becpool_rm( becpool_t *bcp, int close ) \brief Removes a backend 
+/*!\brief Removes a backend 
  * connection pool \param bcp The connection pool \param close A flag denoting 
  * whether any open connections should be closed before the connection
  * representation is removed 
@@ -108,8 +108,7 @@ becpool_rm(becpool_t * bcp, int close)
 	}
 }
 
-/*
- * ! \brief Creates a new backend connection pool \param max The maximum size
+/*! \brief Creates a new backend connection pool \param max The maximum size
  * of the connection pool, the connections held in this should never be
  * allowed to exceed this number. \return A pointer to the newly created pool 
  */
@@ -132,8 +131,7 @@ becpool_new(size_t max)
 /*
  * ------------------------------------------------------------------- 
  */
-/*
- * ! \fn becon_t *becon_push( octet_t *, closefn *, void *, becpool_t * )
+/*!
  * \brief Pushes a connection onto the connection pool \param arg The name of
  * the connection \param close The function that should be used to close a
  * connection of this type \param con A handle to the connection \param bcp A
@@ -184,8 +182,7 @@ becon_push(octet_t * arg, closefn * close, void *con, becpool_t * bcp)
  * ------------------------------------------------------------------- 
  */
 
-/*
- * ! \fn becon_t *becon_get( octet_t *arg, becpool_t *bcp ) \brief Get a old
+/*! \brief Get a old
  * unused, hopefully still active connection \param arg The name of the
  * connection type \param bcp A pointer to this backends connection pool
  * \return A pointer to a struct representing the connection if there is a
@@ -249,8 +246,7 @@ becon_get(octet_t * arg, becpool_t * bcp)
 /*
  * ------------------------------------------------------------------- 
  */
-/*
- * ! \fn void becon_return( becon_t *bc ) \brief Return a connection to the
+/*!\brief Return a connection to the
  * pool \param bc The connection 
  */
 void
@@ -265,8 +261,7 @@ becon_return(becon_t * bc)
  * ------------------------------------------------------------------- 
  */
 
-/*
- * ! \fn void becon_rm( becpool_t *bcp, becon_t *bc ) \brief Removes the
+/*! \brief Removes the
  * representation of a connection from the pool, the connection itself should
  * be closed before the representation is removed. \param bcp The connection
  * pool \param bc The connection representation 
@@ -311,8 +306,7 @@ becon_rm(becpool_t * bcp, becon_t * bc)
 /*
  * ------------------------------------------------------------------- 
  */
-/*
- * ! \fn void becon_update( becon_t *bc, void *con ) \brief Used to replaces a 
+/*! \brief Used to replaces a 
  * defunct connecction with a working \param bc A pointer to the connection
  * representation \param con The connection handle 
  */

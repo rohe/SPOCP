@@ -1,7 +1,7 @@
 /*!
  * \file cache.c
  * \author Roland Hedberg <roalnd@catalogix.se>
- * \brief functions for set and retireving cache results
+ * \brief functions for set and retireving cached results
  */
 
 /***************************************************************************

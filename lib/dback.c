@@ -1,5 +1,5 @@
-/*
- * ! \file lib/dback.c \author Roland Hedberg <roland@catalogix.se> 
+/*! \file lib/dback.c \author Roland Hedberg <roland@catalogix.se> 
+ * \brief Function API to the backend persistent data store
  */
 
 /***************************************************************************
@@ -37,8 +37,8 @@ dback_t        *dback_load(char *name, char *load);
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Does all the dynamic link loader stuff, that is opens the dynamic library 
+/*!
+ * \brief Does all the dynamic link loader stuff, that is opens the dynamic library 
  * and connects the defined symbols to functions in the library. Possible
  * initialization functions contained in the library is NOT run by this
  * routine. There exists functions that are necessary for a well functioning
@@ -174,8 +174,8 @@ datum_parse(octet_t * arg, octet_t * rule, octet_t * blob, char **bcname)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Runs the initialization function present in the database backend library
+/*!
+ * \brief Runs the initialization function present in the database backend library
  * \param dbc A link to the backend information \return SPOCP_SUCCESS on
  * success otherwise an appropriate error code 
  */
@@ -194,8 +194,8 @@ dback_init(dbcmd_t * dbc)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Stores information in the persistent storage \param dbc A link to the
+/*!
+ * \brief Stores information in the persistent storage \param dbc A link to the
  * backend information \param k The key under which the information should be
  * stored. \param o0, o1, s Pieces of the information to be stored \return
  * SPOCP_SUCCESS on success otherwise an hopefully appropriate error code 
@@ -221,8 +221,8 @@ dback_save(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Replaces information stored under a specific key in the persistent
+/*!
+ * \brief Replaces information stored under a specific key in the persistent
  * storage \param dbc A link to the backend information \param k The key under 
  * which the information should be stored. \param o0, o1, s Pieces of the
  * information to be stored \return SPOCP_SUCCESS on success otherwise an
@@ -250,8 +250,8 @@ dback_replace(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
  * ---------------------------------------------------------------------- 
  */
 
-/*
- * ! Reads stored information from the persistent storage \param dbc
+/*!
+ * \brief Reads stored information from the persistent storage \param dbc
  * Information on the persistent store \param key The key under which the
  * information should be stored. \param o0, o1, s The information from the
  * persistent storage split into its original pieces. \return SPOCP_SUCCESS
@@ -275,8 +275,8 @@ dback_read(dbcmd_t * dbc, char *key, octet_t * o0, octet_t * o1, char **s)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Deletes a information pieces connected to a specific key from the
+/*!
+ * \brief Deletes a information pieces connected to a specific key from the
  * persistent storage. \param dbc A link to the backend information \param
  * key The key under which the information was stored. \return An appropriate
  * result code 
@@ -298,8 +298,8 @@ dback_delete(dbcmd_t * dbc, char *key)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Gets all keys from the persistent storage This is dback_open(),
+/*!
+ * \brief Gets all keys from the persistent storage This is dback_open(),
  * dback_first_key(), dback_next_key(), dback_close rolled into one function.
  * \param dbc A link to the persistent store information \param r A pointer to 
  * an int where the result code can be placed. \return A octetarr struct
@@ -318,8 +318,8 @@ dback_all_keys(dbcmd_t * dbc, spocp_result_t * r)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Begins a transaction against the persistent store \param dbc A link to
+/*!
+ * \brief Begins a transaction against the persistent store \param dbc A link to
  * the persistent store information \return A Spocp result code 
  */
 
@@ -340,8 +340,8 @@ dback_begin(dbcmd_t * dbc)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Ends a transaction \param dbc A link to the persistent store information
+/*!
+ * \brief Ends a transaction \param dbc A link to the persistent store information
  * \return The result code 
  */
 
@@ -359,9 +359,10 @@ dback_end(dbcmd_t * dbc)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Commit the changes to the store \param dbc Information about the
- * persistent store \return The result code 
+/*!
+ * \brief Commit the changes to the store
+ * \param dbc Information about the persistent store
+ * \return A Spocp result code 
  */
 
 spocp_result_t
@@ -378,8 +379,8 @@ dback_commit(dbcmd_t * dbc)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*
- * ! Discards all the changes that has been done so far in this transaction.
+/*!
+ * \brief Discards all the changes that has been done so far in this transaction.
  * \param dbc A link to the backend information \return The result code 
  */
 

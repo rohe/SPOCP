@@ -1,4 +1,6 @@
-/*! \file lib/rvapi.c \author Roland Hedberg <roland@catalogi.se> 
+/*!
+ * \file lib/rvapi.c \author Roland Hedberg <roland@catalogi.se> 
+ * \brief Functions that the backends can use to handle parsed S-expressions
  */
 
 /***************************************************************************
