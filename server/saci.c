@@ -243,6 +243,8 @@ static char *sexp_constr( conn_t *conn, arg_t **ap )
   char        *argv[32], format[32] ;
   char         sexp[2048], *res ;
 
+  if( ap == 0 ) return 0 ;
+
   for( i = 0 ; ap[i] ; i++ ) {
     format[i] = ap[i]->type ;
 
@@ -271,12 +273,12 @@ static char *sexp_constr( conn_t *conn, arg_t **ap )
 
 static char *get_transpsec( conn_t *conn )
 {
-  if( conn->tls != 0  ) {
+  if( conn->tls > 0  ) {
     if( conn->transpsec == 0 ) conn->transpsec = sexp_constr( conn, tpsec_X509 ) ;
 
     return conn->transpsec ;
   }
-  else return "(12:TransportSec(4:vers1:0))" ;
+  else return "" ;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -407,8 +409,8 @@ static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
 
   rs = con->rs ;
 
-  /* No ruleset means evrything is allowed !!! */
-  if( ruleset_find( &oct, &rs ) == 0 ) return SPOCP_SUCCESS ;
+  /* No ruleset means everything is allowed !!! */
+  if( ruleset_find( &oct, &rs ) == 0  || rs->db == 0 ) return SPOCP_SUCCESS ;
 
   if( 0 ) traceLog( "Making the internal access query" ) ;
   sexp = sexp_constr( con, arg ) ;
@@ -416,17 +418,17 @@ static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
   LOG( SPOCP_DEBUG ) traceLog("Internal access Query: \"%s\" in \"%s\"", sexp, rs->name ) ;
 
   /* is it a valid assumption to assume only 'printable' characters in sexp ? */
-  oct.len = strlen(sexp) ;
-  oct.val = sexp ;
-  oct.size = 0 ;
+  oct_assign( &oct, sexp) ;
 
   if(( res = element_get( &oct, &ep )) != SPOCP_SUCCESS ) {
     traceLog("The S-expression \"%s\" didn't parse OK", sexp ) ;
     
+    free( sexp ) ;
     return res ;
   }
 
   if( oct.len ) { /* shouldn't be */
+    free( sexp ) ;
     element_free( ep ) ;
     return SPOCP_DENIED ;
   }
@@ -435,8 +437,9 @@ static spocp_result_t spocp_access( conn_t *con, arg_t **arg, char *path )
   comp.head = ep ;
   comp.blob = 0 ;
 
-  res = allowed( rs->db->jp, &comp ) ;
+  if( rs->db ) res = allowed( rs->db->jp, &comp ) ;
 
+  free( sexp ) ;
   element_free( ep ) ;
 
   return res ;

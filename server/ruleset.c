@@ -15,6 +15,58 @@
 #include "locl.h"
 RCSID("$Id$");
 
+ruleset_t *one_level( octet_t *name, ruleset_t *rs )  ;
+octarr_t *path_split( octet_t *oct, int *pathlen )  ;
+
+/* ---------------------------------------------------------------------- */
+
+octarr_t *path_split( octet_t *oct, int *pathlen ) 
+{
+  char     *sp, *ep ;
+  octarr_t *res ;
+  octet_t  *o, tmp ;
+
+  octln( &tmp, oct ) ;
+
+  while( *tmp.val == '/' ) tmp.val++, tmp.len-- ;
+
+  for( sp = tmp.val ; *sp == '/' || DIRCHAR( *sp ) ; sp++ ) ;
+
+  tmp.len = sp - tmp.val ;
+
+  *pathlen = sp - oct->val ;
+
+  if( tmp.len == 0 ) return 0 ;
+
+  o = octdup( &tmp ) ;
+
+  ep = o->val + o->len ;
+  res = octarr_new( 4 ) ;
+
+  for( sp = o->val ; sp < ep ; sp++ ) {
+    if( *sp == '/' ) {
+      o->len = sp - o->val ; 
+      octarr_add( res, o ) ;
+
+      while( *(sp+1) == '/' ) sp++ ;
+      if( sp +1 == ep ) {
+        o = 0 ;
+        break ;
+      }
+
+      o = oct_new( 0, 0 ) ;
+      o->val = sp+1 ;
+    } 
+  } 
+
+  if( o ) {
+    o->len = sp - o->val ;
+    octarr_add( res, o ) ;
+  }
+
+  return res ;
+}
+
 /* ---------------------------------------------------------------------- */
 
 ruleset_t *ruleset_new( octet_t *name )
@@ -51,6 +103,7 @@ void ruleset_free( ruleset_t *rs )
 
 /* ---------------------------------------------------------------------- */
 
+/*
 static int next_part( octet_t *a, octet_t *b )
 {
   if( a->len == 0 ) return 0 ;
@@ -65,19 +118,20 @@ static int next_part( octet_t *a, octet_t *b )
 
   return 1 ;
 }
-
+*/
 /* ---------------------------------------------------------------------- */
 
-static ruleset_t *search_level( octet_t *name, ruleset_t *rs ) 
+ruleset_t *one_level( octet_t *name, ruleset_t *rs ) 
 {
   int c ;
 
+  if( rs == 0 ) return 0 ;
+
   do {
-    traceLog( "search_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
+    traceLog( "one_level: [%s](%d),[%s]", name->val, name->len, rs->name ) ;
     c = oct2strcmp( name, rs->name ) ;
   
     if( c == 0 ) {
-      rs = rs->down ;
       break ;
     }
     else if ( c < 0 ) {
@@ -96,8 +150,10 @@ static ruleset_t *search_level( octet_t *name, ruleset_t *rs )
 /* returns 1 if a ruleset is found with the given name */
 int ruleset_find( octet_t *name, ruleset_t **rs )
 {
-  octet_t   loc, p ;
-  ruleset_t *r, *nr ;
+  octet_t   loc ;
+  ruleset_t *r, *nr = 0 ;
+  octarr_t  *oa = 0 ;
+  int        i, pathlen ;
 
   if( *rs == 0 ) return 0 ;
 
@@ -107,60 +163,61 @@ int ruleset_find( octet_t *name, ruleset_t **rs )
     *rs = r ;
     return 1 ;
   }
+  /* server part */
+  else if( name->len >= 2 && *name->val == '/' && *(name->val + 1 ) == '/' ) {
+    for( r = *rs ; r->up ; r = r->up ) ;
 
-  if( *(name->val) == '/' ) {
-    if( *(name->val+1) == '/' ) {
-      for( r = *rs ; r->up ; r = r->up ) ;
-      loc.val = name->val ;
-      loc.len = 2 ;
-      if( r->down ) {
-        nr = search_level( &loc, r->down ) ;
-        if( nr == 0 ){
-          *rs = r ;
-          return 0 ;
-        }
-      }
-      else return 0 ;
+    loc.val = "//" ;
+    loc.len = 2 ;
+    if(( nr = one_level( &loc, r )) == 0 ) {
+      *rs = r ;
+      return 0 ;
+    }
 
-      name->len -= 2 ;
+    if( nr && name->len == 2 ) {
+      *rs = nr ;
       name->val += 2 ;
+      name->len -= 2 ;
+      return 1 ;
     }
-    else {
-      for( r = *rs ; r->up ; r = r->up ) ;
-      name->len-- ;
-      name->val++ ;
-    }
+
+    loc.val = name->val + 2 ;
+    loc.len = name->len - 2 ;
+    loc.size = 0 ;
   }
-  else r = *rs ;
-
-  octln( &loc, name ) ;
-
-  do {
-    if( *loc.val == '/' ) {
-      loc.val++ ;
-      loc.len-- ;
-    }
- 
-    if( next_part( &loc, &p ) == 0 ) break ;
-
-    nr = search_level( &loc, r ) ; 
-  
-    if( nr == 0 ) {
-      loc.len += p.len ;
-      break ; /* this is as far as it gets */
-    }
-
-    octln( &loc, &p ) ;
+  /* absolute path */
+  else if( *name->val == '/' ) {
+    for( nr = *rs ; nr->up ; nr = nr->up ) ;
+    octln( &loc, name ) ;
+    loc.val++ ;
+    loc.len-- ;
     r = nr ;
-  } while( loc.len ) ;
- 
-  *rs = r ;
+  }
+  else {
+    return 0 ; /* don't do relative */
+  }
 
-  if( loc.len == 0 ) return 1 ;
+  oa = path_split( &loc, &pathlen ) ;  
+  for( i = 0 ; oa && i < oa->n ; i++ ) {
+    r = nr->down ;
+    if( r == 0 ) {
+      *rs = r ;
+      return 0 ;
+    }
 
-  octln( name, &loc ) ;
+    if(( nr = one_level( oa->arr[i], r )) == 0 ) break ;
+  }
 
-  return 0 ;
+  if( nr == 0 ) {
+    *rs = r ;
+    return 0 ;
+  }
+  else *rs = nr ;
+
+  name->val = loc.val + pathlen ;
+  name->len = loc.len - pathlen ;
+
+  return 1 ;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -201,61 +258,58 @@ static ruleset_t *add_to_level( octet_t *name, ruleset_t *rs )
 
 ruleset_t *ruleset_create( octet_t *name, ruleset_t **root )
 {
-  ruleset_t *res = 0, *r = 0, *nr ;
-  octet_t   p, loc ;
+  ruleset_t *r = 0, *nr ;
+  octet_t    loc ;
+  octarr_t  *oa = 0 ;
+  int        i, pathlen = 0;
 
   if( *root == 0 ) {
+    *root = r = ruleset_new( 0 ) ;
+
     if( name == 0 || name->len == 0 || ( name->len == 1 && *name->val == '/' )) 
-      return ruleset_new( 0 ) ;
+      return r ;
   }
-
-  if( name ) octln( &loc, name ) ;
-  else {
-    loc.len = loc.size = 0 ;
-    loc.val = 0 ;
-  }
-
-  res = *root ;
-  if( ruleset_find( &loc, &res ) == 1 ) return res ;
+  else r = *root ;
 
   /* special case */
-  if( *loc.val == '/' && *(loc.val+1) == '/' ) {
-    p.val = loc.val +2 ;
-    p.len = loc.len -2 ;
-    loc.len = 2 ;
+  if( name->len >= 2 && *name->val == '/' && *(name->val+1) == '/' ) {
+    oct_assign( &loc, "//" ) ;
 
-    if( res == 0 ) {
-      res = ruleset_new( 0 ) ;
-      r = ruleset_new( &loc ) ;
-      res->down = r ;
-      r->up = res ; 
-      octln( &loc, &p ) ;
+    if(( nr = one_level( &loc, r )) == 0 ) {
+      nr = ruleset_new( &loc ) ;
+      r->left = nr ;
+      nr->up = r ;
+      r = nr ;
     }
-    else {
-      r = add_to_level( &loc, res ) ;
-      r->up = res ;
-      octln( &loc, &p ) ;
-    }
+    else r = nr ;
+
+    octln( &loc, name ) ;
+    loc.val += 2 ;
+    loc.len -= 2 ;
   }
-  else r = res ;
+  else if( *name->val == '/' ) {
+    octln( &loc, name ) ;
+    loc.val++ ;
+    loc.len-- ;
+  }
+  else octln( &loc, name ) ;
 
-  do {
-    if( *loc.val == '/' ) {
-      loc.val++ ;
-      loc.len-- ;
+  oa = path_split( &loc, &pathlen ) ;
+
+  for( i = 0 ; oa && i < oa->n ; i++ ) {
+
+    if(( nr = one_level( oa->arr[i], r->down )) == 0 ) {
+      if( r->down ) nr = add_to_level( oa->arr[i], r->down ) ; 
+      else r->down = nr = ruleset_new( oa->arr[i] ) ;
+      nr->up = r ;
+      r = nr ;
     }
+    else r = nr ;
+  }
  
-    if( next_part( &loc, &p ) == 0 ) break ;
+  name->val = loc.val + pathlen ;
+  name->len = loc.len - pathlen ;
 
-    if( r->down ) nr = add_to_level( &loc, r->down ) ; 
-    else r->down = nr = ruleset_new( &loc ) ;
-
-    nr->up = r ;
-
-    octln( &loc, &p ) ;
-    r = nr ;
-  } while( loc.len ) ;
- 
   return r ;
 }
 

@@ -25,8 +25,6 @@
 #include <macros.h>
 #include <rvapi.h>
 
-#define TAGCHAR(c)  ( ALPHA(c) || DIGIT(c) || (c) == '-' || (c) == '_' || (c) == '.' )
-
 static varr_t *list_search( element_t *e, octet_t *tag, varr_t *r) ;
 element_t *element_dup( element_t *ep, element_t *memberof ) ; 
 /* from input.c */
@@ -46,8 +44,7 @@ static atom_t *atom_dup( atom_t *ap )
 
 /* ====================================================================== */
 /*!
- * \fn octet_t *atoms_join( element_t *e, char *sep ) 
- * Joins a set of atoms with a separator in betweem into one string of bytes.
+ * \brief Joins a set of atoms with a separator in betweem into one string of bytes.
  * If given a list which contains both atoms and other elements all non-atom
  * elements will just be silently ignores.
  * \param e A pointer to a element structure which should contain either a set or
@@ -288,7 +285,7 @@ element_t *element_dup( element_t *ep, element_t *memberof )
 
 /* ====================================================================== */
 /*!
- * Adds a element to a list of elements, the element is added to the end of the
+ * \brief Adds a element to a list of elements, the element is added to the end of the
  * list. If the list is empty a new list is created and the element is added as
  * the first of the list.
  * The S-expression restriction that the first element in a list has to be a atom
@@ -326,7 +323,6 @@ element_t *element_list_add( element_t *le, element_t *e )
 /* ====================================================================== */
 
 /*!
- * \fn element_t *element_array_add( element_t *le, element_t *e )
  * \brief Adds a element to an array of elements. The difference between this and 
  * element_add_list is that the array is by definition unsorted, so the added
  * element might end up anywhere in the array. Array differs from Set in that the
@@ -355,7 +351,6 @@ static element_t *element_array_add( element_t *le, element_t *e )
 
 /* ====================================================================== */
 /*!
- * \fn int element_size( element_t *e) 
  * \brief The number of elements in this element. Only returns the number of immediate 
  * elements, so if this list contains lists those lists are counted as 1 and not
  * as the number of elements in the sublists. If the element is a list, array or
@@ -389,7 +384,6 @@ int element_size( element_t *e)
 
 /* ---------------------------------------------------------------------- */
 /*!
- * \fn int element_type( element_t *e ) 
  * \brief There are different types of elements this function returns a indicator of
  *  what kind of element it is.
  * \param e The element which type is asked for
@@ -445,7 +439,7 @@ static varr_t *list_search( element_t *e, octet_t *tag, varr_t *r)
 
 /* ---------------------------------------------------------------------- */
 /*!
- * This function finds all lists in a S-expression that has a specific tag 
+ * \brief This function finds all lists in a S-expression that has a specific tag 
  * \param e The parsed respresentation of the S-exxpression that should be searched
  * \param tag the list tag
  * \return An element array containing the list/lists or NULL if no list with that
@@ -476,7 +470,8 @@ element_t *element_find_list( element_t *e, octet_t *tag )
 
 /* ---------------------------------------------------------------------- */
 /*!
- * Given a path specification find the element list that matches that description
+ * \brief Given a path specification find the element list that matches
+ * that description
  * \param e The element to be searched
  * \param oa An octarr_t struct representing the path specification
  * \param i The level in the tree to which the search has reached
@@ -521,7 +516,8 @@ static element_t *element_traverse( element_t *e, octarr_t *oa, int i )
 /* ---------------------------------------------------------------------- */
 
 /*!
- * Gives you the first element in a list, or one element from a array or set element
+ * \brief Gives you the first element in a list, or one element from a array
+ * or set element
  * \param e A pointer to the element from which the element should be picked
  * \return A pointer to the subelement or if the element given was not a list, array
  *         or set NULL.
@@ -539,9 +535,10 @@ element_t *element_first( element_t *e )
 /* ---------------------------------------------------------------------- */
 
 /*!
- * Gives you the last element in a list, or one element from a array or set element
- * If you use this function on a array or set it should not return the same element as
- * element_first() provided that the array or set element contains more than one element.
+ * \brief Gives you the last element in a list, or one element from a array
+ * or set element. If you use this function on a array or set it should not
+ * return the same element as element_first() provided that the array or set
+ * element contains more than one element.
  * \param e A pointer to the element from which the element should be picked
  * \return A pointer to the subelement or if the element given was not a list, array
  *         or set NULL.
@@ -562,8 +559,7 @@ element_t *element_last( element_t *e )
 /* ---------------------------------------------------------------------- */
 
 /*!
- * \fn element_t *element_nth( element_t *e, int n )
- * Gives you the nth element in a list, or one element from a array or set element
+ * \brief Gives you the nth element in a list, or one element from a array or set element
  * \param e A pointer to the element list from which the element should be picked
  * \param n The index of the element to pick
  * \return A pointer to the subelement . If the element given is a atom alement
@@ -589,7 +585,7 @@ element_t *element_nth( element_t *e, int n )
 /* ---------------------------------------------------------------------- */
 
 /*!
- * Another function that lets you pick a list of subelements.
+ * \brief Another function that lets you pick a list of subelements.
  * Here you specify the index of the first and the last subelement.
  * -1 denotes that last subelement in the list.
  * \param e A pointer to the list element
@@ -643,8 +639,8 @@ static element_t *element_intervall( element_t *e, int start, int end )
 /* ---------------------------------------------------------------------- */
 
 /*! 
- * This function compares two elements and decides whether they are equal or not
- * Only atom or list elements can be compared at present.
+ * \brief This function compares two elements and decides whether they are
+ * equal or not. Only atom or list elements can be compared at present.
  * \param e0, e1 the two elements that are to be compared.
  * \return Returns 0 if the elements are equal and non zero if they are not.
  */
@@ -688,8 +684,8 @@ int element_cmp( element_t *e0, element_t *e1 )
 
 /* ---------------------------------------------------------------------- */
 /*!
- * Swaps the places of the subelements in a list scuh that the first subelement 
- * becomes the last and the last the first.
+ * \brief Swaps the places of the subelements in a list such that the
+ * first subelement becomes the last and the last the first.
  * This function only works on element lists.
  * \param e The element list to be reversed.
  */
@@ -730,6 +726,7 @@ void element_free( element_t *e ) defined in lib/free.c
  * SPOCP_RANGE it will point to a range_t struct. If SPOCP_SET or SPOCP_ARRAY a
  * varr_t struct is return. And if of type SPOCP_LIST a pointer
  * to the first element in the list will be returned.
+ * \brief Returns a pointer to the element data.
  * \param e A pointer to a element
  * \return A void pointer
  */
@@ -767,8 +764,8 @@ void *element_data( element_t *e )
 /* ---------------------------------------------------------------------- */
 
 /*!
- * For transversals in a tree, this function will give you the parent of the
- * element you supply it with.
+ * \brief For transversals in a tree, this function will give you the
+ * parent of the element you supply it with.
  * \param e A element
  * \return A pointer to the parent element if it exists, otherwise NULL.
  */
@@ -845,7 +842,7 @@ static octarr_t *parse_path( octet_t *o )
   octarr_t     *oa = 0 ;
   octet_t      *oct = 0 ;
 
-  for( sp = o->val, i = 0 ; ( TAGCHAR(*sp) || *sp == '/' ) && i < o->len ; sp++, i++ ) {
+  for( sp = o->val, i = 0 ; ( DIRCHAR(*sp) || *sp == '/' ) && i < o->len ; sp++, i++ ) {
     if( *sp == '/' ) {
       if( oa == 0 ) {
         oa = octarr_new( 2 ) ;
@@ -884,15 +881,17 @@ static octarr_t *parse_path( octet_t *o )
  *
  * //D - The list/-s with the tag D 
  *
- * ..A* all elements in the list with tag A, except the tag == 1,...,last 
+ * ..A/* all elements in the list with tag A, except the tag == 1,...,last 
  *
  * ..A[n-m] elements n to m
  * allowed formats [n], [-m], [n-m], [n-], ["last"], [-"last"], [n-"last"]
  * first element has index 0
- * ..A* and ..A[1-] is equivalent
+ *
+ * ..A/* and ..A[1-] is equivalent
  *
  * //A | //B All list starting with either A or B
  *
+ * \brief Picks subelements from a S-expression
  * \param e The element representing the parsed S-expression
  * \param rc A pointer to a int, this is where the error code will be placed
  *           if some problem was encountered will doing the picking
@@ -939,7 +938,7 @@ element_t *element_eval( octet_t *spec, element_t *e, int *rc )
           cpy.val += 2 ;
           cpy.len -= 2 ;
           tag.val = sp ;
-          for( tag.len = 0 ; TAGCHAR( *sp ) ; tag.len++, sp++ ) ;
+          for( tag.len = 0 ; DIRCHAR( *sp ) ; tag.len++, sp++ ) ;
 
           cpy.len -= tag.len ;
           cpy.val += tag.len ;
@@ -1051,6 +1050,7 @@ NEXTpart:
  * The number within the "${" "}" refers to the index of the element in the elementlist.
  * If the element provided to the function is a atom element, then it goes without 
  * saying the the only index allowed within a variablereference can be 0.
+ * \brief Makes a variable substitution.
  * \param val The 'string' containing substitution points is any
  * \param xp An element list or a atom element 
  * \return The string after variable substitutions 

@@ -285,7 +285,7 @@ spocp_result_t dback_begin( dbcmd_t *dbc )
   void          *handle ;
   spocp_result_t r = SPOCP_SUCCESS ;
 
-  if( dbc && dbc->dback && dback->begin ) {
+  if( dbc && dbc->dback && dbc->dback->begin ) {
     if(( handle = dbc->dback->begin( dbc, 0, 0, &r )) != 0 )  dbc->handle = handle ;
     return r ;
   }

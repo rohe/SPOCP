@@ -356,8 +356,14 @@ int read_rules( srv_t *srv, char *file, dbcmd_t *dbc, keyval_t **globals )
         return -1;
       }
 
-      trs = ruleset_create( &rsn, &rs ) ;
-      LOG( SPOCP_DEBUG ) traceLog( "ruleset name: \"%s\"", trs->name ) ;
+      trs = rs ;
+      if( ruleset_find( &rsn, &trs ) == 0 ) {
+        ruleset_create( &rsn, &rs ) ;
+        LOG( SPOCP_DEBUG ) traceLog( "ruleset name: \"%s\"", trs->name ) ;
+        ruleset_find( &rsn, &trs ) ;
+        trs->db = db_new() ;
+      }
+      /* this is after the ruleset specification */
       sp = oct.val ;
     }
     else trs = rs ;
@@ -412,7 +418,7 @@ int read_rules( srv_t *srv, char *file, dbcmd_t *dbc, keyval_t **globals )
         }
       }
 
-      r = dbapi_rule_add( &(rs->db), srv->plugin, dbc, oa ) ;
+      r = dbapi_rule_add( &(trs->db), srv->plugin, dbc, oa ) ;
       if( r == SPOCP_SUCCESS ) n++ ;
       else {
         LOG( SPOCP_WARNING ) traceLog("Failed to add rule: \"%s\"", oct.val ) ;

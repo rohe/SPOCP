@@ -79,6 +79,7 @@ int main( int  argc, char **argv )
   keyval_t            *globals = 0 ;
   FILE                *pidfp ;
   octet_t             oct ;
+  ruleset_t           *rs ;
 
   /* Who am I running as ? */
 
@@ -129,12 +130,15 @@ int main( int  argc, char **argv )
   sprintf( path, "%s/server", localcontext) ;
   oct.val = path ;
   oct.len = strlen(path) ;
-  ruleset_create( &oct, &srv.root ) ;
+  if(( rs = ruleset_create( &oct, &srv.root )) == 0 ) exit(1) ;
+  rs->db = db_new() ;
 
-  sprintf( path, "%s/rules", localcontext ) ;
+  /* access rules for operations */
+  sprintf( path, "%s/operation", localcontext ) ;
   oct.val = path ;
   oct.len = strlen(path) ;
-  ruleset_create( &oct, &srv.root ) ;
+  if(( rs = ruleset_create( &oct, &srv.root )) == 0 ) exit(1)  ;
+  rs->db = db_new() ;
 
   if( srv_init( &srv, cnfg ) < 0 ) exit(1) ;
 
@@ -282,6 +286,7 @@ int main( int  argc, char **argv )
   else {
     conn_t *conn ;
 
+    saci_init() ;
     DEBUG( SPOCP_DSRV ) traceLog("---->") ;
 
     LOG( SPOCP_INFO ) traceLog( "Reading STDIN" ) ;

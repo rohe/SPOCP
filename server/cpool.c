@@ -41,9 +41,6 @@ int srv_init( srv_t *srv, char *cnfg )
 {
   fprintf( stderr, "init_server\n" ) ;
 
-  /* make sure nothing unwanted is present */
-  memset( (void *) srv, 0, sizeof( srv_t )) ;
-
   fprintf( stderr, "Read config\n" ) ;
 
   if( read_config( cnfg, srv ) == 0 ) return -1 ;

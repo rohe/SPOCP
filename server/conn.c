@@ -32,7 +32,7 @@ void conn_init( conn_t *conn )
   conn->writen = conn_writen;
   conn->close = conn_close;
 
-  conn->tls = -1 ;
+  conn->tls = 0 ;
 }
 
 conn_t *conn_new( void )
@@ -119,7 +119,7 @@ int conn_setup( conn_t *conn, srv_t *srv, int fd, char *host )
   conn->sri.hostaddr = Strdup(host);
 
   conn->rs = srv->root ;
-  conn->tls = -1 ;
+  conn->tls = 0 ;
   conn->stop = 0 ;
 
   time( &conn->last_event ) ;

@@ -154,7 +154,7 @@ void *thread_main(void *arg)
      */
   
     /* if ever it was, TLS is not active anymore */
-    con->tls = -1 ;
+    con->tls = 0 ;
   }
 }
 
