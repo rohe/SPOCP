@@ -118,6 +118,7 @@ set_attr( void **vpp, void *cd, int argc, char **argv)
 	char	*buf;
 	int	n;
 	LDAPDN	*dn = 0;
+	void	*vp;
 
 	traceLog( LOG_DEBUG, "argc: %d, argv[0]: %s", argc, argv[0]);
 	if( argc != 1 )
@@ -144,12 +145,14 @@ set_attr( void **vpp, void *cd, int argc, char **argv)
 	newai->base = buf;
 	newai->attr = line_split( sp, ',', 0, 1, 0, &n);
 
-	if( *vpp == 0 )
-		vpp = (void **) &newai;
-	else
+	vp = (void *) newai;
+
+	if( *vpp != 0 ) {
 		ai = (ainfo_t *) *vpp;
-		vpp = (void **) &newai;
 		newai->next = ai;
+	}
+
+	*vpp = vp;
 
 	return SPOCP_SUCCESS;
 }
