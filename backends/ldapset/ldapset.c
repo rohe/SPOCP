@@ -12,27 +12,37 @@
  * 
  * Format of the query part
  * 
- * dnvset = base | '(' dnvset ')' | '{' dnvset ext attribute '}' | dnvset SP
- * conj SP dnvset | dnvset ext dnattribute | '<' dn '>' valvset = '[' string
- * ']' | '(' valvset ')' | dnvset ext attribute | valvset SP conj SP valvset
+ * dnvset	=	base |
+ *			'(' dnvset ')' |
+ *			'{' dnvset ext attribute '}' |
+ *			dnvset SP conj SP dnvset |
+ *			dnvset ext dnattribute |
+ *			'<' dn '>'
+ *
+ * valvset	=	'[' string ']' |
+ *			'(' valvset ')' |
+ *			dnvset ext attribute |
+ *			valvset SP conj SP valvset
  * 
- * base = '\' d
+ * base		=	'\' d
  * 
- * conj = "&" | "|" ext = "/" | "%" | "$" ( base, onelevel resp. subtree
- * search )
+ * conj		=	"&" | "|" ext = "/" | "%" | "$"	 
+ *	; base, onelevel resp. subtree search
  * 
- * a = %x41-5A / %x61-7A ; lower and upper case ASCII d = %x30-39 k = a / d /
- * "-" / ";" anhstring = 1*k
+ * a		=	%x41-5A / %x61-7A ; lower and upper case ASCII
+ * d		=	%x30-39
+ * k		=	a / d / "-" / ";"
+ * anhstring	=	1*k
+ * SP		=	0x20
  * 
- * attribute-list = attribute *[ "," attribute ] attribute = a [ anhstring] ;
- * as defined by [RFC2252]
  * 
- * dnattribute-list = dnattribute *[ "," dnattribute ] dnattribute = any
- * attribute name which have attributetype distinguishedName
- * (1.3.6.1.4.1.1466.115.121.1.12) like member, owner, roleOccupant, seeAlso,
- * modifiersName, creatorsName,...
+ * attribute-list = attribute *[ "," attribute ] attribute = a [ anhstring]
+ *	; as defined by [RFC2252]
  * 
- * SP = 0x20
+ * dnattribute-list = dnattribute *[ "," dnattribute ]
+ * 	; dnattribute = any attribute name which have attributetype
+ *	distinguishedName (1.3.6.1.4.1.1466.115.121.1.12) like member,
+ *	owner, roleOccupant, seeAlso, modifiersName, creatorsName,...
  * 
  * Ex, <cn=Group>/member & user {user$mail &
  * [sven.svensson@minorg.se]}/title,personalTitle & [mib] <cn=Group>/member &
@@ -739,7 +749,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 		}
 
 		sp->dn =
-		    lsln_add(sp->dn, lstrndup(scp->str + 1, scp->size - 3));
+		    lsln_add(sp->dn, strndup(scp->str + 1, scp->size - 3));
 		break;
 
 	case '[':
@@ -753,7 +763,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 		}
 
 		sp->val =
-		    lsln_add(sp->val, lstrndup(scp->str + 1, scp->size - 3));
+		    lsln_add(sp->val, strndup(scp->str + 1, scp->size - 3));
 		break;
 
 	case '{':		/* str == "{}" */
@@ -1496,7 +1506,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 	spocp_result_t  r = SPOCP_DENIED, rc = SPOCP_SUCCESS ;
 	scnode_t       *scp;
 	vset_t         *vset, *res;
-	char           *ldaphost;
+	char           *ldaphost, *tmp;
 	octet_t        *oct, *o, cb;
 	LDAP           *ld = 0;
 	becon_t        *bc = 0;
@@ -1507,8 +1517,20 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 	if (cpp->arg == 0 || cpp->arg->len == 0)
 		return SPOCP_MISSING_ARG;
 
+	LOG( SPOCP_DEBUG ) {
+		tmp = oct2strdup( cpp->arg, '%' );
+		traceLog( LOG_DEBUG , "Ldapset test on: \"%s\"", tmp );
+		free(tmp);
+	}
+
 	if ((oct = element_atom_sub(cpp->arg, cpp->x)) == 0)
 		return SPOCP_SYNTAXERROR;
+
+	LOG( SPOCP_DEBUG ) {
+		tmp = oct2strdup( oct, '%' );
+		traceLog( LOG_DEBUG , "Expanded: \"%s\"", tmp);
+		free(tmp);
+	}
 
 	cb.len = 0;
 	if (dyn)
