@@ -60,34 +60,34 @@ decode_base64(char *inbuf, char *outbuf)
 	int             inlen;
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Creating base64-filter");
+		traceLog(LOG_DEBUG,"Creating base64-filter");
 	}
 	b64 = BIO_new(BIO_f_base64());
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Setting flags");
+		traceLog(LOG_DEBUG,"Setting flags");
 	}
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Creating memory buffer");
+		traceLog(LOG_DEBUG,"Creating memory buffer");
 	}
 	bio = BIO_new_mem_buf(inbuf, -1);
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Pushing base64-filter");
+		traceLog(LOG_DEBUG,"Pushing base64-filter");
 	}
 	bio = BIO_push(b64, bio);
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Reading into outbuffer");
+		traceLog(LOG_DEBUG,"Reading into outbuffer");
 	}
 	while ((inlen = BIO_read(bio, outbuf, 65000)) > 0) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Have read %d bytes", inlen);
+			traceLog(LOG_DEBUG,"Have read %d bytes", inlen);
 		}
 	}
 
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Freeing all.");
+		traceLog(LOG_DEBUG,"Freeing all.");
 	}
 	BIO_free_all(bio);
 }
@@ -101,51 +101,51 @@ initCertificateCheck(char *ca_dir)
 	int             i;
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Creating the cert context");
+		traceLog(LOG_DEBUG,"Creating the cert context");
 	}
 
 	cert_ctx = X509_STORE_new();
 
 	if (cert_ctx == NULL) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Couldn't init cert_ctx");
+			traceLog(LOG_DEBUG,"Couldn't init cert_ctx");
 		}
 		return NULL;
 	}
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Setting the callback function");
+		traceLog(LOG_DEBUG,"Setting the callback function");
 	}
 	X509_STORE_set_verify_cb_func(cert_ctx, cb);
 
 	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog("Adding lookup of file"); }
+	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Adding lookup of file"); }
 	 * lookup=X509_STORE_add_lookup(cert_ctx,X509_LOOKUP_file()); if
-	 * (lookup == NULL) { DEBUG( SPOCP_DBCOND ){ traceLog("Couldn't init
+	 * (lookup == NULL) { DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Couldn't init
 	 * lookup_file"); } return NULL; }
 	 * X509_LOOKUP_load_file(lookup,NULL,X509_FILETYPE_DEFAULT); 
 	 */
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Adding lookup of dir");
+		traceLog(LOG_DEBUG,"Adding lookup of dir");
 	}
 	lookup = X509_STORE_add_lookup(cert_ctx, X509_LOOKUP_hash_dir());
 	if (lookup == NULL) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Couldn't init lookup_dir");
+			traceLog(LOG_DEBUG,"Couldn't init lookup_dir");
 		}
 		return NULL;
 	}
 	i = X509_LOOKUP_add_dir(lookup, ca_dir, X509_FILETYPE_PEM);
 	if (!i) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Couldn't add ca_dir to lookup");
+			traceLog(LOG_DEBUG,"Couldn't add ca_dir to lookup");
 		}
 		return NULL;
 	}
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Clearing errors.");
+		traceLog(LOG_DEBUG,"Clearing errors.");
 	}
 	ERR_clear_error();
 
@@ -158,7 +158,7 @@ cb(int ok, X509_STORE_CTX * ctx)
 	if (!ok) {
 		if (ctx->error != X509_V_ERR_CERT_SIGNATURE_FAILURE) {
 			DEBUG(SPOCP_DBCOND) {
-				traceLog("Got error: %d", ctx->error);
+				traceLog(LOG_DEBUG,"Got error: %d", ctx->error);
 			}
 		}
 		if (ctx->error == X509_V_ERR_PATH_LENGTH_EXCEEDED)
@@ -184,7 +184,7 @@ check_cert(X509_STORE * ctx, char *data)
 	in = BIO_new_mem_buf(data, -1);
 	if (in == NULL) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Problem with opening buffer with data");
+			traceLog(LOG_DEBUG,"Problem with opening buffer with data");
 		}
 		/*
 		 * if (x != NULL) { X509_free(x); } if (in != NULL) {
@@ -197,7 +197,7 @@ check_cert(X509_STORE * ctx, char *data)
 
 	if (x == NULL) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Problem with reading X509 certificate");
+			traceLog(LOG_DEBUG,"Problem with reading X509 certificate");
 		}
 		/*
 		 * if (x != NULL) { X509_free(x); } if (in != NULL) { 
@@ -212,7 +212,7 @@ check_cert(X509_STORE * ctx, char *data)
 	csc = X509_STORE_CTX_new();
 	if (csc == NULL) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Problem with creating new X509_STORE_CTX");
+			traceLog(LOG_DEBUG,"Problem with creating new X509_STORE_CTX");
 		}
 		if (x != NULL) {
 			X509_free(x);
@@ -246,30 +246,30 @@ cert_test(cmd_param_t * cpp, octet_t * blob)
 	char           *decoded_cert = "";
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Entering cert_test");
+		traceLog(LOG_DEBUG,"Entering cert_test");
 	}
 
 	cert_b64 = cpp->arg->val;
 	DEBUG(SPOCP_DBCOND) {
 		traceLog
-		    ("Allocating memory for decoded part. Memory needed: %d",
+		    (LOG_DEBUG,"Allocating memory for decoded part. Memory needed: %d",
 		     cpp->arg->len);
 	}
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Decoding base64.");
+		traceLog(LOG_DEBUG,"Decoding base64.");
 	}
 	decoded_cert = (char *) Malloc(arg->len * sizeof(char));
 
 	decode_base64(cert_b64, decoded_cert);
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Checking certificate.");
+		traceLog(LOG_DEBUG,"Checking certificate.");
 	}
 
 	answer = check_cert(cert_ctx, decoded_cert);
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Answer from check: %d.", answer);
+		traceLog(LOG_DEBUG,"Answer from check: %d.", answer);
 	}
 
 	if (cert_ctx != NULL)
@@ -295,7 +295,7 @@ cert_init(void **conf, pdyn_t * pdp)
 	struct stat     sts;
 	int             i;
 
-	LOG(SPOCP_DEBUG) traceLog("cert_init");
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"cert_init");
 
 	/*
 	 * If you are loking up a plugin configuration attribute, cfg will
@@ -312,8 +312,8 @@ cert_init(void **conf, pdyn_t * pdp)
 		path = oa->arr[i]->val;
 		if (stat(path, &sts) == -1 && errno == ENOENT) {
 			DEBUG(SPOCP_DBCOND) {
-				traceLog
-				    ("The path specified: [%s] does not exist.",
+				traceLog(LOG_DEBUG,
+				    "The path specified: [%s] does not exist.",
 				     path);
 			}
 		} else
@@ -327,12 +327,12 @@ cert_init(void **conf, pdyn_t * pdp)
 
 	if (cert_ctx == NULL) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Cert_ctx is NULL");
+			traceLog(LOG_DEBUG,"Cert_ctx is NULL");
 		}
 		return SPOCP_UNAVAILABLE;
 	}
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Have inited certificate check with dir [%s].", path);
+		traceLog(LOG_DEBUG,"Have inited certificate check with dir [%s].", path);
 	}
 
 	return SPOCP_SUCCESS;

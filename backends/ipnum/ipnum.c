@@ -129,7 +129,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 		cv = cached(dyn->cv, oct, &cb);
 
 	if (cv) {
-		traceLog("ipnum: cache hit");
+		traceLog(LOG_DEBUG,"ipnum: cache hit");
 
 		if (cv == EXPIRED) {
 			cached_rm(dyn->cv, oct);
@@ -140,7 +140,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 	if (cv == 0) {
 
 		sp = oct2strdup(oct, 0);
-		traceLog("ipnum[expanded arg]: \"%s\"", sp);
+		traceLog(LOG_DEBUG,"ipnum[expanded arg]: \"%s\"", sp);
 		free(sp);
 
 		argv = oct_split(oct, ':', '\\', 0, 0);
@@ -175,7 +175,7 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 				} else
 					becon_update(bc, (void *) fp);
 			}
-			traceLog("Using connection from the pool");
+			traceLog(LOG_DEBUG,"Using connection from the pool");
 		}
 
 		if (argv->n >= 2 && r == SPOCP_DENIED) {

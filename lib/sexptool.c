@@ -75,7 +75,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 				*tp = '\0';
 				for (i = 0; i < ntransf; i++) {
 					/*
-					 * traceLog( "(%d)[%s] == [%s] ?", i,
+					 * traceLog(LOG_DEBUG, "(%d)[%s] == [%s] ?", i,
 					 * transf[i].var, vp ) ; 
 					 */
 					if (strcmp(transf[i].var, vp) == 0) {
@@ -96,9 +96,9 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 				 * unknown variable, clear out and close down 
 				 */
 				if (i == ntransf) {
-					traceLog
-					    ("parse_format: variable [%s] unknown",
-					     vp);
+					traceLog(LOG_ERR,
+					    "parse_format: variable [%s] unknown",
+					    vp);
 					for (i = 0; arg[i] && i < n; i++)
 						free(arg[i]);
 					free(arg);
@@ -149,14 +149,14 @@ sexp_constr( void *comarg, sexparg_t ** ap )
 			argv[i] = ap[i]->af(comarg);
 
 		if (0)
-			LOG(SPOCP_DEBUG) traceLog("SEXP argv[%d]: [%s]", i,
-						  argv[i]);
+			LOG(SPOCP_DEBUG)
+				traceLog(LOG_DEBUG,"SEXP argv[%d]: [%s]", i, argv[i]);
 	}
 	format[i] = '\0';
 	argv[i] = 0;
 
 	if (0)
-		LOG(SPOCP_DEBUG) traceLog("SEXP Format: [%s]", format);
+		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"SEXP Format: [%s]", format);
 
 	if (sexp_printa(sexp, &size, format, (void **) argv) == 0)
 		res = 0;

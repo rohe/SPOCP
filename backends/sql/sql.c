@@ -99,7 +99,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	}
 
 	DEBUG(SPOCP_DBCOND) {
-		traceLog("Uid: %s DSN: %s", uid, dsn);
+		traceLog(LOG_DEBUG,"Uid: %s DSN: %s", uid, dsn);
 	}
 
 	/*
@@ -107,7 +107,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	 */
 	if (SQLAllocEnv(&hEnv) != SQL_SUCCESS) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Could not SQLAllocEnv.");
+			traceLog(LOG_DEBUG,"Could not SQLAllocEnv.");
 		}
 		octarr_free(argv);
 		octarr_free(argv_ident);
@@ -123,7 +123,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	 */
 	if (SQLAllocConnect(hEnv, &hDbc) != SQL_SUCCESS) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Could not SQLAllocConnect.");
+			traceLog(LOG_DEBUG,"Could not SQLAllocConnect.");
 		}
 		octarr_free(argv);
 		octarr_free(argv_ident);
@@ -143,7 +143,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 	     (hDbc, (SQLCHAR *) dsn, SQL_NTS, (SQLCHAR *) uid, SQL_NTS,
 	      (SQLCHAR *) pwd, SQL_NTS))) {
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Could not SQLConnect.");
+			traceLog(LOG_DEBUG,"Could not SQLConnect.");
 		}
 		octarr_free(argv);
 		octarr_free(argv_ident);
@@ -170,7 +170,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		}
 
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("SQL: %s Negate: %d", sql, negate);
+			traceLog(LOG_DEBUG,"SQL: %s Negate: %d", sql, negate);
 		}
 
 		/*
@@ -178,7 +178,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		 */
 		if (SQLAllocStmt(hDbc, &hStmt) != SQL_SUCCESS) {
 			DEBUG(SPOCP_DBCOND) {
-				traceLog("Could not SQLAllocStmt.");
+				traceLog(LOG_DEBUG,"Could not SQLAllocStmt.");
 			}
 			octarr_free(argv);
 			octarr_free(argv_ident);
@@ -197,7 +197,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		 */
 		if (SQLPrepare(hStmt, (SQLCHAR *) sql, SQL_NTS) != SQL_SUCCESS) {
 			DEBUG(SPOCP_DBCOND) {
-				traceLog("Could not SQLPrepare.");
+				traceLog(LOG_DEBUG,"Could not SQLPrepare.");
 			}
 			octarr_free(argv);
 			octarr_free(argv_ident);
@@ -219,7 +219,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 			 * N = 0 
 			 */
 			DEBUG(SPOCP_DBCOND) {
-				traceLog("SQLExecute returned SQL_NO_DATA.");
+				traceLog(LOG_DEBUG,"SQLExecute returned SQL_NO_DATA.");
 			}
 			if (negate == FALSE) {
 				octarr_free(argv);
@@ -236,12 +236,12 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 			 * N = 0 ?
 			 */
 			DEBUG(SPOCP_DBCOND) {
-				traceLog
-				    ("SQLExecute returned SQL_SUCCESS_WITH_INFO.");
+				traceLog(LOG_DEBUG,
+				    "SQLExecute returned SQL_SUCCESS_WITH_INFO.");
 			}
 		} else if (ret != SQL_SUCCESS) {
 			DEBUG(SPOCP_DBCOND) {
-				traceLog("Could not SQLExecute.");
+				traceLog(LOG_DEBUG,"Could not SQLExecute.");
 			}
 			SQLFreeStmt(hStmt, SQL_DROP);
 			SQLFreeConnect(hDbc);
@@ -259,7 +259,7 @@ sql_test(cmd_param_t * cpp, octet_t * blob)
 		SQLRowCount(hStmt, &nRows);
 
 		DEBUG(SPOCP_DBCOND) {
-			traceLog("Got %d rows", nRows);
+			traceLog(LOG_DEBUG,"Got %d rows", nRows);
 		}
 
 		free(sql);

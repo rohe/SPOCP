@@ -166,7 +166,7 @@ phash_print(phash_t * ht)
 	for (i = 0; i < (int) ht->size; i++)
 		if (ba[i]) {
 			tmp = oct2strdup(&ba[i]->val, '%');
-			traceLog("Hash[%d]: %s", i, tmp);
+			traceLog(LOG_INFO,"Hash[%d]: %s", i, tmp);
 			free(tmp);
 		}
 }
@@ -298,7 +298,7 @@ bucket_free(buck_t * bp)
 			char           *tmp;
 
 			tmp = oct2strdup(&bp->val, '\\');
-			traceLog("removing bucket with value [%s]", tmp);
+			traceLog(LOG_DEBUG,"removing bucket with value [%s]", tmp);
 			free(tmp);
 		}
 		/*

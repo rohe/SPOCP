@@ -111,7 +111,7 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 	DEBUG(SPOCP_DSTORE) {
 		char           *tmp;
 		tmp = oct2strdup(&ap->val, '\\');
-		traceLog("atom_rm: bucket [%s] [%d]", tmp, bucket->refc);
+		traceLog(LOG_DEBUG,"atom_rm: bucket [%s] [%d]", tmp, bucket->refc);
 		free(tmp);
 	}
 
@@ -127,7 +127,7 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 			phash_free(bp->val.atom);
 			bp->val.atom = 0;
 			DEBUG(SPOCP_DSTORE)
-			    traceLog("Get rid of the rest of this branch");
+			    traceLog(LOG_DEBUG,"Get rid of the rest of this branch");
 			branch_free(bp);
 			return 0;
 		} else {
@@ -145,7 +145,7 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 
 		if (junction_index(jp) == 0) {
 			DEBUG(SPOCP_DSTORE)
-			    traceLog("Junction without any branches");
+			    traceLog(LOG_DEBUG,"Junction without any branches");
 			junc_free(jp);
 			bucket->next = 0;
 		}
@@ -188,7 +188,7 @@ range_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
 		 */
 		if (junction_index(jp) == 0) {
 			DEBUG(SPOCP_DSTORE)
-			    traceLog("Junction without any branches");
+			    traceLog(LOG_DEBUG,"Junction without any branches");
 			junc_free(jp);
 			return -1;
 		}
@@ -231,7 +231,8 @@ ssn_rm(branch_t * bp, ssn_t * ssn, char *sp, int direction, element_t * ep,
 			 */
 			if (junction_index(jp) == 0) {
 				DEBUG(SPOCP_DSTORE)
-				    traceLog("Junction without any branches");
+					traceLog(LOG_DEBUG,
+					    "Junction without any branches");
 				junc_free(jp);
 				return -1;
 			}
@@ -256,7 +257,7 @@ prefix_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 {
 	atom_t         *ap = elemp->e.atom;
 
-	DEBUG(SPOCP_DSTORE) traceLog("rm prefix \"%s\"", ap->val.val);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"rm prefix \"%s\"", ap->val.val);
 
 	return ssn_rm(bp, bp->val.prefix, ap->val.val, FORWARD, elemp, rt);
 }
@@ -276,7 +277,7 @@ suffix_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 {
 	atom_t         *ap = elemp->e.atom;
 
-	DEBUG(SPOCP_DSTORE) traceLog("rm suffix \"%s\"", ap->val.val);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"rm suffix \"%s\"", ap->val.val);
 
 	return ssn_rm(bp, bp->val.suffix, ap->val.val, BACKWARD, elemp, rt);
 }
@@ -302,18 +303,18 @@ rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt)
 
 	bp->count--;
 
-	DEBUG(SPOCP_DSTORE) traceLog("EOL Branch [%d]", bp->count);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"EOL Branch [%d]", bp->count);
 
 	rjp = bp->val.list;
 
 	if (bp->count == 0) {
 		DEBUG(SPOCP_DSTORE)
-		    traceLog("Get rid of the rest of this branch");
+		    traceLog(LOG_DEBUG,"Get rid of the rest of this branch");
 
 		branch_free(bp);
 
 		DEBUG(SPOCP_DSTORE)
-		    traceLog("No type %d branch at this junction any more",
+		    traceLog(LOG_DEBUG,"No type %d branch at this junction any more",
 			     SPOC_ENDOFLIST);
 
 		jp->item[SPOC_ENDOFLIST] = 0;
@@ -327,7 +328,7 @@ rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt)
 
 		if (junction_index(rjp) == 0) {
 			DEBUG(SPOCP_DSTORE)
-			    traceLog("Junction without any branches");
+			    traceLog(LOG_DEBUG,"Junction without any branches");
 			junc_free(rjp);
 			bp->val.list = 0;
 		}
@@ -371,12 +372,12 @@ rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt)
 	branch_t       *bp;
 	index_t        *inx;
 
-	DEBUG(SPOCP_DSTORE) traceLog("rm end_of_rule");
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"rm end_of_rule");
 	bp = ARRFIND(jp, SPOC_ENDOFRULE);
 
 	bp->count--;
 
-	DEBUG(SPOCP_DSTORE) traceLog("Branch count=%d", bp->count);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Branch count=%d", bp->count);
 	inx = bp->val.id;
 
 	index_rm(inx, rt);
@@ -411,14 +412,14 @@ list_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
 	junc_t         *njp = bp->val.list;
 	int             r;
 
-	DEBUG(SPOCP_DSTORE) traceLog("rm list");
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"rm list");
 
 	elemp = lp->head;
 
 	r = element_rm(njp, elemp, rt);
 
 	/*
-	 * DEBUG(SPOCP_DSTORE) traceLog( "rm list; is there anything more?") ;
+	 * DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG, "rm list; is there anything more?") ;
 	 * 
 	 * if( r == 0 ) { njp->item[ elemp->type ] = 0 ;
 	 * 
@@ -450,17 +451,17 @@ element_rm(junc_t * jp, element_t * ep, ruleinst_t * rt)
 	if (bp == 0) {		/* Ooops, how did that happen, can't delete
 				 * something that isn't there */
 		DEBUG(SPOCP_DSTORE)
-		    traceLog("missing branch where there shold be one");
+		    traceLog(LOG_DEBUG,"missing branch where there shold be one");
 		return -2;
 	}
 
 	bp->count--;
 
-	DEBUG(SPOCP_DSTORE) traceLog("Branch: [%d]", bp->count);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Branch: [%d]", bp->count);
 
 	if (bp->count == 0) {
 		DEBUG(SPOCP_DSTORE)
-		    traceLog("element_rm; branch counter down to zero");
+		    traceLog(LOG_DEBUG,"element_rm; branch counter down to zero");
 		branch_free(bp);
 
 		/*
@@ -507,14 +508,14 @@ element_rm(junc_t * jp, element_t * ep, ruleinst_t * rt)
 		 * that branch is gone 
 		 */
 		DEBUG(SPOCP_DSTORE)
-		    traceLog("rm element; no type %d branch anymore",
+		    traceLog(LOG_DEBUG,"rm element; no type %d branch anymore",
 			     ep->type);
 
 		jp->item[ep->type] = 0;
 
 		n = junction_index(jp);
-		DEBUG(SPOCP_DSTORE) traceLog("rm element; junction index %d",
-					     n);
+		DEBUG(SPOCP_DSTORE)
+			traceLog(LOG_DEBUG,"rm element; junction index %d", n);
 		if (n == 0)
 			junc_free(jp);
 	}
@@ -533,7 +534,7 @@ rule_rm(junc_t * jp, octet_t * rule, ruleinst_t * rt)
 	DEBUG(SPOCP_DSTORE) {
 		char           *tmp;
 		tmp = oct2strdup(rule, '\\');
-		traceLog("- rm rule [%s]", tmp);
+		traceLog(LOG_DEBUG,"- rm rule [%s]", tmp);
 		free(tmp);
 	}
 
@@ -546,7 +547,7 @@ rule_rm(junc_t * jp, octet_t * rule, ruleinst_t * rt)
 	if ((rc = element_get(&loc, &ep)) != SPOCP_SUCCESS)
 		return rc;
 
-	DEBUG(SPOCP_DSTORE) traceLog("---");
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"---");
 
 	if (ep) {
 		r = element_rm(jp, ep, rt);

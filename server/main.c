@@ -193,8 +193,8 @@ main(int argc, char **argv)
 
 
 	LOG(SPOCP_INFO) {
-		traceLog("Local context: \"%s\"", localcontext);
-		traceLog("initializing backends");
+		traceLog(LOG_INFO, "Local context: \"%s\"", localcontext);
+		traceLog(LOG_INFO, "initializing backends");
 		if (srv.root->db)
 			plugin_display(srv.plugin);
 	}
@@ -222,9 +222,9 @@ main(int argc, char **argv)
 		dbcmd_t         dbc;
 
 		if (srv.rulefile == 0) {
-			LOG(SPOCP_INFO) traceLog("No rule file to start with");
+			LOG(SPOCP_INFO) traceLog(LOG_INFO, "No rule file to start with");
 		} else {
-			LOG(SPOCP_INFO) traceLog("Opening rules file \"%s\"",
+			LOG(SPOCP_INFO) traceLog(LOG_INFO, "Opening rules file \"%s\"",
 						 srv.rulefile);
 		}
 
@@ -236,7 +236,7 @@ main(int argc, char **argv)
 
 		if (srv.rulefile
 		    && read_rules(&srv, srv.rulefile, &dbc) != 0) {
-			LOG(SPOCP_ERR) traceLog("Error while reading rules");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error while reading rules");
 			exit(1);
 		}
 
@@ -246,13 +246,13 @@ main(int argc, char **argv)
 		}
 	} else {
 		LOG(SPOCP_INFO)
-		    traceLog
-		    ("Got the rules from the persistent store, will not read the rulefile");
+		    traceLog(LOG_INFO,
+			"Got the rules from the persistent store, will not read the rulefile");
 	}
 
 	/* If only testing configuration and rulefile this is as far as I go */
 	if (conftest) {
-		traceLog("Configuration was OK");
+		traceLog(LOG_INFO,"Configuration was OK");
 		exit(0);
 	}
 
@@ -282,7 +282,7 @@ main(int argc, char **argv)
 		THREAD_setup();
 
 		if (srv.certificateFile && srv.privateKey && srv.caList) {
-			traceLog("Initializing the TLS/SSL environment");
+			traceLog(LOG_INFO,"Initializing the TLS/SSL environment");
 			if (!(srv.ctx = tls_init(&srv))) {
 				return FALSE;
 			}
@@ -297,8 +297,8 @@ main(int argc, char **argv)
 		{
 			int             r = sasl_server_init(NULL, "spocp");
 			if (r != SASL_OK) {
-				traceLog
-				    ("Unable to initialized SASL library: %s",
+				traceLog( LOG_ERR,
+				    "Unable to initialized SASL library: %s",
 				     sasl_errstring(r, NULL, NULL));
 				return FALSE;
 			}
@@ -332,8 +332,8 @@ main(int argc, char **argv)
 		}
 
 		if (srv.port) {
-			LOG(SPOCP_INFO) traceLog("Asked to listen on port %d",
-						 srv.port);
+			LOG(SPOCP_INFO) traceLog( LOG_INFO,
+				"Asked to listen on port %d", srv.port);
 
 			if ((srv.listen_fd =
 			     spocp_stream_socket(srv.port)) < 0)
@@ -345,7 +345,7 @@ main(int argc, char **argv)
 			srv.type = AF_INET;
 		} else {
 			LOG(SPOCP_INFO)
-			    traceLog("Asked to listen on unix domain socket");
+			    traceLog(LOG_INFO,"Asked to listen on unix domain socket");
 			if ((srv.listen_fd =
 			     spocp_unix_domain_socket(srv.uds)) < 0)
 				exit(1);
@@ -361,7 +361,7 @@ main(int argc, char **argv)
 
 		clilen = sizeof(cliaddr);
 
-		DEBUG(SPOCP_DSRV) traceLog("Creating threads");
+		DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"Creating threads");
 		/*
 		 * returns the pool the threads are picking work from 
 		 */
@@ -373,9 +373,9 @@ main(int argc, char **argv)
 		conn_t         *conn;
 
 		saci_init();
-		DEBUG(SPOCP_DSRV) traceLog("---->");
+		DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"---->");
 
-		LOG(SPOCP_INFO) traceLog("Reading STDIN");
+		LOG(SPOCP_INFO) traceLog(LOG_INFO,"Reading STDIN");
 
 		/*
 		 * If I want to use this I have to do init_server() first
@@ -387,7 +387,7 @@ main(int argc, char **argv)
 		conn = conn_new();
 		conn_setup(conn, &srv, STDIN_FILENO, "localhost", "127.0.0.1");
 
-		LOG(SPOCP_INFO) traceLog("Running server");
+		LOG(SPOCP_INFO) traceLog(LOG_INFO,"Running server");
 
 		spocp_server((void *) conn);
 

@@ -69,7 +69,7 @@ gdbm_test(cmd_param_t * cmdp, octet_t * blob)
 		cv = cached(cmdp->pd->cv, oct, &cb);
 
 	if (cv) {
-		traceLog("ipnum: cache hit");
+		traceLog(LOG_DEBUG,"ipnum: cache hit");
 
 		if (cv == EXPIRED) {
 			cached_rm(cmdp->pd->cv, oct);

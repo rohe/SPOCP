@@ -8,6 +8,8 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdio.h>
+#include <stdarg.h>
+#include <syslog.h>
 
 /*!
  * system health levels 
@@ -286,7 +288,7 @@ char		*sexp_printv(char *sexp, unsigned int *bsize, char *fmt, ...);
 
 void		FatalError(char *msg, char *s, int i);
 /*! defined in lib/log.c */
-void		traceLog(const char *fmt, ...);
+void		traceLog(int priority, const char *fmt, ...);
 void		print_elapsed(char *s, struct timeval start,
 				struct timeval end);
 void		timestamp(char *s);
@@ -315,6 +317,8 @@ spocp_chunk_t	*chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np );
 extern int	spocp_loglevel;
 /*! The debug level */ 
 extern int	spocp_debug;
+/* whether syslog is used or not */
+extern int	log_syslog;
 
 /*
  * =============================================================================== 

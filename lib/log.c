@@ -45,17 +45,17 @@
 #endif
 
 /*! The file descriptor to which the logging should go */
-FILE           *spocp_logf = 0;
-int             spocp_loglevel = 0;
-int             spocp_debug = 0;
+FILE	*spocp_logf = 0;
+int	spocp_loglevel = 0;
+int	spocp_debug = 0;
+int	log_syslog = 0;
+
 /*! The process ID of the server startup process */
-int             procid = 0;
+int	procid = 0;
 
 #ifdef HAVE_LIBPTHREAD
 pthread_mutex_t loglock;
 #endif
-
-void            traceLog(const char *fmt, ...);
 
 /*!
  * \brief Opens a file to which logging information is to be written
@@ -68,6 +68,10 @@ spocp_open_log(char *file, int level)
 {
 	spocp_loglevel = (level & SPOCP_LEVELMASK);
 	spocp_debug = level;
+
+	if (file && strcmp(file, "syslog") == 0) {
+		openlog( "spocp", LOG_NDELAY|LOG_CONS, LOG_LOCAL3);
+	}
 
 	if (!procid)
 		procid = getpid();
@@ -96,13 +100,13 @@ spocp_open_log(char *file, int level)
 	if (spocp_logf == 0)
 		return SPOCP_OPERATIONSERROR;
 	else {
-		traceLog("Using loglevel %d", spocp_loglevel);
+		traceLog( LOG_INFO, "Using loglevel %d", spocp_loglevel);
 		return SPOCP_SUCCESS;
 	}
 }
 
 static void
-tracelog_doit(const char *fmt, va_list ap)
+tracelog_doit(int priority, const char *fmt, va_list ap)
 {
 	char            buf[SPOCP_MAXLINE], date[24], *sp = 0;
 	int             r, len;
@@ -156,13 +160,16 @@ tracelog_doit(const char *fmt, va_list ap)
  * \param ... A variable amount of arguments of varying type
  */
 void
-traceLog(const char *fmt, ...)
+traceLog(int priority, const char *fmt, ...)
 {
 	va_list         ap;
 
 	va_start(ap, fmt);
 
-	tracelog_doit(fmt, ap);
+	if (log_syslog)
+		syslog( LOG_WARNING, fmt, ap);
+	else
+		tracelog_doit(priority, fmt, ap);
 
 	va_end(ap);
 
@@ -178,9 +185,9 @@ traceLog(const char *fmt, ...)
 void
 FatalError(char *msg, char *s, int i)
 {
-	traceLog("*** Fatal Error ***");
-	traceLog(msg, s, i);
-	traceLog("*** Shutting down ***");
+	traceLog(LOG_EMERG, "*** Fatal Error ***");
+	traceLog(LOG_EMERG, msg, s, i);
+	traceLog(LOG_EMERG, "*** Shutting down ***");
 	exit(1);
 }
 
@@ -202,11 +209,7 @@ print_elapsed(char *s, struct timeval start, struct timeval end)
 	}
 	end.tv_sec -= start.tv_sec;
 
-	if (0)
-		traceLog("%s: %.3ld.%.6ld\n", s, end.tv_sec, end.tv_usec);
-	else
-		fprintf(stderr, "%s: %.3ld.%.6ld\n", s, end.tv_sec,
-			end.tv_usec);
+	traceLog(LOG_DEBUG, "%s: %.3ld.%.6ld\n", s, end.tv_sec, end.tv_usec);
 }
 
 /*!
@@ -220,5 +223,5 @@ timestamp(char *txt)
 
 	gettimeofday(&tv, 0);
 
-	traceLog("%s: %ld.%06ld", txt, tv.tv_sec, tv.tv_usec);
+	traceLog(LOG_INFO, "%s: %ld.%06ld", txt, tv.tv_sec, tv.tv_usec);
 }

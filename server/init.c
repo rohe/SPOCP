@@ -11,7 +11,7 @@ run_plugin_init(srv_t * srv)
 			continue;
 
 		if (pl->init) {
-			traceLog("Running the init function for %s", pl->name);
+			traceLog(LOG_INFO,"Running the init function for %s", pl->name);
 			pl->init(&pl->conf, &pl->dyn);
 		}
 	}

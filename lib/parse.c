@@ -226,7 +226,7 @@ get_token(spocp_charbuf_t * io)
 			res = mycpy(res, io->start, len, sofar);
 
 			if (get_more(io) == 0) {
-				traceLog("End of input reached unexpected");
+				traceLog(LOG_ERR,"End of input reached unexpected");
 				return 0;
 			}
 		} else
@@ -241,7 +241,7 @@ get_token(spocp_charbuf_t * io)
 	}
 
 	if( res == 0 ) {
-		traceLog("No token specification where one was expected\"%s\"",
+		traceLog(LOG_ERR,"No token specification where one was expected\"%s\"",
 		    io->start);
 		return NULL;
 	}
@@ -268,7 +268,7 @@ get_path(spocp_charbuf_t * io)
 			res = mycpy(res, io->start, len, sofar);
 
 			if (get_more(io) == 0) {
-				traceLog("End of input reached unexpected");
+				traceLog(LOG_ERR,"End of input reached unexpected");
 				return 0;
 			}
 		} else
@@ -283,7 +283,7 @@ get_path(spocp_charbuf_t * io)
 	}
 
 	if( res == 0 ) {
-		traceLog("No path specification where one was expected\"%s\"",
+		traceLog(LOG_ERR,"No path specification where one was expected\"%s\"",
 		    io->start);
 		return NULL;
 	}
@@ -313,7 +313,7 @@ get_base64( spocp_charbuf_t * io)
 			res = mycpy(res, io->start, len, sofar);
 			sofar += len;
 			if (get_more(io) == 0) {
-				traceLog("End of input reached unexpected");
+				traceLog(LOG_ERR,"End of input reached unexpected");
 				return 0;
 			}
 		} else
@@ -346,7 +346,8 @@ get_base64( spocp_charbuf_t * io)
 		return oct;
 	}
 	else {
-		traceLog( "No base64 string where I expected one \"%s\"", io->start);
+		traceLog(LOG_ERR,
+		    "No base64 string where I expected one \"%s\"", io->start);
 		return NULL;
 	}
 }
@@ -370,7 +371,7 @@ get_hex( spocp_charbuf_t * io)
 			res = mycpy(res, io->start, len, sofar);
 			sofar += len;
 			if (get_more(io) == 0) {
-				traceLog("End of input reached unexpected");
+				traceLog(LOG_ERR,"End of input reached unexpected");
 				return 0;
 			}
 		} else
@@ -403,7 +404,8 @@ get_hex( spocp_charbuf_t * io)
 			else if (*rp >= '0' && *rp <= '9')
 				c = (*rp - 0x30) << 4;
 			else {
-				traceLog("Non hex value where there should have been one",
+				traceLog(LOG_ERR,
+				    "Non hex value where there should have been one",
 				    rp);
 				return 0;
 			}
@@ -417,7 +419,8 @@ get_hex( spocp_charbuf_t * io)
 			else if (*rp >= '0' && *rp <= '9')
 				c += (*rp - 0x30);
 			else {
-				traceLog("Non hex value where there should have been one",
+				traceLog(LOG_ERR,
+				    "Non hex value where there should have been one",
 				    rp);
 				return 0;
 			}
@@ -462,7 +465,8 @@ get_quote( spocp_charbuf_t * io)
 						else
 							expect = HEXCHAR;
 					} else {
-						traceLog("Expected hex value \"%s\"",cp);
+						traceLog(LOG_ERR,
+						    "Expected hex value \"%s\"",cp);
 						return 0;
 					}
 				} else {
@@ -471,7 +475,7 @@ get_quote( spocp_charbuf_t * io)
 					else if (HEX(*cp))
 						expect = HEXCHAR;
 					else
-						traceLog(
+						traceLog(LOG_ERR,
 						    "Expected hex or escape char \"%s\""
 						    ,cp);
 						return 0;
@@ -490,7 +494,7 @@ get_quote( spocp_charbuf_t * io)
 			res = mycpy(res, io->start, len, sofar);
 			sofar += len;
 			if (get_more(io) == 0) {
-				traceLog("End of input reached unexpected");
+				traceLog(LOG_ERR,"End of input reached unexpected");
 				return 0;
 			}
 		} else
@@ -512,7 +516,7 @@ get_quote( spocp_charbuf_t * io)
 	}
 
 	if (res == 0) {
-		traceLog("Empty string encountered");
+		traceLog(LOG_ERR,"Empty string encountered");
 		return 0;	/* not allowed */
 	}
 
@@ -615,7 +619,8 @@ get_chunk(spocp_charbuf_t * io)
 		if (VCHAR(*io->start))
 			o = get_token(io);
 		else {
-			traceLog("Non token char, where token char was expected \"%s\"",
+			traceLog(LOG_ERR,
+			    "Non token char, where token char was expected \"%s\"",
 			    io->start);
 			return NULL;
 		}

@@ -210,7 +210,7 @@ get_results(LDAP * ld, LDAPMessage * res)
 	ava = ( char *** ) calloc( nr+1, sizeof( char **));
 
 	/*
-	 * LOG( SPOCP_DEBUG ) traceLog( "Found %d matching entries", nr ) ; 
+	 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Found %d matching entries", nr ) ; 
 	 */
 
 	for (ap = ldap_first_attribute(ld, e, &be), j=0 ; ap != NULL;
@@ -268,12 +268,12 @@ open_conn(char *server, int port, spocp_result_t * ret)
 	}
 
 	/*
-	 * LOG( SPOCP_DEBUG) traceLog("Opening LDAP con to %s", server ) ; 
+	 * LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG,"Opening LDAP con to %s", server ) ; 
 	 */
 
 	if ((ld = ldap_init(server, port)) == 0) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't initialize
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_WARNING, "Error: Couldn't initialize
 		 * the LDAP server") ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
@@ -288,7 +288,7 @@ open_conn(char *server, int port, spocp_result_t * ret)
 	if (ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &vers) !=
 	    LDAP_SUCCESS) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't set the
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_WARNING, "Error: Couldn't set the
 		 * version") ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
@@ -302,8 +302,8 @@ open_conn(char *server, int port, spocp_result_t * ret)
 	if (ldap_set_option(ld, LDAP_OPT_REFERRALS, LDAP_OPT_ON) !=
 	    LDAP_SUCCESS) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't set follow
-		 * referrals") ; 
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_WARNING,
+			"Error: Couldn't set follow referrals") ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
 		ldap_unbind(ld);
@@ -313,7 +313,7 @@ open_conn(char *server, int port, spocp_result_t * ret)
 
 	if ((rc = ldap_simple_bind_s(ld, user, passwd)) != LDAP_SUCCESS) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "LDAP bind failed to %s",
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_WARNING, "LDAP bind failed to %s",
 		 * server ) ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
@@ -323,13 +323,13 @@ open_conn(char *server, int port, spocp_result_t * ret)
 
 	/*
 	 * if( use_tls && ldap_start_tls_s( ld, NULL, NULL ) != LDAP_SUCCESS ) 
-	 * { if( use_tls > 1 ) { LOG( SPOCP_WARNING ) traceLog(
+	 * { if( use_tls > 1 ) { LOG( SPOCP_WARNING ) traceLog(LOG_WARNING,
 	 * "LDAP_START_TLS failed" ) ; *ret = -1 ; ldap_unbind( ld ) ; return
 	 * 0 ; } } 
 	 */
 
 	/*
-	 * LOG( SPOCP_DEBUG) traceLog("Bound OK" ) ; 
+	 * LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG,"Bound OK" ) ; 
 	 */
 
 	return ld;
@@ -362,7 +362,7 @@ do_ldap_query( LDAP * ld, const char *base, const char *filter, spocp_result_t *
 	 * values 
 	 */
 
-	LOG( SPOCP_DEBUG ) traceLog("Using filter: %s, base: %s, scope: %d",
+	LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG,"Using filter: %s, base: %s, scope: %d",
 				filter, base, scope ) ; 
 
 	if ((rc = ldap_search_s(ld, base, scope, filter, attr, 0, &res))) {
@@ -378,9 +378,9 @@ do_ldap_query( LDAP * ld, const char *base, const char *filter, spocp_result_t *
 
 	LOG( SPOCP_DEBUG ) {
 		if (ava == 0)
-			traceLog( "LDAP return NULL (%d)", *ret );
+			traceLog(LOG_DEBUG, "LDAP return NULL (%d)", *ret );
 		else
-			traceLog( "LDAP return a set (%d)", *ret);
+			traceLog(LOG_DEBUG, "LDAP return a set (%d)", *ret);
 	} 
 
 	return ava;
@@ -442,7 +442,7 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 
 	argv = oct_split( oct, ':', '\\', 0,0 );
 
-	traceLog( "argc: %d", argv->n);
+	traceLog( LOG_DEBUG,"argc: %d", argv->n);
 
 	domain = argv->arr[0];
 
@@ -492,7 +492,7 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 	filter = (char *)malloc( strlen(attr) + strlen(val) +4);
 	sprintf( filter, "(%s=%s)", attr, val );
 
-	traceLog( "Filter: %s, DN: %s", filter, dn);
+	traceLog(LOG_DEBUG, "Filter: %s, DN: %s", filter, dn);
 
 	/* do the stuff */
 
@@ -515,7 +515,7 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 		xml = do_xml( ava );
 		oct_assign( blob, xml );
 		blob->size = blob->len;
-		traceLog( "%s", xml);
+		traceLog(LOG_DEBUG, "%s", xml);
 
 		for( i = 0; ava[i] ; i++) {
 			for( j = 0; ava[i][j] ; j++) free( ava[i][j] );

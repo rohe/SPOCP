@@ -180,7 +180,7 @@ get_oparg(octet_t * arg, octarr_t ** oa)
 	octarr_t       *oarr = *oa;
 
 	if (oarr)
-		traceLog("Non empty oarr ?? (n = %d)", oarr->n);
+		traceLog(LOG_INFO,"Non empty oarr ?? (n = %d)", oarr->n);
 
 	for (i = 0; arg->len; i++) {
 		if ((r = get_str(arg, &op)) != SPOCP_SUCCESS)
@@ -231,7 +231,7 @@ opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
 			char           *str;
 
 			str = oct2strdup(conn->oppath, '%');
-			traceLog("ERR: No \"/%s\" ruleset", str);
+			traceLog(LOG_INFO,"ERR: No \"/%s\" ruleset", str);
 			free(str);
 
 			r = SPOCP_DENIED|UNKNOWN_RULESET;
@@ -268,7 +268,7 @@ com_capa(conn_t * conn)
 	spocp_result_t  r = SPOCP_SUCCESS;
 	const char     *msg = NULL;
 
-	LOG(SPOCP_INFO) traceLog("Attempt to authenticate");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
 	if (conn->transaction) return SPOCP_UNWILLING;
 
 #ifdef HAVE_SASL
@@ -280,7 +280,7 @@ com_capa(conn_t * conn)
 				     NULL, NULL, NULL, NULL, 0, &conn->sasl);
 		if (wr != SASL_OK) {
 			LOG(SPOCP_ERR)
-			    traceLog("Failed to create SASL context");
+			    traceLog(LOG_ERR,"Failed to create SASL context");
 			r = SPOCP_OTHER;
 			goto err;
 		}
@@ -296,7 +296,7 @@ com_capa(conn_t * conn)
 				   &mechlen, &count);
 		if (wr != SASL_OK) {
 			LOG(SPOCP_ERR)
-			    traceLog("Failed to generate SASL mechanism list");
+			    traceLog(LOG_ERR,"Failed to generate SASL mechanism list");
 			r = SPOCP_OTHER;
 		} else {
 			msg = mechs;
@@ -320,7 +320,7 @@ com_auth(conn_t * conn)
 	octet_t         blob;
 #endif
 
-	LOG(SPOCP_INFO) traceLog("Attempt to authenticate");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
 	if (conn->transaction) return SPOCP_UNWILLING;
 
 #ifdef HAVE_SASL
@@ -331,7 +331,7 @@ com_auth(conn_t * conn)
 				     NULL, NULL, NULL, NULL, 0, &conn->sasl);
 		if (wr != SASL_OK) {
 			LOG(SPOCP_ERR)
-			    traceLog("Failed to create SASL context");
+			    traceLog(LOG_ERR,"Failed to create SASL context");
 			goto check;
 		}
 	}
@@ -374,7 +374,7 @@ com_auth(conn_t * conn)
 		add_response(conn->out, SPOCP_AUTHINPROGRESS, NULL);
 		break;
 	default:
-		LOG(SPOCP_ERR) traceLog("SASL start/step failed: %d",
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %d",
 					sasl_errstring(wr, NULL, NULL));
 		add_response(conn->out, SPOCP_AUTHERR,
 			     "Authentication failed");
@@ -407,7 +407,7 @@ com_starttls(conn_t * conn)
 
 	if (conn->transaction) return SPOCP_UNWILLING;
 
-	traceLog("Attempting to start SSL/TLS");
+	traceLog(LOG_INFO,"Attempting to start SSL/TLS");
 
 #if !(defined(HAVE_SSL) || defined(HAVE_SASL))
 	r = SPOCP_NOT_SUPPORTED;
@@ -416,14 +416,14 @@ com_starttls(conn_t * conn)
 #ifdef HAVE_SASL
 	if (conn->sasl != NULL) {
 		LOG(SPOCP_ERR)
-		    traceLog("Layering violation: SASL already in operation");
+		    traceLog(LOG_ERR,"Layering violation: SASL already in operation");
 		r = SPOCP_STATE_VIOLATION;	/* XXX definiera och ... */
 	} else
 #endif
 #ifdef HAVE_SSL
 	if (conn->ssl != NULL) {
 		LOG(SPOCP_ERR)
-		    traceLog("Layering violation: SSL already in operation");
+		    traceLog(LOG_ERR,"Layering violation: SSL already in operation");
 		r = SPOCP_STATE_VIOLATION;	/* XXX ... fixa informativt
 						 * felmeddleande */
 	} else
@@ -436,24 +436,24 @@ com_starttls(conn_t * conn)
 		if ((wr = send_results(conn)) == 0)
 			r = SPOCP_CLOSE;
 
-		traceLog("Setting connection status so main wan't touch it") ;
+		traceLog(LOG_INFO,"Setting connection status so main wan't touch it") ;
 		conn->status = CNST_SSL_NEG;	/* Negotiation in progress */
 
 		/*
 		 * whatever is in the input buffert must not be used anymore 
 		 */
-                traceLog("Input buffer flush") ;
+                traceLog(LOG_INFO,"Input buffer flush") ;
 		iobuf_flush(conn->in);
 
 		/*
 		 * If I couldn't create a TLS connection fail completely 
 		 */
 		if ((r = tls_start(conn, conn->rs)) != SPOCP_SUCCESS) {
-			LOG(SPOCP_ERR) traceLog("Failed to start SSL");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Failed to start SSL");
 			r = SPOCP_CLOSE;
 			conn->stop = 1;
 		} else
-			traceLog("SSL in operation");
+			traceLog(LOG_INFO,"SSL in operation");
 
 		conn->status = CNST_ACTIVE;	/* Negotiation in progress */
 	}
@@ -471,7 +471,7 @@ com_rollback(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_SUCCESS;
 
-	LOG(SPOCP_INFO) traceLog("ROLLBACK");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ROLLBACK");
 
 	if( conn->transaction ){
 		opstack_free( conn->ops );
@@ -492,7 +492,7 @@ com_logout(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_CLOSE;
 
-	LOG(SPOCP_INFO) traceLog("LOGOUT requested ");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"LOGOUT requested ");
 
 	if (conn->transaction)
 		opstack_free( conn->ops );
@@ -521,7 +521,7 @@ com_delete(conn_t * conn)
 	spocp_result_t  r = SPOCP_SUCCESS;
 	ruleset_t      *rs = conn->rs;
 
-	LOG(SPOCP_INFO) traceLog("DELETE requested ");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"DELETE requested ");
 
 	/* possible pathspecification but apart from that exactly one argument */
 	if ((r = opinitial(conn, &rs, 1, 1, 1)) == SPOCP_SUCCESS){
@@ -556,7 +556,7 @@ com_commit(conn_t * conn)
 	ruleset_t	**rspp;
 	int		i, n;
 
-	LOG(SPOCP_INFO) traceLog("COMMIT requested");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"COMMIT requested");
 
 	if (!conn->transaction)
 		r = SPOCP_UNWILLING;
@@ -657,7 +657,7 @@ com_query(conn_t * conn)
 
 	LOG(SPOCP_INFO) {
 		str = oct2strdup(conn->oparg->arr[0], '%');
-		traceLog("[%d]QUERY:%s", conn->fd, str);
+		traceLog(LOG_INFO,"[%d]QUERY:%s", conn->fd, str);
 		free(str);
 	}
 
@@ -685,7 +685,7 @@ com_query(conn_t * conn)
 			}
 
 			str = oct2strdup(oct, '%');
-			traceLog("returns \"%s\"", str);
+			traceLog(LOG_INFO,"returns \"%s\"", str);
 			free(str);
 
 			/*
@@ -704,7 +704,7 @@ com_query(conn_t * conn)
 
 		octarr_free(on);
 
-		traceLog( "r after blobs");
+		traceLog( LOG_INFO,"r after blobs");
 	}
 
 	return postop( conn, r, 0);
@@ -729,7 +729,7 @@ com_login(conn_t * conn)
 {
 	spocp_result_t  r = SPOCP_DENIED;
 
-	LOG(SPOCP_WARNING) traceLog("LOGIN: not supported");
+	LOG(SPOCP_WARNING) traceLog(LOG_WARNING,"LOGIN: not supported");
 
 	return postop( conn, r, 0);
 }
@@ -744,7 +744,7 @@ com_begin(conn_t * conn)
 	spocp_result_t  rc = SPOCP_SUCCESS;
 	ruleset_t      *rs = conn->srv->root;
 
-	LOG(SPOCP_INFO) traceLog("BEGIN requested");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"BEGIN requested");
 
 	if (conn->transaction)
 		rc = SPOCP_EXISTS;
@@ -783,7 +783,7 @@ com_subject(conn_t * conn)
 
 	if (conn->transaction) return SPOCP_UNWILLING;
 
-	LOG(SPOCP_INFO) traceLog("SUBJECT definition");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUBJECT definition");
 
 	if ((r = opinitial( conn, &rs, 0, 1, 1)) == SPOCP_SUCCESS) {
 		if (conn->oparg->n)
@@ -810,7 +810,7 @@ com_add(conn_t * conn)
 	ruleset_t	*rs = conn->rs;
 	srv_t		*srv = conn->srv;
 
-	LOG(SPOCP_INFO) traceLog("ADD rule");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ADD rule");
 
 	if ((rc = opinitial( conn, &rs, 1, 1, 3)) == (SPOCP_DENIED|UNKNOWN_RULESET)) {
 		ruleset_t	*trs ;
@@ -859,7 +859,7 @@ com_list(conn_t * conn)
 	octarr_t       *oa = 0;	/* where the result is put */
 	spocp_iobuf_t  *out = conn->out;
 
-	LOG(SPOCP_INFO) traceLog("LIST requested");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"LIST requested");
 
 	if (conn->transaction) return SPOCP_UNWILLING;
 
@@ -867,7 +867,7 @@ com_list(conn_t * conn)
 
 /*	
 		if (0)
-			traceLog( "Getting the list" );
+			traceLog( LOG_INFO,"Getting the list" );
 */
 
 		oa = octarr_new( 32 ) ;
@@ -878,7 +878,7 @@ com_list(conn_t * conn)
 		
 /*
 		if (0)
-			traceLog( "Translating list to result" );
+			traceLog( LOG_INFO,"Translating list to result" );
 */
 
 		if (oa && oa->n) {
@@ -888,7 +888,7 @@ com_list(conn_t * conn)
 				LOG(SPOCP_DEBUG) {
 					char           *str;
 					str = oct2strdup(op, '\\');
-					traceLog(str);
+					traceLog(LOG_DEBUG,str);
 					free(str);
 				}
 
@@ -973,9 +973,9 @@ get_operation(conn_t * conn, proto_op ** oper)
 		int             n;
 
 		if ((n = iobuf_content(conn->in)))
-			traceLog("%d bytes in input buffer", n);
+			traceLog(LOG_DEBUG,"%d bytes in input buffer", n);
 		else
-			traceLog("Empty input buffer");
+			traceLog(LOG_DEBUG,"Empty input buffer");
 	}
 
 	arg.val = conn->in->r;
@@ -985,7 +985,7 @@ get_operation(conn_t * conn, proto_op ** oper)
 		char           *tmp;
 
 		tmp = oct2strdup(&arg, '%');
-		traceLog("ARG. [%s]", tmp);
+		traceLog(LOG_DEBUG,"ARG. [%s]", tmp);
 		free(tmp);
 	}
 
@@ -995,7 +995,7 @@ get_operation(conn_t * conn, proto_op ** oper)
 	if ((r = get_str(&arg, &wo)) != SPOCP_SUCCESS)
 		return r;
 
-        DEBUG(SPOCP_DSRV) traceLog("OpLen: %d", wo.len ) ;
+        DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"OpLen: %d", wo.len ) ;
         octln( &oa, &wo) ;
 
 	/*
@@ -1121,7 +1121,7 @@ native_server(conn_t * con)
 	out = con->out;
 	time(&con->last_event);
 
-	traceLog("Running native server");
+	traceLog(LOG_INFO,"Running native server");
 
       AGAIN:
 	while (wr && (n = spocp_conn_read(con)) >= 0) {
@@ -1133,16 +1133,17 @@ native_server(conn_t * con)
 				continue;
 
 			if ((int) (now - con->last_event) > con->srv->timeout) {
-				traceLog
-				    ("Connection closed due to inactivity");
+				traceLog( LOG_INFO,
+				   "Connection closed due to inactivity");
 				break;
 			} else
 				continue;
 		}
 
 		if (n) {
-			DEBUG(SPOCP_DSRV) traceLog("Got %d(%d new)  bytes",
-						   in->w - in->r, n);
+			DEBUG(SPOCP_DSRV)
+			    traceLog( LOG_DEBUG,"Got %d(%d new)  bytes",
+			    in->w - in->r, n);
 		}
 
 		/*
@@ -1152,12 +1153,12 @@ native_server(conn_t * con)
 			if ((r = get_operation(con, &oper)) == SPOCP_SUCCESS) {
 				r = (*oper) (con);
 
-				LOG(SPOCP_DEBUG)
-				    traceLog("command returned %d", r);
-				LOG(SPOCP_DEBUG)
-				    traceLog
-				    ("%d chars left in the input buffer",
-				     in->w - in->r);
+				LOG(SPOCP_DEBUG) {
+				    traceLog(LOG_DEBUG,"command returned %d", r);
+				    traceLog(LOG_DEBUG,
+					"%d chars left in the input buffer",
+				    	in->w - in->r);
+				}
 
 				spocp_conn_write(con);
 				oparg_clear(con);
@@ -1178,7 +1179,9 @@ native_server(conn_t * con)
 				if (in->r == in->w)
 					iobuf_flush(in);
 			} else if (r == SPOCP_MISSING_CHAR) {
-				traceLog("get more input");
+				LOG(SPOCP_DEBUG)
+					traceLog(LOG_DEBUG,"get more input");
+
 				if (in->left == 0) {	/* increase input
 							 * buffer */
 					int             l;
@@ -1216,7 +1219,7 @@ native_server(conn_t * con)
 
       clearout:
 	conn_iobuf_clear(con);
-	DEBUG(SPOCP_DSRV) traceLog("(%d) Closing the connection", con->fd);
+	DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"(%d) Closing the connection", con->fd);
 
 	return 0;
 }
@@ -1230,7 +1233,7 @@ spocp_server(void *vp)
 	 * ruleset_t *rs ; srv_t *srv ; 
 	 */
 
-	DEBUG(SPOCP_DSRV) traceLog("In spocp_server");
+	DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"In spocp_server");
 
 	if (vp == 0)
 		return;
@@ -1241,7 +1244,7 @@ spocp_server(void *vp)
 	 * srv = co->srv ; pthread_mutex_lock( &(srv->mutex) ) ; rs =
 	 * srv->root ; pthread_mutex_unlock( &(srv->mutex) ) ;
 	 * 
-	 * traceLog("Server ready (timeout set to %d)", srv->timeout) ; 
+	 * traceLog(LOG_DEBUG,"Server ready (timeout set to %d)", srv->timeout) ; 
 	 */
 
 

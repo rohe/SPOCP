@@ -69,13 +69,13 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 
 	if (dyn == 0 || (bc = becon_get(host, dyn->bcp)) == 0) {
 		server = oct2strdup(host, 0);
-		traceLog("Spocp query to %s", server);
+		traceLog(LOG_INFO,"Spocp query to %s", server);
 
 		spocp = spocpc_open( 0, server, 2);
 		free(server);
 
 		if (spocp == 0) {
-			traceLog("Couldn't open connection");
+			traceLog(LOG_NOTICE,"Couldn't open connection");
 			r = SPOCP_UNAVAILABLE;
 		} else if (dyn && dyn->size) {
 			if (!dyn->bcp)
@@ -106,7 +106,7 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 		if (argv->n == 1)
 			r = SPOCP_SUCCESS;
 		else {
-			traceLog("filedesc: %d", spocp->fd);
+			traceLog(LOG_DEBUG,"filedesc: %d", spocp->fd);
 
 			oper = argv->arr[1];
 			path = argv->arr[2];
@@ -138,7 +138,7 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 				}
 			}
 
-			traceLog("Spocp returned:%d", (int) r);
+			traceLog(LOG_DEBUG,"Spocp returned:%d", (int) r);
 		}
 	}
 

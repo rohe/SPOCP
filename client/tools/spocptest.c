@@ -52,7 +52,7 @@ main(int argc, char **argv)
 	}
 
 	if (spocpc_debug)
-		traceLog("[%d] arguments", argc);
+		traceLog(LOG_DEBUG,"[%d] arguments", argc);
 
 	if ((spocp = spocpc_open(0, argv[1], 3)) == 0) {
 		fprintf(stderr, "Could not open connection to \"%s\"\n",
@@ -60,7 +60,7 @@ main(int argc, char **argv)
 		exit(1);
 	}
 	if (spocpc_debug)
-		traceLog("Spocpserver [%s]", argv[1]);
+		traceLog(LOG_DEBUG,"Spocpserver [%s]", argv[1]);
 
 	if (argc > 2) {
 		for (i = 2; i < argc; i++) {
@@ -95,14 +95,14 @@ main(int argc, char **argv)
 		}
 	} else {
 		if (spocpc_debug)
-			traceLog("reading stdin");
+			traceLog(LOG_DEBUG,"reading stdin");
 		while (fgets(buf, BUFSIZ, stdin)) {
 			cp = &buf[strlen(buf) - 1];
 			while (*cp == '\n' || *cp == '\r' || *cp == ' ')
 				*cp-- = '\0';
 
 			if (spocpc_debug)
-				traceLog("Got [%s]", buf);
+				traceLog(LOG_DEBUG,"Got [%s]", buf);
 
 			if (strncmp(buf, "OK ", 3) == 0) {
 				ok = SPOCP_SUCCESS;

@@ -79,7 +79,7 @@ is_ipv4(octet_t * op, struct in_addr * ia)
 	if (inet_aton( op->val, ia) == 0) {
 #endif
 		op->val[op->len] = c;
-		traceLog("Error in IP number definition: %s", strerror(errno));
+		traceLog(LOG_ERR,"Error in IP number definition: %s", strerror(errno));
 		return SPOCP_SYNTAXERROR;
 	} else {
 		op->val[op->len] = c;
@@ -111,7 +111,7 @@ is_ipv6(octet_t * op, struct in6_addr * ia)
 	op->val[op->len] = 0;
 	if (inet_pton(AF_INET6, op->val, ia) <= 0) {
 		op->val[op->len] = c;
-		traceLog("Error in IP number definition: %s", strerror(errno));
+		traceLog(LOG_ERR,"Error in IP number definition: %s", strerror(errno));
 		return SPOCP_SYNTAXERROR;
 	} else {
 		op->val[op->len] = c;

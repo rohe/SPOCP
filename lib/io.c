@@ -115,7 +115,7 @@ Readn(int fd, size_t max, char *str)
 		}
 	} else {		/* timed out */
 		/*
-		 * traceLog( "Timed out waiting for intput") ; 
+		 * traceLog(LOG_INFO, "Timed out waiting for intput") ; 
 		 */
 	}
 

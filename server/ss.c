@@ -95,11 +95,11 @@ ss_allow(ruleset_t * rs, octet_t * sexp, octarr_t ** on, int scope)
 	if (rs == 0 || sexp == 0 || sexp->len == 0) {
 		if (rs == 0) {
 			LOG(SPOCP_EMERG)
-			    traceLog("Ain't got no rule database");
+			    traceLog(LOG_NOTICE,"Ain't got no rule database");
 		} else {
 			LOG(SPOCP_ERR)
-			    traceLog
-			    ("Blamey no S-expression to check, oh well");
+				traceLog(LOG_ERR,
+				    "Blamey no S-expression to check, oh well");
 		}
 		return SPOCP_DENIED;
 	}
@@ -108,7 +108,7 @@ ss_allow(ruleset_t * rs, octet_t * sexp, octarr_t ** on, int scope)
 	 * ruledatabase but no rules ? 
 	 */
 	if (rules(rs->db) == 0 && rs->down == 0) {
-		traceLog("Rule database but no rules");
+		traceLog(LOG_NOTICE,"Rule database but no rules");
 		return SPOCP_DENIED;
 	}
 
@@ -196,8 +196,8 @@ rec_del(ruleset_t * rs, dbcmd_t * dbc, octet_t *uid, size_t * nr)
 			return rc;
 
 		if (free_rule(db->ri, str) == 0) {
-			traceLog
-			    ("Hmm, something fishy here, couldn't delete rule");
+			traceLog(LOG_ERR
+			    ,"Hmm, something fishy here, couldn't delete rule");
 		}
 		(*nr)++;
 	}
@@ -231,14 +231,14 @@ ss_del_rule(ruleset_t * rs, dbcmd_t * dbc, octet_t * op, int scope)
 
 	n = 0;
 	if (rec_del(rs, dbc, op, &n) != SPOCP_SUCCESS)
-		traceLog("Error while deleting rules");
+		traceLog(LOG_ERR,"Error while deleting rules");
 
 	if (n > 1)
-		traceLog("%d rules successfully deleted", n);
+		traceLog(LOG_ERR,"%d rules successfully deleted", n);
 	else if (n == 1)
-		traceLog("1 rule successfully deleted");
+		traceLog(LOG_ERR,"1 rule successfully deleted");
 	else
-		traceLog("No rules deleted");
+		traceLog(LOG_ERR,"No rules deleted");
 
 	return SPOCP_SUCCESS;
 }
@@ -276,7 +276,7 @@ ss_del_rule(ruleset_t * rs, dbcmd_t * dbc, octet_t * op, int scope)
  * octet_t ** ss_list_rules( ruleset_t *rs, octet_t *pattern, spocp_req_info
  * *sri, int *rc, int scope ) { *rc = 1 ;
  * 
- * LOG( SPOCP_INFO ) traceLog( "List rules" ) ;
+ * LOG( SPOCP_INFO ) traceLog(LOG_INFO, "List rules" ) ;
  * 
  * return rec_list_rules( rs, pattern, sri, rc, scope ) ;
  * 
@@ -342,7 +342,7 @@ db_dup(db_t * db)
 	new = (db_t *) calloc(1, sizeof(db_t *));
 
 	if (new == 0) {
-		LOG(SPOCP_ERR) traceLog("Memory allocation problem");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Memory allocation problem");
 		return 0;
 	}
 
@@ -481,7 +481,7 @@ ruleset_print_r(ruleset_t * rs)
 int
 ruleset_print(ruleset_t * rs)
 {
-	LOG(SPOCP_DEBUG) traceLog("rulesetname: \"%s\"", rs->name);
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"rulesetname: \"%s\"", rs->name);
 	print_db(rs->db);
 	/*
 	 * print_aci( rs->aci ) ; 

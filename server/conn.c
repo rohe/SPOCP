@@ -28,7 +28,7 @@ void
 conn_init(conn_t * conn)
 {
 	/*
-	 * traceLog("Init Connection") ; 
+	 * traceLog(LOG_INFO,"Init Connection") ; 
 	 */
 	conn->in = iobuf_new(SPOCP_IOBUFSIZE);
 	conn->out = iobuf_new(SPOCP_IOBUFSIZE);
@@ -57,7 +57,7 @@ conn_new(void)
 int
 conn_close(conn_t * conn)
 {
-	traceLog("connection on %d closed", conn->fd);
+	traceLog(LOG_INFO,"connection on %d closed", conn->fd);
 	close(conn->fd);
 	conn->fd = 0;
 
@@ -238,7 +238,7 @@ conn_writen(conn_t * ct, char *str, size_t n)
 		oct.len = n;
 
 		/*
-		 * tmp = oct2strdup( &oct, '\\' ) ; traceLog( "REPLY: [%s]",
+		 * tmp = oct2strdup( &oct, '\\' ) ; traceLog(LOG_INFO, "REPLY: [%s]",
 		 * tmp ) ; free( tmp ) ; 
 		 */
 
@@ -338,9 +338,9 @@ spocp_conn_read(conn_t * conn)
 	pthread_mutex_lock(&io->lock);
 
 /*
-	traceLog("is00 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	traceLog(LOG_DEBUG,"is00 [buf]%p [p]%p [r]%p [w]%p [left]%d",
 	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog( "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
 	    io->w - io->buf, io->left );
 */
 
@@ -351,14 +351,14 @@ spocp_conn_read(conn_t * conn)
 		io->w += n;
 		*io->w = '\0'; 
 /*
-		traceLog( "spocp_conn_read: %d %d", io->left, io->w - io->buf);
+		traceLog(LOG_DEBUG, "spocp_conn_read: %d %d", io->left, io->w - io->buf);
 */
 	}
 
 /*
-	traceLog("is01 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	traceLog(LOG_DEBUG,"is01 [buf]%p [p]%p [r]%p [w]%p [left]%d",
 	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog( "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
 	    io->w - io->buf, io->left );
 */
 	pthread_mutex_unlock(&io->lock);
@@ -377,7 +377,8 @@ spocp_conn_write(conn_t * conn)
 	n = conn->writen(conn, out->r, out->w - out->r);
 
 	if (n >= 0) {
-		DEBUG(SPOCP_DSRV) traceLog("spocp_io_write wrote %d bytes", n);
+		DEBUG(SPOCP_DSRV)
+			traceLog(LOG_DEBUG,"spocp_io_write wrote %d bytes", n);
 
 		out->r += n;
 		out->left -= n;
@@ -390,10 +391,10 @@ spocp_conn_write(conn_t * conn)
 
 		if ((l = iobuf_content(out)) == 0) {
 			DEBUG(SPOCP_DSRV)
-			    traceLog("Wrote everything in buffer");
+			    traceLog(LOG_DEBUG,"Wrote everything in buffer");
 			pthread_cond_broadcast(&out->empty);
 		} else
-			DEBUG(SPOCP_DSRV) traceLog("%d left in buffert", l);
+			DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"%d left in buffert", l);
 	} else
 		pthread_mutex_unlock(&out->lock);
 
@@ -417,7 +418,7 @@ send_results(conn_t * conn)
 
 	LOG(SPOCP_INFO) {
 		*out->w = '\0';
-		traceLog("[%d]SEND_RESULT: [%s]", conn->fd, out->r);
+		traceLog(LOG_INFO,"[%d]SEND_RESULT: [%s]", conn->fd, out->r);
 	}
 
 	if (0)

@@ -13,17 +13,17 @@ cpool_new(int nc)
 	int             i;
 
 	if (0)
-		traceLog("cpool_new\n");
+		traceLog(LOG_INFO,"cpool_new\n");
 
 	afpool = afpool_new();
 
 	if (0)
-		traceLog("afpool_new\n");
+		traceLog(LOG_INFO,"afpool_new\n");
 
 	pool = afpool->free;
 
 	if (0)
-		traceLog("max simultaneous connections: %d\n", nc);
+		traceLog(LOG_INFO,"max simultaneous connections: %d\n", nc);
 
 	if (nc) {
 		for (i = 0; i < nc; i++) {

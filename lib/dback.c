@@ -57,7 +57,8 @@ dback_load(char *name, char *load)
 	handle = dlopen(load, RTLD_LAZY);
 
 	if (!handle) {
-		traceLog("Unable to open %s library: [%s]", load, dlerror());
+		traceLog(LOG_WARNING,"Unable to open %s library: [%s]",
+		    load, dlerror());
 		return 0;
 	}
 
@@ -67,7 +68,7 @@ dback_load(char *name, char *load)
 
 	dback = (dback_t *) dlsym(handle, modulename);
 	if (dback == 0 || dback->magic != MODULE_MAGIC_COOKIE) {
-		traceLog("%s: Not a proper dback_struct", name);
+		traceLog(LOG_WARNING,"%s: Not a proper dback_struct", name);
 		dlclose(handle);
 		return 0;
 	}

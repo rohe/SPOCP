@@ -90,7 +90,7 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 		return -1;
 
 	/*
-	 * traceLog("boundary_xcmp (%d)", b2p->type) ; boundary_print( b1p) ;
+	 * traceLog(LOG_DEBUG,"boundary_xcmp (%d)", b2p->type) ; boundary_print( b1p) ;
 	 * boundary_print( b2p) ; 
 	 */
 
@@ -137,7 +137,7 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 	}
 
 	/*
-	 * traceLog( "res: %d", v ) ; 
+	 * traceLog(LOG_DEBUG, "res: %d", v ) ; 
 	 */
 
 	return v;
@@ -411,14 +411,14 @@ boundary_print(boundary_t * bp)
 	case SPOC_ALPHA:
 	case SPOC_DATE:
 		if (bp->v.val.len)
-			traceLog(" %s %s", lte, bp->v.val.val);
+			traceLog(LOG_DEBUG," %s %s", lte, bp->v.val.val);
 		else
-			traceLog(" NULL");
+			traceLog(LOG_DEBUG," NULL");
 		break;
 
 	case SPOC_TIME:
 	case SPOC_NUMERIC:
-		traceLog(" %s %d", lte, bp->v.num);
+		traceLog(LOG_DEBUG," %s %d", lte, bp->v.num);
 		break;
 
 	case SPOC_IPV4:
@@ -431,13 +431,13 @@ boundary_print(boundary_t * bp)
 			strcat( ip, tmp);
 		}
 #endif
-		traceLog(" %x %s %s", bp->type, lte, ip);
+		traceLog(LOG_DEBUG," %x %s %s", bp->type, lte, ip);
 		break;
 
 #ifdef USE_IPV6
 	case SPOC_IPV6:
 		inet_ntop(AF_INET6, (void *) &bp->v.v6, ip, 65);
-		traceLog(" %s %s", lte, ip);
+		traceLog(LOG_DEBUG," %s %s", lte, ip);
 		break;
 #endif
 
@@ -454,7 +454,7 @@ sl_print(slist_t * slp)
 		return;
 
 	for (sn = slp->head, i = 0; sn->next; sn = sn->next[0], i++) {
-		traceLog("%d:", i);
+		traceLog(LOG_DEBUG,"%d:", i);
 		boundary_print(sn->item);
 	}
 }
@@ -469,7 +469,7 @@ sl_match(slist_t * slp, boundary_t * item)
 	varr_t         *lp = 0, *up = 0, *res;
 
 	if (slp == 0) {
-		traceLog("Empty range ?");
+		traceLog(LOG_DEBUG,"Empty range ?");
 		return 0;
 	}
 

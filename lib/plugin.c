@@ -158,18 +158,18 @@ plugin_load(plugin_t * top, char *name, char *load)
 	char           *modulename;
 	void           *handle;
 
-	traceLog( "Loading plugin: \"%s\"", name ) ;
+	traceLog(LOG_INFO, "Loading plugin: \"%s\"", name ) ;
 
 	for (pl = top; pl; pl = pl->next) {
 		if (strcmp(pl->name, name) == 0) {
-			traceLog("%s: Already loaded that plugin", name);
+			traceLog(LOG_ERR,"%s: Already loaded that plugin", name);
 			return top;
 		}
 	}
 
 	handle = dlopen(load, RTLD_LAZY);
 	if (!handle) {
-		traceLog("%s: Unable to open %s library: [%s]", name, load,
+		traceLog(LOG_ERR,"%s: Unable to open %s library: [%s]", name, load,
 			 dlerror());
 		return top;
 	}
@@ -182,7 +182,7 @@ plugin_load(plugin_t * top, char *name, char *load)
 	free(modulename);
 
 	if (new == 0 || new->magic != MODULE_MAGIC_COOKIE) {
-		traceLog("%s: Not a proper plugin_struct", name);
+		traceLog(LOG_ERR,"%s: Not a proper plugin_struct", name);
 		dlclose(handle);
 		return top;
 	}
@@ -209,5 +209,5 @@ void
 plugin_display(plugin_t * pl)
 {
 	for (; pl; pl = pl->next)
-		traceLog("Active backend: %s", pl->name);
+		traceLog(LOG_INFO,"Active backend: %s", pl->name);
 }

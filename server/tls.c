@@ -154,7 +154,7 @@ verify_callback(int preverify_ok, X509_STORE_CTX * x509ctx)
 
 	if (preverify_ok == 0) {
 		LOG(SPOCP_ERR)
-		    traceLog("SSL verify error: depth=%d error=%s cert=%s",
+		    traceLog(LOG_ERR,"SSL verify error: depth=%d error=%s cert=%s",
 			     x509ctx->error_depth,
 			     X509_verify_cert_error_string(x509ctx->error),
 			     txt);
@@ -165,7 +165,7 @@ verify_callback(int preverify_ok, X509_STORE_CTX * x509ctx)
 	 * the check against allowed clients are done elsewhere 
 	 */
 
-	LOG(SPOCP_DEBUG) traceLog("SSL authenticated peer: %s\n", txt);
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"SSL authenticated peer: %s\n", txt);
 
 	return 1;		/* accept */
 }
@@ -182,9 +182,9 @@ tls_error(int level, conn_t * conn, char *msg)
 	e = ERR_get_error();
 	ERR_error_string_n(e, errorstr, 1024);
 
-	LOG(level) traceLog("TLS error on connection from %s (%s): %s",
+	LOG(level) traceLog(LOG_ERR,"TLS error on connection from %s (%s): %s",
 			    conn->sri.hostname, conn->sri.hostaddr, msg);
-	LOG(level) traceLog("\"%s\"", errorstr);
+	LOG(level) traceLog(LOG_ERR,"\"%s\"", errorstr);
 
 	return FALSE;
 }
@@ -200,7 +200,7 @@ password_cb(char *buf, int num, int rwflag, void *userdata)
 
 	if (num < (int) strlen(passwd) + 1) {
 		LOG(SPOCP_ERR)
-		    traceLog("Not big enough place for the password (%d)",
+		    traceLog(LOG_ERR,"Not big enough place for the password (%d)",
 			     num);
 		return (0);
 	}
@@ -224,12 +224,12 @@ generate_eph_rsa_key(SSL_CTX * ctx, int keylength)
 {
 	RSA            *rsa_key;
 
-	LOG(SPOCP_DEBUG) traceLog("Generating %d bit RSA key...\n", keylength);
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Generating %d bit RSA key...\n", keylength);
 
 	rsa_key = RSA_generate_key(keylength, RSA_F4, NULL, NULL);
 
 	if (!SSL_CTX_set_tmp_rsa(ctx, rsa_key)) {
-		LOG(SPOCP_ERR) traceLog("TLS error (RSA_generate_key): %s",
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"TLS error (RSA_generate_key): %s",
 					ssl_errstring);
 		return FALSE;
 	}
@@ -263,7 +263,7 @@ init_dh(SSL_CTX * ctx, unsigned char *dhparam)
 
 	if ((bio = BIO_new_file((char *) dhparam, "r")) == NULL) {
 		LOG(SPOCP_ERR)
-		    traceLog("DH: could not read %s: %s", dhparam,
+		    traceLog(LOG_ERR,"DH: could not read %s: %s", dhparam,
 			     strerror(errno));
 		rc = FALSE;
 	} else {
@@ -271,20 +271,20 @@ init_dh(SSL_CTX * ctx, unsigned char *dhparam)
 		if ((dh =
 		     PEM_read_bio_DHparams(bio, NULL, NULL, NULL)) == NULL) {
 			LOG(SPOCP_ERR)
-			    traceLog("DH: could not load params from %s",
+			    traceLog(LOG_ERR,"DH: could not load params from %s",
 				     dhparam);
 			rc = FALSE;
 		} else {
 			if (SSL_CTX_set_tmp_dh(ctx, dh) < 0) {
 				LOG(SPOCP_DEBUG)
-				    traceLog
-				    ("Couldn't set Diffie-Hellman parameters");
+					traceLog(LOG_ERR,
+					    "Couldn't set Diffie-Hellman parameters");
 				rc = FALSE;
 			} else
 				LOG(SPOCP_DEBUG)
-				    traceLog
-				    ("Diffie-Hellman initialised from %s with %d-bit key",
-				     dhparam, 8 * DH_size(dh));
+				    traceLog(LOG_ERR,
+					"Diffie-Hellman initialised from %s with %d-bit key",
+				    	 dhparam, 8 * DH_size(dh));
 
 			DH_free(dh);
 		}
@@ -317,7 +317,7 @@ add_entropy(const char *file)
 	if (st.st_uid != getuid() ||
 	    ((st.st_mode & (S_IWGRP | S_IRGRP)) != 0) ||
 	    ((st.st_mode & (S_IWOTH | S_IROTH)) != 0)) {
-		LOG(SPOCP_ERR) traceLog("TLS: %s has insecure permissions!",
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"TLS: %s has insecure permissions!",
 					file);
 		return -1;
 	}
@@ -425,11 +425,11 @@ tls_init(srv_t * srv)
 	 */
 
 	if (!(ctx = SSL_CTX_new(SSLv23_method()))) {
-		LOG(SPOCP_ERR) traceLog("Error allocation SSL_CTX");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error allocation SSL_CTX");
 		return 0;
 	}
 
-	LOG(SPOCP_DEBUG) traceLog("Do we have enough randomness ??");
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Do we have enough randomness ??");
 
 	if (!RAND_status()) {
 		/*
@@ -454,8 +454,8 @@ tls_init(srv_t * srv)
 		RAND_write_file(RAND_file_name(path, sizeof(path)));
 		if (!RAND_status()) {
 			LOG(SPOCP_ERR)
-			    traceLog
-			    ("Failed to find enough entropy on your system");
+				traceLog(LOG_ERR,
+				    "Failed to find enough entropy on your system");
 			return 0;
 		}
 	}
@@ -466,11 +466,11 @@ tls_init(srv_t * srv)
 
 	if (srv->dhFile) {
 		if (init_dh(ctx, (unsigned char *) srv->dhFile) == FALSE) {
-			LOG(SPOCP_ERR) traceLog("Error initializing DH");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error initializing DH");
 			SSL_CTX_free(ctx);
 			return 0;
 		} else
-			LOG(SPOCP_ERR) traceLog("Initializing DH OK");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Initializing DH OK");
 	}
 
 	/*
@@ -478,22 +478,22 @@ tls_init(srv_t * srv)
 	 */
 
 	if (generate_eph_rsa_key(ctx, 512) == FALSE) {
-		LOG(SPOCP_ERR) traceLog("Error initializing RSA key");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error initializing RSA key");
 		SSL_CTX_free(ctx);
 		return 0;
 	} else
-		LOG(SPOCP_ERR) traceLog("Initializing RSA key OK");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Initializing RSA key OK");
 
 	/*
 	 * Set up certificates and keys 
 	 */
 
 	if (srv->certificateFile != NULL) {
-		LOG(SPOCP_INFO) traceLog("Reading Certificate File");
+		LOG(SPOCP_INFO) traceLog(LOG_INFO,"Reading Certificate File");
 		if (!SSL_CTX_use_certificate_chain_file
 		    (ctx, srv->certificateFile)) {
 			LOG(SPOCP_ERR)
-			    traceLog("Error in SSL_CTX_use_certificate_file");
+			    traceLog(LOG_ERR,"Error in SSL_CTX_use_certificate_file");
 			SSL_CTX_free(ctx);
 			return 0;
 		}
@@ -508,7 +508,7 @@ tls_init(srv_t * srv)
 			SSL_CTX_set_default_passwd_cb(ctx, password_cb);
 		}
 
-		LOG(SPOCP_INFO) traceLog("Reading Private Key File");
+		LOG(SPOCP_INFO) traceLog(LOG_INFO,"Reading Private Key File");
 		r = SSL_CTX_use_PrivateKey_file(ctx, srv->privateKey,
 						SSL_FILETYPE_PEM);
 		if (r == 0) {
@@ -516,8 +516,8 @@ tls_init(srv_t * srv)
 			ERR_error_string_n(e, errorstr, 1024);
 
 			LOG(SPOCP_ERR)
-			    traceLog("Error in SSL_CTX_use_PrivateKey_file");
-			LOG(SPOCP_ERR) traceLog("%s", errorstr);
+			    traceLog(LOG_ERR,"Error in SSL_CTX_use_PrivateKey_file");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"%s", errorstr);
 
 			SSL_CTX_free(ctx);
 			return 0;
@@ -525,10 +525,10 @@ tls_init(srv_t * srv)
 	}
 
 	if (srv->caList != NULL) {
-		LOG(SPOCP_INFO) traceLog("Reading Trusted CAs File");
+		LOG(SPOCP_INFO) traceLog(LOG_INFO,"Reading Trusted CAs File");
 		if (!SSL_CTX_load_verify_locations(ctx, srv->caList, 0)) {
 			LOG(SPOCP_ERR)
-			    traceLog("Error in SSL_CTX_load_verify_locations");
+			    traceLog(LOG_ERR,"Error in SSL_CTX_load_verify_locations");
 			SSL_CTX_free(ctx);
 			return 0;
 		}
@@ -549,12 +549,12 @@ tls_init(srv_t * srv)
 	SSL_CTX_set_options(ctx, SSL_OP_ALL | SSL_OP_NO_SSLv2);
 
 	if (SSL_CTX_set_cipher_list(ctx, CIPHER_LIST) != 1) {
-		LOG(SPOCP_ERR) traceLog("No valid ciphers in cipherlist");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"No valid ciphers in cipherlist");
 		SSL_CTX_free(ctx);
 		return 0;
 	}
 
-	LOG(SPOCP_DEBUG) traceLog("Initialised TLS");
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Initialised TLS");
 
 	return ctx;
 }
@@ -574,7 +574,7 @@ check_cert_chain(conn_t * conn, SSL * ssl, ruleset_t * rs)
 	int             r = FALSE, extc;
 
 	if (SSL_get_verify_result(ssl) != X509_V_OK) {
-		LOG(SPOCP_ERR) traceLog("Certificate doesn't verify");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Certificate doesn't verify");
 		return FALSE;
 	}
 
@@ -585,7 +585,7 @@ check_cert_chain(conn_t * conn, SSL * ssl, ruleset_t * rs)
 
 	peer = SSL_get_peer_certificate(ssl);
 	if (!peer) {
-		LOG(SPOCP_ERR) traceLog("No peer certificate");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"No peer certificate");
 		return TRUE;
 	}
 
@@ -646,7 +646,7 @@ check_cert_chain(conn_t * conn, SSL * ssl, ruleset_t * rs)
 		X509_NAME_get_text_by_NID(xn, NID_commonName, subject, 1024);
 		subject[1023] = '\0';
 
-		traceLog("\"%s\" = \"%s\" ?", subject, conn->sri.hostname);
+		traceLog(LOG_DEBUG,"\"%s\" = \"%s\" ?", subject, conn->sri.hostname);
 		if (strcasecmp(subject, conn->sri.hostname) == 0) {
 			r = TRUE;
 		}
@@ -695,19 +695,19 @@ tls_start(conn_t * conn, ruleset_t * rs)
 				   strlen(sid_ctx));
 
 	if (SSL_set_fd(ssl, conn->fd) == 0) {
-		traceLog("Couldn't set filedescriptor in SSL");
+		traceLog(LOG_ERR,"Couldn't set filedescriptor in SSL");
 		return SPOCP_OPERATIONSERROR;
 	}
 
 	n = iobuf_content(conn->in);
-	traceLog("tls_start: %d bytes in input buffer", n);
+	traceLog(LOG_INFO,"tls_start: %d bytes in input buffer", n);
 	if (n) {
-		traceLog("tls_start: %x%x%x%x", conn->in->r[0], conn->in->r[1],
+		traceLog(LOG_INFO,"tls_start: %x%x%x%x", conn->in->r[0], conn->in->r[1],
 			 conn->in->r[2], conn->in->r[3]);
 	}
 
 	LOG(SPOCP_DEBUG)
-	    traceLog("Waiting for client on %d to initiate handshake",
+	    traceLog(LOG_DEBUG,"Waiting for client on %d to initiate handshake",
 		     conn->fd);
 
 	/*
@@ -718,25 +718,25 @@ tls_start(conn_t * conn, ruleset_t * rs)
 	  
 		FD_ZERO( &rset );
 		FD_SET( conn->fd, &rset );
-		traceLog( "Waiting for the client" ) ;
+		traceLog(LOG_DEBUG, "Waiting for the client" ) ;
 		retval = select(conn->fd+1,&rset,NULL,NULL,0) ;
 	}
 	if ((r = SSL_accept(ssl)) <= 0) {
 		int se ;
 
 		if ((se = SSL_get_error(ssl, r)) == SSL_ERROR_WANT_READ) {
-			traceLog("Want_read");
+			traceLog(LOG_DEBUG,"Want_read");
 		} else if (se == SSL_ERROR_SYSCALL) {
 			unsigned long err ;
 
 			err = ERR_get_error();
 			if( err == 0L && r == 0 ) {
-				traceLog("EOF observed") ;
+				traceLog(LOG_DEBUG,"EOF observed") ;
 			}
 			else 
-				traceLog("I/O error occured (%ld/%d)", err, r);
+				traceLog(LOG_ERR,"I/O error occured (%ld/%d)", err, r);
 		} else {
-			traceLog("SSL_get_error: %d", se);
+			traceLog(LOG_ERR,"SSL_get_error: %d", se);
 			tls_error(SPOCP_ERR, conn, "SSL accept error");
 			SSL_free(ssl);
 		}
@@ -747,11 +747,13 @@ tls_start(conn_t * conn, ruleset_t * rs)
 	 * } 
 	 */
 
-	LOG(SPOCP_DEBUG) traceLog("SSL accept done");
-	LOG(SPOCP_DEBUG) traceLog("Checking client certificate");
+	LOG(SPOCP_DEBUG) {
+		traceLog(LOG_DEBUG,"SSL accept done");
+		traceLog(LOG_DEBUG,"Checking client certificate");
+	 }
 
 	if (!check_cert_chain(conn, ssl, rs)) {
-		traceLog("Certificate chain check failed");
+		traceLog(LOG_ERR,"Certificate chain check failed");
 		SSL_free(ssl);
 		conn->status = CNST_ACTIVE;
 		return SPOCP_CERT_ERR;
@@ -769,14 +771,14 @@ tls_start(conn_t * conn, ruleset_t * rs)
 	conn->ssl_vers = strdup(SSL_CIPHER_get_version(cipher));
 
 	if (server_access(conn) == 0) {
-		traceLog("Client not allowed access");
+		traceLog(LOG_ERR,"Client not allowed access");
 		SSL_free(ssl);
 
 		conn->status = CNST_ACTIVE;
 		return SPOCP_CERT_ERR;
 	}
 
-	LOG(SPOCP_DEBUG) traceLog("SSL accept done");
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"SSL accept done");
 
 	/*
 	 * TLS has been set up. Change input/output to read via TLS instead 

@@ -93,7 +93,7 @@ lastlogin_test(cmd_param_t * cpp, octet_t * blob)
 		cv = cached(dyn->cv, oct, &cb);
 
 	if (cv) {
-		traceLog("ipnum: cache hit");
+		traceLog(LOG_DEBUG,"lastlogin: cache hit");
 
 		if (cv == EXPIRED) {
 			cached_rm(dyn->cv, oct);

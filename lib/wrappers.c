@@ -153,7 +153,7 @@ Strndup(char *s, size_t n)
 void
 xFree(void *vp)
 {
-	traceLog("%p-free\n", vp);
+	traceLog(LOG_DEBUG,"%p-free\n", vp);
 	free(vp);
 }
 
@@ -162,7 +162,7 @@ xMalloc(size_t size)
 {
 	void           *vp = malloc(size);
 
-	traceLog("%p(%d)-malloc\n", vp, size);
+	traceLog(LOG_DEBUG,"%p(%d)-malloc\n", vp, size);
 
 	if (vp == 0)
 		FatalError("Out of memory", 0, 0);
@@ -176,7 +176,7 @@ xCalloc(size_t n, size_t size)
 {
 	void           *vp = calloc(n, size);
 
-	traceLog("%p(%d,%d)-calloc\n", vp, n, size);
+	traceLog(LOG_DEBUG,"%p(%d,%d)-calloc\n", vp, n, size);
 
 	if (vp == 0)
 		FatalError("Out of memory", 0, 0);
@@ -190,7 +190,7 @@ xRecalloc(void *vp, size_t n, size_t size)
 {
 	void           *nvp = realloc(vp, n * size);
 
-	traceLog("%p->%p(%d)-recalloc\n", vp, nvp, n * size);
+	traceLog(LOG_DEBUG,"%p->%p(%d)-recalloc\n", vp, nvp, n * size);
 
 	if (nvp == 0)
 		FatalError("Out of memory", 0, 0);
@@ -204,7 +204,7 @@ xRealloc(void *vp, size_t n)
 {
 	void           *nvp = realloc(vp, n);
 
-	traceLog("%p->%p(%d)-realloc\n", vp, nvp, n);
+	traceLog(LOG_DEBUG,"%p->%p(%d)-realloc\n", vp, nvp, n);
 
 	if (nvp == 0)
 		FatalError("Out of memory", 0, 0);
@@ -217,7 +217,7 @@ xStrdup(char *s)
 {
 	char           *sp = strdup(s);
 
-	traceLog("%p(%d)-strdup\n", sp, strlen(s));
+	traceLog(LOG_DEBUG,"%p(%d)-strdup\n", sp, strlen(s));
 
 	if (sp == 0)
 		FatalError("Out of memory", 0, 0);
@@ -250,7 +250,7 @@ xStrndup(char *s, size_t n)
 {
 	char           *sp = strndup(s, n);
 
-	traceLog("%p(%d)-strndup\n", sp, n);
+	traceLog(LOG_DEBUG,"%p(%d)-strndup\n", sp, n);
 
 	if (sp == 0)
 		FatalError("Out of memory", 0, 0);

@@ -48,7 +48,8 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 	 */
 	if ((n = octchr(spec, ':')) < 0) {
 		tmp = oct2strdup( spec, 0 );
-		traceLog( "Error in boundary condition specification \"%s\"", tmp);
+		traceLog( LOG_ERR,
+		    "Error in boundary condition specification \"%s\"", tmp);
 		free(tmp);
 		return 0;
 	}
@@ -59,7 +60,7 @@ bcspec_new(plugin_t * plt, octet_t * spec)
 
 	if ((p = plugin_match(plt, spec)) == 0) {
 		tmp = oct2strdup(spec, 0 );
-		traceLog("Doesn't match any known plugin \"%s\"",tmp);
+		traceLog(LOG_ERR,"Doesn't match any known plugin \"%s\"",tmp);
 		free(tmp);
 		return 0;
 	}
@@ -383,7 +384,8 @@ transv_stree(plugin_t * plt, stree_t * st, bcdef_t * list, bcdef_t * parent)
 		if (!st->next) {	/* should be a bcond spec */
 			if (plt == 0 || (bcs = bcspec_new(plt, &st->val)) == 0) {
 				if (plt == 0)
-					traceLog("Reference to plugin while non is defined");
+					traceLog(LOG_ERR,
+					    "Reference to plugin while non is defined");
 				return 0;
 			}
 			bce = bcexp_new();
@@ -1001,7 +1003,7 @@ bcond_check(element_t * ep, index_t * id, octarr_t ** oa)
 
 		r = bcexp_eval(ep, ri->ep, ri->bcond->exp, oa);
 		DEBUG(SPOCP_DMATCH) {
-			traceLog("boundary condition \"%s\" returned %d\n",
+			traceLog(LOG_INFO,"boundary condition \"%s\" returned %d\n",
 				 ri->bcond->name, r);
 		}
 		if (r == SPOCP_SUCCESS) {
@@ -1013,7 +1015,7 @@ bcond_check(element_t * ep, index_t * id, octarr_t ** oa)
 
 	if (r == SPOCP_SUCCESS) {	/* if so ri has to be defined */
 		str = oct2strdup(ri->rule, '%');
-		traceLog("Matched rule \"%s\"", str);
+		traceLog(LOG_INFO,"Matched rule \"%s\"", str);
 		free(str);
 	}
 

@@ -55,7 +55,7 @@ get_len(octet_t * op, spocp_result_t *rc)
 
 	if (n == 0) {
 		sp = op->val;
-		traceLog("No digit found at \"%c%c%c%c\"", *sp, *(sp+1),
+		traceLog(LOG_ERR,"No digit found at \"%c%c%c%c\"", *sp, *(sp+1),
 		    *(sp+2), *(sp+3) ) ;
 		*rc = SPOCP_SYNTAXERROR;
 		return -1;
@@ -104,17 +104,18 @@ get_str(octet_t * so, octet_t * ro)
 
 	if ((so->len - 1) < ro->len) {
 		LOG(SPOCP_ERR) {
-			traceLog
-			    ("expected length of string (%d) exceeds input length (%d)",
+			traceLog(LOG_ERR,
+			     "expected length of string (%d) exceeds input length (%d)",
 			     ro->len, so->len);
-			traceLog("Offending part \"%c%c%c\"", so->val[0],
-				 so->val[1], so->val[2]);
+			traceLog(LOG_ERR,
+			     "Offending part \"%c%c%c\"", so->val[0],
+			     so->val[1], so->val[2]);
 		}
 		return SPOCP_MISSING_CHAR;
 	}
 
 	if (ro->len == 0) {
-		LOG(SPOCP_ERR) traceLog("Zero length strings not allowed");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Zero length strings not allowed");
 		return SPOCP_SYNTAXERROR;
 	}
 
@@ -129,7 +130,7 @@ get_str(octet_t * so, octet_t * ro)
 	so->len -= ro->len;
 
 	DEBUG(SPOCP_DPARSE)
-	    traceLog("Got 'string' \"%*.*s\"", ro->len, ro->len, ro->val);
+	    traceLog(LOG_DEBUG,"Got 'string' \"%*.*s\"", ro->len, ro->len, ro->val);
 
 	return SPOCP_SUCCESS;
 }
@@ -236,7 +237,7 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 
 	while (*format && bsize) {
 		/*
-		 * traceLog( "Sexp [%s][%c]", sexp, *format ) ; 
+		 * traceLog(LOG_INFO, "Sexp [%s][%c]", sexp, *format ) ; 
 		 */
 		switch (*format++) {
 		case '(':	/* start of a list */

@@ -151,7 +151,7 @@ do_prefix(octet_t * oct, element_t * ep)
 {
 	spocp_result_t  rc = SPOCP_SUCCESS;
 
-	DEBUG(SPOCP_DPARSE) traceLog("Parsing 'prefix' expression");
+	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"Parsing 'prefix' expression");
 
 	ep->type = SPOC_PREFIX;
 
@@ -163,7 +163,7 @@ do_prefix(octet_t * oct, element_t * ep)
 	 */
 
 	if (*oct->val != ')') {
-		LOG(SPOCP_ERR) traceLog("Missing ending ')'");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Missing ending ')'");
 		return SPOCP_SYNTAXERROR;
 	} else {
 		oct->val++;
@@ -178,7 +178,7 @@ do_suffix(octet_t * oct, element_t * ep)
 {
 	spocp_result_t  rc = 0;
 
-	DEBUG(SPOCP_DPARSE) traceLog("Parsing 'suffix' expression");
+	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"Parsing 'suffix' expression");
 
 	ep->type = SPOC_SUFFIX;
 
@@ -186,7 +186,7 @@ do_suffix(octet_t * oct, element_t * ep)
 		return rc;
 
 	if (*oct->val != ')') {
-		LOG(SPOCP_ERR) traceLog("Missing ending ')'");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Missing ending ')'");
 		return SPOCP_SYNTAXERROR;
 	} else {
 		oct->val++;
@@ -238,7 +238,7 @@ get_set(octet_t * oct, element_t * ep)
 		}
 	}
 
-	DEBUG(SPOCP_DPARSE) traceLog("Got end of set");
+	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"Got end of set");
 
 	/*
 	 * only one item in the and expr, so it's not really a set. It's just
@@ -268,7 +268,7 @@ get_set(octet_t * oct, element_t * ep)
 static spocp_result_t
 do_set(octet_t * oct, element_t * ep)
 {
-	DEBUG(SPOCP_DPARSE) traceLog("Parsing 'set' expression");
+	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"Parsing 'set' expression");
 
 	ep->type = SPOC_SET;
 
@@ -477,13 +477,14 @@ is_valid_range(range_t * rp)
 		}
 
 		if (c < 0) {
-			LOG(SPOCP_ERR) traceLog("Upper limit less then lower");
+			LOG(SPOCP_ERR)
+				traceLog(LOG_ERR,"Upper limit less then lower");
 			r = SPOCP_SYNTAXERROR;
 		} else if (c == 0 && !(rp->upper.type & GLE)
 			   && !(rp->lower.type & GLE)) {
 			LOG(SPOCP_ERR)
-			    traceLog
-			    ("Upper limit equal to lower when it shouldn't");
+				traceLog(LOG_ERR,
+				    "Upper limit equal to lower when it shouldn't");
 			r = SPOCP_SYNTAXERROR;
 		}
 	}
@@ -548,7 +549,7 @@ do_range(octet_t * op, element_t * ep)
 	boundary_t     *bp;
 	int             r = SPOCP_SUCCESS;
 
-	DEBUG(SPOCP_DPARSE) traceLog("Parsing range");
+	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"Parsing range");
 
 	/*
 	 * next part should be type specifier 
@@ -558,7 +559,7 @@ do_range(octet_t * op, element_t * ep)
 		goto done;
 
 	ep->type = SPOC_RANGE;
-	DEBUG(SPOCP_DPARSE) traceLog("new_range");
+	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"new_range");
 	rp = (range_t *) Calloc(1, sizeof(range_t));
 
 	ep->e.range = rp;
@@ -576,7 +577,7 @@ do_range(octet_t * op, element_t * ep)
 		else if (strncasecmp(oct.val, "time", 4) == 0)
 			rp->lower.type = SPOC_TIME;
 		else {
-			LOG(SPOCP_ERR) traceLog("Unknown range type");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unknown range type");
 			r = SPOCP_SYNTAXERROR;
 		}
 		break;
@@ -585,7 +586,7 @@ do_range(octet_t * op, element_t * ep)
 		if (strncasecmp(oct.val, "alpha", 5) == 0)
 			rp->lower.type = SPOC_ALPHA;
 		else {
-			LOG(SPOCP_ERR) traceLog("Unknown range type");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unknown range type");
 			r = SPOCP_SYNTAXERROR;
 		}
 		break;
@@ -594,13 +595,13 @@ do_range(octet_t * op, element_t * ep)
 		if (strncasecmp(oct.val, "numeric", 7) == 0)
 			rp->lower.type = SPOC_NUMERIC;
 		else {
-			LOG(SPOCP_ERR) traceLog("Unknown range type");
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unknown range type");
 			r = SPOCP_SYNTAXERROR;
 		}
 		break;
 
 	default:
-		LOG(SPOCP_ERR) traceLog("Unknown range type");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unknown range type");
 		r = SPOCP_SYNTAXERROR;
 		break;
 	}
@@ -626,7 +627,7 @@ do_range(octet_t * op, element_t * ep)
 		goto cleanup;
 
 	if ((bp = set_delimiter(rp, oct)) == 0) {
-		LOG(SPOCP_ERR) traceLog("Error in delimiter specification");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error in delimiter specification");
 		r = SPOCP_SYNTAXERROR;
 		goto cleanup;
 	}
@@ -660,7 +661,7 @@ do_range(octet_t * op, element_t * ep)
 		goto cleanup;
 
 	if (r == SPOCP_SUCCESS && (bp = set_delimiter(rp, oct)) == 0) {
-		LOG(SPOCP_ERR) traceLog("Error in delimiter specification");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Error in delimiter specification");
 		r = SPOCP_SYNTAXERROR;
 		goto cleanup;
 	}
@@ -676,7 +677,7 @@ do_range(octet_t * op, element_t * ep)
 		goto cleanup;
 
 	if (r == SPOCP_SUCCESS && *op->val != ')') {
-		LOG(SPOCP_ERR) traceLog("Missing closing ')'");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Missing closing ')'");
 		r = SPOCP_SYNTAXERROR;
 		goto cleanup;
 	}
@@ -713,7 +714,7 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 	spocp_result_t  r = SPOCP_SUCCESS;
 	element_t      *nep = 0, *pep;
 
-	DEBUG(SPOCP_DPARSE) traceLog("List tag");
+	DEBUG(SPOCP_DPARSE) traceLog(LOG_DEBUG,"List tag");
 
 	ep->type = SPOC_LIST;
 	ep->e.list = list_new();
@@ -759,7 +760,7 @@ do_list(octet_t * to, octet_t * lo, element_t * ep, char *base)
 	DEBUG(SPOCP_DPARSE) {
 		char           *tmp;
 		tmp = oct2strdup(to, '\\');
-		traceLog("Input end of list with tag [%s]", tmp);
+		traceLog(LOG_DEBUG,"Input end of list with tag [%s]", tmp);
 		free(tmp);
 	}
 

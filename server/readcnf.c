@@ -33,7 +33,7 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 		 * So do I have the whole S-expression ? 
 		 */
 		if (np == 0) {
-			traceLog( "Error in rulefile" ) ;
+			traceLog(LOG_ERR, "Error in rulefile" ) ;
 			chunk_free(head);
 			return 0;
 		}
@@ -53,7 +53,7 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 					pp = get_sexp( ib, chunk_add(pp, np));
 
 				if (pp == 0) {
-					traceLog( "Error in rulefile" ) ;
+					traceLog(LOG_ERR, "Error in rulefile" ) ;
 					chunk_free(head);
 					return 0;
 				}
@@ -82,7 +82,7 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 			}
 		}
 		else {
-			traceLog("Error in rulefile") ;
+			traceLog(LOG_ERR,"Error in rulefile") ;
 			chunk_free(head);
 			return 0;
 		}

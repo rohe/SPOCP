@@ -140,10 +140,10 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	spocp_ruledef_t	rdef;
 
 	if ((fp = fopen(file, "r")) == 0) {
-		LOG(SPOCP_EMERG) traceLog("couldn't open rule file \"%s\"",
+		LOG(SPOCP_EMERG) traceLog(LOG_ERR,"couldn't open rule file \"%s\"",
 					  file);
 		sp = getcwd(oct.val, oct.size);
-		LOG(SPOCP_EMERG) traceLog("I'm in \"%s\"", sp);
+		LOG(SPOCP_EMERG) traceLog(LOG_ERR,"I'm in \"%s\"", sp);
 		free(oct.val);
 		return -1;
 	}
@@ -175,10 +175,10 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 								 * file */
 			ck = chunk->next;
 			tmp = oct2strdup( ck->val, 0 ) ;
-			LOG(SPOCP_DEBUG) traceLog("include directive \"%s\"",
+			LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"include directive \"%s\"",
 						  tmp);
 			if ((rc = read_rules(srv, tmp, dbc)) < 0) {
-				traceLog("Include problem");
+				traceLog(LOG_ERR,"Include problem");
 			}
 		}
 		else if (*chunk->val->val == '/' || *chunk->val->val == '(') {
@@ -187,7 +187,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				if (ruleset_find( chunk->val, &trs) == 0) {
 					ruleset_create(chunk->val, &rs);
 					LOG(SPOCP_DEBUG)
-					    traceLog("ruleset name: \"%s\"",
+					    traceLog(LOG_DEBUG,"ruleset name: \"%s\"",
 					    rs->name);
 					trs = rs;
 					ruleset_find(chunk->val, &trs);
@@ -222,7 +222,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				n++;
 			else {
 				LOG(SPOCP_WARNING)
-				    traceLog("Failed to add rule: \"%s\"",
+				    traceLog(LOG_WARNING,"Failed to add rule: \"%s\"",
 					     oct.val);
 				f++;
 			}
@@ -242,7 +242,8 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				}
 				else {
 					LOG( SPOCP_WARNING )
-						traceLog("Error in bconddef");
+						traceLog(LOG_WARNING,
+						    "Error in bconddef");
 					f++;
 					chunk_free( chunk ) ;
 					continue ;
@@ -266,7 +267,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	if (rc != SPOCP_SUCCESS)
 		return -1;
 	else {
-		LOG(SPOCP_INFO) traceLog("Stored %d rules, failed %d", n, f);
+		LOG(SPOCP_INFO) traceLog(LOG_INFO,"Stored %d rules, failed %d", n, f);
 
 		return f;
 	}
@@ -409,7 +410,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 				n++;
 			else {
 				LOG(SPOCP_WARNING)
-				    traceLog("Failed to add rule: \"%s\"",
+				    traceLog(LOG_WARNING,"Failed to add rule: \"%s\"",
 					     dat0.val);
 				f++;
 			}

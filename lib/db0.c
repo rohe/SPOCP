@@ -225,7 +225,7 @@ atom_add(branch_t * bp, atom_t * ap)
 	bucket = phash_insert(bp->val.atom, ap, ap->hash);
 	bucket->refc++;
 
-	DEBUG(SPOCP_DSTORE) traceLog("Atom \"%s\" [%d]", ap->val.val,
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Atom \"%s\" [%d]", ap->val.val,
 				     bucket->refc);
 
 	if (bucket->next == 0)
@@ -309,7 +309,7 @@ list_end(junc_t * arr)
 		db->count++;
 	}
 
-	DEBUG(SPOCP_DSTORE) traceLog("List end [%d]", db->count);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"List end [%d]", db->count);
 
 	arr = db->val.list;
 
@@ -343,7 +343,7 @@ list_add(plugin_t * pl, branch_t * bp, list_t * lp, ruleinst_t * ri)
 	 * fails, means I should clean up 
 	 */
 	if ((jp = element_add(pl, jp, elp, ri, 1)) == 0) {
-		traceLog("List add failed");
+		traceLog(LOG_WARNING,"List add failed");
 		return 0;
 	}
 
@@ -490,7 +490,7 @@ rule_end(junc_t * ap, ruleinst_t * ri)
 	branch_t       *bp;
 
 	if ((bp = ARRFIND(ap, SPOC_ENDOFLIST)) == 0) {
-		DEBUG(SPOCP_DSTORE) traceLog("New rule end");
+		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"New rule end");
 
 		bp = (branch_t *) Calloc(1, sizeof(branch_t));
 		bp->type = SPOC_ENDOFRULE;
@@ -501,12 +501,12 @@ rule_end(junc_t * ap, ruleinst_t * ri)
 	} else {		/* If rules contains references this can
 				 * happen, otherwise not */
 		bp->count++;
-		DEBUG(SPOCP_DSTORE) traceLog("Old rule end: count [%d]",
+		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Old rule end: count [%d]",
 					     bp->count);
 		index_add(bp->val.id, (void *) ri);
 	}
 
-	DEBUG(SPOCP_DSTORE) traceLog("done rule %s", ri->uid);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"done rule %s", ri->uid);
 
 	return ap;
 }
@@ -534,7 +534,7 @@ list_close(junc_t * ap, element_t * ep, ruleinst_t * ri, int *eor)
 		parent = ep->memberof;
 
 		DEBUG(SPOCP_DSTORE) {
-			traceLog("end_list that started with \"%s\"",
+			traceLog(LOG_DEBUG,"end_list that started with \"%s\"",
 				 parent->e.list->head->e.atom->val.val);
 		}
 
@@ -599,7 +599,7 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 	bp = ARRFIND(jp, ep->type);
 
 	/*
-	 * DEBUG( SPOCP_DSTORE ) traceLog("Items: %s", set_item_list( jp ) ) ; 
+	 * DEBUG( SPOCP_DSTORE ) traceLog(LOG_DEBUG,"Items: %s", set_item_list( jp ) ) ; 
 	 */
 
 	if (bp == 0) {
@@ -611,7 +611,8 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 		bp->count++;
 	}
 
-	DEBUG(SPOCP_DSTORE) traceLog("Branch [%d] [%d]", bp->type, bp->count);
+	DEBUG(SPOCP_DSTORE)
+		traceLog(LOG_DEBUG,"Branch [%d] [%d]", bp->type, bp->count);
 
 	switch (ep->type) {
 	case SPOC_ATOM:
@@ -673,8 +674,9 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 		bp->count--;
 
 		if (bp->count == 0) {
-			DEBUG(SPOCP_DSTORE) traceLog("Freeing type %d branch",
-						     bp->type);
+			DEBUG(SPOCP_DSTORE)
+				traceLog( LOG_DEBUG, "Freeing type %d branch",
+				     bp->type);
 			branch_free(bp);
 			jp->item[ep->type] = 0;
 		}
@@ -722,7 +724,7 @@ ruleinst_new(octet_t * rule, octet_t * blob, char *bcname)
 	for (j = 0, ucp = (unsigned char *) rip->uid; j < 20; j++, ucp += 2)
 		sprintf((char *) ucp, "%02x", sha1sum[j]);
 
-	DEBUG(SPOCP_DSTORE) traceLog("New rule (%s)", rip->uid);
+	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"New rule (%s)", rip->uid);
 
 	rip->ep = 0;
 	rip->alias = 0;
@@ -1149,7 +1151,8 @@ add_right(db_t ** db, dbcmd_t * dbc, octarr_t * oa, ruleinst_t ** ri,
 	spocp_result_t  rc = SPOCP_SUCCESS;
 
 	/*
-	 * LOG( SPOCP_WARNING ) traceLog("Adding new rule: \"%s\"", rp->val) ; 
+	 * LOG( SPOCP_WARNING )
+		traceLog(LOG_WARNING,"Adding new rule: \"%s\"", rp->val) ; 
 	 */
 
 	rule.len = rule.size = 0;
@@ -1196,7 +1199,8 @@ add_right(db_t ** db, dbcmd_t * dbc, octarr_t * oa, ruleinst_t ** ri,
 			 */
 			free_rule((*db)->ri, rt->uid);
 
-			LOG(SPOCP_WARNING) traceLog("Error while adding rule");
+			LOG(SPOCP_WARNING)
+				traceLog(LOG_WARNING,"Error while adding rule");
 		}
 
 		if (bcd) {

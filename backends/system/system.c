@@ -58,14 +58,14 @@ system_test(cmd_param_t * cpp, octet_t * blob)
 	cmd = oct2strdup(argv->arr[1], 0);
 
 	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog("System cmd: \"%s\" should have
+	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"System cmd: \"%s\" should have
 	 * return value %d.",cmd,return_val); } 
 	 */
 
 	temp_ret = system(cmd);
 
 	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog("Command returned %d. WEXITSTATUS
+	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Command returned %d. WEXITSTATUS
 	 * is %d",temp_ret,WEXITSTATUS(temp_ret)); } 
 	 */
 

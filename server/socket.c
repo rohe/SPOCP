@@ -38,7 +38,7 @@ spocp_stream_socket(int lport)
 
 	if ((lfd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		LOG(SPOCP_DEBUG)
-		    traceLog("Unable to create socket: %s\n", strerror(errno));
+		    traceLog(LOG_ERR,"Unable to create socket: %s\n", strerror(errno));
 		return -1;
 	}
 #ifdef SO_LINGER
@@ -52,7 +52,7 @@ spocp_stream_socket(int lport)
 		    (lfd, SOL_SOCKET, SO_LINGER, (char *) &ling,
 		     sizeof(struct linger)) < 0) {
 			LOG(SPOCP_DEBUG)
-			    traceLog("Unable to enable reuse: %.100s",
+			    traceLog(LOG_ERR,"Unable to enable reuse: %.100s",
 				     strerror(errno));
 			return -1;
 		}
@@ -66,7 +66,7 @@ spocp_stream_socket(int lport)
 		    (lfd, SOL_SOCKET, SO_REUSEADDR, (char *) &one,
 		     sizeof(int)) < 0) {
 			LOG(SPOCP_DEBUG)
-			    traceLog("Unable to enable reuse: %.100s",
+			    traceLog(LOG_ERR,"Unable to enable reuse: %.100s",
 				     strerror(errno));
 			return -1;
 		}
@@ -82,7 +82,7 @@ spocp_stream_socket(int lport)
 		    (lfd, IPPROTO_TCP, TCP_NODELAY, (char *) &one,
 		     sizeof(int)) < 0) {
 			LOG(SPOCP_DEBUG)
-			    traceLog("Unable to disable nagle: %.100s",
+			    traceLog(LOG_ERR,"Unable to disable nagle: %.100s",
 				     strerror(errno));
 			return -1;
 		}
@@ -98,7 +98,7 @@ spocp_stream_socket(int lport)
 		    (lfd, SOL_SOCKET, SO_KEEPALIVE, (char *) &one,
 		     sizeof(int)) < 0) {
 			LOG(SPOCP_DEBUG)
-			    traceLog("Unable to enable keepalive: %.100s",
+			    traceLog(LOG_ERR,"Unable to enable keepalive: %.100s",
 				     strerror(errno));
 			return -1;
 		}
@@ -126,7 +126,7 @@ spocp_unix_domain_socket(char *uds)
 
 	if ((fd = socket(PF_LOCAL, SOCK_STREAM, 0)) < 0) {
 		LOG(SPOCP_DEBUG)
-		    traceLog("Unable to create socket: %s\n", strerror(errno));
+		    traceLog(LOG_ERR,"Unable to create socket: %s\n", strerror(errno));
 		return -1;
 	}
 
@@ -137,14 +137,14 @@ spocp_unix_domain_socket(char *uds)
 	strcpy(sun.sun_path, uds);
 
 	if (bind(fd, (SA *) & sun, sizeof(sun)) == -1) {
-		LOG(SPOCP_ERR) traceLog("Unable to bind to socket: %s",
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Unable to bind to socket: %s",
 					strerror(errno));
 		return -1;
 	}
 
 	if (listen(fd, LISTENQ) == -1) {
 		LOG(SPOCP_ERR)
-		    traceLog("Unable to start listening on socket: %s",
+		    traceLog(LOG_ERR,"Unable to start listening on socket: %s",
 			     strerror(errno));
 		return -1;
 	}

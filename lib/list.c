@@ -54,32 +54,32 @@ get_rule_indexes(varr_t * pa, varr_t * in)
 void
 junc_print(int lev, junc_t * jp)
 {
-	traceLog("|---------------------------->");
+	traceLog(LOG_DEBUG,"|---------------------------->");
 	if (jp->item[0])
-		traceLog("Junction[%d]: ATOM", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: ATOM", lev);
 	if (jp->item[1])
-		traceLog("Junction[%d]: LIST", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: LIST", lev);
 	if (jp->item[2])
-		traceLog("Junction[%d]: SET", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: SET", lev);
 	if (jp->item[3])
-		traceLog("Junction[%d]: PREFIX", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: PREFIX", lev);
 	if (jp->item[4])
-		traceLog("Junction[%d]: SUFFIX", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: SUFFIX", lev);
 	if (jp->item[5])
-		traceLog("Junction[%d]: RANGE", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: RANGE", lev);
 	if (jp->item[6])
-		traceLog("Junction[%d]: ENDOFLIST", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: ENDOFLIST", lev);
 	if (jp->item[7])
-		traceLog("Junction[%d]: ENDOFRULE", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: ENDOFRULE", lev);
 	if (jp->item[8])
-		traceLog("Junction[%d]: ExTREF", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: ExTREF", lev);
 	if (jp->item[9])
-		traceLog("Junction[%d]: ANY", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: ANY", lev);
 	if (jp->item[10])
-		traceLog("Junction[%d]: REPEAT", lev);
+		traceLog(LOG_DEBUG,"Junction[%d]: REPEAT", lev);
 	if (jp->item[11])
-		traceLog("Junction[%d]: REGEXP", lev);
-	traceLog(">----------------------------|");
+		traceLog(LOG_DEBUG,"Junction[%d]: REGEXP", lev);
+	traceLog(LOG_DEBUG,">----------------------------|");
 }
 
 /*************************************************************************/
@@ -345,7 +345,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 	void           *v;
 
 	/*
-	 * DEBUG( SPOCP_DMATCH ) traceLog( "subelem_match_lte") ; 
+	 * DEBUG( SPOCP_DMATCH ) traceLog( LOG_DEBUG,"subelem_match_lte") ; 
 	 */
 
 	/*
@@ -360,11 +360,11 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 	switch (ep->type) {
 	case SPOC_ATOM:	/* Atoms, prefixes, suffixes or ranges */
 		/*
-		 * traceLog( "Matching Atom: %s", ep->e.atom->val.val ) ; 
+		 * traceLog(LOG_INFO, "Matching Atom: %s", ep->e.atom->val.val ) ; 
 		 */
 		if ((bp = ARRFIND(jp, SPOC_ATOM)) != 0) {
 			/*
-			 * traceLog( "against Atom" ) ; 
+			 * traceLog(LOG_INFO, "against Atom" ) ; 
 			 */
 			np = atom2atom_match(ep->e.atom, bp->val.atom);
 			if (np)
@@ -373,7 +373,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 		if ((bp = ARRFIND(jp, SPOC_PREFIX)) != 0) {
 			/*
-			 * traceLog( "against prefix" ) ; 
+			 * traceLog(LOG_INFO, "against prefix" ) ; 
 			 */
 			arr = atom2prefix_match(ep->e.atom, bp->val.prefix);
 			if (arr) {
@@ -384,7 +384,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 		if ((bp = ARRFIND(jp, SPOC_SUFFIX)) != 0) {
 			/*
-			 * traceLog( "against suffix" ) ; 
+			 * traceLog(LOG_INFO, "against suffix" ) ; 
 			 */
 			arr = atom2suffix_match(ep->e.atom, bp->val.suffix);
 			if (arr) {
@@ -395,7 +395,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 		if ((bp = ARRFIND(jp, SPOC_RANGE)) != 0) {
 			/*
-			 * traceLog( "against range" ) ; 
+			 * traceLog(LOG_INFO, "against range" ) ; 
 			 */
 			slpp = bp->val.range;
 
@@ -464,7 +464,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 	case SPOC_LIST:	/* other lists */
 		/*
-		 * traceLog( "Matching List:" ) ; 
+		 * traceLog(LOG_INFO, "Matching List:" ) ; 
 		 */
 		if ((bp = ARRFIND(jp, SPOC_LIST)) != 0) {
 			arr = varr_junc_add(0, bp->val.list);
@@ -493,7 +493,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 			 */
 
 			/*
-			 * traceLog("Gather until end of list") ; 
+			 * traceLog(LOG_INFO,"Gather until end of list") ; 
 			 */
 
 			for (i = 0; (v = varr_nth(arr, i)); i++)
@@ -550,14 +550,14 @@ adm_list(junc_t * jp, subelem_t * sub, spocp_result_t * rc)
 			return 0;
 
 		/*
-		 * traceLog("%d roads to follow", nap->n ) ; 
+		 * traceLog(LOG_INFO,"%d roads to follow", nap->n ) ; 
 		 */
 		pap = nap;
 		nap = 0;
 	}
 
 	/*
-	 * traceLog( "Done all subelements, %d junctions to follow through",
+	 * traceLog(LOG_INFO, "Done all subelements, %d junctions to follow through",
 	 * pap->n ) ; 
 	 */
 
@@ -639,7 +639,7 @@ get_matching_rules(db_t * db, octarr_t * pat, octarr_t * oa, char *rs)
 	}
 
 	/*
-	 * traceLog( "Parsed the subelements OK" ) ; 
+	 * traceLog(LOG_INFO, "Parsed the subelements OK" ) ; 
 	 */
 
 	/*

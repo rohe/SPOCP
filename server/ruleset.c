@@ -91,7 +91,7 @@ ruleset_new(octet_t * name)
 	} else
 		rs->name = oct2strdup(name, 0);
 
-	LOG(SPOCP_DEBUG) traceLog("New ruleset: %s", rs->name);
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"New ruleset: %s", rs->name);
 
 	return rs;
 }
@@ -151,7 +151,7 @@ one_level(octet_t * name, ruleset_t * rs)
 
 	do {
 		if (0)
-			traceLog("one_level: [%s](%d),[%s]", name->val,
+			traceLog(LOG_DEBUG,"one_level: [%s](%d),[%s]", name->val,
 				 name->len, rs->name);
 		c = oct2strcmp(name, rs->name);
 
@@ -273,7 +273,7 @@ add_to_level(octet_t * name, ruleset_t * rs)
 
 	do {
 		if (0)
-			traceLog("add_level: [%s](%d),[%s]", name->val,
+			traceLog(LOG_DEBUG,"add_level: [%s](%d),[%s]", name->val,
 				 name->len, rs->name);
 		c = oct2strcmp(name, rs->name);
 
@@ -441,16 +441,16 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 	if ((rc = operation_access(conn)) != SPOCP_SUCCESS) {
 		LOG(SPOCP_INFO) {
 			if (rs->name)
-				traceLog
-				    ("List access denied to rule set \"%s\"",
+				traceLog(LOG_INFO,
+				    "List access denied to rule set \"%s\"",
 				     rs->name);
 			else
-				traceLog
-				    ("List access denied to the root rule set");
+				traceLog(LOG_INFO,
+				    "List access denied to the root rule set");
 		}
 	} else {
 		if (0)
-			traceLog( "Allowed to list");
+			traceLog(LOG_DEBUG, "Allowed to list");
 
 		if ((rc = pathname_get(rs, pathname, BUFSIZ)) != SPOCP_SUCCESS)
 			return rc;
@@ -461,7 +461,7 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 		}
 
 		if (0)
-			traceLog("Done head");
+			traceLog(LOG_DEBUG,"Done head");
 
 		if (recurs && rs->down) {
 			for (rp = rs->down; rp->left; rp = rp->left);

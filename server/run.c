@@ -143,7 +143,7 @@ run_stop( srv_t *srv, conn_t *conn, pool_item_t *pi )
 	 * release lock 
 	 */
 	if ((err = pthread_mutex_unlock(&conn->clock)) != 0)
-		traceLog("Panic: unable to release lock on connection: %s",
+		traceLog(LOG_ERR,"Panic: unable to release lock on connection: %s",
 		    strerror(err));
 
 }
@@ -163,15 +163,15 @@ spocp_srv_run(srv_t * srv)
 
 	signal(SIGPIPE, SIG_IGN);
 
-	traceLog("Running server!!");
+	traceLog(LOG_INFO,"Running server!!");
 
 	if (srv->connections) {
 		int             f, a;
 		f = number_of_free(srv->connections);
 		a = number_of_active(srv->connections);
-		DEBUG(SPOCP_DSRV) traceLog("Active: %d, Free: %d", a, f);
+		DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"Active: %d, Free: %d", a, f);
 	} else {
-		DEBUG(SPOCP_DSRV) traceLog("NO connection pool !!!");
+		DEBUG(SPOCP_DSRV) traceLog(LOG_DEBUG,"NO connection pool !!!");
 	}
 
 	while (!stop_loop) {
@@ -194,12 +194,12 @@ spocp_srv_run(srv_t * srv)
 			conn = (conn_t *) pi->info;
 
 			if ((err = pthread_mutex_lock(&conn->clock)) != 0)
-				traceLog
-				    ("Panic: unable to obtain lock on connection: %.100s",
+				traceLog(LOG_ERR,
+				    "Panic: unable to obtain lock on connection: %.100s",
 				     strerror(err));
 
 			/*
-			 * DEBUG( SPOCP_DSRV ) traceLog("fd=%d [status: %d,
+			 * DEBUG( SPOCP_DSRV ) traceLog(LOG_DEBUG,"fd=%d [status: %d,
 			 * ops_pending:%d]\n", conn->fd, conn->status,
 			 * conn->ops_pending); 
 			 */
@@ -229,8 +229,8 @@ spocp_srv_run(srv_t * srv)
 
 				if ((err =
 				     pthread_mutex_unlock(&conn->clock)) != 0)
-					traceLog
-					    ("Panic: unable to release lock on connection: %s",
+					traceLog(LOG_ERR,
+					    "Panic: unable to release lock on connection: %s",
 					     strerror(err));
 
 			}
@@ -256,7 +256,7 @@ spocp_srv_run(srv_t * srv)
 		 */
 		if (nready < 0) {
 			if (errno != EINTR)
-				traceLog("Unable to select: %s\n",
+				traceLog(LOG_ERR,"Unable to select: %s\n",
 					 strerror(errno));
 			continue;
 		}
@@ -271,7 +271,7 @@ spocp_srv_run(srv_t * srv)
 			timestamp("Readable/Writeable");
 
 		/*
-		 * traceLog( "maxfd: %d, nready: %d", maxfd, nready ) ; 
+		 * traceLog(LOG_DEBUG, "maxfd: %d, nready: %d", maxfd, nready ) ; 
 		 */
 
 		if (FD_ISSET(wake_sds[0], &rfds)) {
@@ -294,20 +294,20 @@ spocp_srv_run(srv_t * srv)
 
 			if (client < 0) {
 				if (errno != EINTR)
-					traceLog("Accept error: %.100s",
+					traceLog(LOG_ERR,"Accept error: %.100s",
 						 strerror(errno));
 				continue;
 			}
 
-			DEBUG(SPOCP_DSRV) traceLog("Got connection on fd=%d",
+			DEBUG(SPOCP_DSRV) traceLog(LOG_ERR,"Got connection on fd=%d",
 						   client);
 			if (XYZ)
 				timestamp("Accepted");
 
 			val = fcntl(client, F_GETFL, 0);
 			if (val == -1) {
-				traceLog
-				    ("Unable to get file descriptor flags on fd=%d: %s",
+				traceLog(LOG_ERR,
+				    "Unable to get file descriptor flags on fd=%d: %s",
 				     client, strerror(errno));
 				close(client);
 				goto fdloop;
@@ -315,7 +315,7 @@ spocp_srv_run(srv_t * srv)
 
 			/*
 			 * if( fcntl( client, F_SETFL, val|O_NONBLOCK ) == -1) 
-			 * { traceLog("Unable to set socket nonblock on fd=%d: 
+			 * { traceLog(LOG_ERR,"Unable to set socket nonblock on fd=%d: 
 			 * %s",client,strerror(errno)); close(client); goto
 			 * fdloop; } 
 			 */
@@ -338,9 +338,9 @@ spocp_srv_run(srv_t * srv)
 				int             f, a;
 				f = number_of_free(srv->connections);
 				a = number_of_active(srv->connections);
-				traceLog("Active: %d, Free: %d", a, f);
+				traceLog(LOG_INFO,"Active: %d, Free: %d", a, f);
 			} else {
-				traceLog("NO connection pool !!!");
+				traceLog(LOG_ERR,"NO connection pool !!!");
 			}
 
 			/*
@@ -354,8 +354,8 @@ spocp_srv_run(srv_t * srv)
 				conn = 0;
 
 			if (conn == 0) {
-				traceLog
-				    ("Unable to get free connection for fd=%d",
+				traceLog(LOG_ERR,
+				    "Unable to get free connection for fd=%d",
 				     client);
 				close(client);
 			} else {
@@ -364,16 +364,16 @@ spocp_srv_run(srv_t * srv)
 				 */
 
 				DEBUG(SPOCP_DSRV)
-				    traceLog("Initializing connection to %s",
+				    traceLog(LOG_DEBUG,"Initializing connection to %s",
 					     hname);
 				conn_setup(conn, srv, client, hname, ipaddr);
 
 				LOG(SPOCP_DEBUG)
-				    traceLog("Doing server access check");
+				    traceLog(LOG_DEBUG,"Doing server access check");
 
 				if (server_access(conn) != SPOCP_SUCCESS) {
-					traceLog
-					    ("connection from %s(%s) DISALLOWED",
+					traceLog(LOG_INFO,
+					    "connection from %s(%s) DISALLOWED",
 					     conn->fd, hname, ipaddr);
 
 					conn_reset(conn);
@@ -384,9 +384,9 @@ spocp_srv_run(srv_t * srv)
 					item_return(srv->connections, pi);
 					close(client);
 				} else {
-					traceLog
-					    ("Accepted connection from %s on fd=%d",
-					     hname, client);
+					traceLog(LOG_INFO,
+					    "Accepted connection from %s on fd=%d",
+					    hname, client);
 					afpool_push_item(srv->connections, pi);
 
 					pe++;
@@ -420,7 +420,7 @@ spocp_srv_run(srv_t * srv)
 			 */
 			if (conn->fd > maxfd) {
 				if (XYZ)
-					traceLog("Not this time ! Too young");
+					traceLog(LOG_DEBUG,"Not this time ! Too young");
 				continue;
 			}
 
@@ -428,13 +428,13 @@ spocp_srv_run(srv_t * srv)
 			 * Don't have to lock the connection, locking the io
 			 * bufferts are quite sufficient if(( err =
 			 * pthread_mutex_lock(&conn->clock)) != 0)
-			 * traceLog("Panic: unable to obtain lock on
+			 * traceLog(LOG_ERR,"Panic: unable to obtain lock on
 			 * connection %d: %s", conn->fd,strerror(err)); 
 			 */
 
 			if (FD_ISSET(conn->fd, &rfds) && !conn->stop) {
 				if (XYZ)
-					traceLog("input readable on %d",
+					traceLog(LOG_DEBUG,"input readable on %d",
 					    conn->fd);
 
 				/*
@@ -442,10 +442,10 @@ spocp_srv_run(srv_t * srv)
 				 */
 				n = spocp_conn_read(conn);
 				if (XYZ)
-					traceLog("Read returned %d from %d", n,
+					traceLog(LOG_DEBUG,"Read returned %d from %d", n,
 						 conn->fd);
 				/*
-				 * traceLog( "[%s]", conn->in->buf ) ; 
+				 * traceLog(LOG_DEBUG, "[%s]", conn->in->buf ) ; 
 				 */
 				if (n == 0) {	/* connection probably
 						 * terminated by other side */
@@ -457,7 +457,7 @@ spocp_srv_run(srv_t * srv)
 
 				res = get_operation(conn, &operation);
 				if (XYZ)
-					traceLog("Getops returned %d", res);
+					traceLog(LOG_DEBUG,"Getops returned %d", res);
 				if (res != SPOCP_SUCCESS)
 					continue;
 
@@ -475,7 +475,7 @@ spocp_srv_run(srv_t * srv)
 
 				DEBUG(SPOCP_DSRV) {
 					n = iobuf_content(conn->out);
-					traceLog(
+					traceLog(LOG_DEBUG,
 					    "Outgoing data on fd %d (%d)\n",
 					    conn->fd, n);
 				}
@@ -483,13 +483,12 @@ spocp_srv_run(srv_t * srv)
 				n = spocp_conn_write(conn);
 
 				if (XYZ)
-					traceLog("Wrote %d on %d",
+					traceLog(LOG_DEBUG,"Wrote %d on %d",
 					   n, conn->fd);
 
 				if (n == -1)
-					traceLog
-					    ("Error in writing to %d",
-					     conn->fd);
+					traceLog(LOG_ERR,
+					    "Error in writing to %d", conn->fd);
 				else if (iobuf_content(conn->out) == 0) {
 					if (conn->stop) {
 						run_stop( srv, conn, pi);
@@ -502,7 +501,7 @@ spocp_srv_run(srv_t * srv)
 
 			/*
 			 * if(( err = pthread_mutex_unlock(&conn->clock)) !=
-			 * 0) traceLog("Panic: unable to release lock on
+			 * 0) traceLog(LOG_ERR,"Panic: unable to release lock on
 			 * connection %d: %s", conn->fd,strerror(err)); 
 			 */
 

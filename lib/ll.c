@@ -82,8 +82,8 @@ ll_push(ll_t * lp, void *vp, int nodup)
 			 * should I let anyone know I don't want to add this ? 
 			 */
 			if ((np = ll_find(lp, vp)) != 0) {
-				traceLog
-				    ("Attempting to add already present rule");
+				traceLog(LOG_INFO,
+				    "Attempting to add already present rule");
 				return lp;
 			}
 		}

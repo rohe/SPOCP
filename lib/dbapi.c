@@ -40,7 +40,7 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 
 	DEBUG(SPOCP_DPARSE) {
 		str = oct2strdup(sexp, '%');
-		traceLog("Parsing the S-expression \"%s\"", str);
+		traceLog(LOG_DEBUG,"Parsing the S-expression \"%s\"", str);
 		free(str);
 
 		octln( &oct, sexp ) ;
@@ -49,7 +49,7 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 
 	if ((res = element_get(sexp, target)) != SPOCP_SUCCESS) {
 		str = oct2strdup(sexp, '%');
-		traceLog("The S-expression \"%s\" didn't parse OK", str);
+		traceLog(LOG_INFO,"The S-expression \"%s\" didn't parse OK", str);
 		free(str);
 	}
 	else {
@@ -57,7 +57,7 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 			oct.len -= sexp->len ;
 	
 			str = oct2strdup(&oct, '%');
-			traceLog("Query: \"%s\"", str);
+			traceLog(LOG_DEBUG,"Query: \"%s\"", str);
 			free(str);
 		}
 	}
@@ -75,11 +75,11 @@ dbapi_allowed(db_t * db, octet_t * sexp, octarr_t ** on)
 	if (db == 0 || sexp == 0 || sexp->len == 0) {
 		if (db == 0) {
 			LOG(SPOCP_EMERG)
-			    traceLog("Ain't got no rule database");
+			    traceLog( LOG_CRIT,"Ain't got no rule database");
 		} else {
 			LOG(SPOCP_ERR)
-			    traceLog
-			    ("Blamey no S-expression to check, oh well");
+				traceLog( LOG_NOTICE,
+				    "Blamey no S-expression to check, oh well");
 		}
 		return res;
 	}
@@ -136,8 +136,8 @@ dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
 			char uid[SHA1HASHLEN +1];
 
 			oct2strcpy( op, uid, SHA1HASHLEN +1, 0 );
-			traceLog
-			    ("Deleting rule \"%s\" impossible since it doesn't exist",
+			traceLog( LOG_NOTICE,
+			    "Deleting rule \"%s\" impossible since it doesn't exist",
 			     uid);
 
 			return SPOCP_SYNTAXERROR;
@@ -154,7 +154,7 @@ dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
 	free_rule(db->ri, rt->uid);
 
 	if (rc == SPOCP_SUCCESS)
-		traceLog("Rule successfully deleted");
+		traceLog( LOG_INFO,"Rule successfully deleted");
 
 	return rc;
 }
@@ -187,7 +187,7 @@ dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
 {
 	if (pattern == 0 || pattern->n == 0) {	/* get all */
 		if(0)
-			traceLog("Get ALL rules");
+			traceLog(LOG_INFO,"Get ALL rules");
 
 		return get_all_rules(db, oa, rs);
 	} else
@@ -228,7 +228,8 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 			if (bcd == NULL && r != SPOCP_SUCCESS) {
 				LOG(SPOCP_INFO) {
 					tmp = oct2strdup(bcexp, '%');
-					traceLog("Unknown boundary condition:\"%s\"",
+					traceLog(LOG_INFO,
+					    "Unknown boundary condition:\"%s\"",
 					    tmp);
 					free(tmp);
 				}
@@ -239,7 +240,7 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 
 	LOG(SPOCP_INFO) {
 		tmp = oct2strdup(oa->arr[0], '%');
-		traceLog("spocp_add_rule:\"%s\"", tmp);
+		traceLog(LOG_INFO,"spocp_add_rule:\"%s\"", tmp);
 		free(tmp);
 	}
 
@@ -269,7 +270,7 @@ dbapi_db_dup(db_t * db, spocp_result_t * r)
 	new = (db_t *) calloc(1, sizeof(db_t *));
 
 	if (new == 0) {
-		LOG(SPOCP_ERR) traceLog("Memory allocation problem");
+		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Memory allocation problem");
 		*r = SPOCP_NO_MEMORY;
 		return 0;
 	}

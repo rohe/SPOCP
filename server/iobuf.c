@@ -84,7 +84,7 @@ iobuf_shift(spocp_iobuf_t * io)
 	int             len, last;
 
 	/*
-	 * LOG( SPOCP_DEBUG ) traceLog( "Shifting buffer b:%p r:%p w:%p
+	 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Shifting buffer b:%p r:%p w:%p
 	 * left:%d bsize:%d", io->buf, io->r, io->w, io->left, io->bsize ) ; 
 	 */
 
@@ -94,9 +94,9 @@ iobuf_shift(spocp_iobuf_t * io)
 		io->r++;
 
 /*
-	traceLog("is10 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	traceLog(LOG_DEBUG,"is10 [buf]%p [p]%p [r]%p [w]%p [left]%d",
 	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog( "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	traceLog(LOG_DEBUG, "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
 	    io->w - io->buf, io->left );
 */
 
@@ -105,7 +105,7 @@ iobuf_shift(spocp_iobuf_t * io)
 		io->left = io->bsize - 1;
 		*io->w = 0;
 		/*
-		 * traceLog( "DONE Shifting buffer b:%p r:%p w:%p left:%d",
+		 * traceLog(LOG_DEBUG, "DONE Shifting buffer b:%p r:%p w:%p left:%d",
 		 * io->buf, io->r, io->w, io->left ) ; 
 		 */
 	} else {		/* something in the buffer, shift it to the
@@ -120,13 +120,14 @@ iobuf_shift(spocp_iobuf_t * io)
 		*io->w = '\0';
 	}
 
-	DEBUG(SPOCP_DSRV) traceLog("DONE Shifting buffer b:%p r:%p w:%p left:%d",
-		 io->buf, io->r, io->w, io->left);
+	DEBUG(SPOCP_DSRV)
+		traceLog(LOG_DEBUG,"DONE Shifting buffer b:%p r:%p w:%p left:%d",
+		    io->buf, io->r, io->w, io->left);
 
 /*
-	traceLog("is11 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	traceLog(LOG_DEBUG,"is11 [buf]%p [p]%p [r]%p [w]%p [left]%d",
 	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog( "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	traceLog(LOG_DEBUG, "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
 	    io->w - io->buf, io->left );
 */
 
@@ -201,7 +202,7 @@ iobuf_add(spocp_iobuf_t * io, char *s)
 	n = strlen(s);
 
 	/*
-	 * LOG( SPOCP_DEBUG ) traceLog( "Add to IObuf \"%s\" %d/%d", s, n,
+	 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Add to IObuf \"%s\" %d/%d", s, n,
 	 * io->left) ; 
 	 */
 

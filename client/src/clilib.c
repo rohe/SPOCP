@@ -151,7 +151,7 @@ password_cb(char *buf, int num, int rwflag, void *userdata)
 {
 	if (num < (int) strlen((char *) userdata) + 1) {
 		if (spocpc_debug)
-			traceLog("Not big enough place for the password (%d)",
+			traceLog(LOG_DEBUG,"Not big enough place for the password (%d)",
 			    num);
 		return (0);
 	}
@@ -186,7 +186,7 @@ verify_cb(int verify_ok, X509_STORE_CTX * x509ctx)
 	X509_NAME_oneline(xn, txt, sizeof(txt));
 
 	if (verify_ok == 0) {
-		traceLog("SSL verify error: depth=%d error=%s cert=%s",
+		traceLog(LOG_ERR,"SSL verify error: depth=%d error=%s cert=%s",
 		    x509ctx->error_depth,
 		    X509_verify_cert_error_string(x509ctx->error), txt);
 		return 0;
@@ -195,7 +195,7 @@ verify_cb(int verify_ok, X509_STORE_CTX * x509ctx)
 	/* the check against allowed clients are done elsewhere */
 
 	if (spocpc_debug)
-		traceLog("SSL authenticated peer: %s\n", txt);
+		traceLog(LOG_DEBUG,"SSL authenticated peer: %s\n", txt);
 
 	return 1;		/* accept */
 }
@@ -220,7 +220,7 @@ tls_init(SPOCP * spocp)
 
 	if (!RAND_status()) {
 		if (spocpc_debug)
-			traceLog("Have to find more entropy\n");
+			traceLog(LOG_DEBUG,"Have to find more entropy\n");
 
 		/* get some entropy */
 
@@ -228,8 +228,8 @@ tls_init(SPOCP * spocp)
 
 		if (!RAND_status()) {
 			if (spocpc_debug)
-				traceLog
-				    ("Failed to find enough entropy on your system");
+				traceLog(LOG_DEBUG,
+				    "Failed to find enough entropy on your system");
 			return 0;
 		}
 	}
@@ -246,7 +246,7 @@ tls_init(SPOCP * spocp)
 	    !SSL_CTX_use_certificate_chain_file(spocp->ctx,
 		spocp->certificate)) {
 		if (spocpc_debug)
-			traceLog("Failed to load certificate chain file");
+			traceLog(LOG_DEBUG,"Failed to load certificate chain file");
 		SSL_CTX_free(spocp->ctx);
 		spocp->ctx = 0;
 		return 0;
@@ -261,7 +261,7 @@ tls_init(SPOCP * spocp)
 	if (!SSL_CTX_use_PrivateKey_file(spocp->ctx, spocp->privatekey,
 		SSL_FILETYPE_PEM)) {
 		if (spocpc_debug)
-			traceLog("Failed to load private key file, passwd=%s",
+			traceLog(LOG_DEBUG,"Failed to load private key file, passwd=%s",
 			    spocp->passwd);
 		SSL_CTX_free(spocp->ctx);
 		spocp->ctx = 0;
@@ -270,7 +270,7 @@ tls_init(SPOCP * spocp)
 
 	if (spocp->calist
 	    && !SSL_CTX_load_verify_locations(spocp->ctx, spocp->calist, 0)) {
-		traceLog("Failed to load ca file");
+		traceLog(LOG_ERR,"Failed to load ca file");
 		SSL_CTX_free(spocp->ctx);
 		spocp->ctx = 0;
 		return 0;
@@ -295,7 +295,7 @@ check_cert_chain(SSL * ssl, char *host)
 	int r;
 
 	if (SSL_get_verify_result(ssl) != X509_V_OK) {
-		traceLog("Certificate doesn't verify");
+		traceLog(LOG_ERR,"Certificate doesn't verify");
 		return 0;
 	}
 
@@ -309,7 +309,7 @@ check_cert_chain(SSL * ssl, char *host)
 
 	name = X509_NAME_oneline(xn, buf, sizeof(buf));
 	if (spocpc_debug)
-		traceLog("Peers subject name: %s", name);
+		traceLog(LOG_DEBUG,"Peers subject name: %s", name);
 
 	pp = index(host, ':');
 	/* do I need to reset this, no */
@@ -319,13 +319,13 @@ check_cert_chain(SSL * ssl, char *host)
 	r = X509_NAME_get_text_by_NID(xn, NID_commonName, hostname, 256);
 	if (spocpc_debug)
 		if (spocpc_debug)
-			traceLog
-			    ("Peers hostname: %s, connections hostname: %s",
+			traceLog(LOG_DEBUG,
+			    "Peers hostname: %s, connections hostname: %s",
 			    hostname, host);
 
 /*
   if (strcasecmp(peer_CN,host)) {
-    traceLog("Common name doesn't match host name");
+    traceLog(LOG_ERR,"Common name doesn't match host name");
     return 0 ;
   }
 */
@@ -415,14 +415,14 @@ spocpc_start_tls(SPOCP * spocp)
 		return 0;
 
 	if (spocpc_debug)
-		traceLog("TLS init done");
+		traceLog(LOG_DEBUG,"TLS init done");
 
 	/* Connect the SSL/TLS socket */
 	if ((spocp->ssl = SSL_new(spocp->ctx)) == 0)
 		return 0;
 
 	if (SSL_set_fd(spocp->ssl, spocp->fd) != 1) {
-		traceLog("starttls: Error setting fd\n");
+		traceLog(LOG_ERR,"starttls: Error setting fd\n");
 		SSL_free(spocp->ssl);
 		return 0;
 	}
@@ -430,11 +430,11 @@ spocpc_start_tls(SPOCP * spocp)
 	SSL_set_mode(spocp->ssl, SSL_MODE_AUTO_RETRY);
 
 	if (spocpc_debug)
-		traceLog("SSL_connect");
+		traceLog(LOG_DEBUG,"SSL_connect");
 
 	/* Initiates the TLS handshake with a server */
 	if ((r = SSL_connect(spocp->ssl)) <= 0) {
-		traceLog("SSL connect failed %d", r);
+		traceLog(LOG_ERR,"SSL connect failed %d", r);
 		print_tls_errors();
 		SSL_free(spocp->ssl);
 		return 0;
@@ -454,7 +454,7 @@ spocpc_start_tls(SPOCP * spocp)
 	spocp->contype = SSL_TLS;
 
 	if (spocpc_debug)
-		traceLog("STARTTLS done");
+		traceLog(LOG_DEBUG,"STARTTLS done");
 
 	return 1;
 }
@@ -633,7 +633,7 @@ spocpc_sexp_elements(char *resp, int n, octet_t line[], int size, int *rc)
 	int l, i;
 
 	if (spocpc_debug)
-		traceLog("spocpc_sexp_elements");
+		traceLog(LOG_DEBUG,"spocpc_sexp_elements");
 
 	sp = resp;
 	i = 0;
@@ -643,17 +643,17 @@ spocpc_sexp_elements(char *resp, int n, octet_t line[], int size, int *rc)
 		line[i].val = sp;
 
 		if (spocpc_debug)
-			traceLog("n [%d]", n);
+			traceLog(LOG_DEBUG,"n [%d]", n);
 		next = sexp_get_next_element(sp, n, rc);
 		if (spocpc_debug)
-			traceLog("next (%d)", *rc);
+			traceLog(LOG_DEBUG,"next (%d)", *rc);
 
 		if (next) {
 			l = next - sp;
 			n = (n - l);
 		} else {
 			if (spocpc_debug)
-				traceLog("No next");
+				traceLog(LOG_DEBUG,"No next");
 			if (*rc != SPOCPC_OK)
 				return -1;
 			l = n;
@@ -749,7 +749,7 @@ spocpc_connect(char *srv, int nsec)
 		res = connect(sockfd, (SA *) & sun, sizeof(sun));
 
 		if (res != 0) {
-			traceLog("connect error [%s] \"%s\"\n", srv,
+			traceLog(LOG_ERR,"connect error [%s] \"%s\"\n", srv,
 			    strerror_r(errno, buf, 256));
 			return 0;
 		}
@@ -766,22 +766,22 @@ spocpc_connect(char *srv, int nsec)
 
 		if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *) &one,
 			sizeof(int)) < 0) {
-			traceLog("Unable to disable nagle: %.100s",
+			traceLog(LOG_ERR,"Unable to disable nagle: %.100s",
 			    strerror(errno));
 			return 0;
 		}
 
 		val = fcntl(sockfd, F_GETFL, 0);
 		if (val == -1) {
-			traceLog
-			    ("Unable to get file descriptor flags on fd=%d: %s",
+			traceLog(LOG_ERR,
+			    "Unable to get file descriptor flags on fd=%d: %s",
 			    sockfd, strerror(errno));
 			close(sockfd);
 			return 0;
 		}
 
 		if (fcntl(sockfd, F_SETFL, val | O_NONBLOCK) == -1) {
-			traceLog("Unable to set socket nonblock on fd=%d: %s",
+			traceLog(LOG_ERR,"Unable to set socket nonblock on fd=%d: %s",
 			    sockfd, strerror(errno));
 			close(sockfd);
 			return 0;
@@ -798,7 +798,7 @@ spocpc_connect(char *srv, int nsec)
 		} else {
 			/* Use getaddrinfo and freeaddrinfo instead ?? */
 			if ((hp = gethostbyname(host)) == NULL) {
-				traceLog("DNS problem with %s\n", host);
+				traceLog(LOG_ERR,"DNS problem with %s\n", host);
 				return 0;
 			}
 
@@ -820,8 +820,8 @@ spocpc_connect(char *srv, int nsec)
 			}
 
 			if (!(res == 0 || errno == EINPROGRESS)) {
-				traceLog
-				    ("Was not able to connect to %s at %d\n",
+				traceLog(LOG_ERR,
+				    "Was not able to connect to %s at %d\n",
 				    host, port);
 				perror("connect");
 				return 0;
@@ -843,7 +843,7 @@ spocpc_connect(char *srv, int nsec)
 				select(sockfd + 1, &rset, &wset, NULL,
 				    nsec ? &tv : NULL)) == 0) {
 				close(sockfd);
-				traceLog("Connection attempt timedout");
+				traceLog(LOG_NOTICE,"Connection attempt timedout");
 				errno = ETIMEDOUT;
 				return -1;
 			}
@@ -854,7 +854,7 @@ spocpc_connect(char *srv, int nsec)
 					&error, (socklen_t *) &len) < 0)
 					return -1;
 			} else {
-				traceLog("select error, sockfd not set");
+				traceLog(LOG_ERR,"select error, sockfd not set");
 				return -1;
 			}
 		}
@@ -941,7 +941,7 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 		return NULL;
 
 	if (spocpc_debug)
-		traceLog("Connected on %d", fd);
+		traceLog(LOG_DEBUG,"Connected on %d", fd);
 
 	if (!spocp)
 		spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
@@ -1015,7 +1015,7 @@ spocpc_writen(SPOCP * spocp, char *str, ssize_t n )
 	spocp->rc = 0;
 
 	if (spocpc_debug)
-		traceLog("Writen fd:%d", spocp->fd);
+		traceLog(LOG_DEBUG,"Writen fd:%d", spocp->fd);
 
 	while (nleft > 0) {
 		FD_SET(spocp->fd, &wset);
@@ -1132,14 +1132,14 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 		return res;
 
 	if (spocpc_debug)
-		traceLog("Got %d elements", n);
+		traceLog(LOG_DEBUG,"Got %d elements", n);
 
 	if (n == 1) {
 		if ((res =
 			sexp_get_response(&elem[0], &code,
 			    &info)) != SPOCPC_OK) {
 			if (spocpc_debug)
-				traceLog("sexp_response returned %d",
+				traceLog(LOG_DEBUG,"sexp_response returned %d",
 				    (int) res);
 			return res;
 		}
@@ -1147,7 +1147,7 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 		if (spocpc_debug) {
 			strncpy(prbuf, code.val, code.len);
 			prbuf[code.len] = '\0';
-			traceLog("Spocp returned code: [%s]", prbuf);
+			traceLog(LOG_DEBUG,"Spocp returned code: [%s]", prbuf);
 		}
 
 		qr->rescode = spocpc_get_result_code(&code);
@@ -1162,7 +1162,7 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 				sexp_get_response(&elem[i], &code,
 				    &info)) != SPOCPC_OK) {
 				if (spocpc_debug)
-					traceLog("sexp_response returned %d",
+					traceLog(LOG_DEBUG,"sexp_response returned %d",
 					    (int) res);
 				return res;
 			}
@@ -1178,7 +1178,7 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 				if (spocpc_debug) {
 					strncpy(prbuf, info.val, info.len);
 					prbuf[info.len] = '\0';
-					traceLog("Spocp returned info: [%s]",
+					traceLog(LOG_DEBUG,"Spocp returned info: [%s]",
 					    prbuf);
 				}
 
@@ -1193,7 +1193,7 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 			sexp_get_response(&elem[i], &code,
 			    &info)) != SPOCPC_OK) {
 			if (spocpc_debug)
-				traceLog("sexp_response returned %d",
+				traceLog(LOG_DEBUG,"sexp_response returned %d",
 				    (int) res);
 			return res;
 		}
@@ -1201,7 +1201,7 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 		if (spocpc_debug) {
 			strncpy(prbuf, code.val, code.len);
 			prbuf[code.len] = '\0';
-			traceLog("Spocp returned code: [%s]", prbuf);
+			traceLog(LOG_DEBUG,"Spocp returned code: [%s]", prbuf);
 		}
 
 		if (cent != *code.val)
@@ -1259,7 +1259,7 @@ spocpc_just_send_X(SPOCP * spocp, octarr_t *argv)
 		char *tmp;
 		tmp = oct2strdup( &o, '%');
 
-		traceLog("[%s](%d) ->(%d/%d)", tmp, l, spocp->fd,
+		traceLog(LOG_DEBUG,"[%s](%d) ->(%d/%d)", tmp, l, spocp->fd,
 		    spocp->contype);
 
 		free( tmp );
@@ -1277,7 +1277,7 @@ spocpc_just_send_X(SPOCP * spocp, octarr_t *argv)
 	}
 
 	if (spocpc_debug)
-		traceLog("Wrote %d chars", n);
+		traceLog(LOG_DEBUG,"Wrote %d chars", n);
 
 	return SPOCPC_OK;
 }
@@ -1296,14 +1296,14 @@ spocpc_get_result(SPOCP * spocp, queres_t * qr)
 		return spocp->rc;
 
 	if (spocpc_debug)
-		traceLog("Read %d chars", n);
+		traceLog(LOG_DEBUG,"Read %d chars", n);
 
 	resp[n] = '\0';
 
 	ret = spocpc_answer_ok(resp, n, qr);
 
 	if (spocpc_debug)
-		traceLog("response: [%s] (%d)", resp, ret);
+		traceLog(LOG_DEBUG,"response: [%s] (%d)", resp, ret);
 
 	return ret;
 }
@@ -1749,7 +1749,7 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 		return rc;
 
 	if (spocpc_debug)
-		traceLog("Got %d elements", re);
+		traceLog(LOG_DEBUG,"Got %d elements", re);
 
 	if (re == 0)
 		return rc;
@@ -1761,7 +1761,7 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 		if (spocpc_debug) {
 			strncpy(prbuf, elem[j].val, elem[j].len);
 			prbuf[elem[j].len] = '\0';
-			traceLog("Element[%d]: [%s](%d)", j, prbuf,
+			traceLog(LOG_DEBUG,"Element[%d]: [%s](%d)", j, prbuf,
 			    elem[j].len);
 		}
 
@@ -1775,11 +1775,11 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 		if (spocpc_debug) {
 			strncpy(prbuf, code.val, code.len);
 			prbuf[code.len] = '\0';
-			traceLog("code: [%s](%d)", prbuf, code.len);
+			traceLog(LOG_DEBUG,"code: [%s](%d)", prbuf, code.len);
 
 			strncpy(prbuf, content.val, content.len);
 			prbuf[content.len] = '\0';
-			traceLog("content: [%s](%d)", prbuf, content.len);
+			traceLog(LOG_DEBUG,"content: [%s](%d)", prbuf, content.len);
 		}
 
 		if (strncmp(code.val, "200", 3) == 0) {	/* have gotten everything I'm to get */
@@ -1792,14 +1792,14 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 				return rc;
 
 			if (spocpc_debug)
-				traceLog("%d parts", sn);
+				traceLog(LOG_DEBUG,"%d parts", sn);
 
 			ln = skip_length(&(part[0].val), part[0].len, &rc);
 
 			strncpy(prbuf, part[0].val, ln);
 			prbuf[ln] = '\0';
 			if (spocpc_debug)
-				traceLog("path: [%s]", prbuf);
+				traceLog(LOG_DEBUG,"path: [%s]", prbuf);
 			fwrite(prbuf, 1, ln, fp);
 			fwrite(" ", 1, 1, fp);
 
@@ -1809,12 +1809,12 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 				    &rc);
 
 				if (spocpc_debug)
-					traceLog("ruleid length %d", ln);
+					traceLog(LOG_DEBUG,"ruleid length %d", ln);
 
 				strncpy(prbuf, part[1].val, ln);
 				prbuf[ln] = '\0';
 				if (spocpc_debug)
-					traceLog("ruleid: [%s]", prbuf);
+					traceLog(LOG_DEBUG,"ruleid: [%s]", prbuf);
 				fwrite(prbuf, 1, ln, fp);
 				fwrite(" ", 1, 1, fp);
 			}
@@ -1824,7 +1824,7 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 			strncpy(prbuf, part[2].val, ln);
 			prbuf[ln] = '\0';
 			if (spocpc_debug)
-				traceLog("rule: [%s]", prbuf);
+				traceLog(LOG_DEBUG,"rule: [%s]", prbuf);
 			fwrite(prbuf, 1, ln, fp);
 			fwrite("\n", 1, 1, fp);
 		} else {

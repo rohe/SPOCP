@@ -66,10 +66,10 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 	string = oct2strdup(argv->arr[2], 0);
 
 	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog("Regexp: flags: %s regexp: %s
+	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Regexp: flags: %s regexp: %s
 	 * string: \"%s\"",flags,regexp,string); }
 	 * 
-	 * DEBUG( SPOCP_DBCOND ){ traceLog("Flags len: %d",argv[0]->len); } 
+	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Flags len: %d",argv[0]->len); } 
 	 */
 
 	if (argv->arr[0]->len > 0) {
@@ -95,12 +95,12 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 	preg = (regex_t *) malloc(1 * sizeof(regex_t));
 	answ = regcomp(preg, regexp, the_flags);
 	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog("Have compiled expression"); } 
+	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Have compiled expression"); } 
 	 */
 
 	if (answ != 0) {
 		/*
-		 * DEBUG( SPOCP_DBCOND ){ traceLog("Error when trying to
+		 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Error when trying to
 		 * compile regular expression: %d",answ); } 
 		 */
 		regfree(preg);
@@ -114,7 +114,7 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 
 	answ = regexec(preg, string, (size_t) 0, NULL, 0);
 	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog("Have executed expression, with
+	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Have executed expression, with
 	 * answer %d",answ); } 
 	 */
 
@@ -126,7 +126,7 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 
 	if (answ != 0) {
 		/*
-		 * DEBUG( SPOCP_DBCOND ){ traceLog("Error, or no match found:
+		 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Error, or no match found:
 		 * %d",answ); } 
 		 */
 		return FALSE;

@@ -670,7 +670,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 				} else if (sp->right->restype !=
 					   sp->left->restype) {
 					/*
-					 * traceLog("Trying to add DNs and
+					 * traceLog(LOG_DEBUG,"Trying to add DNs and
 					 * attribute values") ; 
 					 */
 					rt = SC_DN;
@@ -805,7 +805,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 			dnp = scp->str + 1;
 
 			/*
-			 * traceLog( "SC_DN:[%c][%c]", *scp->str, *dnp ) ; 
+			 * traceLog(LOG_DEBUG, "SC_DN:[%c][%c]", *scp->str, *dnp ) ; 
 			 */
 
 			if (*scp->str != '\\'
@@ -827,7 +827,7 @@ vset_get(scnode_t * scp, int type, octarr_t * oa, spocp_result_t * rc)
 			dnp = scp->str + 1;
 
 			/*
-			 * traceLog( "[%c][%c]", *scp->str, *dnp ) ; 
+			 * traceLog(LOG_DEBUG, "[%c][%c]", *scp->str, *dnp ) ; 
 			 */
 
 			if (*scp->str != '\\') {
@@ -870,12 +870,12 @@ get_results(LDAP * ld,
 	 * could I have to many ?? 
 	 */
 	/*
-	 * LOG( SPOCP_DEBUG ) traceLog( "Found %d matching entries", nr ) ; 
+	 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Found %d matching entries", nr ) ; 
 	 */
 
 	if (ao == SC_OR) {
 		/*
-		 * traceLog("SC_OR") ; 
+		 * traceLog(LOG_DEBUG,"SC_OR") ; 
 		 */
 		if (type == SC_VAL)
 			set = lsln_dup(val);
@@ -890,7 +890,7 @@ get_results(LDAP * ld,
 			 */
 			if (type == SC_DN) {
 				/*
-				 * LOG( SPOCP_DEBUG ) traceLog( "Collecting
+				 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Collecting
 				 * DNs" ) ; 
 				 */
 				dn = ldap_get_dn(ld, e);
@@ -898,7 +898,7 @@ get_results(LDAP * ld,
 				ldap_memfree(dn);
 			} else {
 				/*
-				 * LOG( SPOCP_DEBUG ) traceLog( "Collecting
+				 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Collecting
 				 * attribute values" ) ; 
 				 */
 				for (ap = ldap_first_attribute(ld, e, &be);
@@ -909,7 +909,7 @@ get_results(LDAP * ld,
 					 * attribute names 
 					 */
 					/*
-					 * LOG( SPOCP_DEBUG ) traceLog( "Got
+					 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Got
 					 * attribute: %s", ap ) ; 
 					 */
 
@@ -921,7 +921,7 @@ get_results(LDAP * ld,
 					for (i = 0; vect[i]; i++) {
 						/*
 						 * LOG( SPOCP_DEBUG )
-						 * traceLog( "Among the ones I 
+						 * traceLog(LOG_DEBUG, "Among the ones I 
 						 * look for" ) ; 
 						 */
 						/*
@@ -943,14 +943,14 @@ get_results(LDAP * ld,
 		}
 	} else {
 		/*
-		 * traceLog("SC_AND") ; 
+		 * traceLog(LOG_DEBUG,"SC_AND") ; 
 		 */
 		for (e = ldap_first_entry(ld, res); e != NULL;
 		     e = ldap_next_entry(ld, e)) {
 
 			if (type == SC_DN) {
 				/*
-				 * LOG( SPOCP_DEBUG ) traceLog( "Collecting
+				 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Collecting
 				 * DNs" ) ; 
 				 */
 				dn = ldap_get_dn(ld, e);
@@ -958,7 +958,7 @@ get_results(LDAP * ld,
 				ldap_memfree(dn);
 			} else {
 				/*
-				 * LOG( SPOCP_DEBUG ) traceLog( "Collecting
+				 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Collecting
 				 * attribute values" ) ; 
 				 */
 
@@ -967,7 +967,7 @@ get_results(LDAP * ld,
 				     ap = ldap_next_attribute(ld, e, be)) {
 
 					/*
-					 * LOG( SPOCP_DEBUG ) traceLog( "Got
+					 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Got
 					 * attribute: %s", ap ) ; 
 					 */
 
@@ -999,7 +999,7 @@ get_results(LDAP * ld,
 	 * if( set ) { lsln_t *tmp ;
 	 * 
 	 * for( tmp = lsln_first( set ), i = 0 ; tmp ; tmp = lsln_next( tmp ), 
-	 * i++ ) LOG( SPOCP_DEBUG ) traceLog( "set[%d]: %s", i, (char *)
+	 * i++ ) LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "set[%d]: %s", i, (char *)
 	 * lsln_get_val( tmp )) ; } 
 	 */
 
@@ -1027,12 +1027,12 @@ open_conn(char *server, spocp_result_t * ret)
 	}
 
 	/*
-	 * LOG( SPOCP_DEBUG) traceLog("Opening LDAP con to %s", server ) ; 
+	 * LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG,"Opening LDAP con to %s", server ) ; 
 	 */
 
 	if ((ld = ldap_init(server, 0)) == 0) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't initialize
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_DEBUG, "Error: Couldn't initialize
 		 * the LDAP server") ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
@@ -1047,7 +1047,7 @@ open_conn(char *server, spocp_result_t * ret)
 	if (ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &vers) !=
 	    LDAP_SUCCESS) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't set the
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_WARNING, "Error: Couldn't set the
 		 * version") ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
@@ -1061,7 +1061,7 @@ open_conn(char *server, spocp_result_t * ret)
 	if (ldap_set_option(ld, LDAP_OPT_REFERRALS, LDAP_OPT_ON) !=
 	    LDAP_SUCCESS) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "Error: Couldn't set follow
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_WARNING, "Error: Couldn't set follow
 		 * referrals") ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
@@ -1072,7 +1072,7 @@ open_conn(char *server, spocp_result_t * ret)
 
 	if ((rc = ldap_simple_bind_s(ld, user, passwd)) != LDAP_SUCCESS) {
 		/*
-		 * LOG( SPOCP_WARNING ) traceLog( "LDAP bind failed to %s",
+		 * LOG( SPOCP_WARNING ) traceLog(LOG_WARNING, "LDAP bind failed to %s",
 		 * server ) ; 
 		 */
 		*ret = SPOCP_INFO_UNAVAIL;
@@ -1082,13 +1082,13 @@ open_conn(char *server, spocp_result_t * ret)
 
 	/*
 	 * if( use_tls && ldap_start_tls_s( ld, NULL, NULL ) != LDAP_SUCCESS ) 
-	 * { if( use_tls > 1 ) { LOG( SPOCP_WARNING ) traceLog(
+	 * { if( use_tls > 1 ) { LOG( SPOCP_WARNING ) traceLog(LOG_WARNING,
 	 * "LDAP_START_TLS failed" ) ; *ret = -1 ; ldap_unbind( ld ) ; return
 	 * 0 ; } } 
 	 */
 
 	/*
-	 * LOG( SPOCP_DEBUG) traceLog("Bound OK" ) ; 
+	 * LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG,"Bound OK" ) ; 
 	 */
 
 	return ld;
@@ -1196,7 +1196,7 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 		res = 0;
 
 		LOG( SPOCP_DEBUG )
-			traceLog("Using filter: %s, base: %s, scope: %d",
+			traceLog(LOG_DEBUG,"Using filter: %s, base: %s, scope: %d",
 				filter, base, scope ) ; 
 
 		if ((rc =
@@ -1225,9 +1225,9 @@ do_ldap_query(vset_t * vsetp, LDAP * ld, spocp_result_t * ret)
 
 	LOG( SPOCP_DEBUG ) {
 		if (arr == 0)
-			traceLog( "LDAP return NULL (%d)", *ret );
+			traceLog(LOG_DEBUG, "LDAP return NULL (%d)", *ret );
 		else
-			traceLog( "LDAP return a set (%d)", *ret);
+			traceLog(LOG_DEBUG, "LDAP return a set (%d)", *ret);
 	} 
 
 	return arr;
@@ -1370,7 +1370,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 		 */
 		else {
 			/*
-			 * LOG( SPOCP_DEBUG ) traceLog( "ANDing two sets --" ) 
+			 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "ANDing two sets --" ) 
 			 * ; 
 			 */
 
@@ -1382,7 +1382,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 				rm_children(sp);
 				if (sp->dn == 0) {
 					/*
-					 * LOG( SPOCP_DEBUG ) traceLog( "The
+					 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "The
 					 * resulting set was empty" ) ; 
 					 */
 					vset_free(sp);
@@ -1397,7 +1397,7 @@ vset_compact(vset_t * sp, LDAP * ld, spocp_result_t * rc)
 				rm_children(sp);
 				if (sp->val == 0) {
 					/*
-					 * LOG( SPOCP_DEBUG ) traceLog( "The
+					 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "The
 					 * resulting set was empty" ) ; 
 					 */
 					vset_free(sp);
@@ -1515,7 +1515,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 		cv = cached(dyn->cv, oct, &cb);
 
 	if (cv) {
-		LOG( SPOCP_DEBUG) traceLog("ldapset: cache hit");
+		LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG,"ldapset: cache hit");
 
 		if (cv == EXPIRED) {
 			cached_rm(dyn->cv, oct);
@@ -1528,7 +1528,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 		argv = oct_split(oct, ';', '\\', 0, 0);
 
 		/*
-		 * LOG( SPOCP_DEBUG) traceLog( "filter: \"%s\"", arg->val ) ; 
+		 * LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG, "filter: \"%s\"", arg->val ) ; 
 		 */
 
 		o = argv->arr[argv->n - 1];
@@ -1625,7 +1625,7 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 	if (oct != cpp->arg)
 		oct_free(oct);
 
-	LOG( SPOCP_DEBUG) traceLog("ldapset => %d", r);
+	LOG( SPOCP_DEBUG) traceLog(LOG_DEBUG,"ldapset => %d", r);
 
 	return r;
 }

@@ -181,7 +181,7 @@ get_action(void * vp)
 	unsigned int    size = conn->oper.len + 9;
 
 	/*
-	 * traceLog("Get_action") ; 
+	 * traceLog(LOG_DEBUG,"Get_action") ; 
 	 */
 
 	res = (char *) Malloc(size * sizeof(char));
@@ -290,15 +290,15 @@ saci_init(void)
 #ifdef HAVE_SSL
 	tpsec_X509 = parse_format(tpsec[TPSEC_X509], transf, ntransf);
 	if (tpsec_X509 == 0)
-		traceLog("Could not parse TPSEC_X509");
+		traceLog(LOG_ERR,"Could not parse TPSEC_X509");
 	else
-		LOG(SPOCP_DEBUG) traceLog("Parsed TPSEC_X509 OK");
+		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed TPSEC_X509 OK");
 
 	tpsec_X509_wcc = parse_format(tpsec[TPSEC_X509_WCC], transf, ntransf);
 	if (tpsec_X509_wcc == 0)
-		traceLog("Could not parse TPSEC_X509_WCC");
+		traceLog(LOG_ERR,"Could not parse TPSEC_X509_WCC");
 	else
-		LOG(SPOCP_DEBUG) traceLog("Parsed TPSEC_X509_WCC OK");
+		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed TPSEC_X509_WCC OK");
 #endif
 	/*
 	 * tpsec_kerb = parse_format( tpsec[TPSEC_KERB], transf ) ; 
@@ -306,15 +306,15 @@ saci_init(void)
 
 	srvq = parse_format(srvquery, transf, ntransf);
 	if (srvq == 0)
-		traceLog("*ERR* Could not parse srvquery");
+		traceLog(LOG_ERR,"*ERR* Could not parse srvquery");
 	else
-		LOG(SPOCP_DEBUG) traceLog("Parsed srvquery OK");
+		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed srvquery OK");
 
 	operq = parse_format(operquery, transf, ntransf);
 	if (operq == 0)
-		traceLog("*ERR* Could not parse operquery");
+		traceLog(LOG_ERR,"*ERR* Could not parse operquery");
 	else
-		LOG(SPOCP_DEBUG) traceLog("Parsed operquery OK");
+		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed operquery OK");
 
 }
 
@@ -337,14 +337,14 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 	 */
 	if (con->rs == 0 || rules(con->rs->db) == 0) {
 		if (0)
-			traceLog("No rules to tell me what to do");
+			traceLog(LOG_ERR,"No rules to tell me what to do");
 		return SPOCP_SUCCESS;
 	}
 
 	oct_assign(&oct, path);
 
 	if (0)
-		traceLog("Looking for ruleset [%s](%p)", path, con->rs);
+		traceLog(LOG_DEBUG,"Looking for ruleset [%s](%p)", path, con->rs);
 
 	rs = con->rs;
 
@@ -360,10 +360,10 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 		return SPOCP_SUCCESS;
 
 	if (0)
-		traceLog("Making the internal access query");
+		traceLog(LOG_DEBUG,"Making the internal access query");
 	sexp = sexp_constr(con, arg);
 
-	LOG(SPOCP_DEBUG) traceLog("Internal access Query: \"%s\" in \"%s\"",
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Internal access Query: \"%s\" in \"%s\"",
 				  sexp, rs->name);
 
 	/*
@@ -373,7 +373,7 @@ spocp_access(conn_t * con, sexparg_t ** arg, char *path)
 	oct_assign(&oct, sexp);
 
 	if ((res = element_get(&oct, &ep)) != SPOCP_SUCCESS) {
-		traceLog("The S-expression \"%s\" didn't parse OK", sexp);
+		traceLog(LOG_ERR,"The S-expression \"%s\" didn't parse OK", sexp);
 
 		free(sexp);
 		return res;
@@ -418,7 +418,7 @@ operation_access(conn_t * con)
 	r = spocp_access(con, operq, path);
 
 	if (r != SPOCP_SUCCESS)
-		traceLog("Operation disallowed");
+		traceLog(LOG_INFO,"Operation disallowed");
 
 	return r;
 }

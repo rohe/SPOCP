@@ -143,7 +143,7 @@ main(int argc, char **argv)
 #endif
 
 	if (spocpc_debug)
-		traceLog("Spocpserver [%s]", server);
+		traceLog(LOG_DEBUG,"Spocpserver [%s]", server);
 
 	if ((spocp = spocpc_open(spocp, 0, 5)) == 0) {
 		fprintf(stderr, "Could not open connection to \"%s\"\n",
@@ -158,7 +158,7 @@ main(int argc, char **argv)
 		}
 	} else {
 		if (spocpc_debug)
-			traceLog("reading stdin");
+			traceLog(LOG_DEBUG,"reading stdin");
 		fp = stdin;
 	}
 
@@ -189,7 +189,7 @@ main(int argc, char **argv)
 			*cp-- = '\0';
 
 		if (spocpc_debug)
-			traceLog("Got [%s]", buf);
+			traceLog(LOG_DEBUG,"Got [%s]", buf);
 
 		if (strncmp(buf, "---", 3) == 0 ||
 		    strncmp(buf, "+++", 3) == 0 ||
@@ -214,17 +214,17 @@ main(int argc, char **argv)
 			ruleid = 0;
 
 		if (spocpc_debug)
-			traceLog("path [%s]", path);
+			traceLog(LOG_DEBUG,"path [%s]", path);
 
 		memset(&qres, 0, sizeof(queres_t));
 
 		if (*s == '+') {
 			if (spocpc_debug)
-				traceLog("rule [%s]", cp);
+				traceLog(LOG_DEBUG,"rule [%s]", cp);
 			res = spocpc_str_send_add(spocp, path, cp, 0, 0, &qres);
 		} else if (rid) {	/* can't do delete without a ruleid */
 			if (spocpc_debug)
-				traceLog("ruleid [%s]", ruleid);
+				traceLog(LOG_DEBUG,"ruleid [%s]", ruleid);
 			res = spocpc_str_send_delete(spocp, path, ruleid, &qres);
 		} else
 			res = SPOCPC_PARAM_ERROR;

@@ -112,7 +112,7 @@ tpool_init(int wthreads, int max_queue_size, int do_not_block_when_full)
 	tpool->shutdown = 0;
 
 	/*
-	 * traceLog("Creating %d threads", wthreads ) ; 
+	 * traceLog(LOG_DEBUG,"Creating %d threads", wthreads ) ; 
 	 */
 
 	tpool->threads = (pthread_t *) Calloc(wthreads, sizeof(pthread_t));
@@ -143,18 +143,18 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 
 	if (0) {
 		timestamp("tpool_add_work");
-		traceLog("cur_queue_size:%d", tpool->cur_queue_size);
-		traceLog("max_queue_size:%d", tpool->max_queue_size);
-		traceLog("shutdown:%d", tpool->shutdown);
-		traceLog("queue_closed:%d", tpool->queue_closed);
+		traceLog(LOG_DEBUG,"cur_queue_size:%d", tpool->cur_queue_size);
+		traceLog(LOG_DEBUG,"max_queue_size:%d", tpool->max_queue_size);
+		traceLog(LOG_DEBUG,"shutdown:%d", tpool->shutdown);
+		traceLog(LOG_DEBUG,"queue_closed:%d", tpool->queue_closed);
 	}
 
 	/*
-	 * traceLog( "queued items: %d", number_of_active( tpool->queue )) ; 
+	 * traceLog(LOG_DEBUG, "queued items: %d", number_of_active( tpool->queue )) ; 
 	 */
 
 	/*
-	 * traceLog( "queue size: %d, max_size: %d", tpool->cur_queue_size,
+	 * traceLog(LOG_DEBUG, "queue size: %d, max_size: %d", tpool->cur_queue_size,
 	 * tpool->max_queue_size) ; 
 	 */
 
@@ -165,7 +165,7 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 	       (tpool->cur_queue_size == tpool->max_queue_size) &&
 	       (!(tpool->shutdown || tpool->queue_closed))) {
 
-		traceLog("current queue_size=%d", tpool->cur_queue_size);
+		traceLog(LOG_DEBUG,"current queue_size=%d", tpool->cur_queue_size);
 
 		/*
 		 * and this caller doesn't want to wait 
@@ -192,7 +192,7 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 	 * Any free workp structs around ? 
 	 */
 	if (afpool_free_item(tpool->queue) == 0) {	/* NO ! */
-		traceLog("No free workp structs !! ");
+		traceLog(LOG_NOTICE,"No free workp structs !! ");
 		if (tpool->cur_queue_size < tpool->max_queue_size) {
 			if (tpool->cur_queue_size + DEF_QUEUE_SIZE <
 			    tpool->max_queue_size)
@@ -203,7 +203,7 @@ tpool_add_work(tpool_t * tpool, proto_op * routine, conn_t * c)
 						 tpool->max_queue_size -
 						 tpool->cur_queue_size);
 		} else {	/* shouldn't happen */
-			traceLog("Reached the max_queue_size");
+			traceLog(LOG_NOTICE,"Reached the max_queue_size");
 			return -1;
 		}
 	}
@@ -309,7 +309,7 @@ tpool_thread(void *arg)
 		afpool_lock(workqueue);
 
 		/*
-		 * if(1) traceLog( "Thread %d looking for work", id ) ; 
+		 * if(1) traceLog(LOG_DEBUG, "Thread %d looking for work", id ) ; 
 		 */
 
 		/*
@@ -324,7 +324,7 @@ tpool_thread(void *arg)
 			pthread_cond_wait(&(tpool->queue_not_empty),
 					  &(workqueue->aflock));
 			/*
-			 * traceLog("%d awaken", id ) ; timestamp("Any work
+			 * traceLog(LOG_DEBUG,"%d awaken", id ) ; timestamp("Any work
 			 * around" ) ; 
 			 */
 		}
@@ -332,7 +332,7 @@ tpool_thread(void *arg)
 		afpool_unlock(workqueue);
 
 		/*
-		 * if(1) traceLog( "Thread %d working", id ) ; 
+		 * if(1) traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
 		 */
 
 		/*
@@ -349,7 +349,7 @@ tpool_thread(void *arg)
 		pi = afpool_get_item(workqueue);
 
 		/*
-		 * traceLog( "Active workitems %d", number_of_active(
+		 * traceLog(LOG_DEBUG, "Active workitems %d", number_of_active(
 		 * workqueue )) ; 
 		 */
 
@@ -361,7 +361,7 @@ tpool_thread(void *arg)
 		 */
 
 		/*
-		 * traceLog( "Doing some work" ) ; 
+		 * traceLog(LOG_DEBUG, "Doing some work" ) ; 
 		 */
 
 		/*

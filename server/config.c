@@ -245,9 +245,8 @@ read_config(char *file, srv_t * srv)
 	plugins = srv->plugin;
 
 	if ((fp = fopen(file, "r")) == NULL) {
-		traceLog
-		    ("Could not find or open the configuration file \"%s\"",
-		     file);
+		traceLog(LOG_ERR,
+		    "Could not find or open the configuration file \"%s\"", file);
 		return 0;
 	}
 
@@ -265,7 +264,7 @@ read_config(char *file, srv_t * srv)
 
 			cp = find_balancing(s + 1, '[', ']');
 			if (cp == 0) {
-				traceLog(err_msg, n, "Section specification");
+				traceLog(LOG_ERR, err_msg, n, "Section specification");
 				return 0;
 			}
 
@@ -301,7 +300,7 @@ read_config(char *file, srv_t * srv)
 
 		cp = strchr(s, '=');
 		if (cp == 0) {
-			traceLog(err_msg, n, "syntax error");
+			traceLog(LOG_ERR, err_msg, n, "syntax error");
 			continue;
 		}
 
@@ -324,7 +323,7 @@ read_config(char *file, srv_t * srv)
 					break;
 
 			if (keyword[i] == 0) {
-				traceLog(err_msg, n, "Unknown keyword");
+				traceLog(LOG_ERR, err_msg, n, "Unknown keyword");
 				continue;
 			}
 
@@ -383,12 +382,12 @@ read_config(char *file, srv_t * srv)
 						srv->timeout =
 						    (unsigned int) lval;
 					else {
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR, err_msg, n,
 							 "Value out of range");
 						srv->timeout = DEFAULT_TIMEOUT;
 					}
 				} else {
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR, err_msg, n,
 						 "Non numeric value");
 					srv->timeout = DEFAULT_TIMEOUT;
 				}
@@ -407,12 +406,12 @@ read_config(char *file, srv_t * srv)
 						srv->port =
 						    (unsigned int) lval;
 					} else {
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR, err_msg, n,
 							 "Number out of range");
 						srv->port = DEFAULT_PORT;
 					}
 				} else {
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR, err_msg, n,
 						 "Non numeric value");
 				}
 				break;
@@ -420,7 +419,7 @@ read_config(char *file, srv_t * srv)
 			case NTHREADS:
 				if (numstr(cp, &lval) == SPOCP_SUCCESS) {
 					if (lval <= 0) {
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR, err_msg, n,
 							 "Value out of range");
 						return 0;
 					} else {
@@ -430,7 +429,7 @@ read_config(char *file, srv_t * srv)
 						srv->threads = level;
 					}
 				} else {
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR, err_msg, n,
 						 "Non numeric specification");
 					return 0;
 				}
@@ -442,12 +441,12 @@ read_config(char *file, srv_t * srv)
 						srv->sslverifydepth =
 						    (unsigned int) lval;
 					} else {
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR, err_msg, n,
 							 "number out of range");
 						srv->sslverifydepth = 0;
 					}
 				} else {
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR, err_msg, n,
 						 "Non numeric value");
 				}
 				break;
@@ -464,12 +463,12 @@ read_config(char *file, srv_t * srv)
 						srv->nconn =
 						    (unsigned int) lval;
 					} else {
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR, err_msg, n,
 							 "Number out of range");
 						srv->sslverifydepth = 0;
 					}
 				} else {
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR, err_msg, n,
 						 "Non numeric value");
 				}
 				break;
@@ -491,7 +490,7 @@ read_config(char *file, srv_t * srv)
 		case PLUGIN:
 			if (pl == 0) {
 				if (strcmp(s, "load") != 0) {
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR, err_msg, n,
 						 "First directive in plugin sector has to be \"load\"");
 					section = 0;
 				}
@@ -513,7 +512,7 @@ read_config(char *file, srv_t * srv)
 				if (strcmp(s, "poolsize") == 0) {
 					if (numstr(cp, &lval) == SPOCP_SUCCESS) {
 						if (lval <= 0) {
-							traceLog(err_msg, n,
+							traceLog(LOG_ERR, err_msg, n,
 								 "Value out of range");
 						} else {
 							int             level =
@@ -528,17 +527,17 @@ read_config(char *file, srv_t * srv)
 								    level;
 						}
 					} else {
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR, err_msg, n,
 							 "Non numeric specification");
 					}
 				} else if (strcmp(s, "cachetime") == 0) {
 					if (plugin_add_cachedef(pl, cp) == FALSE )
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR, err_msg, n,
 							 "Cachetime def");
 				} else if (pl->ccmds == 0) {	/* No
 								 * directives
 								 * allowed */
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR, err_msg, n,
 						 "Directive where there should not be one");
 				} else {
 					for (ccp = pl->ccmds; ccp; ccp++) {
@@ -548,7 +547,8 @@ read_config(char *file, srv_t * srv)
 						arr = strchop(cp,&np);
 
 						for (j=0; j<np; j++)
-							traceLog("%s:%s",sp, arr[j]);
+							traceLog(LOG_ERR, "%s:%s",
+							    cp, arr[j]);
 
 						if (strcmp(ccp->name, s) == 0) {
 							r = ccp->func(&pl->
@@ -558,7 +558,7 @@ read_config(char *file, srv_t * srv)
 								      np, arr);
 							if (r != SPOCP_SUCCESS) {
 								traceLog
-								    (err_msg,
+								    (LOG_ERR, err_msg,
 								     n,
 								     ccp->
 								     errmsg);
@@ -568,7 +568,7 @@ read_config(char *file, srv_t * srv)
 						}
 					}
 					if (ccp == 0) {
-						traceLog(err_msg, n,
+						traceLog(LOG_ERR,err_msg, n,
 							 "Unknown directive");
 					}
 				}
@@ -594,7 +594,7 @@ read_config(char *file, srv_t * srv)
 						free(dbload);
 					}
 				} else
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR,err_msg, n,
 						 "Unknown directive");
 			} else {
 				for (ccp = dbp->ccmds; ccp && *ccp->name;
@@ -604,14 +604,14 @@ read_config(char *file, srv_t * srv)
 							      ccp->cmd_data, 1,
 							      &cp);
 						if (r != SPOCP_SUCCESS) {
-							traceLog(err_msg, n,
+							traceLog(LOG_ERR,err_msg, n,
 								 ccp->errmsg);
 						}
 						break;
 					}
 				}
 				if (ccp == 0) {
-					traceLog(err_msg, n,
+					traceLog(LOG_ERR,err_msg, n,
 						 "Unknown directive");
 				}
 			}
