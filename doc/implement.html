@@ -1,480 +1,135 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-<head>
-<title>Implementers guide</title>
-<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-</head>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=iso-8859-1">
+	<TITLE>Implementers guide</TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.0  (Linux)">
+	<META NAME="CREATED" CONTENT="20040428;16411600">
+	<META NAME="CHANGEDBY" CONTENT="Eva Magnusson">
+	<META NAME="CHANGED" CONTENT="20040428;17322800">
+</HEAD>
+<BODY LANG="en-US" DIR="LTR">
+<H1>Spocp client implementer manual</H1>
+<H2>1. Introduction</H2>
+<P>When you want to Spocpify a application, you not only have to
+decide on a query format, where/when you are going to pose queries to
+a Spocp server, but you also have to modify the source code for the
+application. This document is about doing that in a application that
+written in C. There also exists client library implementations in
+Perl and Java, but they will not be dealt with here.</P>
+<H2>2. Client library</H2>
+<P>A more detailed description of the commands can be found in the
+doxygen documentation.</P>
+<P>This text will describe some of the commands as they appear in the
+apache spocp authorization module. The full code can be gotten from
+the same place as you got this software, among the client
+implementations.</P>
+<P><BR><BR>
+</P>
+<PRE>static sexpargfunc path_to_sexp;
+static sexpargfunc get_method;
+static sexpargfunc ac_mode;
+static sexpargfunc get_ip;
+static sexpargfunc get_host;
+static sexpargfunc get_inv_host;
+static sexpargfunc get_uid;
+static sexpargfunc get_authname;
+static sexpargfunc get_authtype;
+static sexpargfunc get_transpsec;
+static sexpargfunc get_ssl_vers;
+static sexpargfunc get_ssl_cipher;
+static sexpargfunc get_ssl_subject;
+static sexpargfunc get_ssl_issuer;
+static sexpargfunc get_authinfo;
+static sexpargfunc get_hostinfo;
 
-<body>
+</PRE><P>
+First some functions that can be used to get information from the
+application, these are extremly application dependent and can
+probably not be used between applications, or sometimes even between
+versions of the same application.</P>
+<PRE>const sexparg_t transf[] = {
+	{ &quot;resource&quot;, path_to_sexp, 'l', TRUE },
+	{ &quot;method&quot;, get_method, 'a', FALSE },
+	{ &quot;acmode&quot;, ac_mode, 'a', FALSE },
+	{ &quot;ip&quot;, get_ip, 'a', FALSE },
+	{ &quot;host&quot;, get_host, 'a', FALSE },
+	{ &quot;invhost&quot;, get_inv_host, 'l', TRUE },
+	{ &quot;uid&quot;, get_uid, 'a', FALSE },
+	{ &quot;authname&quot;, get_authname, 'a', FALSE },
+	{ &quot;authtype&quot;, get_authtype, 'a', FALSE },
+	{ &quot;authinfo&quot;, get_authinfo, 'l', TRUE },
+	{ &quot;hostinfo&quot;, get_hostinfo, 'l', TRUE },
+#ifdef MOD_SSL
+	{&quot;ssl_vers&quot;, get_ssl_vers, 'a', FALSE},
+	{&quot;ssl_cipher&quot;, get_ssl_cipher, 'a', FALSE},
+	{&quot;ssl_subject&quot;, get_ssl_subject, 'a', TRUE},
+	{&quot;ssl_issuer&quot;, get_ssl_issuer, 'a', TRUE},
+#endif
+	{ &quot;transportsec&quot;, get_transpsec, 'l', TRUE }
+} ;
+</PRE><P>
+This is about putting all the information gathering functions into a
+struct array which later can be used by the function that constructs
+S-expressions from a basic format definition and information pieces
+gathered by these functions. 
+</P>
+<PRE>char *httpquery =
+       &quot;(4:http(8:resource%{resource}1:-)(6:action%{method}%{acmode})%{hostinfo}%{authinfo})&quot;;
+</PRE><P>
+The format definition; every <B>%{...}</B><SPAN STYLE="font-weight: medium"><SPAN STYLE="font-weight: medium">
+constuct refers back to a line in the transf array. So in the place
+occupied by <I>%{resource}</I><SPAN STYLE="font-style: normal"><SPAN STYLE="font-style: normal">
+would be placed whatever the </SPAN></SPAN><I>path_to_sexp()</I><SPAN STYLE="font-style: normal"><SPAN STYLE="font-style: normal">
+function returns.</SPAN></SPAN></SPAN></SPAN></P>
+<PRE>httpq = parse_format(httpquery, transf, ntransf);
+</PRE><P>
+This is where the format definition above are parsed into a more
+usable format.</P>
+<PRE>	sa.r = r;
+	sa.path = 0;
+	sa.authz = authzt;
+	sa.method = met;
+#ifdef MOD_SSL
+	sa.ssl = ssl;
 
-<h1>Implementers guide</h1>
-
-Document Status: Project document, last updated 2001-11-14<br>
-Authors: Roland Hedberg and Torbj&ouml;rn Wiberg
-
-<h2>Content</h2>
-<ul>
-  <li>0. <a href="#intro">Introduction</a></li>
-  <li>1. <a href="#sserver">The native SPOCP server</a></li>
-  <li>2. <a href="#apache">Spocp as a Apache module</a></li>
-  <li>3. <a href="#library">Spocp as a library</a></li>
-</ul>
-
-<h2><a id="intro">0. Introduction</a></h2>
-
-<h2><a id="sserver" name="sserver">1. The native SPOCP server</a></h2>
-This is a server that implements the native SPOCP client protocol. It can
-either listen to an Internet port or a unix domain socket.
-<br>
-It also supports the use of TLS/SSL to protect the connection between client
-and server. 
-<p>
-The server has to know a couple of things when it starts and these things are
-supposed to be learnt from the configuration file.<br>
-The format of the configuration file is described in <a href="adminguide.html#native">
-"Using the native SPOCP server"</a>.
-
-<h2><a id="apache" name="apache">2. Spocp as a Apache module</a></h2>
-
-SPOCP exists as a apache module, designed to receive queries in the form
-of SAML AuthorizationDecisionQuery packets and reply to these with SAML responses.
-<p>
-More information about SAML can be found at the
-<a href="http://www.oasis-open.org/committees/">OASIS site</a>.
-<p>
-The module as it is written right now, can not be used to manage access rights to
-the resources the Apache server might contain, it only uses the Apache server
-as a frontend. A convenient way of getting a well implemented server frontend.
-<p> 
-If POST is used the the SAML packets are expected to be wrapped in a SOAP envelop,
-if PUT is used only the SAML packet is expected.
-
-<h3>2.1 S-expression to SAML XML conversion</h3>
-
-A SAML AuthorizationDecisionQuery consists can contain 4 different type of
-elements:
-<p>
-<dt>
-<dl><b>Resource</b> [required]</dl>
-<dd>A URI reference indicating the resource for which authorization is requested<p>
-SPOCP uses the form "//www.spocp.org/&lt;canonical S-expression&gt;</dd>
-<dl><b>Subject</b> [one]</dl>
-<dd>
-According to the SAML specification a subject element contains either or
-both of the following elements, NameIdentifier and SubjectIdentification.
-<p>
-SubjectIdentification is information that allows the subject to be authenticated.
-Since we are solely dealing with authorization and has the view that authentication
-has someway already been handled by the application before the application turns to
-us, subjectIdentification is something we do not deal with.
-<p>
-NameIdentifier specifies a subject by a combination of a name qualifier (the domain
-that qualifies the name of the subject) a format ( the syntax of the name, the format
-value must be a URI reference ) and lastly the name itself.
-<br>
-SPOCP uses "//www.spocp.org" as the name qualifier, "#canonicalSExpression" as the
-format reference and a canonical S-expression as the subject name.
-</dd>
-<dl><b>Action</b> [one or more]</dl>
-<dd>SPOCP allows only one action per Query packet<p>
-The action element can contain a Namespace definition together with then string data
-that describes the action to be performed<p>
-SPOCP mandates the use of the Namespace "//www.spocp.org" and that the 
-format of the string must be that of a canonical S-expression</dd>
-<dl><b>Evidence</b> [optional]</dl>
-<dd>Not used by SPOCP presently</dd>
-<dt>
-<p>
-Spocp authorization queries/rules consists of a S-expression list with four elements.
-A leading tag (spocp) and three s-expression lists ( resource, action and subject )
-which by a shear coincidence :-) corresponds to resource, action and subject in 
-SAML packets. 
-<p>
-So the conversion is very straight forward:
-<ol>
-<li>strip of the initial "spocp" tag
-<li>take the "resource" subelement list, remove the leading tag and add the rest
-behind "//www.spocp.org/" and stuff the resulting string into the SAML resource element.
-<li>take the "subject" sublement list, remove the leading tag place the rest as the 
-string value in the SAML subject nameIdentifier. You also have to specify "//www.spocp.org"
-as "NameQualifier" and "#canonicalSExpression" as "Format".
-<li>an lastly take the action subelement list, remove the leading tag and add the rest of
-the subelement list as value of the SAML "action" tag. You also have to specify
-"//www.spocp.org" as NameSpace.
-</ol>
-<p>
-And the transformation is of course reversible such that 
-the following SAML AuthorizationDecisionQuery packet (some auxilliary information left out) :
-<pre>
-&lt;samlp:AuthorizationDecisionQuery&gt;
-  &lt;samlp:Resource&gt;//www.spocp.org/11:application&lt;/samlp:Resource&gt;
-  &lt;samlp:Subject&gt;
-    &lt;saml:NameIdentifier NameQualifier="//www.spocp.org"
-                            Format="#canonicalSExpression"&gt;
-      (4:role5:admin)
-    &lt;/samlp:NameIdentifier&gt;
-  &lt;/samlp:Subject&gt;
-  &lt;samlp:Action NameSpace="//www.spocp.org"&gt;6:create&lt;/samlp:Action&gt;
-&lt;/samlp:AuthorizationDecisionQuery&gt;
-</pre>
-<p>
-will be transformed into the S-expression:
-<pre>
-(5:spocp(7:resource11:application)(6:action6:create)(7:subject(4:role5:admin)))
-</pre>
-<p>
-Adding "(5:spocp" at the beginning and ")" to the end is part of the SAML -&gt;
-S-expression transformation.
-
-<h3>2.2 PUT</h3>
-
-PUT uses SAML packets as discussed above.
-<p>
-So a packet sent to the Apache server using PUT would look something like this:
-<pre>
-&lt;Request RequestID="1234" MajorVersion="1" MinorVersion="0"
-    IssueInstant="2002-08-05T10:04:15"&gt;
-  &lt;AuthorizationDecisionQuery&gt;
-    &lt;saml:Resource&gt;//www.spocp.org/11:application&lt;/saml:Resource&gt;
-    &lt;saml:Subject&gt;
-      &lt;saml:NameIdentifier NameQualifier="http://www.spocp.org"
-                              Format="#canonicalSExpression"&gt;
-        (4:role5:admin)
-      &lt;/saml:NameIdentifier&gt;
-    &lt;/saml:Subject&gt;
-    &lt;saml:Action NameSpace="//www.spocp.org"&gt;6:create&lt;/saml:Action&gt;
-  &lt;/AuthorizationDecisionQuery&gt;
-&lt;/Request&gt;
-</pre>
-
-While a reply would look like this
-<pre>
-&lt;Response ResponseID="1" InResponseTo="1234" MajorVersion="1" MinorVersion="0"
-    IssueInstant="2002-09-14T09:58:53"&gt;
-  &lt;Status&gt;
-    &lt;StatusCode&gt;RequestDenied&lt;/StatusCode&gt;
-  &lt;/Status&gt;
-&lt;/Response&gt;
-</pre>
-
-<h3>2.3 POST</h3>
-
-When POST is used the SAML packet should be scrouded in a SOAP envelope.<br>
-The SAML request above becomes ( including the header, lines in the
-body is wrapped for readability ) :
-<p>
-<pre>
-POST /service.spocp HTTP/1.1
-Host: localhost
-Content-Type: text/xml; charset="utf-8"
-Content-Length: 929
-SOAPAction: http://www.oasis-open.org/commitees/security
-
-&lt;SOAP-ENV:Envelope
-  xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"&gt;
-  &lt;SOAP-ENV:Body&gt;
-    &lt;samlp:Request xmlns:samlp="http://www.oasis-open.org/committees/security/"
-                   xmlns:spocp="http://www.spocp.org/"
-                   samlp:RequestID="47823081" samlp:MajorVersion="1" 
-                   samlp:MinorVersion="0" samlp:IssueInstant="2002-08-05T10:04:15"&gt;
-      &lt;samlp:AuthorizationDecisionQuery&gt;
-        &lt;samlp:Resource&gt;//www.spocp.org/11:application&lt;/samlp:Resource&gt;
-        &lt;samlp:Subject&gt;
-          &lt;saml:NameIdentifier NameQualifier="//www.spocp.org"
-                                  Format="#canonicalSExpression"&gt;
-            (4:role5:admin)
-          &lt;/samlp:NameIdentifier&gt;
-        &lt;/samlp:Subject&gt;
-        &lt;samlp:Action NameSpace="//www.spocp.org"&gt;6:create&lt;/samlp:Action&gt;
-      &lt;/samlp:AuthorizationDecisionQuery&gt;
-    &lt;/samlp:Request&gt;
-  &lt;/SOAP-ENV:Body&gt;
-&lt;/SOAP-ENV:Envelope&gt;
-</pre>
-<p>
-The response from the server follows the same format:
-<p>
-<pre>
-HTTP/1.1 200 OK
-Date: Sat, 14 Sep 2002 09:58:53 GMT
-Server: Apache/2.0.39 (Unix)
-Content-Length: 516
-Content-Type: text/plain; charset=ISO-8859-1
-
-&lt;SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/"&gt;
-&lt;SOAP-ENV:Body&gt;
-  &lt;samlp:Response xmlns:samlp="http://www.oasis-open.org/committees/security/"
-                samlp:ResponseID="1" samlp:InResponseTo="47823081"
-                samlp:MajorVersion="1" samlp:MinorVersion="0"
-                samlp:IssueInstant="2002-09-14T09:58:53"&gt;
-    &lt;samlp:Status&gt;
-      &lt;samlp:StatusCode&gt;RequestDenied&lt;/samlp:StatusCode&gt;
-    &lt;/samlp:Status&gt;
-  &lt;/samlp:Response&gt;
-&lt;/SOAP-ENV:Body&gt;
-&lt;/SOAP-ENV:Envelope&gt;
-</pre>
-
-<h2><a id="library" name="library">3. SPOCP as a library</a></h2>
-
-The policy engine is implemented as a library, which means that if
-you for some reason want to keep the policy service very close to the
-application this is what you should use. 
-<p>
-<b>Note!</b> There is no internal locking in the SPOCP library, so your
-application has to make sure that noone is accessing the database while
-it is being updated.
-<p>
-<b>Note!!</b> There is nothing to prevent a application from keeping several
-different rule databases active at the same time.
-<p>
-Your application are given access to the following function calls for your 
-usage.
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>get_rules<p></dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>#include &lt;spocp.h&gt;
-<p>
-void *get_rules( void *database, char *rulefile, int *rc )
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>The <b>get_rules()</b> function reads the file pointed to by
-<u>rulefile</u> and stores the rules in a memorybased database.
-A pointer to that database is return and <u>rc</u> is set to reflect
-the number of correct rules that where read.<br>
-Rules that are not valid S-expressions are just ignored.
-<p>
-If the rules are split between several files;
-successive calls to get_rules() with the previous returned void pointer as
-the first argument to the next call will eventually provide you with a
-pointer to the complete database.
-<br>
-More about the format of the rulefile can be found <a href="adminguide.html#rulefile">
-here</a>.
-<p>
-</dd>
-<dl><b>RETURN VALUE</b></dl>
-<dd>
-The <b>get_rules()</b> function returns a pointer to the memorybased
-database that contains the valid rules from the file <u>rulefile</u>.
-<p>
-If <u>rc</u> is negative the specified file could not be found or was not 
-readable. Otherwise <u>rc</u> indicates the number of rule that was correct 
-and incorporated into the rules database.
-</dd>
-</dt>
-<p>
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>del_spocp_database<p></dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>
-#include &lt;spocp.h&gt;
-<p>
-void del_spocp_database( void *database )
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>The <b>del_spocp_database()</b> function removes the rule database
-and returns all memory used by it to the system. <u>database</u> must a pointer
-as returned by a previous call to <b>get_rules()</b> or <b>add_rule()</b>.
-<p>
-</dd>
-<dl><b>RETURN VALUE</b></dl>
-<dd>
-There is no return value from <b>del_spocp_database()</b>.
-<p>
-</dd>
-</dt>
-<p>
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>
-spocp_allowed<p>
-</dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>#include &lt;spocp.h&gt;
-<p>
-int spocp_allowed( void *vp, char **sexp, char **blob )
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>The <b>spocp_allowed()</b> function is the query interface to the rules
-database. The first argument to the function is the pointer to the database
-that you got back from the <b>get_rules()</b> function, the second argument
-is a pointer to the string that contains the query S-expression and
-the third argument is where a pointer to the return information coupled
-to the matching rule will be placed.<br>
-<b>spocp_allowed()</b> returns the result of comparing the given S-expression
-against the policy S-expressions stored in the database. The pointer <u>sexp</u> 
-will be incrementet på point to the first byte after the S-expression checked.
-<p>
-</dd>
-<dl><b>RETURN VALUE</b></dl>
-<dd>The <b>spocp_allowed()</b> function returns -1 on error, 0 if the query
-S-expression was not less or equal to any rule in the database and 1 if it was.
-<br>
-If there is any return information coupled to a matching rule that information
-will be pointed to by blob pointer. This pointer should not be freed.
-</dd>
-</dt>
-<p>
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>
-spocp_open_log
-<p>
-</dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>#include &lt;spocp.h&gt;
-<p>
-int spocp_open_log( char *file, int level ) 
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>
-The <b>spocp_open_log()</b> function allows you to specify which file the library
-should log to and at what level it should log.
-<p>
-The levels are:
-<ul>
-<li><em>SPOCP_EMERG</em>(0), system is unusable 
-<li><em>SPOCP_ALERT</em>(1), action must be taken immediately
-<li><em>SPOCP_CRIT</em>(2), critical conditions 
-<li><em>SPOCP_ERR</em>(3), error conditions 
-<li><em>SPOCP_WARNING</em>(4), warning conditions 
-<li><em>SPOCP_NOTICE</em>(5), normal but significant condition 
-<li><em>SPOCP_INFO</em>(6), informational
-<li><em>SPOCP_DEBUG</em>(7), debug-level messages 
-</ul>
-Every message that is below or at the same level as specified through this 
-function is logged.
-<p>
-When debugging, different parts can be studied separately, the following 
-parts are recognized:
-<ul>
-<li><em>SPOCP_DPARSE</em>(0x10), S-expression parsing
-<li><em>SPOCP_DSTORE</em>(0x20), S-expression storing
-<li><em>SPOCP_DMATCH</em>(0x40), S-expression matching
-<li><em>SPOCP_DBCOND</em>(0x80), Boundary condition evaluation
-<li><em>SPOCP_DSRV</em>  (0x100), Standalone SPOCP server
-</ul>
-<p>
-</dd>
-<dt>
-<dl><b>RETURN VALUE</b></dl>
-<dd>Returns 1 if the file could be open for writing, 0 if it could not.
-</dd>
-</dt>
-<p>
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>
-del_rules<p>
-</dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>#include &lt;spocp.h&gt;
-<p>
-int del_rules( void *db, char *ids )
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>
-The <b>del_rules()</b> function allows you to remove rules from a rules database.
-<u>db</u> must pointer previously return by a <u>add_rule()</u> or <u>get_rules()</u>
-function call. <u>ids</u> is string respresenting the set of rules to remove.<p>
-The <b>del_rules()</b> function is atomic, that is if one of the rules can not be 
-remove than none of them will be. As the function is defined presently, there is
-no way of knowing which fule the function failed on.
-<p>
-</dd>
-<dl><b>RETURN VALUE</b></dl>
-<dd>
-Return 1 if successfull, 0 otherwise.
-</dd>
-</dt>
-<p>
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>list_rules</dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>#include &lt;spocp.h&gt;
-<p>
-char **list_rules( void *db, char *pattern, int *rc )
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>
-</dd>
-<dl><b>RETURN VALUE</b></dl>
-<dd>Returns a array of string pointers, the last of those being 0. The array
-as well as the strings have to freed by the caller of this function.
-The form of <u>pattern</u> is defined in 
-<a href="protocol.html#list">the protocol definition of the list command</a>.
-<u>rc</u> will contain the status of the process. It will be -1 it one of the
-element of the pattern is not a well formed S-expression, otherwise it will be 1.
-</dd>
-</dt>
-<p>
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>
-add_rule
-<p>
-</dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>
-#include &lt;spocp.h&gt;
-<p>
-void *add_rule( void *db, char *rule, int *id )
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>
-By the use of <b>add_rule()</b> you can add new rules to the database, one at the
-time. <u>id</u> will contain the identification number of the rule. If you try to
-add a rule that is already in the database ( a rule in this context includes the
-return information if any such is given ) <u>id</u> will be -1.<p>
-The format of <u>rule</u> is defined in <a href="protocol.html#add">the protocol
-definition of the add command</a>
-<p>
-</dd>
-<dl><b>RETURN VALUE</b></dl>
-<dd>
-Return a pointer to the database to which rule was added or to a newly allocated
-database if <u>db</u> was NULL.
-</dd>
-</dt>
-<p>
-<hr>
-<dt>
-<dl><b>NAME</b></dl>
-<dd>
-spocp_rules
-<p>
-</dd>
-<dl><b>SYNOPSIS</b></dl>
-<dd>
-#include &lt;spocp.h&gt;
-<p>
-int spocp_rules( void *db )
-<p>
-</dd>
-<dl><b>DESCRIPTION</b></dl>
-<dd>
-The function <b>spocp_rules()</b> allows you to learn about the number of rules
-stored in the database.
-<p>
-</dd>
-<dl><b>RETURN VALUE</b></dl>
-<dd>returns the current number of rules in the specified rule database</dd>
-</dt>
+	if (ssl)
+		sexp = sexp_constr( (void *) &amp;sa, a-&gt;sec_template ) ;
+	else
+#endif
+		sexp = sexp_constr( (void *) &amp;sa, a-&gt;template ) ;
+</PRE><P>
+And this is where the S-expression, the Spocp query, is constructed.
+The <I>sexp_constr</I> function takes two arguments, the first is a
+void pointer to something application specific, this is the
+information the gathering function gets as argument, and the second
+is a pointer to the parse S-expression format definition ( which in
+this case could be httpd if SSL/TLS is not used or some user defined
+format). In this case different templates are used depending on
+whether SSL/TLS is used or not.</P>
+<PRE>	if (sc-&gt;spocp == 0) 
+		sc-&gt;spocp = spocpc_open( 0, sc-&gt;server, 1 ) ;
+	</PRE><P>
+If there is no connection open, open one. In this case don't wait
+more than 1 second before declaring that the Spocp server was not
+reachable.</P>
+<PRE>	if((rc = spocpc_send_query( spocp, 0, sexp, &amp;qres )) == SPOCPC_OK ) {
+		if (qres.rescode == SPOCP_SUCCESS ) {
+			if (qres.blob ) {</PRE><P>
+Send the query, if the operation went without any problems then check
+the result code that the Spocp server returned. If the result code
+indicated a success, look for the return info if any.</P>
+<PRE>	if (sc-&gt;spocp != 0 ) { /* got a connection pose the question */
+		if (pose_query( r, sc-&gt;spocp, sexp, &amp;res ) == SPOCPC_CON_ERR){
+			spocpc_reopen( sc-&gt;spocp, 1 ) ;
+			pose_query( r, sc-&gt;spocp, sexp, &amp;res ) ;
+		} </PRE><P>
+If the query failed due to connection problems ( the server wasn't
+there anymore) try to reconnect. If more than one server was defined
+in the server definition, all of them will be tried in a round-robin
+fashion before giving up. Again, the client will not more than 1
+second before giving up on one server.</P>
+<P><BR><BR>
+</P>
+</BODY>
+</HTML>
