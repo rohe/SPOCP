@@ -327,6 +327,7 @@ ss_list_rules( ruleset_t *rs, octet_t *pattern, spocp_req_info *sri, int *rc, in
 */
 /* --------------------------------------------------------------------------*/
 
+/*
 spocp_result_t ss_add_rule( ruleset_t *rs, octarr_t *oa, bcdef_t *bcd )
 {
   spocp_result_t  r ;
@@ -341,6 +342,7 @@ spocp_result_t ss_add_rule( ruleset_t *rs, octarr_t *oa, bcdef_t *bcd )
 
   return r;
 }
+*/
 
 /* --------------------------------------------------------------------------*/
 
