@@ -257,7 +257,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break ;
 
       case 'o':           /* octet */
-        if(( o = va_arg(ap, octet_t *)) == 0 ) return 0 ;
+        o = va_arg(ap, octet_t *) ;
         if( o && o->len ) {
           n = snprintf( sp, bsize, "%d:", o->len);
           if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
@@ -272,7 +272,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'O':           /* octet array */
-        if(( oa = va_arg(ap, octet_t **)) == 0 ) return 0 ;
+        oa = va_arg(ap, octet_t **) ;
         if( oa ) {
           for( i = 0 ; oa[i] ; i++ ) {
             o = oa[i] ;
@@ -291,7 +291,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'a':           /* atom */
-        if(( s = va_arg(ap, char *)) == 0 ) return 0 ;
+        s = va_arg(ap, char *) ;
         if( s && *s ) {
           n = snprintf( sp, bsize, "%d:%s", strlen(s), s);
           if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
@@ -301,7 +301,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'A':           /* sequence of atoms */
-        if(( arr = va_arg(ap, char **)) == 0 ) return 0 ;
+        arr = va_arg(ap, char **) ;
         if( arr ) {
           for( i = 0 ; arr[i] ; i++ ) {
             n = snprintf( sp, bsize, "%d:%s", strlen(arr[i]), arr[i]);
@@ -313,7 +313,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'l':           /* list */
-        if(( s = va_arg(ap, char *)) == 0 ) return 0 ;
+        s = va_arg(ap, char *) ;
         if( s && *s ) {
           n = snprintf( sp, bsize, "%s", s);
           if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
@@ -323,7 +323,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'L':           /* array of lists */
-        if(( arr = va_arg(ap, char **)) == 0 ) return 0 ;
+        arr = va_arg(ap, char **) ;
         if( arr ) {
           for( i = 0 ; arr[i] ; i++ ) {
             n = snprintf( sp, bsize, "%s", arr[i]);
@@ -335,7 +335,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'u':           /* octet list */
-        if(( o = va_arg(ap, octet_t *)) == 0 ) return 0 ;
+        o = va_arg(ap, octet_t *) ;
         if( o ) {
           if( o->len > bsize ) return 0 ;
           memcpy( sp, o->val, o->len ) ;
@@ -345,7 +345,7 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'U':           /* array of octet lists */
-        if(( oa = va_arg(ap, octet_t **)) == 0 ) return 0 ;
+        oa = va_arg(ap, octet_t **) ;
         if( oa ) {
           for( i = 0 ; oa[i] ; i++ ) {
             o = oa[i] ;
@@ -359,20 +359,21 @@ char *sexp_printv( char *sexp, unsigned int *size, char *fmt, ... )
         break;
 
       case 'X':           /* ocarr */
-        if(( oarr = va_arg( ap, octarr_t *)) == 0 ) return 0 ;
+        oarr = va_arg( ap, octarr_t *) ;
+        if( oarr ) {
+          for( i = 0 ; i < oarr->n ; i++ ) {
+            o = oarr->arr[i] ;
+            if( o->len == 0 ) continue ;
+            n = snprintf( sp, bsize, "%d:", o->len);
+            if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
+            bsize -= n ;
+            sp += n ;
 
-        for( i = 0 ; i < oarr->n ; i++ ) {
-          o = oarr->arr[i] ;
-          if( o->len == 0 ) continue ;
-          n = snprintf( sp, bsize, "%d:", o->len);
-          if( n < 0 || (unsigned int ) n > bsize ) return 0 ;
-          bsize -= n ;
-          sp += n ;
-
-          if( o->len > bsize ) return 0 ;
-          memcpy( sp, o->val, o->len ) ;
-          bsize -= o->len ;
-          sp += o->len ;
+            if( o->len > bsize ) return 0 ;
+            memcpy( sp, o->val, o->len ) ;
+            bsize -= o->len ;
+            sp += o->len ;
+          }
         }
         break;
 
