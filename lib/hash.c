@@ -248,7 +248,7 @@ buck_t *phash_search( phash_t *ht, atom_t *ap, unsigned int key )
   return 0 ;
 }
 
-void bucket_free( buck_t *bp )
+static void bucket_free( buck_t *bp )
 {
   if( bp ) {
     DEBUG( SPOCP_DSTORE ) {
