@@ -22,5 +22,5 @@ INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include #@SASL_CPPFLAGS@
 
 EXTRA_DIST = srv.h srvconf.h readcnf.h
 
-include_HEADERS = srvconf.h readcnf.h
+include_HEADERS = srvconf.h readcnf.h locl.h
 
