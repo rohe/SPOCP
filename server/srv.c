@@ -685,7 +685,8 @@ com_query(conn_t * conn)
 			}
 
 			str = oct2strdup(oct, '%');
-			traceLog(LOG_INFO,"returns \"%s\"", str);
+			DEBUG(SPOCP_DSRV) 
+				traceLog(LOG_DEBUG,"returns \"%s\"", str);
 			free(str);
 
 			/*
@@ -703,8 +704,6 @@ com_query(conn_t * conn)
 		}
 
 		octarr_free(on);
-
-		traceLog( LOG_INFO,"r after blobs");
 	}
 
 	return postop( conn, r, 0);
@@ -1153,11 +1152,11 @@ native_server(conn_t * con)
 			if ((r = get_operation(con, &oper)) == SPOCP_SUCCESS) {
 				r = (*oper) (con);
 
-				LOG(SPOCP_DEBUG) {
-				    traceLog(LOG_DEBUG,"command returned %d", r);
-				    traceLog(LOG_DEBUG,
-					"%d chars left in the input buffer",
-				    	in->w - in->r);
+				DEBUG(SPOCP_DSRV) {
+					traceLog(LOG_DEBUG,"command returned %d", r);
+					traceLog(LOG_DEBUG,
+					    "%d chars left in the input buffer",
+				    	    in->w - in->r);
 				}
 
 				spocp_conn_write(con);

@@ -210,7 +210,8 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		return 0;
 
 	if (jp->item[SPOC_ENDOFRULE]) {
-		traceLog(LOG_DEBUG,"ENDOFRULE marker");
+		DEBUG(SPOCP_DMATCH) 
+			traceLog(LOG_DEBUG,"ENDOFRULE marker");
 		/*
 		 * THIS IS WHERE BCOND IS CHECKED 
 		 */
@@ -221,7 +222,8 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 	}
 
 	if (jp->item[SPOC_ENDOFLIST]) {
-		traceLog(LOG_DEBUG,"ENDOFLIST marker");
+		DEBUG(SPOCP_DMATCH) 
+			traceLog(LOG_DEBUG,"ENDOFLIST marker");
 
 		bp = jp->item[SPOC_ENDOFLIST];
 
@@ -234,7 +236,8 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 				vl = bp->val.list;
 
 				if (vl && vl->item[SPOC_ENDOFRULE]) {
-					traceLog(LOG_DEBUG,"ENDOFRULE marker");
+					DEBUG(SPOCP_DMATCH) 
+						traceLog(LOG_DEBUG,"ENDOFRULE marker");
 					/*
 					 * THIS IS WHERE BCOND IS CHECKED 
 					 */
@@ -293,7 +296,9 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 				jp = element_match_r(vl, nep->next, comp);
 
 				if (jp && jp->item[SPOC_ENDOFRULE]) {
-					traceLog(LOG_DEBUG,"ENDOFRULE marker");
+					DEBUG(SPOCP_DMATCH) 
+						traceLog(LOG_DEBUG,"ENDOFRULE marker");
+
 					r = bcond_check(comp->head,
 						jp->item[SPOC_ENDOFRULE]->val.
 						id, comp->blob);
@@ -302,7 +307,8 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 				}
 
 			} else if (vl->item[SPOC_ENDOFRULE]) {
-				traceLog(LOG_DEBUG,"ENDOFRULE marker");
+				DEBUG(SPOCP_DMATCH) 
+					traceLog(LOG_DEBUG,"ENDOFRULE marker");
 				/*
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */
@@ -315,7 +321,8 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		} else {
 			vl = bp->val.list;
 			if (vl->item[SPOC_ENDOFRULE]) {
-				traceLog(LOG_DEBUG,"ENDOFRULE marker");
+				DEBUG(SPOCP_DMATCH) 
+					traceLog(LOG_DEBUG,"ENDOFRULE marker");
 				/*
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */
@@ -331,7 +338,8 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 			}
 		}
 	} else if (jp->item[SPOC_ENDOFRULE]) {
-		traceLog(LOG_DEBUG,"ENDOFRULE marker");
+		DEBUG(SPOCP_DMATCH) 
+			traceLog(LOG_DEBUG,"ENDOFRULE marker");
 		/*
 		 * THIS IS WHERE BCOND IS CHECKED 
 		 */
@@ -384,7 +392,8 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 
 		if (!ep->memberof) {	/* reached the end */
 			if ((jp = ending(ju, ep, comp))) {
-				traceLog(LOG_DEBUG,"reached ending");	
+				DEBUG(SPOCP_DMATCH) 
+					traceLog(LOG_DEBUG,"reached ending");	
 				return jp;
 			}
 		}
