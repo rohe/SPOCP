@@ -232,10 +232,11 @@ opinitial( conn_t *conn, ruleset_t **rs, int path, int min, int max)
 	
 	if (conn->oparg->n < min) return SPOCP_MISSING_ARG;
 
+	/* allowed to run the operation ? */
 	if (( r = operation_access(conn)) == SPOCP_SUCCESS) {
 
-		if( conn->oppath == 0 );
-		else if ((ruleset_find(conn->oppath, rs)) != 1) {
+		/* if a ruleset path is defined and exists use it */
+		if( conn->oppath != 0 && (ruleset_find(conn->oppath, rs)) != 1) {
 			char           *str;
 
 			str = oct2strdup(conn->oppath, '%');
@@ -256,11 +257,9 @@ postop( conn_t *conn, spocp_result_t rc, const char *msg)
 
 	if( msg && *msg ) {
 		traceLog(LOG_INFO,"return message:%s", msg);
-	}
-	add_response(conn->out, rc, msg);
-
-	if (msg != NULL)
+		add_response(conn->out, rc, msg);
 		free((char *) msg);
+	}
 
 	if ((wr = send_results(conn)) == 0)
 		rc = SPOCP_CLOSE;
@@ -286,7 +285,8 @@ com_capa(conn_t * conn)
 	const char     *msg = NULL;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
-	if (conn->transaction) return SPOCP_UNWILLING;
+	if (conn->transaction)
+		return postop(conn, SPOCP_UNWILLING, 0);
 
 #ifdef HAVE_SASL
 	if (conn->sasl == NULL) {
@@ -299,7 +299,7 @@ com_capa(conn_t * conn)
 			LOG(SPOCP_ERR)
 			    traceLog(LOG_ERR,"Failed to create SASL context");
 			r = SPOCP_OTHER;
-			goto err;
+			goto capa_done;
 		}
 	}
 
@@ -320,7 +320,7 @@ com_capa(conn_t * conn)
 		}
 	}
 
-      err:
+      capa_don:
 #endif
 
 	return postop( conn, r, msg );
@@ -329,8 +329,7 @@ com_capa(conn_t * conn)
 spocp_result_t
 com_auth(conn_t * conn)
 {
-	spocp_result_t  r = SPOCP_SUCCESS;
-	int             wr;
+	const char     *msg = NULL;
 #ifdef HAVE_SASL
 	const char     *data;
 	size_t          len;
@@ -338,7 +337,8 @@ com_auth(conn_t * conn)
 #endif
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
-	if (conn->transaction) return SPOCP_UNWILLING;
+	if (conn->transaction) 
+		return postop(conn, SPOCP_UNWILLING ,msg);
 
 #ifdef HAVE_SASL
 
@@ -384,30 +384,24 @@ com_auth(conn_t * conn)
 		wr = sasl_getprop(conn->sasl, SASL_USERNAME,
 				  (const void **) &conn->sasl_username);
 		add_response_blob(conn->out, SPOCP_MULTI, &blob);
-		add_response(conn->out, SPOCP_SUCCESS, "Authentication OK");
+		r = SPOCP_SUCCESS;
+		msg = strdup("Authentication OK");
 		break;
 	case SASL_CONTINUE:
 		add_response_blob(conn->out, SPOCP_AUTHDATA, &blob);
-		add_response(conn->out, SPOCP_AUTHINPROGRESS, NULL);
+		r = SPOCP_AUTHINPROGRESS;
 		break;
 	default:
 		LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %d",
 					sasl_errstring(wr, NULL, NULL));
-		add_response(conn->out, SPOCP_AUTHERR,
-			     "Authentication failed");
+		r = SPOCP_AUTHERR;
+		msg = strdup("Authentication failed");
 	}
+	postop(conn, r, msg);
 
 #else
-	add_response(conn->out, SPOCP_NOT_SUPPORTED, NULL);
+	return postop( conn, SPOCP_NOT_SUPPORTED, NULL);
 #endif
-
-	if ((wr = send_results(conn)) == 0)
-		r = SPOCP_CLOSE;
-
-	iobuf_shift(conn->in);
-	oparg_clear(conn);
-
-	return r;
 }
 
 /*
@@ -422,7 +416,8 @@ com_starttls(conn_t * conn)
 	int             wr;
 #endif
 
-	if (conn->transaction) return SPOCP_UNWILLING;
+	if (conn->transaction)
+		return postop(conn, SPOCP_UNWILLING, NULL);
 
 	traceLog(LOG_INFO,"Attempting to start SSL/TLS");
 
@@ -449,18 +444,9 @@ com_starttls(conn_t * conn)
 		/*
 		 * Ready to start TLS/SSL 
 		 */
-		add_response(conn->out, SPOCP_SSL_START, 0);
-		if ((wr = send_results(conn)) == 0)
-			r = SPOCP_CLOSE;
-
+		postop( conn, SPOCP_SSL_START, 0);
 		traceLog(LOG_INFO,"Setting connection status so main wan't touch it") ;
 		conn->status = CNST_SSL_NEG;	/* Negotiation in progress */
-
-		/*
-		 * whatever is in the input buffert must not be used anymore 
-		 */
-                traceLog(LOG_INFO,"Input buffer flush") ;
-		iobuf_flush(conn->in);
 
 		/*
 		 * If I couldn't create a TLS connection fail completely 
@@ -472,7 +458,7 @@ com_starttls(conn_t * conn)
 		} else
 			traceLog(LOG_INFO,"SSL in operation");
 
-		conn->status = CNST_ACTIVE;	/* Negotiation in progress */
+		conn->status = CNST_ACTIVE;	/* Negotiation done */
 	}
 #endif
 
@@ -670,7 +656,8 @@ com_query(conn_t * conn)
 	if (0)
 		timestamp("QUERY");
 
-	if (conn->transaction) return SPOCP_UNWILLING;
+	if (conn->transaction)
+		return postop(conn,SPOCP_UNWILLING,0);
 
 	LOG(SPOCP_INFO) {
 		str = oct2strdup(conn->oparg->arr[0], '%');
@@ -734,9 +721,7 @@ com_query(conn_t * conn)
  */
 
 /*
- * int com_x( conn_t *conn, octet_t *com, octet_t *arg ) { int r = 0 ;
- * 
- * return r ; } 
+ * int com_x( conn_t *conn) { int r = 0 ; return postop(conn,r,0) ; } 
  */
 
 /*
@@ -800,7 +785,8 @@ com_subject(conn_t * conn)
 	spocp_result_t  r = SPOCP_DENIED;
 	ruleset_t      *rs = conn->srv->root;
 
-	if (conn->transaction) return SPOCP_UNWILLING;
+	if (conn->transaction)
+		return postop( conn, SPOCP_UNWILLING, 0);
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUBJECT definition");
 
@@ -831,8 +817,7 @@ com_add(conn_t * conn)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ADD rule");
 
-	if ((rc = opinitial( conn, &rs, 1, 1, 3)) ==
-	    (SPOCP_DENIED|UNKNOWN_RULESET)) {
+	if ((rc = opinitial( conn, &rs, 1, 1, 3)) == UNKNOWN_RULESET) {
 		ruleset_t	*trs ;
 
 		if ((trs = ruleset_create(conn->oppath, &rs))){
@@ -881,7 +866,8 @@ com_list(conn_t * conn)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"LIST requested");
 
-	if (conn->transaction) return SPOCP_UNWILLING;
+	if (conn->transaction)
+		return postop( conn, SPOCP_UNWILLING, 0);
 
 	if ((rc = opinitial( conn, &rs, 1, 0, 0)) == SPOCP_SUCCESS ) {
 
@@ -945,7 +931,8 @@ com_summary(conn_t * conn)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUMMARYrequested");
 
-	if (conn->transaction) return SPOCP_UNWILLING;
+	if (conn->transaction)
+		return postop(conn,SPOCP_UNWILLING,0);
 
 	if ((rc = operation_access(conn)) == SPOCP_SUCCESS) {
 
@@ -1214,8 +1201,10 @@ get_operation(conn_t * conn, proto_op ** oper)
 	 * conn->oparg = 0 ; * should be done elsewhere 
 	 */
 
-	if ((r = get_oparg(&oa, &conn->oparg)) != SPOCP_SUCCESS)
+	if ((r = get_oparg(&oa, &conn->oparg)) != SPOCP_SUCCESS) {
+		oparg_clear( conn );
 		return r;
+	}
 
 	if (*oper == 0)
 		return SPOCP_UNKNOWNCOMMAND;
