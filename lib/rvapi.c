@@ -34,7 +34,7 @@ void set_memberof( varr_t *va, element_t *group ) ;
 
 /********************************************************************/
 
-atom_t *atom_dup( atom_t *ap )
+static atom_t *atom_dup( atom_t *ap )
 {
   atom_t *new = 0 ;
 
@@ -337,7 +337,7 @@ element_t *element_list_add( element_t *le, element_t *e )
  * \param e A pointer to the element to be added
  * \return A pointer to the array, which might be created by the function
  */
-element_t *element_array_add( element_t *le, element_t *e )
+static element_t *element_array_add( element_t *le, element_t *e )
 {
   if( e == 0 ) return le ;
 
@@ -483,7 +483,7 @@ element_t *element_find_list( element_t *e, octet_t *tag )
  * \param i The level in the tree to which the search has reached
  * \return A Pointer to the matching list or NULL if no list was found
  */
-element_t *element_traverse( element_t *e, octarr_t *oa, int i )
+static element_t *element_traverse( element_t *e, octarr_t *oa, int i )
 {
   element_t  *ep, *rep ;
   int         j, n ;
@@ -606,7 +606,7 @@ element_t *element_nth( element_t *e, int n )
  *         than the list of available subelements.
  */
 
-element_t *element_perl_intervall( element_t *e, int start, int nr )
+__attribute__((unused)) static element_t *element_perl_intervall( element_t *e, int start, int nr )
 {
   element_t *re = 0, *ep, *next ;
   int        i, n ;
@@ -668,7 +668,7 @@ element_t *element_perl_intervall( element_t *e, int start, int nr )
  *         If the range doesn't make sense, NULL is returned.
  */
 
-element_t *element_intervall( element_t *e, int start, int end )
+static element_t *element_intervall( element_t *e, int start, int end )
 {
   element_t *re = 0, *ep, *next ;
   int        i, n ;
