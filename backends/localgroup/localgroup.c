@@ -22,6 +22,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include "../../server/srvconf.h"
 
 #define ETC_GROUP "/etc/group"
 
