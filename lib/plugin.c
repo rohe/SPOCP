@@ -15,7 +15,7 @@ plugin_t *plugin_get( plugin_t *top, char *name )  ;
 
 /* ------------------------------------------------------------------------------------ */
 
-pconf_t *pconf_new( char *key, octet_t *val )
+static pconf_t *pconf_new( char *key, octet_t *val )
 {
   pconf_t *new ;
 
@@ -27,7 +27,7 @@ pconf_t *pconf_new( char *key, octet_t *val )
   return new ;
 }
 
-void pconf_free( pconf_t *pc )
+static void pconf_free( pconf_t *pc )
 {
   if( pc ) {
     if( pc->key ) free( pc->key ) ;
@@ -37,7 +37,7 @@ void pconf_free( pconf_t *pc )
   }
 }
 
-plugin_t *pconf_set_keyval( plugin_t *top, char *pname, char *key, char *val )
+static plugin_t *pconf_set_keyval( plugin_t *top, char *pname, char *key, char *val )
 {
   plugin_t *pl ;
   pconf_t  *pc = 0 ;
@@ -126,7 +126,7 @@ octarr_t *pconf_get_keyval_by_plugin( plugin_t *top, char *pname, char *key )
 
 /* ------------------------------------------------------------------------------------ */
 
-plugin_t *plugin_new( char *name ) 
+static plugin_t *plugin_new( char *name ) 
 {
   plugin_t *new ;
 
@@ -207,7 +207,7 @@ plugin_t *plugin_add_conf( plugin_t *top, char *pname, char *key, char *val )
 
 /* ------------------------------------------------------------------------------------ */
 
-void plugin_free( plugin_t *pl )
+static void plugin_free( plugin_t *pl )
 {
   if( pl ) {
     if( pl->handle ) dlclose( pl->handle ) ;
@@ -218,7 +218,7 @@ void plugin_free( plugin_t *pl )
   }
 }
 
-plugin_t *plugin_rm( plugin_t **top, plugin_t *pl )
+static plugin_t *plugin_rm( plugin_t **top, plugin_t *pl )
 {
   plugin_t *next ;
 

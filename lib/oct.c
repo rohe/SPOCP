@@ -399,7 +399,7 @@ int oct2strcpy( octet_t *op, char *str, size_t len, int do_escape, char ec )
 
 /* ---------------------------------------------------------------------- */
 
-spocp_result_t
+static spocp_result_t
 oct_replace( octet_t *oct, octet_t *insert, int where, int to_be_replaced, int noresize )
 {
   int  n, r ;

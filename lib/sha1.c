@@ -34,7 +34,7 @@ void sha1_starts( struct sha1_context *ctx )
     ctx->state[4] = 0xC3D2E1F0;
 }
 
-void sha1_process( struct sha1_context *ctx, uint8 data[64] )
+static void sha1_process( struct sha1_context *ctx, uint8 data[64] )
 {
     uint32 temp, A, B, C, D, E, W[16];
 
