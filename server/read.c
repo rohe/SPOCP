@@ -153,7 +153,7 @@ static octet_t *expand_sexp( octet_t *sexp, keyval_t **globals )
 
 /* ----------------------------------------------------------------------------- */
 
-int spocp_add_global( keyval_t **kvpp, octet_t *key, octet_t *val ) 
+static int spocp_add_global( keyval_t **kvpp, octet_t *key, octet_t *val ) 
 {
   keyval_t *kvp ;
 
@@ -510,7 +510,7 @@ void *read_rules( void *vp, char *file, int *rc, keyval_t **globals )
 
  ***************************************************************/
 
-void *get_rules( void *vp, char *file, int *rc  )
+__attribute__((unused)) static void *get_rules( void *vp, char *file, int *rc  )
 {   
   keyval_t *globals = 0  ;
 
