@@ -28,11 +28,6 @@
 #define NATIVE   1
 #define SOAP     2
 
-#define METHOD_GET    1
-#define METHOD_HEAD   2
-#define METHOD_POST   3
-#define METHOD_PUT    4
-
 /* -------------------------------------- */
 
 #ifndef MAX
@@ -51,12 +46,14 @@ typedef spocp_result_t (proto_op)( struct _conn * ) ;
 /* -------------------------------------- */
 
 typedef struct _spocp_iobuf {
-  char    *buf ;
-  char    *r ;     /* Where in the buffer reading should start */
-  char    *w ;     /* Where in the buffer writing should start */
-  char    *end ;    /* end of buffer */
-  size_t  bsize ;
-  size_t  left ;
+  char           *buf ;
+  char           *r ;     /* Where in the buffer reading should start */
+  char           *w ;     /* Where in the buffer writing should start */
+  char           *end ;    /* end of buffer */
+  size_t          bsize ;
+  size_t          left ;
+  pthread_mutex_t lock ;
+  pthread_cond_t  empty ; /* do we need one for full too ?? */
 } spocp_iobuf_t ;
 
 typedef struct _regexp {
@@ -75,6 +72,49 @@ typedef struct _ruleset {
   struct _ruleset  *up ;
 } ruleset_t ;
 
+/* -------------------------------------- */
+
+/* The connection states. */
+#define CNST_FREE      0
+#define CNST_READING   1
+#define CNST_SENDING   2
+#define CNST_PAUSING   3
+#define CNST_LINGERING 4
+#define CNST_STOP      5
+
+/* -------------------------------------- */
+
+struct _tpool ;
+
+/* --- pool of items ---- */
+
+typedef struct _pool_item {
+  struct _pool_item *prev;
+  struct _pool_item *next;
+
+  void *info ;
+} pool_item_t ;
+
+typedef struct _pool {
+  int             size ;
+  pool_item_t    *head ;
+  pool_item_t    *tail ;
+  pthread_mutex_t lock ;           /* look on the pool */
+} pool_t ;
+
+/* struct having items in active and free pools */
+typedef struct _afpool {
+  pool_t          *active ;
+  pool_t          *free ;
+  pthread_mutex_t aflock ;           /* look on the pool */
+/*
+  pthread_cond_t  pool_not_empty;
+  pthread_cond_t  pool_not_full;
+  pthread_cond_t  pool_empty;
+*/
+} afpool_t ;
+
+/* -------------------------------------- */
 /*
   this is the configuration stuff
   first the server configuration */
@@ -88,8 +128,6 @@ typedef struct _other {
 } other_t ;
 
 /* -------------------------------------- */
-/* One connection per thread, definitely not optimal in all cases :-)
- */
 
 typedef struct _thread {
   int             id ;
@@ -106,14 +144,12 @@ typedef struct _server
   int             listen_fd ; /* listen socket */
   pthread_mutex_t mlock ;     /* listener lock */
   int             type ;      /* AF_INET, AF_INET6 or AF_LOCAL */  
-  int             protocol ;  /* NATIVE, SOAP */
   char            *id ;
 
   int             threads ;
-  thread_t       *worker;
 
   int             timeout ;
-  int             nconn ;
+  int             nconn ;     /* max simultaneous connections */
   char            *certificateFile ;
   char            *privateKey ;
   char            *caList ;
@@ -137,6 +173,12 @@ typedef struct _server
   int             ssf ;
 #endif
 
+
+  pthread_mutex_t t_lock ;         /* look on the work pool */
+  struct _tpool  *work ;           /* the pool of work items */
+
+  afpool_t       *connections ;    /* pool of connections active/free */
+
 } srv_t ;
 
 typedef struct _conn {
@@ -155,9 +197,7 @@ typedef struct _conn {
   spocp_req_info_t sri ;      /* contains hostname/hostaddr */
   struct _server   *srv ;
 
-/* If one thread per connection this isn't needed *
-  pthread_mutex_t  lock ;
- */
+  pthread_mutex_t  clock ;
 
   spocp_iobuf_t    *in ;
   spocp_iobuf_t    *out ;
@@ -165,8 +205,6 @@ typedef struct _conn {
   octet_t          oper ;
   octet_t          *oppath ;
   octarr_t         *oparg ;
-
-  hconn_t          http ;
 
 #ifdef HAVE_LIBSSL
   void             *ssl;
@@ -184,6 +222,35 @@ typedef struct _conn {
 
 } conn_t ;
 
+typedef struct _work_info {
+  proto_op  *routine ;
+  conn_t    *conn ;
+} work_info_t;
+
+typedef struct _tpool {
+  /* pool characteristics */
+  int                 num_threads;
+  int                 do_not_block_when_full;
+
+  /* the threads */
+  pthread_t           *threads;
+
+  /* work pool */
+  int                 max_queue_size;
+  int                 cur_queue_size;
+  afpool_t           *queue ;         /* work queue */
+  int                 queue_closed;
+
+  int                 shutdown;
+
+  /* pool synchronization */
+  pthread_cond_t      queue_not_empty;
+  pthread_cond_t      queue_not_full;
+  pthread_cond_t      queue_empty;
+} tpool_t;
+
+/* ---------------------------------------------------------------------- */
+
 #define QUERY    0x01
 #define LIST     0x02
 #define ADD      0x04
@@ -198,6 +265,7 @@ typedef struct _conn {
 
 /************* functions ********************/
 
+void wake_listener( int ) ;
 void daemon_init( char *procname, int facility ) ;
 int  spocp_stream_socket( int port ) ;
 int  spocp_unix_domain_socket( char *uds ) ;
@@ -206,31 +274,43 @@ void spocp_server( void *vp ) ;
 int  send_results( conn_t *conn ) ;
 int  spocp_send_results( conn_t *conn ) ;
 
+/* iobuf.c */
+
 spocp_result_t iobuf_resize( spocp_iobuf_t *io, int increase ) ;
-spocp_result_t add_to_iobuf( spocp_iobuf_t *io, char *s ) ;
-spocp_result_t add_bytestr_to_iobuf( spocp_iobuf_t *io, octet_t *o ) ;
-int            spocp_io_write( conn_t *conn ) ;
-int            spocp_io_read( conn_t *conn ) ;
-void           shift_buffer( spocp_iobuf_t *io ) ;
-void           flush_io_buffer( spocp_iobuf_t *io ) ;
+spocp_result_t iobuf_add( spocp_iobuf_t *io, char *s ) ;
+spocp_result_t iobuf_add_octet( spocp_iobuf_t *io, octet_t *o ) ;
+spocp_iobuf_t *iobuf_new( size_t size ) ;
+void           iobuf_shift( spocp_iobuf_t *io ) ;
+void           iobuf_flush( spocp_iobuf_t *io ) ;
+void           iobuf_insert( spocp_iobuf_t *io, int where, char *what, int len ) ;
+int            iobuf_content( spocp_iobuf_t *io ) ;
+void           conn_iobuf_clear( conn_t * ) ;
+
+/* conn.c */
 
 char *spocp_next_line( conn_t *conn ) ;
 
-int spocp_writen( conn_t *ct, char *str, size_t n ) ;
-int spocp_readn( conn_t *ct, char *str, size_t max ) ;
-int spocp_close( conn_t *conn ) ;
+int conn_writen( conn_t *ct, char *str, size_t n ) ;
+int conn_readn( conn_t *ct, char *str, size_t max ) ;
+int conn_close( conn_t *conn ) ;
 
 conn_t *spocp_open_connection( int fd, srv_t *ss ) ;
-void   init_connection( conn_t *conn ) ;
-void   clear_buffers( conn_t *con ) ;
-conn_t *get_conn( srv_t *srv ) ;
-void   free_conn( srv_t *s, conn_t *c ) ;
-int    reset_conn( conn_t *c ) ;
+void    conn_iobuf_clear( conn_t *con ) ;
+conn_t *conn_get( srv_t *srv ) ;
+void    conn_free( conn_t *c ) ;
+void    conn_reset( conn_t *c ) ;
+conn_t *conn_new( void ) ;
+void    conn_init( conn_t *con ) ;
+int     conn_setup( conn_t *con, srv_t *srv, int fd, char *host ) ;
+int     spocp_conn_write( conn_t *conn ) ;
+int     spocp_conn_read( conn_t *conn ) ;
 
-void *get_rules( void *vp, char *file, int *rc  ) ;
+/* ------------- */
+
+void  *rules_get( void *vp, char *file, int *rc  ) ;
 
 #ifdef HAVE_LIBSSL
-SSL_CTX *tls_init( srv_t *srv ) ;
+SSL_CTX       *tls_init( srv_t *srv ) ;
 spocp_result_t tls_start( conn_t *conn, ruleset_t *rs )  ;
 #endif
 
@@ -239,15 +319,11 @@ int            read_config( char *file, srv_t *srv ) ;
 spocp_result_t conf_get( void *vp, int arg, char *key, void **res ) ;
 int            set_backend_cachetime( srv_t *srv ) ;
 
-/* util.c */
-
-char      *rm_lt_sp( char *s, int t ) ;
-
 /* */
 
-regexp_t  *new_pattern( char *s ) ;
-int       match_pattern( regexp_t *regp, char *s ) ;
-void      rm_pattern( regexp_t *regp ) ;
+regexp_t  *pattern_new( char *s ) ;
+int       pattern_match( regexp_t *regp, char *s ) ;
+void      pattern_rm( regexp_t *regp ) ;
 
 /*
 int     add_client_aci( char *str, ruleset_t **rs ) ;
@@ -260,7 +336,6 @@ spocp_result_t treeList( ruleset_t *rs, conn_t *con, octarr_t *oa, int f ) ;
 
 /* util.c */
 
-octet_t   **join_octarr( octet_t **arr0, octet_t **arr1 ) ;
 char      *rm_lt_sp( char *s, int shift ) ;
 
 /* ruleset.c */
@@ -270,9 +345,9 @@ ruleset_t *ruleset_new( octet_t *name ) ;
 ruleset_t *ruleset_create( octet_t *name, ruleset_t **root ) ;
 int        ruleset_find( octet_t *name, ruleset_t **rs ) ;
 
-spocp_result_t get_rs_name( octet_t *orig, octet_t *rsn ) ;
+spocp_result_t ruleset_name( octet_t *orig, octet_t *rsn ) ;
 spocp_result_t search_in_tree( ruleset_t *, octet_t *, octet_t *, spocp_req_info_t *, int ) ;
-spocp_result_t get_pathname( ruleset_t *rs, char *buf, int buflen ) ;
+spocp_result_t pathname_get( ruleset_t *rs, char *buf, int buflen ) ;
 
 /* ss.c */
 
@@ -287,7 +362,7 @@ int       ss_rules( ruleset_t *rs, int scope ) ;
 void     *ss_dup( ruleset_t *rs, int scope ) ;
 void      free_db( db_t *db ) ;
 
-/* n_srv.c */
+/* srv.c */
 
 spocp_result_t com_subject( conn_t *conn ) ;
 spocp_result_t com_begin( conn_t *conn ) ;
@@ -303,16 +378,53 @@ spocp_result_t com_list( conn_t *conn ) ;
 
 spocp_result_t get_operation( conn_t *conn, proto_op **oper ) ;
 
-/* n_run.c */
+/* run.c */
 
-void spocp_server_run( srv_t *srv ) ;
+void spocp_srv_run( srv_t *srv ) ;
 
 /* cpool.c */
 
-int init_server( srv_t *srv, char *configfile ) ;
-int init_conn( conn_t *con, srv_t *srv, int fd, char *host ) ;
+int srv_init( srv_t *srv, char *configfile ) ;
 
-/* pool.c 
+/* pool.c */
+
+pool_item_t *item_get( afpool_t *afp ) ;
+pool_item_t *pool_pop( pool_t *pool ) ;
+pool_item_t *first_active( afpool_t *afp ) ;
+void         pool_add( pool_t *p, pool_item_t *pi ) ;
+void         pool_rm( pool_t *pool, pool_item_t *item ) ;
+
+
+int       item_return( afpool_t *afp, pool_item_t *item ) ;
+int       afpool_free_item( afpool_t *afp ) ;
+int       afpool_active_item( afpool_t *afp ) ;
+afpool_t *afpool_new( void ) ;
+int       afpool_lock( afpool_t *afp ) ;
+int       afpool_unlock( afpool_t *afp ) ;
+
+
+/* con.c */
+
+char *next_line( conn_t *conn ) ;
+void conn_free( conn_t *conn ) ;
+
+/* init.c */
+
+int run_plugin_init( srv_t *srv ) ;
+
+/* saci.c */
+
+void           saci_init( void ) ;
+spocp_result_t server_access( conn_t *con ) ;
+spocp_result_t operation_access( conn_t *con ) ;
+
+/* tpool.c */
+
+tpool_t *tpool_init( int, int, int ) ;
+int tpool_add_work( tpool_t *, proto_op *routine, conn_t *) ;
+int tpool_destroy( tpool_t *, int ) ;
+
+/* pool.c */
 
 pool_item_t *get_item( afpool_t *afp ) ;
 pool_item_t *pop_from_pool( pool_t *pool ) ;
@@ -325,43 +437,21 @@ int  afpool_active_item( afpool_t *afp ) ;
 void add_to_pool( pool_t *p, pool_item_t *pi ) ;
 void rm_from_pool( pool_t *pool, pool_item_t *item ) ;
 
-afpool_t *new_afpool( void ) ;
+afpool_t *afpool_new( void ) ;
 
 int afpool_lock( afpool_t *afp ) ;
 int afpool_unlock( afpool_t *afp ) ;
 
+int number_of_active( afpool_t *afp ) ;
+int number_of_free( afpool_t *afp ) ;
 
-void free_connection( conn_t *conn ) ;
+/* -------------------------------------------*/
 
-*/
-
-/* con.c */
-
-char *next_line( conn_t *conn ) ;
-void con_reset( conn_t *con ) ;
-
-/* httpd_lite.c */
-
-int hconn_init( hconn_t *hc ) ;
-int hconn_reset( hconn_t *hc ) ;
-
-int httpd_get_content( conn_t *c, char **content ) ;
-int httpd_parse_request( conn_t *c ) ;
-int send_authz_response( conn_t *c, int reqid, int response, octet_t *blob ) ;
-
-/* soap.c */
-
-int soap_server( conn_t *con, spocp_req_info_t *sri, ruleset_t *rs ) ;
-
-/* init.c */
-
-int run_plugin_init( srv_t *srv ) ;
-
-/* saci.c */
-
-void           saci_init( void ) ;
-spocp_result_t server_access( conn_t *con ) ;
-spocp_result_t operation_access( conn_t *con ) ;
+void         afpool_push_item( afpool_t *afp, pool_item_t *pi ) ;
+void         afpool_push_empty( afpool_t *afp, pool_item_t *pi ) ;
+pool_item_t *afpool_get_item( afpool_t *afp ) ;
+pool_item_t *afpool_get_empty( afpool_t *afp ) ;
+pool_item_t *afpool_first( afpool_t *afp ) ;
 
 /* -------------------------------------------*/
 
@@ -381,6 +471,8 @@ char           *localcontext ;
 
 extern int  allow_serverity ;
 extern int  deny_serverity ;
+
+int wake_sds[2] ;
 
 #endif
 
