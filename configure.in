@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
-AC_INIT(spocd, 2.0.0a, roland@catalogix.se)
-AM_INIT_AUTOMAKE( spocd, 2.0.0a )
+AC_INIT(spocd, 2.0.0b, roland@catalogix.se)
+AM_INIT_AUTOMAKE( spocd, 2.0.0b )
 AC_CONFIG_SRCDIR([include/wrappers.h])
 AM_CONFIG_HEADER([include/config.h])
 AM_MAINTAINER_MODE
@@ -287,13 +287,15 @@ dnl *************************************************
 
 AC_CHECK_FUNCS([bzero fdatasync getcwd gethostbyaddr gethostbyname \
 	gethostname gettimeofday inet_ntoa localtime_r memmove memset \
-	select socket strcasecmp strdup strerror strncasecmp strndup strnlen strstr strtol uname])
+	select socket strcasecmp strdup strerror strncasecmp strndup \
+        strnlen strstr strtol uname])
 
 AC_CHECK_FUNCS([memchr])
 AC_CHECK_FUNCS([regcomp])
 AC_CHECK_FUNCS([strchr])
 AC_CHECK_FUNCS([strcspn])
 AC_CHECK_FUNCS([strpbrk])
+AC_CHECK_FUNCS([pipe])
 
 dnl *************************************************
 
