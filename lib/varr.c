@@ -273,7 +273,10 @@ varr_nth(varr_t * va, int n)
 unsigned int
 varr_len(varr_t * va)
 {
-	return va->n;
+	if( va )
+		return va->n;
+	else
+		return 0;
 }
 
 /*
