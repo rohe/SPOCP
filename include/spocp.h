@@ -308,8 +308,10 @@ spocp_chunk_t	*get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp );
 spocp_chunk_t	*get_chunk(spocp_charbuf_t * io);
 spocp_chunk_t	*chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np );
 
+spocp_chunk_t	*get_sexp_from_oct(octet_t *);
+octet_t		*sexp_normalize_oct(octet_t *);
 spocp_chunk_t	*get_sexp_from_str(char *);
-octet_t		*sexp_normalize(char *s);
+octet_t		*sexp_normalize(char *);
 
 /*
  * =============================================================================== 

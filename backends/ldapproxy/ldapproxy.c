@@ -1,6 +1,6 @@
 /* */
-/* format on nyaldap
- * nyaldap ":" orgdomain ":" uid [":" attributnamn ]
+/* format on ldapproxy
+ * ldapproxy ":" orgdomain ":" uid [":" attributnamn ]
  * 
  * ldap server is found through the normal means
  * ldap.<orgdomain>, NAPTR (RFC 2915, 2916)
@@ -31,7 +31,7 @@
 #include <rvapi.h>
 #include <func.h>
 
-befunc nyaldap_test;
+befunc ldapproxy_test;
 
 typedef union {
     HEADER          hdr;
@@ -235,7 +235,7 @@ get_results(LDAP * ld, LDAPMessage * res)
 
 /* ---------------------------------------------------------------------- */
 /*
- * <nyaldap>
+ * <nya>
  * 	<nyaRoll>....</nyaRoll>
  * 	<ladokInstId>....</ladokInstId>
  * 	<givenName>....</givenName>
@@ -244,7 +244,7 @@ get_results(LDAP * ld, LDAPMessage * res)
  *      <uid>....</uid>
  *      <sn>....</sn>
  *      <o>....</o>
- * </nyaldap>
+ * </nya>
  */
 /* ---------------------------------------------------------------------- */
 /*
@@ -420,7 +420,7 @@ do_xml( char ***ava )
 /* ---------------------------------------------------------------------- */
 
 spocp_result_t
-nyaldap_test(cmd_param_t * cpp, octet_t * blob)
+ldapproxy_test(cmd_param_t * cpp, octet_t * blob)
 {
 	spocp_result_t	r = SPOCP_DENIED;
 	LDAP		*ld = 0;
@@ -429,7 +429,7 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 	octet_t		*oct, *domain;
 	pdyn_t		*dyn = cpp->pd;
 	char		***ava = 0, *tmp, *filter, *fqdn;
-	char 		*attr, *val, *dn;
+	char 		*attr = 0, *val, *dn;
 	char 		*xml;
 	srvrec_t	*sr, *nsr;
 	int		i, j;
@@ -451,6 +451,7 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 	if (dyn == 0 || (bc = becon_get(domain, dyn->bcp)) == 0) {
 		/* find the server/-s */
 		if(( sr = dnssrv_lookup( fqdn, "ldap")) == 0 ) {
+			traceLog(LOG_DEBUG,"SRV record lookup failed");
 			sr = ( srvrec_t * ) calloc( 1, sizeof( srvrec_t ));
 			sr->srv = ( char * ) calloc( domain->len+6, sizeof( char ));
 			tmp = oct2strdup( domain, 0 );
@@ -460,6 +461,8 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 
 		for( nsr = sr ; nsr ; nsr = nsr->next ) {
 			/* should pick the one with the lowest priority first */
+			LOG(SPOCP_DEBUG)
+			    traceLog(LOG_DEBUG, "Trying %s:%d", nsr->srv, nsr->port);
 			ld = open_conn(nsr->srv, nsr->port, &r);
 
 			if (ld)
@@ -478,36 +481,40 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 	} else
 		ld = (LDAP *) bc->con;
 
-	/* get the baseDN */
-	dn = fqdn2dn( fqdn );
-	free( fqdn );
+	if (r != SPOCP_UNAVAILABLE) {
+		/* get the baseDN */
+		dn = fqdn2dn( fqdn );
+		free( fqdn );
 
-	/* create the filter */
-	val = oct2strdup( argv->arr[1], 0 );
-	if( argv->n == 3 ) 
-		attr = oct2strdup( argv->arr[2], 0 );
-	else
-		attr = "uid";
+		/* create the filter */
+		val = oct2strdup( argv->arr[1], 0 );
+		if( argv->n == 3 ) 
+			attr = oct2strdup( argv->arr[2], 0 );
+		else
+			attr = "uid";
 
-	filter = (char *)malloc( strlen(attr) + strlen(val) +4);
-	sprintf( filter, "(%s=%s)", attr, val );
+		filter = (char *)malloc( strlen(attr) + strlen(val) +4);
+		sprintf( filter, "(%s=%s)", attr, val );
 
-	traceLog(LOG_DEBUG, "Filter: %s, DN: %s", filter, dn);
+		traceLog(LOG_DEBUG, "Filter: %s, DN: %s", filter, dn);
 
-	/* do the stuff */
+		/* do the stuff */
+	
+		ava = do_ldap_query( ld, dn, filter, &r);
 
-	ava = do_ldap_query( ld, dn, filter, &r);
+		if (bc)
+			becon_return(bc);
+		else
+			ldap_unbind_s(ld);
 
-	if (bc)
-		becon_return(bc);
-	else
-		ldap_unbind_s(ld);
+		free(val);
+		free(filter);
+		free(dn);
 
-	free(val);
-	free(filter);
-	free(dn);
-	if( argv->n == 3) 
-		free(attr);
+		if( argv->n == 3) 
+			free(attr);
+
+	}
 
 	/* create the blob */
 
@@ -530,9 +537,9 @@ nyaldap_test(cmd_param_t * cpp, octet_t * blob)
 	return r;
 }
 
-plugin_t        nyaldap_module = {
+plugin_t        ldapproxy_module = {
 	SPOCP20_PLUGIN_STUFF,
-	nyaldap_test,
+	ldapproxy_test,
 	NULL,
 	NULL
 };

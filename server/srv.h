@@ -222,12 +222,12 @@ typedef struct _conn {
 
 	/* The last time anything happend on this connection */
 	time_t		last_event ; 
-	/* rule database for this connection */
-	ruleset_t	*rs ;	
 	/* Information about the subject that issued the operation */
 	spocp_req_info_t sri ;	
 	/* A pointer to the server on which this connection is running */
 	struct _server	*srv ;	
+	/* rule database for this connection */
+	ruleset_t	*rs ;	
 
 	/* information about the persistent store */
 	dbcmd_t		dbc ;

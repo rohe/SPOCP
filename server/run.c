@@ -11,19 +11,25 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-#define XYZ 0
+#define XYZ 1
 
 /*
  * ---------------------------------------------------------------------- 
  */
 
 static int
-spocp_getnameinfo( const struct sockaddr *sa, int len, char *name, int namelen)
+spocp_getnameinfo( const struct sockaddr *sa, int len, char *name,
+    int namelen, char *ipaddr, int addrlen)
 {
-        int rc;
+        int rc = 0;
+	
 #if defined( HAVE_GETNAMEINFO )
 
         rc = getnameinfo( sa, len, name, namelen, NULL, 0, 0 );
+	if (rc)
+		return rc;
+
+        rc = getnameinfo( sa, len, ipaddr, addrlen, NULL, 0, NI_NUMERICHOST );
 
 #else /* !HAVE_GETNAMEINFO */
         char *addr;
@@ -40,6 +46,7 @@ spocp_getnameinfo( const struct sockaddr *sa, int len, char *name, int namelen)
 	hp = gethostbyaddr( addr, alen, sa->sa_family );
 	if (hp) {
 		strncpy( name, hp->h_name, namelen );
+		strcpy( ipaddr, inet_ntoa(hp->h_addr_list[0]));
 		rc = 0;
 	} else 
 		rc = h_errno;
@@ -165,6 +172,8 @@ spocp_srv_run(srv_t * srv)
 	signal(SIGPIPE, SIG_IGN);
 
 	traceLog(LOG_INFO,"Running server!!");
+
+	memset( ipaddr, 0, 65);
 
 	if (srv->connections) {
 		int             f, a;
@@ -331,7 +340,7 @@ spocp_srv_run(srv_t * srv)
 			 */
 			if ((err =
 			     spocp_getnameinfo((SA *) & client_addr, len, hname,
-					 NI_MAXHOST)) != 0) {
+					 NI_MAXHOST, ipaddr, 64)) != 0) {
 				close(client);
 				goto fdloop;
 			}

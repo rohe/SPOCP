@@ -45,7 +45,7 @@ main(int argc, char **argv)
 	octet_t		**o;
 	octet_t		*query, *path = 0;
 
-	spocpc_debug = 0;
+	spocpc_debug = 1;
 
 	if (argc < 2) {
 		print_usage(argv[0]);

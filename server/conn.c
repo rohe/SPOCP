@@ -148,8 +148,16 @@ conn_setup(conn_t * conn, srv_t * srv, int fd, char *hostname, char *ipaddr)
 	conn->fd = fd;
 	conn->status = CNST_SETUP;
 	conn->con_type = NATIVE;
-	conn->sri.hostaddr = Strdup(ipaddr);
-	conn->sri.hostname = Strdup(hostname);
+
+	if (ipaddr && *ipaddr)
+		conn->sri.hostaddr = Strdup(ipaddr);
+	else
+		conn->sri.hostaddr = 0;
+
+	if (hostname && *hostname)
+		conn->sri.hostname = Strdup(hostname);
+	else
+		conn->sri.hostname = 0;
 
 	conn->rs = srv->root;
 	conn->layer = SPOCP_LAYER_NONE;

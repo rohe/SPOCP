@@ -140,6 +140,9 @@ octcln(octet_t *src)
 {
 	octet_t *res;
 
+	if( src == 0 )
+		return 0;
+
 	res = ( octet_t *) Malloc( sizeof( octet_t ));
 
 	res->len = src->len;

@@ -32,8 +32,9 @@ befunc          addrmatch_test;
 /*
  * The format of the file must be
  * 
- * comment = '#' whatever CR line = addr-spec / xdomain CR xdomain = ( "." /
- * "@" ) domain
+ * comment = '#' whatever CR
+ * line = addr-spec / xdomain CR
+ * xdomain = ( "." / "@" ) domain
  * 
  * addr-spec and domain as defined by RFC 822 
  */

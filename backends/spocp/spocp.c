@@ -13,9 +13,9 @@
 #include <spocpcli.h>
 
 /*
- * arg is composed of the following parts spocphost:operation:arg
+ * arg is composed of the following parts spocphost;operation;arg
  * 
- * where arg are [len ":" path] len ":" sexp [ len ":" bcond [ len ":" blob ]]
+ * where arg are [path] sexp [ SP bcond [ SP blob ]]
  *
  * The native Spocp protocol is used 
  */
@@ -45,7 +45,7 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 	octarr_t	*argv;
 	octet_t		*host, *oper, *oct, *path, *query=0;
 	octet_t		*rule=0, *info=0, *bcond=0;
-	char		*server;
+	char		*server, *tmp;
 	becon_t		*bc = 0;
 	SPOCP		*spocp;
 	pdyn_t		*dyn = cpp->pd;
@@ -54,8 +54,16 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 	if (cpp->arg == 0)
 		return SPOCP_MISSING_ARG;
 
+	tmp = oct2strdup( cpp->arg, 0);
+	traceLog(LOG_DEBUG, "Argument \"%s\"", tmp );
+	free(tmp);
+
 	if ((oct = element_atom_sub(cpp->arg, cpp->x)) == 0)
 		return SPOCP_SYNTAXERROR;
+
+	tmp = oct2strdup( oct, 0);
+	traceLog(LOG_DEBUG, "Argument after expension \"%s\"", tmp );
+	free(tmp);
 
 	argv = oct_split(oct, ';', 0, 0, 0);
 
@@ -112,9 +120,12 @@ spocp_test(cmd_param_t * cpp, octet_t * blob)
 			path = argv->arr[2];
 
 			if (oct2strcmp( oper, "QUERY") == 0 ) {
-				query = argv->arr[3];
-				r = spocpc_send_query(spocp, path, query,
+				query = sexp_normalize_oct(argv->arr[3]);
+				if (query)
+					r = spocpc_send_query(spocp, path, query,
 					       &qres);
+				else
+					r = SPOCPC_SYNTAX_ERROR;
 			}
 			else if (oct2strcmp( oper, "ADD") == 0 ) {
 				rule = argv->arr[3];

@@ -719,7 +719,7 @@ chunk2sexp( spocp_chunk_t *c )
 		ck = ck->next ;
 	} while( p ) ;
  
-	res = oct_new( len, 0 );
+	res = oct_new( len, NULL );
 	sp = res->val;
 	res->len = len;
 
@@ -757,6 +757,32 @@ get_sexp_from_str( char *s )
         get_sexp( &scb, &root);
 
         return root.next;
+}
+
+spocp_chunk_t *
+get_sexp_from_oct( octet_t *o)
+{
+        spocp_charbuf_t scb;
+        spocp_chunk_t root;
+
+	if (o == 0 || o->len == 0 ) 
+		return 0;
+
+        scb.fp = 0;
+        scb.str = o->val;
+        scb.size = o->len;
+        scb.start = o->val;
+
+        memset( &root, 0, sizeof( spocp_chunk_t ));
+        get_sexp( &scb, &root);
+
+        return root.next;
+}
+
+octet_t *
+sexp_normalize_oct( octet_t *o )
+{
+	return chunk2sexp( get_sexp_from_oct( o ) );
 }
 
 octet_t *

@@ -4,11 +4,11 @@
  */
 
 /***************************************************************************
-                          rvapi.c  -  description
-                             -------------------
-    begin                : Thr Jan 29 2004
-    copyright            : (C) 2004 by Stockholm university, Sweden
-    email                : roland@catalogix.se
+			  rvapi.c  -  description
+				-------------------
+    begin		: Thr Jan 29 2004
+    copyright	    : (C) 2004 by Stockholm university, Sweden
+    email		: roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
    of this package for details.
@@ -28,7 +28,7 @@
 #include <rvapi.h>
 
 static varr_t  *list_search(element_t * e, octet_t * tag, varr_t * r);
-element_t      *element_dup(element_t * ep, element_t * memberof);
+element_t	*element_dup(element_t * ep, element_t * memberof);
 /*
  * from input.c 
  */
@@ -38,7 +38,7 @@ element_t      *element_dup(element_t * ep, element_t * memberof);
 static atom_t  *
 atom_dup(atom_t * ap)
 {
-	atom_t         *new = 0;
+	atom_t	 *new = 0;
 
 	if (ap == 0)
 		return 0;
@@ -62,15 +62,15 @@ atom_dup(atom_t * ap)
  * \return A pointer to a a octet struct which
  * contains the result of the concatenation 
  */
-octet_t        *
+octet_t	*
 atoms_join(element_t * e, char *sep)
 {
-	char           *result = 0, *sp;
-	int             n, size = 1, slen = 0;
-	element_t      *ep;
-	octet_t        *oct = 0;
-	void           *v;
-	varr_t         *va;
+	char	   *result = 0, *sp;
+	int		n, size = 1, slen = 0;
+	element_t	*ep;
+	octet_t	*oct = 0;
+	void	   *v;
+	varr_t	 *va;
 
 	if (e == 0)
 		return 0;
@@ -95,7 +95,7 @@ atoms_join(element_t * e, char *sep)
 		result = (char *) Malloc(size * sizeof(char));
 
 		for (sp = result, n = 0, v = varr_first(va); v;
-		     v = varr_next(va, v)) {
+			v = varr_next(va, v)) {
 			ep = (element_t *) v;
 			if (ep->type == SPOC_ATOM) {
 				if (n) {
@@ -103,7 +103,7 @@ atoms_join(element_t * e, char *sep)
 					sp += slen;
 				}
 				memcpy(sp, ep->e.atom->val.val,
-				       ep->e.atom->val.len);
+					ep->e.atom->val.len);
 				sp += ep->e.atom->val.len;
 				n++;
 			}
@@ -123,14 +123,14 @@ atoms_join(element_t * e, char *sep)
 		result = (char *) Malloc(size * sizeof(char));
 
 		for (n = 0, sp = result, ep = e->e.list->head; ep;
-		     ep = ep->next) {
+			ep = ep->next) {
 			if (ep->type == SPOC_ATOM) {
 				if (n) {
 					memcpy(sp, sep, slen);
 					sp += slen;
 				}
 				memcpy(sp, ep->e.atom->val.val,
-				       ep->e.atom->val.len);
+					ep->e.atom->val.len);
 				sp += ep->e.atom->val.len;
 				n++;
 			}
@@ -155,7 +155,7 @@ atoms_join(element_t * e, char *sep)
 static list_t  *
 list_new(void)
 {
-	list_t         *new;
+	list_t	 *new;
 
 	new = (list_t *) Malloc(sizeof(list_t));
 	new->head = 0;
@@ -168,8 +168,8 @@ list_new(void)
 static list_t  *
 list_dup(list_t * lp, element_t * e)
 {
-	list_t         *new = 0;
-	element_t      *ep = 0, *le;
+	list_t	 *new = 0;
+	element_t	*ep = 0, *le;
 
 	if (lp == 0)
 		return 0;
@@ -189,8 +189,8 @@ list_dup(list_t * lp, element_t * e)
 static int
 boundary_cpy(boundary_t * dest, boundary_t * src)
 {
-	int             i;
-	char           *a, *b;
+	int		i;
+	char	   *a, *b;
 
 	switch (src->type & 0x07) {
 	case SPOC_ALPHA:
@@ -234,7 +234,7 @@ boundary_cpy(boundary_t * dest, boundary_t * src)
 static range_t *
 range_dup(range_t * rp)
 {
-	range_t        *new = 0;
+	range_t	*new = 0;
 
 	if (rp == 0)
 		return 0;
@@ -258,7 +258,7 @@ i_element_dup(item_t a, item_t b)
 static varr_t  *
 set_dup(varr_t * va, element_t * parent)
 {
-	varr_t         *new;
+	varr_t	 *new;
 
 	new = varr_dup(va, &i_element_dup);
 
@@ -341,10 +341,10 @@ element_new_set( varr_t *varr )
  * \param memberof The element that is to be the parent of the copy \return A
  * pointer to the copy 
  */
-element_t      *
+element_t	*
 element_dup(element_t * ep, element_t * memberof)
 {
-	element_t      *new = 0;
+	element_t	*new = 0;
 
 	if (ep == 0)
 		return 0;
@@ -394,10 +394,10 @@ element_dup(element_t * ep, element_t * memberof)
  * list, might be NULL \param e The element that is to be added to the list
  * \return A pointer to the possibly newly created list 
  */
-element_t      *
+element_t	*
 element_list_add(element_t * le, element_t * e)
 {
-	element_t      *ep, *end;
+	element_t	*ep, *end;
 
 	if (e == 0)
 		return le;
@@ -501,7 +501,7 @@ element_set_add(element_t * le, element_t * e)
 int
 element_size(element_t * e)
 {
-	int             i = 0;
+	int		i = 0;
 
 	if (e == 0)
 		return -1;
@@ -549,8 +549,8 @@ element_type(element_t * e)
 static varr_t  *
 set_search(varr_t * va, octet_t * tag, varr_t * r)
 {
-	element_t      *ep;
-	void           *v;
+	element_t	*ep;
+	void	   *v;
 
 	if (va == 0 || tag == 0 || tag->len == 0)
 		return 0;
@@ -578,7 +578,7 @@ list_search(element_t * e, octet_t * tag, varr_t * r)
 
 	if (octcmp(tag, &(e->e.atom->val)) == 0) {
 		r = varr_add(r,
-			     element_dup(e->memberof, e->memberof->memberof));
+				element_dup(e->memberof, e->memberof->memberof));
 	}
 
 	for (e = e->next; e; e = e->next) {
@@ -600,11 +600,11 @@ list_search(element_t * e, octet_t * tag, varr_t * r)
  * should be searched \param tag the list tag \return An element array
  * containing the list/lists or NULL if no list with that tag was found. 
  */
-element_t      *
+element_t	*
 element_find_list(element_t * e, octet_t * tag)
 {
-	element_t      *re = 0;
-	varr_t         *varr = 0;
+	element_t	*re = 0;
+	varr_t	 *varr = 0;
 
 	if (e == 0)
 		return 0;
@@ -637,9 +637,9 @@ element_find_list(element_t * e, octet_t * tag)
 static element_t *
 element_traverse(element_t * e, octarr_t * oa, int i)
 {
-	element_t      *ep, *rep;
-	int             j, n;
-	varr_t         *varr = 0;
+	element_t	*ep, *rep;
+	int		j, n;
+	varr_t	 *varr = 0;
 
 	if (e == 0)
 		return 0;
@@ -668,7 +668,7 @@ element_traverse(element_t * e, octarr_t * oa, int i)
 			for (; ep; ep = ep->next) {
 				if (ep->type == SPOC_LIST) {
 					if ((rep =
-					     element_traverse(ep, oa, i)) != 0)
+						element_traverse(ep, oa, i)) != 0)
 						return rep;
 				}
 			}
@@ -688,7 +688,7 @@ element_traverse(element_t * e, octarr_t * oa, int i)
  * should be picked \return A pointer to the subelement or if the element given 
  * was not a list, array or set NULL. 
  */
-element_t      *
+element_t	*
 element_first(element_t * e)
 {
 	if (e == 0)
@@ -714,7 +714,7 @@ element_first(element_t * e)
  * from which the element should be picked \return A pointer to the subelement 
  * or if the element given was not a list, array or set NULL. 
  */
-element_t      *
+element_t	*
 element_last(element_t * e)
 {
 	if (e == 0)
@@ -725,7 +725,7 @@ element_last(element_t * e)
 		return e;
 	} else if (e->type == SPOC_SET || e->type == SPOC_ARRAY)
 		return (element_t *) varr_nth(e->e.set,
-					      varr_len(e->e.set) - 1);
+						varr_len(e->e.set) - 1);
 	else
 		return NULL;
 }
@@ -741,17 +741,17 @@ element_last(element_t * e)
  * A pointer to the subelement . If the element given is a atom alement and
  * the index was set to 0, the element itself will be returned. 
  */
-element_t      *
+element_t	*
 element_nth(element_t * e, int n)
 {
-	int             i;
+	int		i;
 
 	if (e == 0)
 		return 0;
 
 	if (e->type == SPOC_LIST) {
 		for (i = 0, e = e->e.list->head; i < n && e->next;
-		     e = e->next, i++);
+			e = e->next, i++);
 		return e;
 	} else if (e->type == SPOC_SET || e->type == SPOC_ARRAY) {
 		return (element_t *) varr_nth(e->e.set, n);
@@ -778,8 +778,8 @@ element_nth(element_t * e, int n)
 static element_t *
 element_intervall(element_t * e, int start, int end)
 {
-	element_t      *re = 0, *ep, *next;
-	int             i, n;
+	element_t	*re = 0, *ep, *next;
+	int		i, n;
 
 	if (e == 0)
 		return 0;
@@ -816,19 +816,19 @@ element_intervall(element_t * e, int start, int end)
 
 	if (end == start) {
 		for (i = 0, ep = e->e.list->head; i < start;
-		     ep = ep->next, i++);
+			ep = ep->next, i++);
 		re = element_dup(ep, 0);
 	} else {
 		/*
 		 * get the starting point 
 		 */
 		for (i = 0, ep = e->e.list->head; i < start;
-		     ep = ep->next, i++);
+			ep = ep->next, i++);
 
 		re = element_list_add(re, ep);
 
 		for (next = ep->next; i < end; next = next->next, i++)
-			re = element_list_add(re, ep);
+			re = element_list_add(re, next);
 	}
 
 	return re;
@@ -847,7 +847,7 @@ element_intervall(element_t * e, int start, int end)
 int
 element_cmp(element_t * e0, element_t * e1)
 {
-	int             t, i, n, r = 0;
+	int		t, i, n, r = 0;
 
 	if (e0 == 0 || e1 == 0)
 		return -1;
@@ -871,7 +871,7 @@ element_cmp(element_t * e0, element_t * e1)
 			return n - i;
 		for (i = 0; i < n; i++) {
 			if ((r =
-			     element_cmp(element_nth(e0, i),
+				element_cmp(element_nth(e0, i),
 					 element_nth(e1, i))) != 0)
 				break;
 		}
@@ -908,7 +908,7 @@ element_reverse(element_t * e)
 	 * element and can there for not be reversed 
 	 */
 	if (e->type == SPOC_LIST) {
-		element_t      *head, *a, *b;
+		element_t	*head, *a, *b;
 
 		head = e->e.list->head;
 
@@ -945,7 +945,7 @@ element_reverse(element_t * e)
  * \brief Returns a pointer to the element data. \param e A pointer to a
  * element \return A void pointer 
  */
-void           *
+void	   *
 element_data(element_t * e)
 {
 	if (e == 0)
@@ -987,7 +987,7 @@ element_data(element_t * e)
  * of the element you supply it with. \param e A element \return A pointer to
  * the parent element if it exists, otherwise NULL. 
  */
-element_t      *
+element_t	*
 element_parent(element_t * e)
 {
 	if (e == 0)
@@ -1005,8 +1005,8 @@ element_parent(element_t * e)
 static char    *
 parse_intervall(octet_t * o, int *start, int *end)
 {
-	char           *sp;
-	int             n, i = 0;
+	char	   *sp;
+	int		n, i = 0;
 
 	if ((n = octchr(o, ']')) < 0)
 		return 0;
@@ -1068,13 +1068,13 @@ parse_intervall(octet_t * o, int *start, int *end)
 static octarr_t *
 parse_path(octet_t * o)
 {
-	char           *sp, *np = 0;
+	char	   *sp, *np = 0;
 	unsigned int    i;
-	octarr_t       *oa = 0;
-	octet_t        *oct = 0;
+	octarr_t	*oa = 0;
+	octet_t	*oct = 0;
 
 	for (sp = o->val, i = 0; (DIRCHAR(*sp) || *sp == '/') && i < o->len;
-	     sp++, i++) {
+		sp++, i++) {
 		if (*sp == '/') {
 			if (oa == 0) {
 				oa = octarr_new(2);
@@ -1122,15 +1122,15 @@ parse_path(octet_t * o)
  * element/-s 
  */
 
-element_t      *
+element_t	*
 element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
 {
-	element_t      *re = 0, *ep = 0, *ie = 0, *sep = 0;
-	element_t      *pe = 0, *se = 0;
-	char           *sp;
-	octet_t         tag, cpy;
-	octarr_t       *oa = 0;
-	int             p, r, n = 0;
+	element_t	*re = 0, *ep = 0, *ie = 0, *sep = 0;
+	element_t	*pe = 0, *se = 0;
+	char	   *sp;
+	octet_t	 tag, cpy;
+	octarr_t	*oa = 0;
+	int		p, r, n = 0;
 
 	octln(&cpy, spec);
 	do {
@@ -1167,7 +1167,7 @@ element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
 					cpy.len -= 2;
 					tag.val = sp;
 					for (tag.len = 0; DIRCHAR(*sp);
-					     tag.len++, sp++);
+						tag.len++, sp++);
 
 					cpy.len -= tag.len;
 					cpy.val += tag.len;
@@ -1207,14 +1207,14 @@ element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
 				sp = cpy.val;
 
 				if (*sp == '[') {	/* subset of the list */
-					int             b, e;
+					int		b, e;
 
 					cpy.val++;
 					cpy.len--;
 
 					if ((sp =
-					     parse_intervall(&cpy, &b,
-							     &e)) == 0) {
+						parse_intervall(&cpy, &b,
+								&e)) == 0) {
 						if (re)
 							element_free(re);
 						if (se)
@@ -1254,9 +1254,9 @@ element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
 			return 0;
 		}
 
-	      NEXTpart:
+		NEXTpart:
 		for (sp = cpy.val, p = 0;
-		     cpy.len && (*sp == ' ' || *sp == '|'); sp++) {
+			cpy.len && (*sp == ' ' || *sp == '|'); sp++) {
 			if (*sp == '|')
 				p++;
 			cpy.val++;
@@ -1276,7 +1276,7 @@ element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
 					re = element_array_add(re, se);
 				else
 					re = element_array_add(re,
-							       element_dup(pe,
+								element_dup(pe,
 									   0));
 			} else {
 				if (ie)
@@ -1302,6 +1302,39 @@ element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
  * ---------------------------------------------------------------------- 
  */
 
+static octet_t *
+element2oct( element_t *e)
+{
+	octet_t		*oct = 0, *tmp;
+	element_t	*ep;
+	int		i;
+
+	switch (element_type(e)) {
+	case SPOC_ATOM:
+		oct = octdup((octet_t *) element_data(e)) ;
+		break;
+
+	case SPOC_LIST:
+		for( ep = element_data(e), i=0; ep; ep = ep->next, i++ ) {
+			tmp = element2oct( ep );
+			if (tmp == 0) {
+				oct_free( oct );
+				break;
+			}
+
+			if (i) {
+				octcat( oct, " ", 1);
+				octcat( oct, tmp->val, tmp->len );
+				oct_free( tmp );
+			} else
+				oct = tmp;
+		}
+		break;
+	}
+
+	return oct;
+}
+
 /*!
  * This function takes a 'string' containing ${0}, ${1} and so on, where
  * substitutions should be made and a list of ATOM elements that should be
@@ -1314,13 +1347,13 @@ element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
  * variable substitutions 
  */
 
-octet_t        *
+octet_t	*
 element_atom_sub(octet_t * val, element_t * xp)
 {
-	int             subs = 0, n, p, i;
-	octet_t         oct, spec, *res = 0;
-	element_t      *vs;
-	char            tmp[256];
+	int		subs = 0, n, p, i;
+	octet_t		oct, spec, *res = 0;
+	element_t	*vs;
+	octet_t		*tmp;
 
 	/*
 	 * no variable substitutions necessary 
@@ -1393,19 +1426,15 @@ element_atom_sub(octet_t * val, element_t * xp)
 		}
 
 		/*
-		 * allow only simple substitutions 
 		 */
-		if (element_type(vs) != SPOC_ATOM) {
+		if((tmp = element2oct( vs )) == 0 ) {
 			oct_free(res);
+			traceLog(LOG_WARNING, "Substitution error");
 			return 0;
 		}
 
-		if (oct2strcpy(element_data(vs), tmp, 256, 0) < 0) {
-			oct_free(res);
-			return 0;
-		}
-
-		octcat(res, tmp, strlen(tmp));
+		octcat(res, tmp->val, tmp->len);
+		oct_free( tmp );
 
 		oct.val += n + 1;
 		oct.len -= n + 1;

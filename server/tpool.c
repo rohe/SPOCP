@@ -82,7 +82,7 @@ tpool_init(int wthreads, int max_queue_size, int do_not_block_when_full)
 {
 	int             i;
 	tpool_t        *tpool = 0;
-	ptharg_t        ptharg;
+	ptharg_t       *ptharg;
 
 	/*
 	 * allocate a pool data structure 
@@ -121,15 +121,17 @@ tpool_init(int wthreads, int max_queue_size, int do_not_block_when_full)
 	pthread_cond_init(&(tpool->queue_not_full), NULL);
 	pthread_cond_init(&(tpool->queue_empty), NULL);
 
-	ptharg.tpool = tpool;
-
 	/*
 	 * create threads 
 	 */
-	for (i = 0; i != wthreads; i++) {
-		ptharg.id = i;
+	for (i = 0; i < wthreads; i++) {
+		ptharg = (ptharg_t *) Calloc (1, sizeof( ptharg_t ));
+
+		ptharg->tpool = tpool;
+		ptharg->id = i;
+
 		pthread_create(&(tpool->threads[i]), NULL, tpool_thread,
-			       (void *) &ptharg);
+			       (void *) ptharg);
 	}
 
 	return tpool;
@@ -308,9 +310,7 @@ tpool_thread(void *arg)
 		 */
 		afpool_lock(workqueue);
 
-		/*
-		 * if(1) traceLog(LOG_DEBUG, "Thread %d looking for work", id ) ; 
-		 */
+		if(1) traceLog(LOG_DEBUG, "Thread %d looking for work", id ) ; 
 
 		/*
 		 * nothing in the queue, wait for something to appear 
@@ -331,9 +331,7 @@ tpool_thread(void *arg)
 
 		afpool_unlock(workqueue);
 
-		/*
-		 * if(1) traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
-		 */
+		if(1) traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
 
 		/*
 		 * Has a shutdown started while I was sleeping? 

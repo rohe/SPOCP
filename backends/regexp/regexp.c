@@ -38,7 +38,7 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 {
 	octarr_t       *argv;
 	octet_t        *oct;
-	char           *flags;
+	char           *flags = 0;
 	char           *regexp;
 	char           *string;
 	int             icase = FALSE;
@@ -56,21 +56,25 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 	/*
 	 * Split into returnval and cmd parts 
 	 */
-	argv = oct_split(oct, ':', 0, 0, 0);
+	argv = oct_split(oct, ';', 0, 0, 0);
 
 	if (oct != cpp->arg)
 		oct_free(oct);
 
-	flags = oct2strdup(argv->arr[0], 0);
+	if (argv->n < 3)
+		return SPOCP_MISSING_ARG;
+
+	if (argv->arr[0]->len)
+		flags = oct2strdup(argv->arr[0], 0);
 	regexp = oct2strdup(argv->arr[1], 0);
 	string = oct2strdup(argv->arr[2], 0);
 
-	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Regexp: flags: %s regexp: %s
-	 * string: \"%s\"",flags,regexp,string); }
-	 * 
-	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Flags len: %d",argv[0]->len); } 
-	 */
+	DEBUG( SPOCP_DBCOND ){
+		traceLog(LOG_DEBUG,"Regexp: regexp: \"%s\" string: \"%s\"",
+		    regexp,string); 
+	}
+	
+	DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Flags len: %d",argv->arr[0]->len); } 
 
 	if (argv->arr[0]->len > 0) {
 		for (i = 0; flags[i]; i++) {
@@ -92,17 +96,17 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 	}
 
 
-	preg = (regex_t *) malloc(1 * sizeof(regex_t));
+	preg = (regex_t *) calloc(1, sizeof(regex_t));
+	DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"regcomp with flags %d", the_flags); } 
 	answ = regcomp(preg, regexp, the_flags);
-	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Have compiled expression"); } 
-	 */
+	DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Have compiled expression"); } 
 
 	if (answ != 0) {
-		/*
-		 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Error when trying to
-		 * compile regular expression: %d",answ); } 
-		 */
+		DEBUG( SPOCP_DBCOND ){
+		    	traceLog(LOG_DEBUG,
+			    "Error when trying to compile regular expression: %d",
+			    answ);
+		} 
 		regfree(preg);
 		free(flags);
 		free(regexp);
@@ -112,11 +116,12 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 	}
 
 
+	DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Will execute expression"); } 
 	answ = regexec(preg, string, (size_t) 0, NULL, 0);
-	/*
-	 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Have executed expression, with
-	 * answer %d",answ); } 
-	 */
+	DEBUG( SPOCP_DBCOND ){
+		traceLog(LOG_DEBUG,
+		    "Have executed expression, with answer %d",answ); 
+	} 
 
 	regfree(preg);
 	free(flags);
@@ -125,10 +130,8 @@ regexp_test(cmd_param_t * cpp, octet_t * blob)
 	octarr_free(argv);
 
 	if (answ != 0) {
-		/*
-		 * DEBUG( SPOCP_DBCOND ){ traceLog(LOG_DEBUG,"Error, or no match found:
-		 * %d",answ); } 
-		 */
+		DEBUG( SPOCP_DBCOND )
+		    traceLog(LOG_DEBUG,"Error, or no match found: %d",answ);
 		return FALSE;
 	} else {
 		return TRUE;
