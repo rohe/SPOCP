@@ -46,9 +46,11 @@
 
 /*! The file descriptor to which the logging should go */
 FILE	*spocp_logf = 0;
+
 int	spocp_loglevel = 0;
 int	spocp_debug = 0;
 int	log_syslog = 0;
+
 
 /*! The process ID of the server startup process */
 int	procid = 0;

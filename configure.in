@@ -408,6 +408,8 @@ AC_CHECK_FUNCS([strpbrk])
 AC_CHECK_FUNCS([pipe])
 AC_CHECK_FUNCS([getdomainname])
 AC_CHECK_FUNCS([strptime])
+AC_CHECK_FUNCS([strlcat])
+AC_CHECK_FUNCS([strlcpy])
 
 dnl *************************************************
 
