@@ -11,7 +11,7 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-#define XYZ 1
+#define XYZ 0
 
 /*
  * ---------------------------------------------------------------------- 
