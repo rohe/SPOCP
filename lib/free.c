@@ -205,7 +205,7 @@ void branch_free( branch_t *bp )
         break ;
 
       case SPOC_RANGE:
-        for( i = 0 ; i < 10 ; i++ ) sl_free_slist( bp->val.range[i] ) ;
+        for( i = 0 ; i < DATATYPES ; i++ ) sl_free_slist( bp->val.range[i] ) ;
         break ;
 
     }
