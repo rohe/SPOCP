@@ -24,8 +24,10 @@
 
 befunc          system_test;
 /*
- * type = "system" typespecific = returnval ";" cmd returnval = d *2( d ) cmd
- * = utf8string
+ * type = "system"
+ * typespecific = returnval ";" cmd
+ * returnval = d *2( d )
+ * cmd = utf8string
  * 
  * returns true if returnvalue of cmd is the same as returnval. 
  */

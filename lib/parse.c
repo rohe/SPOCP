@@ -702,22 +702,30 @@ chunk2sexp( spocp_chunk_t *c )
 	char		*sp, lf[16] ;
 	octet_t		*res;
 
-	if (c == 0) 
+	if (c == 0)  
 		return 0;
 
 	/* The first chunk should be a "(" and the last a ")", but where
 	 * the last one is I don't know at this point
 	 */
-	if( oct2strcmp( ck->val, "(" ) != 0 ) 
+	if( oct2strcmp( ck->val, "(" ) != 0 ) { 
+		chunk_free(c);
 		return 0;
+	}
 
 	/* calculate the length of the resulting S-expression */
 	do {
+		if ( ck == 0 ) {
+			chunk_free(c);
+			return 0;
+		}
+
 		if( oct2strcmp( ck->val, "(" ) == 0 )
 			len++, p++;
 		else if( oct2strcmp( ck->val, ")" ) == 0 )
 			len++, p--;
 		else {
+			/* since every atom is written <len>':'<atom> */
 			len += ck->val->len + DIGITS(ck->val->len) + 1 ;	
 		}
 		ck = ck->next ;
@@ -747,6 +755,8 @@ chunk2sexp( spocp_chunk_t *c )
 		ck = ck->next ;
 	} while( p ) ;
  
+	chunk_free(c);
+
 	*sp = '\0';
 	res->len = sp - res->val;
 	return res;

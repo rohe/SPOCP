@@ -32,7 +32,7 @@
 static void
 print_usage(char *prog)
 {
-	printf("Usage: %s spocpserver 1*( spocpquery )\n", prog);
+	printf("Usage: %s -d spocpserver 1*( spocpquery )\n", prog);
 }
 
 int
@@ -41,30 +41,46 @@ main(int argc, char **argv)
 	char	buf[BUFSIZ], *cp, *sp, *tmp;
 	int	i = 0, ok = 0, r, j;
 	SPOCP	*spocp;
+	char		*sserv = NULL ;
 	queres_t	qres;
 	octet_t		**o;
 	octet_t		*query, *path = 0;
 
-	spocpc_debug = 1;
+	spocpc_debug = 0;
 
-	if (argc < 2) {
-		print_usage(argv[0]);
+	while ((i = getopt(argc, argv, "ds:")) != EOF) {
+		switch (i) {
+
+		case 'd':
+			spocpc_debug = 1;
+			break;
+
+		case 's':
+			sserv = strdup(optarg);
+			break;
+		case 'h':
+			print_usage(argv[0]);
+			exit(0);
+		}
+	}
+
+	if (sserv == NULL) {
+		fprintf(stderr,"You have to give me a server to talk to\n");
 		exit(1);
 	}
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"[%d] arguments", argc);
-
-	if ((spocp = spocpc_open(0, argv[1], 3)) == 0) {
-		fprintf(stderr, "Could not open connection to \"%s\"\n",
-		    argv[1]);
+	if ((spocp = spocpc_open(0, sserv, 3)) == 0) {
+		fprintf(stderr, "Could not open connection to \"%s\"\n", sserv);
 		exit(1);
 	}
 	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Spocpserver [%s]", argv[1]);
+		traceLog(LOG_DEBUG,"Spocpserver [%s]", sserv);
 
-	if (argc > 2) {
-		for (i = 2; i < argc; i++) {
+	argc -= optind;
+	argv += optind;
+
+	if (argc) {
+		for (i = 0; i < argc; i++) {
 			query = sexp_normalize( argv[i] );
 			if( query == 0 ) {
 				fprintf(stderr,"[%s] not a s-expression\n", argv[i]);
@@ -120,15 +136,35 @@ main(int argc, char **argv)
 			}
 			memset(&qres, 0, sizeof(queres_t));
 
+			/* this routine sends the query and will not return until it has 
+			 * an answer */
 			r = spocpc_send_query(spocp, path, query, &qres);
 
 			if (r == SPOCPC_OK) {
-				if (qres.rescode != ok) {
+				if (ok >= 0 && qres.rescode != ok) {
 					tmp = oct2strdup(query, 0);
 					printf("%d != %d on %s\n",
 					    qres.rescode, ok,  tmp);
 					free(tmp);	
 				}
+				else {
+					if ( qres.rescode == SPOCP_SUCCESS) {
+						if (qres.blob) {
+							for (o = qres.blob->arr, j=0 ;
+					   		 j < qres.blob->n ; o++, j++) {
+								tmp = oct2strdup(*o, '\\');
+								printf("[%s] ", tmp);
+								free(tmp);
+							}
+						}
+						printf("OK\n");
+					} else
+						printf("DENIED\n");
+				}
+
+				if (qres.blob)
+					octarr_free( qres.blob );
+
 			}
 			oct_free(query);
 		}
