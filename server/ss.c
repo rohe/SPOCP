@@ -28,12 +28,8 @@
 
 int ruleset_print( ruleset_t *rs )  ;
 
-static spocp_result_t rec_allow(
-  ruleset_t *rs,
-  element_t *ep,
-  parr_t *gap,
-  int scope ,
-  octnode_t **on )
+static spocp_result_t
+rec_allow( ruleset_t *rs, element_t *ep, int scope, octarr_t **on )
 {
   spocp_result_t res = SPOCP_DENIED ;
   ruleset_t      *trs ;
@@ -46,11 +42,11 @@ static spocp_result_t rec_allow(
    
         /* and over to the right side passing every node on the way */
         for(  ; trs && res != SPOCP_SUCCESS ; trs = trs->right ) 
-          res = rec_allow( trs, ep, gap, scope, on ) ;
+          res = rec_allow( trs, ep, scope, on ) ;
       }
 
     case BASE :
-      if( rs->db ) res = allowed( rs->db->jp, ep, gap, rs->db->bcp, on ) ;
+      if( rs->db ) res = allowed( rs->db->jp, ep, on ) ;
       break ;
   
     case ONELEVEL :
@@ -58,7 +54,7 @@ static spocp_result_t rec_allow(
         for( trs = rs->down ; trs->left ; trs = trs->left ) ;
    
         for(  ; trs && res != SPOCP_SUCCESS ; trs = trs->right ) {
-          if( rs->db ) res = allowed( trs->db->jp, ep, gap, rs->db->bcp, on ) ;
+          if( rs->db ) res = allowed( trs->db->jp, ep, on ) ;
         }
       }
       break ;
@@ -92,14 +88,11 @@ spocp_result_t skip_sexp( octet_t *sexp )
     1 access allowed
  */
 
-spocp_result_t
-ss_allow( ruleset_t *rs, octet_t *sexp, octnode_t **on, spocp_req_info_t *sri, int scope )
+spocp_result_t ss_allow( ruleset_t *rs, octet_t *sexp, octarr_t **on, int scope )
 {
   spocp_result_t res = SPOCP_DENIED ; /* this is the default */
-  int            i ;
-  parr_t        *gap = 0 ;
   element_t     *ep = 0 ;
-  octet_t        oct ;
+  octet_t        oct, dec ;
   char          *str ;
 
   if( rs == 0 || sexp == 0 || sexp->len == 0 ) {
@@ -121,47 +114,26 @@ ss_allow( ruleset_t *rs, octet_t *sexp, octnode_t **on, spocp_req_info_t *sri, i
     free( str ) ;
   }
 
-  oct.len = sexp->len ;
-  oct.val = sexp->val ;
-  oct.size = 0 ;
+  octln( &oct, sexp ) ;
+  octln( &dec, sexp ) ;
 
-  if(( res = element_get( sexp, &ep )) != SPOCP_SUCCESS ) {
-    str = oct2strdup( sexp, '\\' ) ;
+  if(( res = element_get( &dec, &ep )) != SPOCP_SUCCESS ) {
+    str = oct2strdup( &oct, '\\' ) ;
     traceLog("The S-expression \"%s\" didn't parse OK", str ) ;
     free( str ) ;
     
     return res ;
   }
 
-  oct.len -= sexp->len ;
+  /* just ignore extra bytes */
+  oct.len -= dec.len ;
   str = oct2strdup( &oct, '\\' ) ;
   traceLog("Query: \"%s\" in \"%s\"", str, rs->name ) ;
   free( str ) ;
 
-  DEBUG(SPOCP_DPARSE) traceLog("Parsed OK, getting AV list") ;
- 
-  /* collect tag value pairs, used for the substitutions in
-     constraint references. Might be none */
-  gap = get_simple_lists( ep, 0 ) ;
-
-  DEBUG(SPOCP_DPARSE) {
-    keyval_t *kv = 0 ;
-
-    for( i = 0 ; gap &&  i < gap->n ; i++ ) {
-      kv = ( keyval_t * ) gap->vect[i] ;
-      str = oct2strdup( kv->key, '%' ) ;
-      traceLog( "==%s", str ) ;
-      free( str ) ;
-      str = oct2strdup( kv->val, '%' ) ;
-      traceLog( "==>%s", str ) ;
-      free( str ) ;
-    }
-  }
-
-  res = rec_allow( rs, ep, gap, scope, on ) ;
+  res = rec_allow( rs, ep, scope, on ) ;
 
   element_free( ep ) ;
-  if( gap ) parr_free( gap ) ;
 
   return res ;
 }
@@ -231,12 +203,11 @@ void *ss_get_rules( ruleset_t *rs, char *file, int *rc  )
 
 /* ------------------------------------------------------------ */
 
-static spocp_result_t rec_del( ruleset_t *rs, char *uid, spocp_req_info_t *sri, size_t *nr )
+static spocp_result_t rec_del( ruleset_t *rs, char *uid, size_t *nr )
 {
   ruleset_t      *trs ;
   db_t           *db ;
   ruleinst_t     *rt ;
-  octet_t        *arg[2] ;
   spocp_result_t rc = SPOCP_SUCCESS ;
 
   db = rs->db ;
@@ -244,11 +215,6 @@ static spocp_result_t rec_del( ruleset_t *rs, char *uid, spocp_req_info_t *sri, 
   if( db == 0 ) return 0 ;
 
   if(( rt = get_rule( db->ri, uid ))) {
-    arg[0] = rt->rule ;
-    arg[1] = 0 ;
-    if(( rc = allowed_by_aci( rs->db, arg, sri, "DELETE" )) != SPOCP_SUCCESS ) 
-      return rc ;
-
     if(( rc = rm_rule( db->jp, rt->rule, rt )) != SPOCP_SUCCESS ) return rc ;
 
     if( free_rule( db->ri, uid ) == 0 ) {
@@ -262,13 +228,13 @@ static spocp_result_t rec_del( ruleset_t *rs, char *uid, spocp_req_info_t *sri, 
     for( trs = rs->down ; trs->left ; trs = trs->left ) ;
    
     for( ; trs ; trs = trs->right )  
-      if(( rc = rec_del( trs, uid, sri, nr )) != SPOCP_SUCCESS ) return rc ;
+      if(( rc = rec_del( trs, uid, nr )) != SPOCP_SUCCESS ) return rc ;
   }
 
   return rc ;
 }
 
-spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope, spocp_req_info_t *sri )
+spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope )
 {
   size_t    n = 0 ;
   char      uid[SHA1HASHLEN+1], *sp ;
@@ -293,7 +259,7 @@ spocp_result_t ss_del_rule( ruleset_t *rs, octet_t *op, int scope, spocp_req_inf
   /* first check that the rule is there */
 
   n = 0 ;
-  if( rec_del( rs, uid, sri, &n ) != SPOCP_SUCCESS ) 
+  if( rec_del( rs, uid, &n ) != SPOCP_SUCCESS ) 
     traceLog( "Error while deleting rules" ) ;
 
   if( n > 1 )       traceLog( "%d rules successfully deleted", n ) ;
@@ -361,13 +327,18 @@ ss_list_rules( ruleset_t *rs, octet_t *pattern, spocp_req_info *sri, int *rc, in
 */
 /* --------------------------------------------------------------------------*/
 
-spocp_result_t ss_add_rule( ruleset_t *rs, octet_t **argv, spocp_req_info_t *sri )
+spocp_result_t ss_add_rule( ruleset_t *rs, octarr_t *oa, bcdef_t *bcd )
 {
   spocp_result_t  r ;
-  ruleinst_t     *ri ;
+  ruleinst_t     *ri = 0 ;
 
-  r = add_right( &(rs->db), argv, sri, &ri ) ;
+  r = add_right( &(rs->db), oa, &ri ) ;
   
+  if( ri && bcd ) {
+    ri->bcond = bcd ;
+    bcd->rules = varr_add( bcd->rules, (void *) ri ) ;
+  }
+
   return r;
 }
 
@@ -430,6 +401,7 @@ db_t *db_dup( db_t *db )
   return new ;
 }
 
+/*
 regexp_t *regexp_dup( regexp_t *rp )
 {
   return new_pattern( rp->regex ) ;
@@ -453,16 +425,19 @@ aci_t *aci_dup( aci_t *ap )
 
   return new ;
 }
+*/
 
 ruleset_t *ruleset_dup( ruleset_t *rs )
 {
   ruleset_t *new ;
+  octet_t   loc ;
 
   if( rs == 0 ) return 0 ;
   
-  new = new_ruleset( rs->name, strlen(rs->name) ) ;
+  loc.val = rs->name ;
+  loc.len = strlen(rs->name) ;
+  new = ruleset_new( &loc ) ;
 
-  new->aci = aci_dup( rs->aci ) ;
   new->db  = db_dup( rs->db ) ;
 
   return new ;
@@ -531,7 +506,6 @@ int print_db( db_t *db )
 
   /* print_junc( db->jp ) ; */
   if( db->ri ) ruleinfo_print( db->ri ) ;
-  if( db->raci ) ruleinfo_print( db->raci ) ;
 
   return 0 ;
 }
