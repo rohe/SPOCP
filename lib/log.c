@@ -163,5 +163,5 @@ void timestamp( char *txt )
 
   gettimeofday( &tv, 0 ) ;
 
-  traceLog("%s: %ld.%ld",txt, tv.tv_sec, tv.tv_usec) ;
+  traceLog("%s: %ld.%06ld",txt, tv.tv_sec, tv.tv_usec) ;
 }
