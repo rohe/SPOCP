@@ -129,8 +129,8 @@ run_stop( srv_t *srv, conn_t *conn, pool_item_t *pi )
 {
 	int err;
 
-	if (XYZ)
-		timestamp("removing connection");
+	DEBUG(SPOCP_DSRV)
+		traceLog(LOG_DEBUG,"removing connection %d", conn->fd);
 
 	conn->close(conn);
 	conn_reset(conn);
@@ -471,10 +471,9 @@ spocp_srv_run(srv_t * srv)
 					       (void *) conn);
 			}
 
-			if (FD_ISSET(conn->fd, &wfds)) {
+			if ((n = iobuf_content(conn->out))) {
 
 				DEBUG(SPOCP_DSRV) {
-					n = iobuf_content(conn->out);
 					traceLog(LOG_DEBUG,
 					    "Outgoing data on fd %d (%d)\n",
 					    conn->fd, n);
@@ -482,7 +481,7 @@ spocp_srv_run(srv_t * srv)
 
 				n = spocp_conn_write(conn);
 
-				if (XYZ)
+				DEBUG(SPOCP_DSRV) 
 					traceLog(LOG_DEBUG,"Wrote %d on %d",
 					   n, conn->fd);
 
