@@ -195,8 +195,6 @@ if test "$gdbm" = "yes" ; then
   AC_CHECK_LIB([gdbm], [gdbm_open], [AC_DEFINE(HAVE_LIBGDBM)], [gdbm=no] )
 fi
 
-rk_TEST_PACKAGE(sql,[#include <sqlext.h>],-lodbc,,,SQL)
-
 if test "$sql" = "yes" ; then
   AC_CHECK_LIB([odbc], [SQLConnect], [AC_DEFINE(HAVE_LIBODBC)], [sql=no] )
   AC_CHECK_HEADERS([sqlext.h])
