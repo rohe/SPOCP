@@ -328,6 +328,7 @@ AC_CONFIG_FILES([Makefile
                  backends/strmatch/Makefile
                  backends/system/Makefile
                  backends/time/Makefile
+                 backends/dback_gdbm/Makefile
                  server/Makefile])
 AC_OUTPUT
 
