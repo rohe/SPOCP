@@ -831,7 +831,7 @@ void free_all_rules( ruleinfo_t *ri )
   ruleinfo_free( ri ) ;
 }
 
-ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob )
+static ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob, char *bcondname )
 {
   ruleinfo_t  *ri ;
   ruleinst_t  *rt ;
@@ -850,6 +850,8 @@ ruleinst_t *save_rule( db_t *db, octet_t *rule, octet_t *blob )
       return 0 ;
     }
   }
+
+  /* dback_insert( db->dback, rt->uid, rule, blob, bcondname ) ; */
 
   rbt_insert( ri->rules, (item_t) rt ) ;
 
@@ -1059,7 +1061,7 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd
       rule.len -= oct.len ; 
     }
 
-    if(( rt = save_rule( *db, &rule, &blob )) == 0 ) {
+    if(( rt = save_rule( *db, &rule, &blob, bcd ? bcd->name : NULL )) == 0 ) {
       element_free( ep ) ;
       return SPOCP_EXISTS ;
     }
@@ -1074,8 +1076,10 @@ spocp_result_t add_right( db_t **db, octarr_t *oa, ruleinst_t **ri, bcdef_t *bcd
       LOG( SPOCP_WARNING ) traceLog("Error while adding rule") ;
     }
 
-    rt->bcond = bcd ;
-    bcd->rules = varr_add( bcd->rules, (void *) rt ) ;
+    if( bcd ) {
+      rt->bcond = bcd ;
+      bcd->rules = varr_add( bcd->rules, (void *) rt ) ;
+    }
  
     *ri = rt ;
   }
