@@ -23,6 +23,8 @@
 #include <macros.h>
 #include <wrappers.h>
 
+#define AVLUS 1
+
 /*
  * =============================================================== 
  */
@@ -247,6 +249,13 @@ ending(junc_t * jp, element_t * ep, comparam_t * comp)
 		bp = jp->item[SPOC_ENDOFLIST];
 
 		if (ep) {
+			octet_t *eop ;
+
+			eop = oct_new( 512,NULL);
+			element_print( eop, ep );
+			oct_print( "ELEMENT:", eop);
+			oct_free( eop);
+
 			/*
 			 * better safe then sorry, this should not be
 			 * necessary FIX 
@@ -382,13 +391,20 @@ do_arr(varr_t * a, element_t * e, comparam_t * comp)
 	resset_t	*rs = 0, *r;
 
 	while ((jp = varr_junc_pop(a))) {
-#ifdef SPOCP_TEST
-		traceLog(LOG_DEBUG,"jp:%p, e:%p",jp,e);
+#ifdef AVLUS
+		octet_t *eop;
+
+		eop = oct_new( 512,NULL);
+		element_print( eop, e );
+		oct_print( "do_arr", eop);
+		oct_free( eop);
+
 #endif
-		r = ending(jp, e, comp );
+		r = next( jp, e, comp );
+
 		if (!r || comp->all)
 			r = resset_join(r,element_match_r(jp, e, comp));
-#ifdef SPOCP_TEST
+#ifdef AVLUS
 		DEBUG(SPOCP_DMATCH)
 			resset_print(r);
 #endif
@@ -467,7 +483,6 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 		return 0;
 
 	atom = ep->e.atom;
-	nep = ep->next;
 
 	if ((bp = ARRFIND(db, SPOC_ATOM)) != 0) {
 		if ((ju = atom2atom_match(atom, bp->val.atom))) {
@@ -495,7 +510,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 
 		if (avp) {
 			DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"matched prefix");
-			rs = resset_join(rs, do_arr(avp, nep, comp));
+			rs = resset_join(rs, do_arr(avp, ep, comp));
 			if (rs && !comp->all)
 				return rs;
 		}
@@ -506,8 +521,16 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 		avp = atom2suffix_match(atom, bp->val.suffix);
 
 		if (avp) {
+			octet_t *eop ;
+
 			DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"matched suffix");
-			rs = resset_join(rs,do_arr(avp, nep, comp));
+
+			eop = oct_new( 512,NULL);
+			element_print( eop, ep );
+			oct_print( "ep", eop);
+			oct_free( eop);
+
+			rs = resset_join(rs,do_arr(avp, ep, comp));
 			if (rs && !comp->all)
 				return rs;
 		}
@@ -526,7 +549,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 				avp = atom2range_match(atom, slp[i], i,
 					&comp->rc);
 				if (avp) {
-					rs=resset_join(rs,do_arr(avp,nep,comp));
+					rs=resset_join(rs,do_arr(avp,ep,comp));
 					if (rs && !comp->all)
 						break;
 				}
@@ -552,9 +575,15 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 	varr_t		*set;
 	void		*v;
 	resset_t	*res = 0, *rs, *setrs=0;
+	octet_t		*eop;
 
 	if (db == 0)
 		return 0;
+
+	eop = oct_new( 512,NULL);
+	element_print( eop, ep );
+	oct_print( "element_match", eop);
+	oct_free( eop);
 
 	/*
 	 * may have several roads to follow, this might just be one of them 

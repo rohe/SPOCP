@@ -49,7 +49,9 @@
 #include <wrappers.h>
 #include <spocpcli.h>
 
+/*
 #define AVLUS 1
+*/
 
 #if!defined(MAXHOSTNAMELEN) || (MAXHOSTNAMELEN < 64)
 #undef MAXHOSTNAMELEN
