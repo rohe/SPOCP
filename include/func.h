@@ -50,7 +50,7 @@ char           *sexp_to_canonical( char *sexp ) ;
 int             ipv6cmp( struct in6_addr *ia1, struct in6_addr *ia2 ) ;
 
 spocp_result_t  element_get( octet_t *oct, element_t **epp ) ;
-element_t      *element_new() ;
+element_t      *element_new( void ) ;
 
 atom_t         *atom_new( octet_t *op ) ;
 set_t          *set_new( int size ) ;
@@ -139,9 +139,9 @@ void    bucket_rm( phash_t *ht, buck_t *bp ) ;
 
 /* db0.c */
 
-junc_t     *junc_new(  ) ;
+junc_t     *junc_new( void ) ;
 junc_t     *junc_dup( junc_t *jp, ruleinfo_t *ri ) ;
-db_t       *db_new() ;
+db_t       *db_new( void ) ;
 
 junc_t     *branch_add( junc_t *ap, branch_t *dbp ) ;
 branch_t   *brancharr_find( junc_t *arr, int type ) ;
@@ -175,10 +175,10 @@ void       *read_rules( void *vp, char *file, int *rc, keyval_t **globals ) ;
 element_t  *element_dup( element_t *ep, element_t *set, element_t *memberof ) ;
 junc_t     *element_add( plugin_t *pl, junc_t *dvp, element_t *ep, ruleinst_t *rt ) ;
 
-raci_t     *saci_new() ;
+raci_t     *saci_new( void ) ;
 
 
-raci_t     *raci_new( ) ;
+raci_t     *raci_new( void ) ;
 int        P_raci_print( void *vp ) ;
 void       *P_raci_dup( void *vp ) ;
 void       P_raci_free( void *vp ) ;
@@ -308,7 +308,7 @@ slist_t   *sl_dup( slist_t *old, ruleinfo_t *ri ) ;
 
 parr_t    *get_all_range_followers( branch_t *bp, parr_t *pa ) ;
 
-subelem_t *subelem_new() ;
+subelem_t *subelem_new( void ) ;
 void       subelem_free( subelem_t *sep ) ;
 
 void        boundary_print( boundary_t *bp ) ;
