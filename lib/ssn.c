@@ -22,7 +22,7 @@
 
 varr_t *get_rec_all_ssn_followers( ssn_t *ssn, varr_t *ja ) ;
 
-ssn_t *ssn_new( char ch )
+static ssn_t *ssn_new( char ch )
 {
   ssn_t *ssn ;
 
@@ -36,7 +36,7 @@ ssn_t *ssn_new( char ch )
   return ssn ;
 }
 
-junc_t *ssn_insert_forward( ssn_t **top, char *str )
+static junc_t *ssn_insert_forward( ssn_t **top, char *str )
 {
   ssn_t   *pssn = 0 ;
   unsigned char *s ;
@@ -108,7 +108,7 @@ junc_t *ssn_insert_forward( ssn_t **top, char *str )
   return pssn->next ;
 }
 
-junc_t *ssn_insert_backward( ssn_t **top, char *str )
+static junc_t *ssn_insert_backward( ssn_t **top, char *str )
 {
   ssn_t   *pssn ;
   unsigned char *s ;
@@ -274,7 +274,7 @@ varr_t *ssn_lte_match( ssn_t *pssn, char *sp, int direction, varr_t *res )
   return res ;
 }
 
-junc_t *ssn_free( ssn_t *pssn )
+static junc_t *ssn_free( ssn_t *pssn )
 {
   junc_t *juncp = 0 ;
   ssn_t  *down ;
