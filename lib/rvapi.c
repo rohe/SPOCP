@@ -30,7 +30,6 @@
 static varr_t *list_search( element_t *e, octet_t *tag, varr_t *r) ;
 element_t *element_dup( element_t *ep, element_t *memberof ) ; 
 /* from input.c */
-void set_memberof( varr_t *va, element_t *group ) ;
 
 /********************************************************************/
 
