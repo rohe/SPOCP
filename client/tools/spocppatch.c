@@ -120,7 +120,7 @@ main(int argc, char **argv)
 	if (server == 0)
 		print_usage(argv[0]);
 
-	spocp = spocpc_init(server);
+	spocp = spocpc_init(server, 0, 0);
 
 #ifdef HAVE_SSL
 	if (tls) {

@@ -122,7 +122,7 @@ main(int argc, char **argv)
 		i = 0;
 	}
 
-	spocp = spocpc_init(server);
+	spocp = spocpc_init(server, 0, 0);
 
 	/* parent also sends queries */
 	for (j = 1; j < nc; j++) {

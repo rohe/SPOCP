@@ -75,7 +75,6 @@ spocp_rescode_t spocp_rescode[] = {
 	{SPOCP_MULTI, "201"},
 	{SPOCP_DENIED, "202"},
 	{SPOCP_CLOSE, "203"},
-	{SPOCP_TRANS_COMP, "204"},
 	{SPOCP_SSL_START, "205"},
 
 	{SPOCP_SASLBINDINPROGRESS, "301"},
@@ -436,13 +435,13 @@ spocpc_start_tls(SPOCP * spocp)
 		return 0;
 	}
 
-	if (*spocp->srv == '/' || strcmp(spocp->srv, "localhost") == 0) {
+	if (*(*spocp->srv) == '/' || strcmp(*spocp->srv, "localhost") == 0) {
 		gethostname(sslhost, MAXHOSTNAMELEN);
 		if (check_cert_chain(spocp->ssl, sslhost) == 0) {
 			SSL_free(spocp->ssl);
 			return 0;
 		}
-	} else if (check_cert_chain(spocp->ssl, spocp->srv) == 0) {
+	} else if (check_cert_chain(spocp->ssl, *spocp->srv) == 0) {
 		SSL_free(spocp->ssl);
 		return 0;
 	}
@@ -863,16 +862,23 @@ spocpc_connect(char *srv, int nsec)
 /*!
  * \brief Initializes a Spocp session, that is creates a Spocp struct but does not
  *   connect to any server.
- * \param host Where the server is to be found
+ * \param host Where the server is to be found, space separated list of servers
  * \return A Spocp connection struct
  */
 SPOCP *
-spocpc_init(char *host)
+spocpc_init(char *hosts, long tv_sec, long tv_usec)
 {
-	SPOCP *spocp;
+	SPOCP	*spocp;
+	int	n;
 
 	spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
-	spocp->srv = strdup(host);
+	spocp->srv = line_split( hosts, ' ', '\\', 0, 0, &n) ;
+	spocp->cursrv = spocp->srv;
+	if ( tv_sec != 0L && tv_usec != 0L) {
+		spocp->com_timeout = (struct timeval *) Malloc (sizeof(struct timeval));
+		spocp->com_timeout->tv_sec = tv_sec;
+		spocp->com_timeout->tv_usec = tv_usec;
+	}
 
 	return spocp;
 }
@@ -895,12 +901,29 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 	if (srv) {
 		if ((fd = spocpc_connect(srv, nsec)) > 0 ) {
 			if (spocp == 0)
-				spocp = spocpc_init(srv) ;
+				spocp = spocpc_init(srv, 0L, 0L) ;
+			else {
+				char	**arr;
+				int	n;
+
+				for( arr = spocp->srv, n = 0; arr; arr++) n++;
+
+				arr = Realloc( spocp->srv, n+2 * sizeof(char *));
+				arr[n+1] = 0;
+				arr[n] = strdup(srv);
+				spocp->srv = arr;
+				spocp->cursrv = spocp->srv+n;
+			}
 		}
 	}
 
-	if (fd <= 0 && spocp && spocp->srv)
-		fd = spocpc_connect(spocp->srv, nsec);
+	if (fd <= 0 && spocp && spocp->srv) {
+		while( spocp->cursrv ) {
+			fd = spocpc_connect(*spocp->cursrv, nsec);
+			if( fd <= 0 ) spocp->cursrv++;
+		}
+		if (spocp->cursrv == 0) spocp->cursrv = spocp->srv;
+	}
 
 	if (fd == 0)
 		return NULL;
@@ -930,12 +953,30 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 int
 spocpc_reopen(SPOCP * spocp, int nsec)
 {
+	char **arr;
+
 	close(spocp->fd);	/* necessary if other side has already closed ? */
 
-	if ((spocp->fd = spocpc_connect(spocp->srv, nsec)) == 0)
+	arr = spocp->cursrv;	/* Retry the same first */
+
+	while( arr ) {
+		spocp->fd = spocpc_connect(*arr, nsec);
+		if( spocp->fd <= 0 ) spocp->cursrv++;
+	}
+	if (arr == 0) {
+		arr = spocp->srv;
+		while( arr != spocp->cursrv ) {
+			spocp->fd = spocpc_connect(*arr, nsec);
+			if( spocp->fd <= 0 ) spocp->cursrv++;
+		}
+	}
+
+	if (spocp->fd <= 0)
 		return FALSE;
-	else
+	else {
+		spocp->cursrv = arr;
 		return TRUE;
+	}
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -948,28 +989,25 @@ spocpc_reopen(SPOCP * spocp, int nsec)
  * \return The number of bytes written or -1 if no bytes could be written
  */
 ssize_t
-spocpc_writen(SPOCP * spocp, char *str, ssize_t n)
+spocpc_writen(SPOCP * spocp, char *str, ssize_t n )
 {
 	ssize_t nleft, nwritten = 0 ;
 	char *sp;
 	fd_set wset;
 	int retval;
-	struct timeval to;
-
-	/* wait max 1 seconds */
-	to.tv_sec = 1;
-	to.tv_usec = 0;
 
 	sp = str;
 	nleft = n;
 	FD_ZERO(&wset);
+
+	spocp->rc = 0;
 
 	if (spocpc_debug)
 		traceLog("Writen fd:%d", spocp->fd);
 
 	while (nleft > 0) {
 		FD_SET(spocp->fd, &wset);
-		retval = select(spocp->fd + 1, NULL, &wset, NULL, &to);
+		retval = select(spocp->fd + 1, NULL, &wset, NULL, spocp->com_timeout);
 
 		if (retval) {
 #ifdef HAVE_SSL
@@ -990,6 +1028,7 @@ spocpc_writen(SPOCP * spocp, char *str, ssize_t n)
 			nleft -= nwritten;
 			sp += nwritten;
 		} else {	/* timed out */
+			spocp->rc = SPOCPC_TIMEOUT;
 			break;
 		}
 	}
@@ -1014,16 +1053,13 @@ spocpc_readn(SPOCP * spocp, char *buf, ssize_t size)
 	fd_set rset;
 	int retval;
 	ssize_t n = 0;
-	struct timeval to;
-
-	/* wait max 1 seconds */
-	to.tv_sec = 1;
-	to.tv_usec = 0;
 
 	FD_ZERO(&rset);
 
+	spocp->rc = 0;
+
 	FD_SET(spocp->fd, &rset);
-	retval = select(spocp->fd + 1, &rset, NULL, NULL, &to);
+	retval = select(spocp->fd + 1, &rset, NULL, NULL, spocp->com_timeout);
 
 	if (retval) {
 #ifdef HAVE_SSL
@@ -1034,13 +1070,15 @@ spocpc_readn(SPOCP * spocp, char *buf, ssize_t size)
 			n = read(spocp->fd, buf, size);
 
 		if (n <= 0) {
-			if (errno == EINTR)
+			if (errno == EINTR) {
+				spocp->rc = SPOCPC_INTERUPT;
 				n = 0;
+			}
 			else
 				return -1;
 		}
 	} else {		/* timed out */
-		;
+		spocp->rc = SPOCPC_TIMEOUT;
 	}
 
 	return (n);
@@ -1068,7 +1106,7 @@ spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
 {
 	octet_t	code, info;
 	octet_t	elem[32];	/* max 15 blobs */
-	int	res = SPOCPC_TIMEDOUT;
+	int	res = SPOCPC_TIMEOUT;
 	int	i;
 	char	cent = 0;
 
@@ -1206,6 +1244,8 @@ spocpc_just_send_X(SPOCP * spocp, char **argv)
 	/* what if I haven't been able to write everything ? */
 	if ((n = spocpc_writen(spocp, op, l)) < 0)
 		return SPOCPC_CON_ERR;
+	else if ( n == 0 && spocp->rc ) 
+		return spocp->rc;
 
 	if (spocpc_debug)
 		traceLog("Wrote %d chars", n);
@@ -1219,19 +1259,15 @@ static int
 spocpc_get_result(SPOCP * spocp, queres_t * qr)
 {
 	char	resp[BUFSIZ];
-	int	ret, n, i = 0;
+	int	ret, n;
 
-	do {
-		if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0)
-			return SPOCPC_OTHER;
+	if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0)
+		return SPOCPC_OTHER;
+	else if (n == 0 && spocp->rc)
+		return spocp->rc;
 
-		if (spocpc_debug)
-			traceLog("Read %d chars", n);
-		i++;
-	} while (n == 0 && i < 5);
-
-	if (n == 0 && i == 5)
-		return SPOCPC_TIMEDOUT;
+	if (spocpc_debug)
+		traceLog("Read %d chars", n);
 
 	resp[n] = '\0';
 
@@ -1486,7 +1522,7 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 	octet_t code, content;
 	int l, re, j, sn, ln;
 	octet_t elem[64], part[6];
-	int rc = SPOCPC_TIMEDOUT, res;
+	int rc = SPOCPC_TIMEOUT, res;
 
 	if ((re = spocpc_sexp_elements(resp, n, elem, 64, &rc)) == -1)
 		return rc;
