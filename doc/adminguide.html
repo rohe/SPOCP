@@ -9,7 +9,7 @@
 <h1>SPOCP Administrators manual</h1>
 Document Status: Project document, last updated 2003-09-27<br>
 Authors: Roland Hedberg and Torbj&ouml;rn Wiberg
-<h2>Content</h2>
+<h1>Content</h1>
 <ul>
 </ul>
 <ol>
@@ -21,7 +21,7 @@ Authors: Roland Hedberg and Torbj&ouml;rn Wiberg
 </ol>
 <ul>
 </ul>
-<h2><a id="intro" name="intro">0. Introduction</a></h2>
+<h1><a id="intro" name="intro">0. Introduction</a></h1>
 This document assumes some basic knowledge on how S-expressions are
 used to manage authorization. If you know very little about this you
 would do well to read <a href="./intro.html">Introduction to
@@ -63,15 +63,17 @@ the old rules and read the new ones from the file. The updating will
 not be
 made instantaneous.
 </p>
-<h2><a id="native" name="native">1. Using the native SPOCP serve</a></h2>
-<h3>1.0 Introduction</h3>
+<h1><a id="native" name="native">1. Using the native SPOCP serve</a></h1>
+<h2>1.0 Introduction</h2>
 The native server is the most versatile server in the set. With it you
 can
 use the full power of S-expression as well as choose from a varity of
 access ways. The native server can listen on Internet ports as well as
 unix domain sockets and as protocol it can presently only used TCP. In
 the future UDP might also be supported.
-<h3>1.1 Configuration file</h3>
+<h2>1.1 Configuration file</h2>
+
+<h3>1.1.0 Server part</h3>
 The server has to know a couple of things when it starts and these
 things are
 supposed to be learnt from the configuration file.<br>
@@ -83,7 +85,7 @@ The format of the configuration file is as follows:
   keyword = "calist" / "certificate" / "clients" / "dhfile" / "entropyfile" /
             "logfile" / "passwd" / "port" / "privatekey" / "rulefile" /
             "threads" / "timeout" / "unixdomainsocket" / "sslverifydepth" /
-             "pidfile" / "cachetime"
+             "pidfile" 
 
   CRLF    = %x0D %x0A
 
@@ -228,20 +230,52 @@ connection.</dd>
   <dd>Which unix domain socket spocp should listen on.</dd>
 </dl>
 <dl>
-  <dt style="font-weight: bold;">Pidfile</dt>
+  <dt><b>Pidfile</b></dt>
   <dd>Where the server should write the process Id of the server</dd>
 </dl>
+
+<h3>1.1.2 Plugin part</h3>
+
+The native server handles what we call boundary conditions through the use of 
+plugins. Plugins are dynamically loaded software modules that is loaded at startup.
+<p>
+Since we don't know and can't guess what kind of plugins there are going to be in
+the future we have only defined how you tell the server about plugins.
+<p>
+You are suppost to use the construct: 
+<pre>
+  "[" pluginname ":" key "]"
+</pre>
+
+There are a couple of keys that we have defined and then you are free to define
+more for managing the configuration of your backend. The ones we have defined are:
+
 <dl>
-  <dt style="font-weight: bold;">cachetime</dt>
-  <dd>Definitions of the cachetime to use for different backends. The
-first argument is the
-number of seconds, the second a string which will be matched agains the
-string defining the
-backend and its arguments after the variable substitution</dd>
+  <dt><b>filename</b></dt>
+  <dd>The absolute pathname to the dynammic software module implementing the backend</dd>
 </dl>
-<p>The following is an example of a config file:
-</p>
-<hr>
+
+<dl>
+  <dt><b>test</b></dt>
+  <dd>The function that should be invoked when this backend is used to evauate a boundary condition</dd>
+</dl>
+
+<dl>
+  <dt><b>init</b></dt>
+  <dd>A function that should be run by the server on startup. This is if the backend needs to do
+      some initialization before it is used for evaluation the first time
+  </dd>
+</dl>
+
+<dl>
+  <dt><b>cachetime</b></dt>
+  <dd>Definitions of the cachetime to use for different backends. The
+first argument is the number of seconds, the second a string which will be matched agains the
+string defining the arguments of the backend after the variable substitution</dd>
+</dl>
+
+<h3>1.1.3 Example</h3>
+
 <pre>
 [certificate]
 /usr/local/spocp/certs/spocpserver.pem
@@ -282,27 +316,21 @@ NewKey
 [timeout]
 30
 
-[cachetime]
-3600  flatfile
-10    flatfile:/home/roland/
-180   flatfile:/etc
-60    flatfile:/etc/passwd
-300   lastlogin
-0     time
-3600  ldapset
-30    ldapset:ldap.ki.se
-180   ldapset:tonwig1
-3600  ipnum
-60    mail
-60    rbl
-86400 strmatch
-86400 strcasematch
-0     difftime
+[flatfile:filename]
+/usr/local/spocp/lib/libflatfileplugin.so
 
+[flatfile:test]
+flatfile_test
+
+[flatfile:cachetime]
+3600  /
+10    /home/roland/
+180   /etc
+60    /etc/passwd
 </pre>
-<h3>1.2 Commandline options</h3>
+<h2>1.2 Commandline options</h2>
 <pre> spocp [-d num][-f file][-h]<br><br> num   = 1*digit<br> digit = %30-39<br> file  = 1*UTF8 ; filename<br></pre>
-<h3><a id="rulefile" name="rulefile">1.3 Rulefile format</a></h3>
+<h2><a id="rulefile" name="rulefile">1.3 Rulefile format</a></h2>
 A formal definition:
 <pre>  rulefile   = ( ruledef / comment / "" / definition / include ) CR<br>  ruledef    = [path] rule<br>  rule       = list / atom / variable<br>  list       = "(" atom *rule ")"<br>  atom       = len ":" val<br>  variable   = "$$(" key ")"<br>  key        = 1*(%x2A-7E)<br>  comment    = "#" *UTF8  <br>  definition = key *SP "=" *SP 1*( atom / rule )<br>  SP         = %x20 / %x09                      ; space or tab<br>  len        = %x31-39 *( %x30-39 )<br>  val        = 1*UTF8<br>  include    = ";include" filename              ; reference to another rule file<br>  path       = '/' *( pathpart )<br>  pathpart   = 1*dirchar '/'<br>  dirchar    = %x30-39 / %x41-5A / %x61-7A / '-' / '_' <br></pre>
 A unformal definition: <br>
@@ -332,10 +360,10 @@ text.
 to prepend the ruledefinition itself with a path name.
 </p>
 <hr>
-<h3><a id="pam" name="pam">2. Spocp as a Pluggable Authentication
-Module (PAM) for Linux</a></h3>
+<h2><a id="pam" name="pam">2. Spocp as a Pluggable Authentication
+Module (PAM) for Linux</a></h2>
 
-<h4>2.1 Account queries to S-expression conversion</h4>
+<h3>2.1 Account queries to S-expression conversion</h3>
 The information presented to the PAM module are service requested, on
 what host,by who ( uid and gid ) and finally from where the request
 came. It might come
@@ -358,7 +386,7 @@ is allowed
 to run the command 'useradd'. If this was the only rule defined and
 used then root
 would not be able to run 'useradd' !
-    <h3>2.2 PAM configuration file format</h3>
+    <h2>2.2 PAM configuration file format</h2>
 PAM separates the tasks of authentication into four independent
 management groups:
     <ul>
@@ -429,10 +457,10 @@ unnecessary )
 the spocp line in the configuration file would become:
     <pre>account  required       pam_spocp.so    spocpserver=/tmp/spocp <br><br><br></pre>
 
-<h2><a id="apache_mod" name="apache_mod">3. Spocp as
-accesscontrol system for a Apache server</a></h2>
+<h1><a id="apache_mod" name="apache_mod">3. Spocp as
+accesscontrol system for a Apache server</a></h1>
 
-<h3>3.1 Apache configuration: (httpd.conf)</h3>
+<h2>3.1 Apache configuration: (httpd.conf)</h2>
 This directive is suppost to be used inside &lt;Directory&gt; or &lt;Location&gt;
 within *.conf files. It can not be used in .htaccess.
 &lt;/Location&gt;&lt;/Directory&gt;
@@ -452,7 +480,7 @@ host:port ( remember there is no default spocp port ) or a unix domain
 socket specification.
 </dd>
 </dl>
-<h3>3.2 Defining the Spocp rules</h3>
+<h2>3.2 Defining the Spocp rules</h2>
 There are 5 different cases when it comes to http requests:
     <ol>
       <li> http without authentication
@@ -581,7 +609,7 @@ The mod_spocp implementation allows you to
 distinguish between these by adding a '0' element to the action list if it
 is a access check and a '1' if it is a authorisation check.
 
-<h3>3.2 A simple example </h3>
+<h2>3.2 A simple example </h2>
 
 Given a httpd.conf with the following parts:
 
@@ -684,8 +712,7 @@ also to explicitly specify who should be granted access.<br>
 first two checks, the access and identity check) would not ( since she would
 fail on the authorization check).
 
-<h2><a id="intro" name="intro">4. Spocp as access control for
-OpenLDAP</a></h2>
+<h1><a id="intro" name="intro">4. Spocp as access control for OpenLDAP</a></h1>
 ---Placeholder---
 </body>
 </html>
