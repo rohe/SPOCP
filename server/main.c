@@ -229,8 +229,8 @@ main(int argc, char **argv)
 		dbc.handle = 0;
 
 		if (srv.rulefile
-		    && read_rules(&srv, srv.rulefile, &dbc, &globals) <= 0) {
-			LOG(SPOCP_ERR) traceLog("No valid rules found");
+		    && read_rules(&srv, srv.rulefile, &dbc, &globals) != 0) {
+			LOG(SPOCP_ERR) traceLog("Error while reading rules");
 			exit(1);
 		}
 
