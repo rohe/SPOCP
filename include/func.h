@@ -325,6 +325,7 @@ ruleinst_t *varr_ruleinst_nth( varr_t *va, int n ) ;
 
 /* ----- */
 
+int		bcspec_is( octet_t *spec ) ;
 bcdef_t        *bcdef_add( db_t *db, octet_t *n, octet_t *d ) ;
 spocp_result_t  bcdef_del( db_t *db, octet_t *name ) ;
 spocp_result_t  bcdef_replace( db_t *db, octet_t *n, octet_t *d ) ;
