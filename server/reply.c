@@ -107,7 +107,6 @@ gather_replies( spocp_iobuf_t *out, conn_t *conn )
 		timestamp("Got it");
 
 	if (conn->head == 0) {
-		traceLog(LOG_INFO,"No result");
 		pthread_mutex_unlock( &conn->rlock );
 		return r;
 	}

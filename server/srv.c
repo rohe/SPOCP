@@ -754,8 +754,7 @@ _query(work_info_t *wi, int all)
 					break;
 				}
 
-				DEBUG(SPOCP_DSRV) 
-					oct_print(LOG_DEBUG,"returns blob", oct);
+				oct_print(LOG_INFO,"returns blob", oct);
 
 				oct_free(oct);
 			}

@@ -17,7 +17,9 @@ checked_new( ruleinst_t *ri, spocp_result_t rc, octet_t *blob)
 	checked_t *cr;
 
 	cr = (checked_t *)Calloc(1, sizeof( checked_t ));
+#ifdef AVLUS
 	traceLog( LOG_DEBUG, "checked_new %p", (void *) cr );
+#endif
 	cr->ri = ri;
 	cr->rc = rc;
 	cr->blob = blob;
@@ -29,7 +31,9 @@ void
 checked_free( checked_t *c )
 {
 	if (c) {
+#ifdef AVLUS
 		traceLog( LOG_DEBUG, "checked_free %p", (void *) c );
+#endif
 		if (c->blob)
 			oct_free(c->blob);
 		if (c->next)

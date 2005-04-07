@@ -276,8 +276,8 @@ oct2strcmp(octet_t * o, char *s)
 	size_t          l, n;
 	int             r;
 
-	if( o == 0 && s == 0 ) return 0;
-	else if( o == 0 || s == NULL ) return -1;
+	if( o == 0 && (s == 0 || *s == '\0')) return 0;
+	else if( o == 0 || s == 0 || *s == '\0' ) return -1;
 
 	l = strlen(s);
 

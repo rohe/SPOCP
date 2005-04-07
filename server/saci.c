@@ -73,7 +73,9 @@ char           *operquery =
 sexparg_t         **srvq;
 sexparg_t         **operq;
 
-int xyy = 1;
+/*
+#define AVLUS 1
+*/
 
 /*
  * ---------------------------------------------------------------------- 
@@ -344,22 +346,25 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 	 * no ruleset or rules means everything is allowed 
 	 */
 	if (rs == 0 || rules(rs->db) == 0) {
-		if (xyy)
-			traceLog(LOG_ERR,"No rules to tell me what to do");
+#ifdef AVLUS
+		traceLog(LOG_ERR,"No rules to tell me what to do");
+#endif
 		return SPOCP_SUCCESS;
 	}
 
 	oct_assign(&oct, path);
 
-	if (xyy)
-		traceLog(LOG_DEBUG,"Looking for ruleset [%s](%p)", path, rs);
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"Looking for ruleset [%s](%p)", path, rs);
+#endif
 
 	/*
 	 * No ruleset means everything is allowed !!! 
 	 */
 	if ((rs = ruleset_find(&oct, rs)) == 0 || rs->db == 0) {
-		if (xyy)
-			traceLog(LOG_DEBUG,"No ruleset");
+#ifdef AVLUS
+		traceLog(LOG_DEBUG,"No ruleset");
+#endif
 
 		return SPOCP_SUCCESS;
 	}
@@ -367,13 +372,15 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 	 * The same if there is no rules in the ruleset 
 	 */
 	if (rs->db->ri->rules == 0) {
-		if (xyy)
-			traceLog(LOG_DEBUG,"No ruleset");
+#ifdef AVLUS
+		traceLog(LOG_DEBUG,"No ruleset");
+#endif
 		return SPOCP_SUCCESS;
 	}
 
-	if (xyy)
-		traceLog(LOG_DEBUG,"Making the internal access query");
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"Making the internal access query");
+#endif
 	sexp = sexp_constr(wi, arg);
 
 	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Internal access Query: \"%s\" in \"%s\"",

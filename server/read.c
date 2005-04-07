@@ -190,6 +190,9 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 		else if (*chunk->val->val == '/' || *chunk->val->val == '(') {
 			trs = rs;
 			if (*chunk->val->val == '/') {
+#ifdef AVLUS
+				oct_print(LOG_INFO,"ruleset", chunk->val);
+#endif
 				if ((trs = ruleset_find( chunk->val, rs)) == NULL) {
 					octet_t oct;
 

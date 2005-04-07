@@ -18,7 +18,9 @@
 
 int             ruleset_print(ruleset_t * rs);
 
+/*
 #define AVLUS 1
+*/
 
 static          spocp_result_t
 rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
@@ -34,7 +36,7 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 	memset(&comp,0,sizeof(comparam_t));
 
 #ifdef AVLUS
-	traceLog(LOG_INFO,"rec_allow %d", scope&0x0F);
+	traceLog(LOG_INFO,"rec_allow %s %d", rs->name, scope&0x0F);
 #endif
 
 	switch (scope&0x0F) {
@@ -43,7 +45,12 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 			/*
 			 * go as far to the left as possible 
 			 */
-			for (trs = rs->down; trs->left; trs = trs->left);
+			for (trs = rs->down; trs->left; trs = trs->left)
+#ifdef AVLUS
+				traceLog(LOG_INFO,"Going left %s", trs->left);
+#else
+				;
+#endif
 
 			/*
 			 * and over to the right side passing every node on

@@ -283,7 +283,8 @@ main(int argc, char **argv)
 	/* this because of a side effect of ruleset_create() */
 	oct.val = path;
 	oct.len = strlen(path);
-	rs = ruleset_find( &oct, srv.root );
+	/* Not needed */
+	/* rs = ruleset_find( &oct, srv.root );*/
 	rs->db = db_new();
 
 	/*
@@ -296,7 +297,8 @@ main(int argc, char **argv)
 		exit(1);
 	oct.val = path;
 	oct.len = strlen(path);
-	rs = ruleset_find( &oct, srv.root );
+	/* Not needed */
+	/* rs = ruleset_find( &oct, srv.root ); */
 	rs->db = db_new();
 
 	if (srv_init(&srv, cnfg) < 0)

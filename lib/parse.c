@@ -631,8 +631,12 @@ get_chunk(spocp_charbuf_t * io)
 		break;
 	}
 
-	if (o)
+	if (o) {
+#ifdef AVLUS
+		oct_print( LOG_INFO, "chunk", o);
+#endif
 		cp = chunk_new(o);
+	}
 
 	return cp;
 }

@@ -20,6 +20,10 @@ ruleset_t      *one_level(octet_t * name, ruleset_t * rs);
 octarr_t       *path_split(octet_t * oct, int *pathlen);
 
 /*
+#define AVLUS 1
+*/
+
+/*
  * ---------------------------------------------------------------------- 
  */
 
@@ -158,6 +162,10 @@ ruleset_free(ruleset_t * rs)
  * ---------------------------------------------------------------------- 
  */
 
+/*
+ * Search through all the rulesets on this level to see if this one
+ * already exists
+ */
 ruleset_t      *
 one_level(octet_t * name, ruleset_t * rs)
 {
@@ -166,22 +174,33 @@ one_level(octet_t * name, ruleset_t * rs)
 	if (rs == 0)
 		return 0;
 
-	do {
-		if (0)
-			traceLog(LOG_DEBUG,"one_level: [%s](%d),[%s]", name->val,
-				 name->len, rs->name);
-		c = oct2strcmp(name, rs->name);
+#ifdef AVLUS
+	traceLog(LOG_DEBUG,"one_level: [%s](%d),[%s]", name->val,
+		 name->len, rs->name);
+#endif
+	c = oct2strcmp(name, rs->name);
 
-		if (c == 0) {
-			break;
-		} else if (c < 0) {
+	if (c < 0) {
+		while( c < 0 ) {
+			if (!rs->left)
+				break;
 			rs = rs->left;
-		} else {
-			rs = rs->right;
+			c = oct2strcmp(name, rs->name);
 		}
-	} while (c && rs);
+	}
+	else {
+		while( c > 0 ) {
+			if (!rs->right)
+				break;
+			rs = rs->right;
+			c = oct2strcmp(name, rs->name);
+		}
+	}
 
-	return rs;
+	if (c == 0)
+		return rs;
+	else
+		return 0;
 }
 
 /*
@@ -300,26 +319,64 @@ add_to_level(octet_t * name, ruleset_t * rs)
 	if (rs == 0)
 		return new;
 
-	do {
-		if (0)
-			traceLog(LOG_DEBUG,"add_level: [%s](%d),[%s]", name->val,
+#ifdef AVLUS	
+	traceLog(LOG_DEBUG,"add_level: [%s](%d),[%s]", name->val,
 				 name->len, rs->name);
-		c = oct2strcmp(name, rs->name);
+#endif
+	c = oct2strcmp(name, rs->name);
 
-		if (c < 0) {
+	if (c < 0) {
+		while( c < 0 ) {
+			/* Far left */
+#ifdef AVLUS
+			traceLog(LOG_DEBUG,"Left of %s", rs->name);
+#endif
+
 			if (!rs->left) {
 				rs->left = new;
+				new->right = rs;
+				rs = new;
 				c = 0;
 			}
-			rs = rs->left;
-		} else {
+			else {
+				rs = rs->left;
+				c = oct2strcmp(name, rs->name);
+			}
+		}
+		
+		if ( c > 0 ) {
+			new->right = rs->right;
+			new->left = rs;
+			new->right->left = new;
+			rs->right = new;	
+			rs = new;
+		}
+	} else if( c > 0) {
+		while( c > 0 ) {
+#ifdef AVLUS
+			traceLog(LOG_DEBUG,"Right of %s", rs->name);
+#endif
+			/* Far right */
 			if (!rs->right) {
 				rs->right = new;
+				new->left = rs;
+				rs = new;
 				c = 0;
 			}
-			rs = rs->right;
+			else {
+				rs = rs->right;
+				c = oct2strcmp(name, rs->name);
+			}
 		}
-	} while (c && rs);
+		
+		if ( c < 0 ) {
+			new->left = rs->left;
+			new->right = rs;
+			new->left->right = new;
+			rs->left = new;	
+			rs = new;
+		}
+	} 
 
 	return rs;
 }
@@ -345,6 +402,10 @@ ruleset_create(octet_t * name, ruleset_t *root)
 		Free(tmp);
 	}
 	*/
+
+#ifdef AVLUS
+	oct_print(LOG_INFO,"Ruleset create", name);
+#endif
 
 	if (root == 0) {
 		root = ruleset_new(0);
