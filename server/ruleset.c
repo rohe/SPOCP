@@ -119,18 +119,32 @@ ruleset_tree( ruleset_t *rs, int level )
 }
 
 void
-ruleset_free(ruleset_t * rs)
+ruleset_free_onelevel(ruleset_t * rs)
+{
+	ruleset_t *trs, *nrs;
+
+	if (rs) {
+		for( trs = rs; trs->left; trs = trs->left );
+
+		for( ; trs ; trs = nrs ) {
+			nrs = trs->right;
+			ruleset_free(trs, 0);
+		}
+	}
+}
+
+void
+ruleset_free(ruleset_t * rs, int f)
 {
 	if (rs) {
 		if (rs->name)
 			Free(rs->name);
 
 		if (rs->down)
-			ruleset_free(rs->down);
-		if (rs->left)
-			ruleset_free(rs->left);
-		if (rs->right)
-			ruleset_free(rs->right);
+			ruleset_free(rs->down, 1);
+
+		if (f)
+			ruleset_free_onelevel( rs );
 
 		if (rs->db) 
 			db_free( rs->db );
@@ -582,5 +596,6 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 
 	return rc;
 }
+
 
 

@@ -1092,11 +1092,9 @@ do_reread_rulefile( work_info_t *wi)
 
 	/* get rid of all child databases */
 	if (rs->down)
-		ruleset_free(rs->down);
-	if (rs->left)
-		ruleset_free(rs->left);
-	if (rs->right)
-		ruleset_free(rs->right);
+		ruleset_free(rs->down, 1);
+
+	ruleset_free_onelevel(rs);
 
 	/* reset the main database */
 	db_clr( rs->db );

@@ -608,8 +608,8 @@ spocp_srv_run(srv_t * srv)
 #endif
 	}
 
-	/* will deconnect all external connections held by the plugins */
-	ruleset_free( srv->root );
+	/* */
+	ruleset_free( srv->root, 1 );
 	
 	traceLog(LOG_NOTICE,"Closing down");
 	exit(0);

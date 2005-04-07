@@ -436,7 +436,8 @@ char	*rm_lt_sp( char *s, int shift );
 
 /* ruleset.c */
 
-void		ruleset_free( ruleset_t *rs );
+void		ruleset_free( ruleset_t *rs, int f );
+void		ruleset_free_onelevel( ruleset_t *rs );
 void		ruleset_tree( ruleset_t *rs, int lev );
 ruleset_t	*ruleset_new( octet_t *name );
 ruleset_t	*ruleset_create( octet_t *name, ruleset_t *root );
