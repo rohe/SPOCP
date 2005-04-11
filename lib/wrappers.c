@@ -19,7 +19,9 @@
 #include <wrappers.h>
 #include <func.h>
 
+/*
 #define AVLUS 1
+*/
 
 void	*
 Malloc(size_t size)
