@@ -253,7 +253,7 @@ opinitial( work_info_t *wi, ruleset_t **rs, int path, int min, int max)
 			traceLog(LOG_INFO,"ERR: No \"%s\" ruleset", str);
 			Free(str);
 
-			r = SPOCP_DENIED|UNKNOWN_RULESET;
+			r = UNKNOWN_RULESET;
 		}
 	} 
 
@@ -895,6 +895,8 @@ com_add(work_info_t *wi)
 		octet_t		oct;
 
 		octln(&oct, wi->oppath);
+		/* set to NULL by opinitial */
+		rs = conn->rs;
 		if (ruleset_create(wi->oppath, rs) != NULL ){
 			rc = SPOCP_SUCCESS;
 			rs = ruleset_find(&oct, rs);

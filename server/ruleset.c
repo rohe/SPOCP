@@ -137,19 +137,19 @@ void
 ruleset_free(ruleset_t * rs, int f)
 {
 	if (rs) {
-		if (rs->name)
-			Free(rs->name);
-
 		if (rs->down)
 			ruleset_free(rs->down, 1);
 
 		if (f)
 			ruleset_free_onelevel( rs );
+		else {
+			if ( rs->name)
+				Free(rs->name);
+			if (rs->db) 
+				db_free( rs->db );
 
-		if (rs->db) 
-			db_free( rs->db );
-
-		Free(rs);
+			Free(rs);
+		}
 	}
 }
 
