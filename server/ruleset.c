@@ -137,12 +137,12 @@ void
 ruleset_free(ruleset_t * rs, int f)
 {
 	if (rs) {
-		if (rs->down)
-			ruleset_free(rs->down, 1);
-
 		if (f)
 			ruleset_free_onelevel( rs );
 		else {
+			if (rs->down)
+				ruleset_free(rs->down, 1);
+
 			if ( rs->name)
 				Free(rs->name);
 			if (rs->db) 
@@ -596,6 +596,7 @@ treeList(ruleset_t * rs, conn_t * conn, octarr_t * oa, int recurs)
 
 	return rc;
 }
+
 
 
 
