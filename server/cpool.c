@@ -86,7 +86,7 @@ srv_free( srv_t *srv)
 		tpool_destroy( srv->work, 1);
 
 	if (srv->root)
-		ruleset_free( srv->root );
+		ruleset_free( srv->root, 1 );
 
 	if (srv->plugin) 
 		plugin_unload_all( srv->plugin);
