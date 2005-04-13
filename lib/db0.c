@@ -1028,17 +1028,21 @@ get_rule(ruleinfo_t * ri, octet_t *oct)
 /*
  * creates an output string that looks like this
  * 
- * path ruleid rule [ blob ]
+ * path ruleid rule [ boundarycond [ blob ]]
+ *
+ * If no boundary condition is defined but a blob is, then
+ * the boundary condition is represented with "NULL"
  * 
  */
 octet_t	*
 ruleinst_print(ruleinst_t * r, char *rs)
 {
 	octet_t	*oct;
-	int	     l, lr;
+	int	     l, lr, bc=0;
 	char	    flen[1024];
 
 
+	/* First the path */
 	if (rs) {
 		lr = strlen(rs);
 		snprintf(flen, 1024, "%d:%s", lr, rs);
@@ -1047,10 +1051,21 @@ ruleinst_print(ruleinst_t * r, char *rs)
 		lr = 1;
 	}
 
+	/* calculate the total length of the whole string */
+	/* starting point path, ruleid and rule only */
 	l = r->rule->len + DIGITS(r->rule->len) + lr + DIGITS(lr) + 5 + 40 + 1;
+
+	if (r->bcexp && r->bcexp->len) {
+		l += r->bcexp->len + 1 + DIGITS(r->bcexp->len);
+		bc = 2;
+	}
 
 	if (r->blob && r->blob->len) {
 		l += r->blob->len + 1 + DIGITS(r->blob->len);
+		if (bc == 0) {
+			l += 6;
+			bc = 1;
+		}
 	}
 
 	oct = oct_new(l, 0);
@@ -1065,6 +1080,14 @@ ruleinst_print(ruleinst_t * r, char *rs)
 	octcat(oct, flen, strlen(flen));
 
 	octcat(oct, r->rule->val, r->rule->len);
+
+	if( bc == 2) {
+		snprintf(flen, 1024, "%d:", (int) r->bcexp->len);
+		octcat(oct, flen, strlen(flen));
+		octcat(oct, r->bcexp->val, r->bcexp->len);
+	}
+	else if (bc==1)
+		octcat( oct, "4:NULL", 6 );
 
 	if (r->blob && r->blob->len) {
 		snprintf(flen, 1024, "%d:", (int) r->blob->len);
