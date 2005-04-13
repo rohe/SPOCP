@@ -192,7 +192,7 @@ iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 	tmp = Realloc(io->buf, io->bsize);
 
 	io->buf = tmp;
-	io->end = io->buf + io->bsize;
+	io->end = io->buf + io->bsize -1;
 	*io->end = '\0';
 	io->r = io->buf + nr;
 	io->w = io->buf + nw;
