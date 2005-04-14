@@ -1037,7 +1037,9 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa, checked_t **cr)
 
 		if (r == SPOCP_SUCCESS) {
 			add_checked( ri, r, octdup(blob), cr );
-			*oa = octarr_add(*oa, blob);
+			if (blob)
+				*oa = octarr_add(*oa, blob);
+			
 			LOG(SPOCP_INFO) {
 				oct_print(LOG_INFO,"Matched rule",ri->rule);
 			}

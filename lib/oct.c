@@ -171,6 +171,9 @@ octdup(octet_t * oct)
 {
 	octet_t        *dup;
 
+	if( oct == NULL ) 
+		return NULL;
+
 	dup = (octet_t *) Malloc(sizeof(octet_t));
 
 	dup->size = dup->len = oct->len;
