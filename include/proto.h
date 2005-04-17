@@ -18,23 +18,27 @@
 #define HEX_UPPER(c)	( (c) >= 'A' && (c) <= 'F' )
 #define HEX(c)		( DIGIT(c) || HEX_LOWER(c) || HEX_UPPER(c) )
 #define BASE64(c)	( ALPHA(c) || DIGIT(c) || (c) == '+' || (c) == '/' )
-#define WHITESPACE(c)	( (c) == ' ' || (c) == '\n' || (c) == '\t' || (c) == '\v' ||\
-	(c) == '\r' || (c) == '\f' )
+#define WHITESPACE(c)	( (c) == ' ' || (c) == '\n' || (c) == '\t' || \
+		(c) == '\v' || (c) == '\r' || (c) == '\f' )
 
 #define SCHAR(c)	((c) == '"' || (c) == '%' || (c) == '|' || \
 		(c) == '(' || (c) == ')' || (c) == '/')
 
-#define VCHAR(c)  ( (c) >= '!' && (c) <= '~' && !SCHAR(c))
+#define VCHAR(c)	((c) >= '!' && (c) <= '~' && !SCHAR(c))
 
-#define PRINTABLE(c)	( (c) >= ' ' && (c) <= '~' )
-/*
- * #define TCHAR(c)         ( (c) == '-' || (c) == '.' || (c) ==  '/' || (c) ==  '_' ||\
- *	(c) ==  ':' || (c) ==  '*' || (c) ==  '+' || (c) ==  '=' )
- * #define TOKENCHAR(c) ( TCHAR(c) || ASCII_LOWER(c) || ASCII_UPPER(c) ||
- * DIGIT(c) ) 
- */
+#define PRINTABLE(c)	((c) >= ' ' && (c) <= '~' )
+
+#define TCHAR(c)	((c) == '-' || (c) == '.' || (c) ==  '/' || \
+		(c) ==  '_' ||	(c) ==  ':' || (c) == '*' || \
+		(c) ==  '+' || (c) ==  '=' )
+
+#define TOKENCHAR(c)	(TCHAR(c) || ASCII_LOWER(c) || \
+		ASCII_UPPER(c) || DIGIT(c)) 
+
 #define LISTDELIM(c)     ( (c) == '(' || (c) == ')' )
+/*
 #define TOKENCHAR(c)     ( !WHITESPACE(c) && !LISTDELIM(c) )
+*/
 #define CONTROLCHAR(c)   ( ((c) >= 0x00 && (c) <= 0x06) || ((c) >= 0x0e && (c) <= 0x1f ))
 
 /*

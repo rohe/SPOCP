@@ -1078,7 +1078,7 @@ parse_path(octet_t * o)
 	octarr_t	*oa = 0;
 	octet_t	*oct = 0;
 
-	for (sp = o->val, i = 0; (DIRCHAR(*sp) || *sp == '/') && i < o->len;
+	for (sp = o->val, i = 0; (TOKENCHAR(*sp) || *sp == '/') && i < o->len;
 		sp++, i++) {
 		if (*sp == '/') {
 			if (oa == 0) {
@@ -1174,8 +1174,8 @@ element_eval(octet_t * spec, element_t * e, spocp_result_t *rc)
 					cpy.val += 2;
 					cpy.len -= 2;
 					tag.val = sp;
-					for (tag.len = 0; DIRCHAR(*sp);
-						tag.len++, sp++);
+					for (tag.len = 0; *sp != '}' &&
+						TOKENCHAR(*sp); tag.len++, sp++);
 
 					cpy.len -= tag.len;
 					cpy.val += tag.len;
@@ -1428,17 +1428,32 @@ element_atom_sub(octet_t * val, element_t * xp)
 
 		spec.val = oct.val;
 		spec.len = n;
+		oct_print( LOG_DEBUG,"element #", &spec );
 
 		if ((i = octtoi(&spec)) < 0 || (vs = element_nth(xp, i)) == 0) {
 			oct_free(res);
 			return 0;
 		}
 
+		{
+			octet_t *eop ;
+
+                        eop = oct_new( 512,NULL);
+                        element_print( eop, vs );
+			oct_print(LOG_WARNING, "Substitution using", eop);
+                        oct_free( eop);
+		}
 		/*
 		 */
 		if((tmp = element2oct( vs )) == 0 ) {
-			oct_free(res);
-			traceLog(LOG_WARNING, "Substitution error");
+			/* */
+			octet_t *eop ;
+
+                        eop = oct_new( 512,NULL);
+                        element_print( eop, vs );
+			oct_print(LOG_WARNING, "Substitution error", eop);
+                        oct_free( eop);
+
 			return 0;
 		}
 
