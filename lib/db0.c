@@ -935,6 +935,9 @@ ruleinfo_free(ruleinfo_t * ri)
 ruleinst_t     *
 ruleinst_find_by_uid(rbt_t * rules, char *uid)
 {
+	if (rules == NULL)
+		return NULL;
+
 	return (ruleinst_t *) rbt_search(rules, uid);
 }
 
@@ -1020,7 +1023,8 @@ get_rule(ruleinfo_t * ri, octet_t *oct)
 	if (ri == 0 || oct == 0 )
 		return 0;
 
-	oct2strcpy( oct, uid, 41, 0 );
+	if (oct2strcpy( oct, uid, 41, 0 ) < 0 ) 
+		return NULL;
 
 	return ruleinst_find_by_uid(ri->rules, uid);
 }

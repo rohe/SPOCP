@@ -289,12 +289,13 @@ int main( int argc, char **argv )
 
 	while ((sc = get_object( &scb, 0 )) != NULL) {
 		op = chunk2sexp( sc ) ;
-		oct2strcpy( op, str, 1024, '%');
-		printf("%s", str);
+		if( oct2strcpy( op, str, 1024, '%') > 0 ) {
+			printf("%s", str);
 
-		printf("\n");
-		if (extended)
 			printf("\n");
+			if (extended)
+				printf("\n");
+		}
 
 		octln( &loc, op);
 		if(( rc = element_get(&loc, &ep)) == SPOCP_SUCCESS) {
@@ -321,9 +322,9 @@ int main( int argc, char **argv )
 					m++;
 				}
 				else if( extended ) {
-					oct2strcpy( ext, str, 1024, '%' );
-					printf("(%d)     [%s] of [%s]\n",
-					   c, str, r->strrule);
+					if (oct2strcpy( ext, str, 1024, '%' ) >0)
+						printf("(%d)     [%s] of [%s]\n",
+						   c, str, r->strrule);
 				}
 			}
 

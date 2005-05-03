@@ -262,7 +262,8 @@ rec_del(ruleset_t * rs, dbcmd_t * dbc, octet_t *uid, size_t * nr)
 	if ((rt = get_rule(db->ri, uid))) {
 		char str[SHA1HASHLEN +1];
 
-		oct2strcpy( uid, str, SHA1HASHLEN +1, 0);
+		if (oct2strcpy( uid, str, SHA1HASHLEN +1, 0) < 0 )
+			return SPOCP_SYNTAXERROR;
 
 		if (dbc) 
 			dback_delete(dbc, str);

@@ -132,13 +132,19 @@ dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
 	ruleinst_t     *rt;
 	spocp_result_t  rc;
 
+#ifdef AVLUS
+	traceLog( LOG_DEBUG, "dbapi_rule_rm reached");
+#endif
 	if (rule) rt = (ruleinst_t *) rule;
 	else if ((rc = check_uid( op )) == SPOCP_SUCCESS ){
 		
+		traceLog( LOG_DEBUG, "get_rule()");
 		if ((rt = get_rule(db->ri, op)) == 0) {
 			char uid[SHA1HASHLEN +1];
 
-			oct2strcpy( op, uid, SHA1HASHLEN +1, 0 );
+			if ( oct2strcpy( op, uid, SHA1HASHLEN +1, 0 ) < 0)
+				return SPOCP_SYNTAXERROR;
+			
 			traceLog( LOG_NOTICE,
 			    "Deleting rule \"%s\" impossible since it doesn't exist",
 			     uid);
@@ -148,6 +154,10 @@ dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
 	}
 	else
 		return rc;
+
+#ifdef AVLUS
+	traceLog( LOG_DEBUG, "Got rule to delete");
+#endif
 
 	if (dbc)
 		dback_delete(dbc, rt->uid);
@@ -188,6 +198,9 @@ spocp_result_t
 dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
 		 char *rs)
 {
+	if (db->ri->rules == 0)
+		return SPOCP_SUCCESS;
+			
 	if (pattern == 0 || pattern->n == 0) {	/* get all */
 		if(0)
 			traceLog(LOG_INFO,"Get ALL rules");

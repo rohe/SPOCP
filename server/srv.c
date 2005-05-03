@@ -548,25 +548,34 @@ com_delete(work_info_t *wi)
 	spocp_result_t	r = SPOCP_SUCCESS;
 	conn_t		*conn = wi->conn;
 	ruleset_t	*rs = conn->rs;
+	octet_t		*oct;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"DELETE requested ");
 
 	/* possible pathspecification but apart from that exactly one argument */
 	r = opinitial( wi, &rs, 1, 1, 1);
+
 	if (r == SPOCP_SUCCESS){
-		if (conn->transaction) {
+		if (rs->db->ri->rules == NULL) {
+			traceLog(LOG_INFO, "No rule to remove");
+			r = SPOCP_DENIED;
+		}
+		else if (conn->transaction) {
 			opstack_t *ops;
 			ops = opstack_new( SPOCP_DEL, rs, wi->oparg );
 			conn->ops = opstack_push( conn->ops, ops );
 		}
 		else {
+			oct = wi->oparg->arr[0] ;
+				
+			if ( oct->len != SHA1HASHLEN ) 
+				return postop( wi, SPOCP_SYNTAXERROR, 0);
 			/*
 			 * get write lock, do operation and release lock 
 			 * locking the whole tree, is that really necessary ? 
 			 */
 			pthread_rdwr_wlock(&rs->rw_lock);
-			r = dbapi_rule_rm(rs->db, &conn->dbc,
-			    wi->oparg->arr[0], NULL);
+			r = dbapi_rule_rm(rs->db, &conn->dbc, oct, NULL);
 			pthread_rdwr_wunlock(&rs->rw_lock);
 		}
 	}
@@ -675,7 +684,7 @@ _query(work_info_t *wi, int all)
 	octet_t		*oct;
 	spocp_iobuf_t	*out = wi->buf;
 	ruleset_t	*rs = conn->rs;
-	char		*str;
+	char		*str, *type;
 
 	/*
 	 * struct timeval tv ;
@@ -683,17 +692,23 @@ _query(work_info_t *wi, int all)
 	 * gettimeofday( &tv, 0 ) ; 
 	 */
 
-	if (0)
-		timestamp("QUERY");
+#ifdef AVLUS
+	timestamp("QUERY");
+#endif
 
 	if (conn->transaction)
 		return postop(wi, SPOCP_UNWILLING,0);
 
 	LOG(SPOCP_INFO) {
 		if ( wi->oparg ) {
+			if (all)
+				type = "QUERY";
+			else
+				type = "BSEARCH";
+
 			if (wi->oparg->n == 1) {
 				str = oct2strdup(wi->oparg->arr[0], '%');
-				traceLog(LOG_INFO,"[%d]QUERY:%s", conn->fd, str);
+				traceLog(LOG_INFO,"[%d]%s:%s", conn->fd,type,str);
 				Free(str);
 			}
 			else if (wi->oparg->n == 2) {
@@ -701,8 +716,8 @@ _query(work_info_t *wi, int all)
 
 				pa = oct2strdup(wi->oparg->arr[0], '%');
 				se = oct2strdup(wi->oparg->arr[1], '%');
-				traceLog(LOG_INFO,"[%d]QUERY:%s %s",
-				    conn->fd, pa, se);
+				traceLog(LOG_INFO,"[%d]%s:%s %s",
+				    conn->fd, type, pa, se);
 				Free(pa);
 				Free(se);
 			}
