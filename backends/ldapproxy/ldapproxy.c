@@ -117,7 +117,7 @@ set_attr( void **vpp, void *cd, int argc, char **argv)
 	char	*sp;
 	char	*buf;
 	int	n;
-	LDAPDN	*dn = 0;
+	LDAPDN	dn = NULL;
 	void	*vp;
 
 	traceLog( LOG_DEBUG, "argc: %d, argv[0]: %s", argc, argv[0]);

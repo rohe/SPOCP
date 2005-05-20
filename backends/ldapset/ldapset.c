@@ -101,8 +101,8 @@ befunc	ldapset_test;
 
 static char *
 _striprdn( char *sdn, int n ) {
-	LDAPDN	*dn, *ndn;
-	LDAPRDN	**rdn;
+	LDAPDN	dn = NULL, ndn;
+	LDAPRDN	*rdn;
 	char 	*s;
 	int	r,i;
 
@@ -112,7 +112,7 @@ _striprdn( char *sdn, int n ) {
 	r = ldap_str2dn( sdn, &dn, LDAP_DN_FORMAT_LDAPV3 );
 
 	/* how many parts are there */
-	for( rdn = *dn, i = 0; rdn[i]; i++ );
+	for( rdn = dn, i = 0; rdn[i]; i++ );
 	
 	if ( i < n ) {
 		/* Can't go higher than this */
@@ -121,7 +121,7 @@ _striprdn( char *sdn, int n ) {
 	else {
 
 		rdn += n;
-		ndn = &rdn;
+		ndn = rdn;
 		r=ldap_dn2str(ndn, &s, LDAP_DN_FORMAT_LDAPV3|LDAP_DN_PEDANTIC);
 	}
 

@@ -487,7 +487,7 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 					 * no upper limits 
 					 */
 					else if (ul == 0) {
-						if ((ll == GLE && li >= lv)
+						if ((ll == EQ && li >= lv)
 						    || (ll = GT && li > lv))
 							r = 1;
 					}
@@ -495,7 +495,7 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 					 * no upper limits 
 					 */
 					else if (ll == 0) {
-						if ((ul == GLE && li <= uv)
+						if ((ul == EQ && li <= uv)
 						    || (ul = LT && li < uv))
 							r = 1;
 					}
@@ -503,9 +503,9 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 					 * upper and lower limits 
 					 */
 					else {
-						if (((ll == GLE && li >= lv)
+						if (((ll == EQ && li >= lv)
 						     || (ll = GT && li > lv))
-						    && ((ul == GLE && li <= uv)
+						    && ((ul == EQ && li <= uv)
 							|| (ul = LT
 							    && li < uv)))
 							r = 1;
@@ -529,7 +529,7 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 				 * no upper limits 
 				 */
 				else if (uo == 0) {
-					if ((ll == GLE && octcmp(op, lo) >= 0)
+					if ((ll == EQ && octcmp(op, lo) >= 0)
 					    || (ll = GT && octcmp(op, lo) > 0))
 						r = 1;
 				}
@@ -537,7 +537,7 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 				 * no lower limits 
 				 */
 				else if (lo == 0) {
-					if ((ul == GLE && octcmp(op, uo) <= 0)
+					if ((ul == EQ && octcmp(op, uo) <= 0)
 					    || (ul = LT && octcmp(op, uo) < 0))
 						r = 1;
 				}
@@ -545,11 +545,11 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
 				 * upper and lower limits 
 				 */
 				else {
-					if (((ll == GLE && octcmp(op, lo) >= 0)
+					if (((ll == EQ && octcmp(op, lo) >= 0)
 					     || (ll = GT
 						 && octcmp(op, lo) > 0))
 					    &&
-					    ((ul == GLE && octcmp(op, uo) <= 0)
+					    ((ul == EQ && octcmp(op, uo) <= 0)
 					     || (ul = LT
 						 && octcmp(op, uo) < 0)))
 						r = 1;

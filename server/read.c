@@ -131,7 +131,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	FILE           *fp;
 	char           *sp, *tmp;
 	int             n = 0, f = 0, r;
-	octet_t         oct, *op;
+	octet_t         *op;
 	octarr_t       *oa = 0;
 	ruleset_t      *rs = 0, *trs;
 	spocp_result_t  rc = SPOCP_SUCCESS;
@@ -232,8 +232,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				n++;
 			else {
 				LOG(SPOCP_WARNING)
-				    traceLog(LOG_WARNING,"Failed to add rule: \"%s\"",
-					     oct.val);
+				    oct_print(LOG_WARNING,"Failed to add rule", oa->arr[0]);
 				f++;
 			}
 

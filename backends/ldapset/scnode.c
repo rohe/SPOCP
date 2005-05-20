@@ -84,7 +84,7 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 {
 	char		*cp, *sp, c, in[32];
 	scnode_t	*psc = 0, *nsc;
-	int	 	j = 0, d, striprdn=0;
+	int	 	d, striprdn=0;
 
 	*rc = 0;
 	memset( in, 0, 32 );

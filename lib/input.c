@@ -33,9 +33,7 @@
 #include <spocp.h>
 #include <proto.h>
 
-/*
-#define AVLUS 1
-*/
+/* #define AVLUS 1 */
 
 spocp_result_t  get_str(octet_t * so, octet_t * ro);
 spocp_result_t  get_and(octet_t * oct, element_t * ep);
@@ -294,7 +292,7 @@ set_delimiter(range_t * range, octet_t oct)
 	case 'g':
 		switch (oct.val[1]) {
 		case 'e':
-			range->lower.type |= (GT | GLE);
+			range->lower.type |= (GT | EQ);
 			bp = &range->lower;
 			break;
 
@@ -308,7 +306,7 @@ set_delimiter(range_t * range, octet_t oct)
 	case 'l':
 		switch (oct.val[1]) {
 		case 'e':
-			range->upper.type |= (LT | GLE);
+			range->upper.type |= (LT | EQ);
 			bp = &range->upper;
 			break;
 
@@ -482,8 +480,8 @@ is_valid_range(range_t * rp)
 			LOG(SPOCP_ERR)
 				traceLog(LOG_ERR,"Upper limit less then lower");
 			r = SPOCP_SYNTAXERROR;
-		} else if (c == 0 && !(rp->upper.type & GLE)
-			   && !(rp->lower.type & GLE)) {
+		} else if (c == 0 && !(rp->upper.type & EQ)
+			   && !(rp->lower.type & EQ)) {
 			LOG(SPOCP_ERR)
 				traceLog(LOG_ERR,
 				    "Upper limit equal to lower when it shouldn't");
@@ -636,8 +634,6 @@ do_range(octet_t * op, element_t * ep)
 
 	/*
 	 * and then some value 
-	 */
-	/*
 	 * it can't be a external reference 
 	 */
 

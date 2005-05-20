@@ -541,7 +541,7 @@ read_config(char *file, srv_t * srv)
 						 "Directive where there should not be one");
 				} else {
 					for (ccp = pl->ccmds; ccp; ccp++) {
-						int np, j;
+						int np=0, j;
 						char **arr;
 
 						arr = strchop(cp,&np);

@@ -65,7 +65,8 @@ dnl *************************************************
 
 # Checks for libraries.
 AC_CHECK_LIB([resolv], [res_query])
-AC_CHECK_LIB([pthread], [pthread_mutex_lock])
+# not on mac os x Tiger
+#AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 AC_CHECK_LIB([idn], [stringprep])
 
 dnl * dynamic modules?
@@ -374,7 +375,7 @@ CHECK_SASL2
 
 AC_CHECK_HEADERS([arpa/inet.h errno.h fcntl.h limits.h \
    netdb.h netinet/in.h stdlib.h string.h strings.h \
-   sys/socket.h sys/time.h syslog.h unistd.h])
+   sys/socket.h sys/time.h syslog.h unistd.h pthread.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

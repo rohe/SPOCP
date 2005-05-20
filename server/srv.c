@@ -702,9 +702,9 @@ _query(work_info_t *wi, int all)
 	LOG(SPOCP_INFO) {
 		if ( wi->oparg ) {
 			if (all)
-				type = "QUERY";
-			else
 				type = "BSEARCH";
+			else
+				type = "QUERY";
 
 			if (wi->oparg->n == 1) {
 				str = oct2strdup(wi->oparg->arr[0], '%');

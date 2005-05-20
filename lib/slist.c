@@ -27,7 +27,7 @@
 #include <varr.h>
 
 /*
-#define AVLUS
+#define AVLUS 1
 
 static void slnode_print( slnode_t *s );
  */
@@ -122,16 +122,13 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 			v = 1;
 		else {
 			if ((v = octcmp(&b1p->v.val, &b2p->v.val)) == 0) {
-				v = b1p->type - b2p->type;
 			}
 		}
 		break;
 
 	case SPOC_NUMERIC:
 	case SPOC_TIME:
-		if ((v = (b1p->v.num - b2p->v.num)) == 0) {
-			v = b1p->type - b2p->type;
-		}
+		v = b1p->v.num - b2p->v.num ;
 #ifdef AVLUS
 		traceLog(LOG_DEBUG,"Numeric %ld, %ld => %d", b1p->v.num,
 			  b2p->v.num, v);
@@ -140,20 +137,17 @@ boundary_xcmp(boundary_t * b1p, boundary_t * b2p)
 
 	case SPOC_IPV4:
 		v = ipv4cmp(&b1p->v.v4, &b2p->v.v4);
-
-		if (!v)
-			v = b1p->type - b2p->type;
 		break;
 
 #ifdef USE_IPV6
 	case SPOC_IPV6:	/* Can be viewed as a array of unsigned ints */
 		v = ipv6cmp(&b1p->v.v6, &b2p->v.v6);
-
-		if (!v)
-			v = b1p->type - b2p->type;
 		break;
 #endif
 	}
+
+	if (!v)
+		if (!(b1p->type & b2p->type)) v = 1;
 
 #ifdef AVLUS
 	DEBUG(SPOCP_DMATCH) {
@@ -414,7 +408,7 @@ sl_find(slist_t * slp, boundary_t * item)
 
 /************************************************************************/
 
-#if AVLUS
+#ifdef AVLUS
 static void
 slnode_print( slnode_t *s )
 {
@@ -445,13 +439,13 @@ boundary_print(boundary_t * bp)
 		return Strdup("");
 
 	switch (bp->type & 0xF0) {
-	case LT | GLE:
+	case LT | EQ:
 		lte = "<=";
 		break;
-	case GT | GLE:
+	case GT | EQ:
 		lte = ">=";
 		break;
-	case GLE:
+	case EQ:
 		lte = "=";
 		break;
 	case GT:
@@ -563,7 +557,7 @@ sl_match(slist_t * slp, boundary_t * item)
 		for (nc = slp->head; nc != node->next[0]; nc = nc->next[0])
 			lp = varr_or(lp, nc->junc, 1);
 
-		if (node->item->type & GLE)
+		if (node->item->type & EQ)
 			nc = node;
 
 		for (;; nc = nc->next[0]) {

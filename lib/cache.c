@@ -79,7 +79,7 @@ cache_new(void)
 
 	new = (cache_t *) Calloc(1, sizeof(cache_t));
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H
 	pthread_rdwr_init(&new->rw_lock);
 #endif
 

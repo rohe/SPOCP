@@ -98,7 +98,7 @@ atom2range_match(atom_t * ap, slist_t * slp, int vtype, spocp_result_t * rc)
 	octet_t        *vo;
 	int             r = 1;
 
-	value.type = vtype | GLE;
+	value.type = vtype | EQ;
 	vo = &value.v.val;
 
 	DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"-ATOM->RANGE: %s", ap->val.val);
@@ -467,10 +467,14 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 	}
 
 	if (ep->next == 0) {	/* end of list */
+		DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"End of list");
 		do {
 			/* reached the top list */
-			if (ep->memberof == 0)
+			if (ep->memberof == 0) {
+				DEBUG(SPOCP_DMATCH)
+				       traceLog(LOG_DEBUG,"Top of the s-exp");
 				break;
+			}
 
 			bp = ju->item[SPOC_ENDOFLIST];
 

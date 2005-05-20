@@ -97,6 +97,24 @@ branch_add(junc_t * ap, branch_t * bp)
 }
 
 /************************************************************
+*							   *
+************************************************************/
+
+static junc_t *
+junc_set( junc_t *a, junc_t *b)
+{
+    int i;
+
+    if (a == 0)
+        a = junc_new();
+
+	for (i = 0; i < NTYPES; i++) 
+        a->item[i] = b->item[i];
+
+    return a;
+}
+
+/************************************************************
 *						   &P_match_uid	*
 ************************************************************/
 /*
@@ -466,7 +484,7 @@ static junc_t *
 set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
 {
 	int		n,i;
-	junc_t		*ap = 0;
+	junc_t		*ap = 0, *rp=0;
 	varr_t		*va, *dsva;
 	element_t	*elem;
 	dset_t		*ds;
@@ -490,10 +508,19 @@ set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
 		elem = (element_t *) v;
 		if ((ap = element_add(pl, jp, elem, rt, 0)) == 0)
 			break;
+
+        if (i) {
+            ap = junc_set(ap, rp);
+        }
+        else {
+	        rp = add_next(pl, ap, ep, rt);
+            ap = rp;
+        }
+
 		dsva = varr_add(dsva, ap);
-		/*ap = add_next(pl, ap, ep, rt);*/
 	}
 	ds->va = dsva;
+
 
 	return ap;
 }
@@ -726,8 +753,9 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
 
 		if (ap && next)
 			ap = add_next(pl, ap, ep, rt);
-
+		
 	}
+
 
 	if (ap == 0 && bp != 0) {
 		bp->count--;

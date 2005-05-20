@@ -12,6 +12,10 @@
 #include <plugin.h>
 #include <wrappers.h>
 
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H
+
+#include <rdwr.h>
+
 int
 pthread_rdwr_init(pthread_rdwr_t * rdwrp)
 {
@@ -108,3 +112,4 @@ pthread_rdwr_destroy(pthread_rdwr_t * p)
 
 	return 0;
 }
+#endif

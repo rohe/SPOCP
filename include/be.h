@@ -8,7 +8,7 @@
 
 #include <config.h>
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
 #include <pthread.h>
 #endif
 #include <time.h>
@@ -46,7 +46,7 @@ typedef struct be_con_t {
 	struct be_con_t *next;
 	/*! Previous */
 	struct be_con_t *prev;
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
 	/*! Lock, so that two threads can not grab the same connection */
 	pthread_mutex_t *c_lock;
 #endif
@@ -62,7 +62,7 @@ typedef struct {
 	size_t          size;
 	/*! The maximum number of simultaneous connections open */
 	size_t          max;
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
 	/*! lock on the connection pool */
 	pthread_mutex_t *lock;
 #endif

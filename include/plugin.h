@@ -13,7 +13,7 @@
 #include <struct.h>
 #include <be.h>
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
 
@@ -64,7 +64,7 @@ typedef struct cachetime_t {
 typedef struct {
 	/*! an array in which to store the cached results */
 	struct _varr   *va;
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H
 	/*! A read/write lock on the cache */
 	pthread_rdwr_t  rw_lock;
 #endif

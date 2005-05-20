@@ -71,6 +71,7 @@ as_read_rules( char *file, rule_t **rule)
 	if ((fp = fopen(file, "r")) == 0) {
 		LOG(SPOCP_EMERG) traceLog(LOG_EMERG,"couldn't open rule file \"%s\"",
 					  file);
+		memset( &oct, 0, sizeof( octet_t ));
 		sp = getcwd(oct.val, oct.size);
 		LOG(SPOCP_EMERG) traceLog(LOG_INFO,"I'm in \"%s\"", sp);
 		Free(oct.val);

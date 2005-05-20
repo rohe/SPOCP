@@ -90,13 +90,13 @@
 #define DATATYPES      6
 
 /*! Less then */
-#define LT          0x10
+#define LT	0x10
 /*! Equal, never used alone always together with either LT or GT  */
-#define GLE         0x20
+#define EQ	0x20
 /*! Greater then */
-#define GT          0x40
+#define GT	0x40
 
-#define BTYPE 		0xF0
+#define BTYPE 	0xF0
 
 /*! The cache result has expired */
 #define EXPIRED     1

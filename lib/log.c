@@ -33,7 +33,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
 
@@ -55,7 +55,8 @@ int	log_syslog = 0;
 /*! The process ID of the server startup process */
 int	procid = 0;
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
+
 pthread_mutex_t loglock;
 #endif
 
@@ -153,7 +154,8 @@ spocp_open_log(char *file, int level)
 		if (!procid)
 			procid = getpid();
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
+
 		if (spocp_logf == 0)
 			pthread_mutex_init(&loglock, NULL);
 		pthread_mutex_lock(&loglock);
@@ -170,7 +172,8 @@ spocp_open_log(char *file, int level)
 		else
 			spocp_logf = stderr;
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
+
 		pthread_mutex_unlock(&loglock);
 #endif
 
@@ -212,7 +215,8 @@ tracelog_doit(int priority, const char *fmt, va_list ap)
 	r = vsnprintf(sp, SPOCP_MAXLINE - len, fmt, ap);	/* this is
 								 * safe */
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
+
 	pthread_mutex_lock(&loglock);
 #endif
 
@@ -221,7 +225,8 @@ tracelog_doit(int priority, const char *fmt, va_list ap)
 	else
 		fprintf(stderr, "%s\n", buf);
 
-#ifdef HAVE_LIBPTHREAD
+#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
+
 	pthread_mutex_unlock(&loglock);
 #endif
 

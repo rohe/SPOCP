@@ -1,7 +1,7 @@
 #ifndef __RDWR_H
 #define __RDWR_H
 
-#ifdef HAVE_LIBPTHREAD
+#include <config.h>
 
 #include <pthread.h>
 
@@ -19,8 +19,5 @@ int             pthread_rdwr_runlock(pthread_rdwr_t * rdwrp);
 int             pthread_rdwr_wunlock(pthread_rdwr_t * rdwrp);
 int             pthread_rdwr_destroy(pthread_rdwr_t * p);
 
-#endif
-
-
-#endif
+#endif /* __RDWR_H */
 

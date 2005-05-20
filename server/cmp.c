@@ -176,7 +176,7 @@ atom2rangecmp( atom_t *a, range_t *r, octet_t *str )
 	if ( r->lower.type & BTYPE ) {
 		if ( atom2boundarycmp( a, &r->lower, &d, str ) == 1 ) 
 			return 1;
-		else if ((r->lower.type & BTYPE) == (GLE|GT) && d >= 0 ) ;
+		else if ((r->lower.type & BTYPE) == (EQ|GT) && d >= 0 ) ;
 		else if ((r->lower.type & BTYPE) == GT && d > 0 ) ;
 		else 
 			return 1;	
@@ -185,7 +185,7 @@ atom2rangecmp( atom_t *a, range_t *r, octet_t *str )
 	if( r->upper.type & BTYPE ) {
 		if ( atom2boundarycmp( a, &r->upper, &d, str ) == 1 ) 
 			return 1;
-		else if ((r->upper.type & BTYPE) == (GLE|LT) && d <= 0);
+		else if ((r->upper.type & BTYPE) == (EQ|LT) && d <= 0);
 		else if ((r->upper.type & BTYPE) == LT && d < 0 );
 		else 
 			return 1;	
@@ -240,7 +240,7 @@ rangecmp( range_t *a, range_t *b, octet_t *str )
 	 r = boundarycmp( &a->lower, &b->lower );
 
 /* 
-	if ((r->lower.type & BTYPE) == (GLE|GT) && d >= 0 ) ;
+	if ((r->lower.type & BTYPE) == (EQ|GT) && d >= 0 ) ;
 	else if ((r->lower.type & BTYPE) == GT && d > 0 ) ;
 	else 
 		return 1;	
@@ -249,7 +249,7 @@ rangecmp( range_t *a, range_t *b, octet_t *str )
 	r = boundarycmp( &a->lower, &b->upper ) ;
 
 /*
-	else if ((r->lower.type & BTYPE) == (GLE|LT) && d <= 0 ) 
+	else if ((r->lower.type & BTYPE) == (EQ|LT) && d <= 0 ) 
 		return 0;
 	else if ((r->lower.type & BTYPE) == GT && d > 0 ) 
 		return 0;
