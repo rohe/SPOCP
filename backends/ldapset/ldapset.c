@@ -76,9 +76,7 @@
 
 #include <ldapset.h>
 
-/*
-#define AVLUS 1
-*/
+/* #define AVLUS 1 */
 
 
 /*
