@@ -13,9 +13,7 @@
 #include <proto.h>
 #include <dback.h>
 
-/*
-#define AVLUS 1
- */
+/* #define AVLUS 1 */
 
 /*! Local struct used to store parsed information about bcond s-expressions */
 typedef struct _stree {

@@ -7,9 +7,7 @@
 #include <wrappers.h>
 #include <func.h>
 
-/*
- * #define AVLUS 1
- */
+/* #define AVLUS 1 */
 
 static checked_t *
 checked_new( ruleinst_t *ri, spocp_result_t rc, octet_t *blob)

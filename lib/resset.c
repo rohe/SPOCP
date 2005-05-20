@@ -23,9 +23,7 @@
 #include <macros.h>
 #include <wrappers.h>
 
-/*
-#define AVLUS 0
-*/
+/* #define AVLUS 1 */
 
 /*
  *----------------------------------------------------------------------

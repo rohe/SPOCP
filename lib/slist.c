@@ -26,11 +26,11 @@
 #include <macros.h>
 #include <varr.h>
 
-/*
-#define AVLUS 1
+/* #define AVLUS 1 */
 
+#ifdef AVLUS
 static void slnode_print( slnode_t *s );
- */
+#endif
 
 /*
  * An implementation of a skip-list 

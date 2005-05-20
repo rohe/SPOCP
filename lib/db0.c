@@ -26,9 +26,7 @@
 #include <rbtree.h>
 #include <dback.h>
 
-/*
-#define AVLUS 1
-*/
+/* #define AVLUS 1 */
 
 static junc_t *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
 			    ruleinst_t * ri, int n);

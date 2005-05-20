@@ -19,9 +19,7 @@ RCSID("$Id$");
 ruleset_t      *one_level(octet_t * name, ruleset_t * rs);
 octarr_t       *path_split(octet_t * oct, int *pathlen);
 
-/*
-#define AVLUS 1
-*/
+/* #define AVLUS 1 */
 
 /*
  * ---------------------------------------------------------------------- 

@@ -18,9 +18,7 @@
 
 int             ruleset_print(ruleset_t * rs);
 
-/*
-#define AVLUS 1
-*/
+/* #define AVLUS 1 */
 
 static          spocp_result_t
 rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)

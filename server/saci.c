@@ -73,9 +73,7 @@ char           *operquery =
 sexparg_t         **srvq;
 sexparg_t         **operq;
 
-/*
-#define AVLUS 1
-*/
+/* #define AVLUS 1 */
 
 /*
  * ---------------------------------------------------------------------- 
