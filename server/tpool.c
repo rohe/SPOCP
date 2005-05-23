@@ -379,7 +379,7 @@ tpool_thread(void *arg)
 		 * Get to work, dequeue the next item 
 		 */
 
-		if(( pi = afpool_get_item(workqueue) == NULL)
+		if(( pi = afpool_get_item(workqueue)) == NULL)
 		    continue;
 
 		/*
