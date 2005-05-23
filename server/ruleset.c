@@ -303,6 +303,7 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 		if ((nr = one_level(oa->arr[i], r)) == 0)
 			break;
 	}
+
 	octarr_free(oa);
 
 	if (nr == 0) 
@@ -472,6 +473,8 @@ ruleset_create(octet_t * name, ruleset_t *root)
 		} else
 			r = nr;
 	}
+
+	octarr_free(oa);
 
 	name->val = loc.val + pathlen;
 	name->len = loc.len - pathlen;

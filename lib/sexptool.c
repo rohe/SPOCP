@@ -102,6 +102,7 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 					for (i = 0; arg[i] && i < n; i++)
 						Free(arg[i]);
 					Free(arg);
+					Free(copy);
 					return 0;
 				}
 			}
@@ -117,6 +118,8 @@ parse_format(const char *format, const sexparg_t transf[], int ntransf )
 		arg[j]->af = 0;
 		arg[j]->type = 'l';
 	}
+
+	Free(copy);
 
 	return arg;
 }
