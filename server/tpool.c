@@ -379,19 +379,23 @@ tpool_thread(void *arg)
 		 * Get to work, dequeue the next item 
 		 */
 
-		pi = afpool_get_item(workqueue);
+		if(( pi = afpool_get_item(workqueue) == NULL)
+		    continue;
 
 		/*
 		 * traceLog(LOG_DEBUG, "Active workitems %d", number_of_active(
 		 * workqueue )) ; 
 		 */
 
-		my_workp = (work_info_t *) pi->info;
+		if(( my_workp = (work_info_t *) pi->info) == NULL )
+		    continue;
+
 		conn = my_workp->conn;
 
 		/*
-		 * Handle waiting destroyer threads * if( afpool_active_items( 
-		 * afp ) == 0 && afpool_cond_signal_empty( afp )) ; 
+		 * Handle waiting destroyer threads
+		 * if( afpool_active_items( afp ) == 0 && 
+		 * afpool_cond_signal_empty( afp )) ; 
 		 */
 
 		/*

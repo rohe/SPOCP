@@ -217,12 +217,13 @@ struct _reply ;
 
 typedef struct _conn {
 
-	int		fd ;		/* connection filedescriptor */
-	int		fdw ;	 /* for writing if different from reading */
+	int		fd ;	    /* connection filedescriptor */
+	int		fdw ;	    /* for writing if different from reading */
 	int		status ;
 	int		con_type ;
 	int		ops_pending ;
-	int		stop ;	/* Set (!= 0) if this connection is to be closed */
+	int		stop ;	    /* Set (!= 0) if this connection is
+				       to be closed */
 	int		operations;
 	int		layer;
 #define SPOCP_LAYER_NONE 0x0
@@ -557,7 +558,7 @@ int	number_of_free( afpool_t *afp );
 
 /* -------------------------------------------*/
 
-void	 	afpool_push_item( afpool_t *afp, pool_item_t *pi );
+void		afpool_push_item( afpool_t *afp, pool_item_t *pi );
 void		afpool_push_empty( afpool_t *afp, pool_item_t *pi );
 pool_item_t	*afpool_get_item( afpool_t *afp );
 pool_item_t	*afpool_get_empty( afpool_t *afp );
