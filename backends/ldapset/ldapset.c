@@ -74,7 +74,7 @@
 #include <rvapi.h>
 #include <func.h>
 
-#include <ldapset.h>
+#include "ldapset.h"
 
 /* #define AVLUS 1 */
 

@@ -6,7 +6,7 @@
 #include <wrappers.h>
 #include <func.h>
 #include <proto.h>
-#include <ldapset.h>
+#include "ldapset.h"
 
 
 void
