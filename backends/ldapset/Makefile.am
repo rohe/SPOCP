@@ -6,5 +6,6 @@ libldapsetplugin_la_LDFLAGS = -module
 libldapsetplugin_la_LIBADD = -lldap -llber ../../lib/libspocp.la
 
 INCLUDES = -I$(srcdir)/../../include
+EXTRA_DIST=ldapset.h
 endif BUILD_LDAPSET
 
