@@ -60,20 +60,23 @@ char           *tpsec[] = {
 	"(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))"
 };
 
-sexparg_t         **tpsec_X509;
-sexparg_t         **tpsec_X509_wcc;
+sexparg_t	**tpsec_X509;
+sexparg_t	**tpsec_X509_wcc;
 
 #endif
 
-char           *srvquery =
+char	*srvquery =
     "(6:server(2:ip%{ip})(4:host%{host})%{transportsec})";
-char           *operquery =
+char	*operquery =
     "(9:operation%{operation}(6:server(2:ip%{ip})(4:host%{host})%{transportsec}))";
+char	*rulequery =
+		"(8:spocpaci(8:argument%{arguments})(9:operation%{operation})(7:subject%{subject}))";
 
-sexparg_t         **srvq;
-sexparg_t         **operq;
+sexparg_t	**srvq;
+sexparg_t	**operq;
+sexparg_t	**ruleq;
 
-/* #define AVLUS 1 */
+#define AVLUS 1
 
 /*
  * ---------------------------------------------------------------------- 
@@ -318,6 +321,12 @@ saci_init(void)
 	else
 		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed operquery OK");
 
+	ruleq = parse_format(rulequery, transf, ntransf);
+	if (ruleq == 0)
+		traceLog(LOG_ERR,"*ERR* Could not parse rulequery");
+	else
+		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed rulequery OK");
+
 }
 
 /*
@@ -325,7 +334,7 @@ saci_init(void)
  */
 
 static spocp_result_t
-spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
+spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 {
 	spocp_result_t	res = SPOCP_DENIED;	/* the default */
 	ruleset_t	*rs = wi->conn->rs;
@@ -350,16 +359,14 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 		return SPOCP_SUCCESS;
 	}
 
-	oct_assign(&oct, path);
-
 #ifdef AVLUS
-	traceLog(LOG_DEBUG,"Looking for ruleset [%s](%p)", path, rs);
+	oct_print(LOG_DEBUG,"Looking for ruleset", path);
 #endif
 
 	/*
 	 * No ruleset means everything is allowed !!! 
 	 */
-	if ((rs = ruleset_find(&oct, rs)) == 0 || rs->db == 0) {
+	if ((rs = ruleset_find(path, rs)) == 0 || rs->db == 0) {
 #ifdef AVLUS
 		traceLog(LOG_DEBUG,"No ruleset");
 #endif
@@ -381,13 +388,9 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, char *path)
 #endif
 	sexp = sexp_constr(wi, arg);
 
-	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Internal access Query: \"%s\" in \"%s\"",
-				  sexp, rs->name);
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,
+		"Internal access Query: \"%s\" in \"%s\"", sexp, rs->name);
 
-	/*
-	 * is it a valid assumption to assume only 'printable' characters in
-	 * sexp ? 
-	 */
 	oct_assign(&oct, sexp);
 
 	if ((res = element_get(&oct, &ep)) != SPOCP_SUCCESS) {
@@ -422,24 +425,42 @@ spocp_result_t
 server_access(conn_t * con)
 {
 	work_info_t	wi;
-	char            path[MAXNAMLEN + 1];
+	char		path[MAXNAMLEN + 1];
+	octet_t		oct;
 
 	snprintf(path, MAXNAMLEN, "%s/server", localcontext);
+	oct_assign(&oct, path);
+
 	memset(&wi,0,sizeof(work_info_t));
 	wi.conn = con;
 
-	return spocp_access( &wi, srvq, path);
+	return spocp_access( &wi, srvq, &oct);
 }
 
 spocp_result_t
 operation_access(work_info_t *wi)
 {
 	char            path[MAXNAMLEN + 1];
+	octet_t			oct;
 	spocp_result_t  r;
 
 	snprintf(path, MAXNAMLEN, "%s/operation", localcontext);
+	oct_assign(&oct, path);
 
-	r = spocp_access(wi, operq, path);
+	r = spocp_access(wi, operq, &oct);
+
+	if (r != SPOCP_SUCCESS)
+		traceLog(LOG_INFO,"Operation disallowed");
+
+	return r;
+}
+
+spocp_result_t
+rule_access(work_info_t *wi)
+{
+	spocp_result_t  r;
+
+	r = spocp_access(wi, ruleq, wi->oppath);
 
 	if (r != SPOCP_SUCCESS)
 		traceLog(LOG_INFO,"Operation disallowed");

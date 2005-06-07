@@ -1778,7 +1778,7 @@ spocpc_send_logout(SPOCP * spocp)
 	return spocpc_oct_send( spocp, "LOGOUT", NULL, 0, &qres); 
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 /*!
  * \brief Sends a BEGIN (transaction start) request to a Spocp server
@@ -1943,4 +1943,17 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 	return rc;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
+
+char *spocpc_err2string( int r )
+{
+	int i ;
+
+	for ( i = 0; spocpc_err2str_map[i].str != NULL; i++ ) {
+		if ( i == r )
+			return spocpc_err2str_map[i].str;
+	}
+
+	return "";
+}
+

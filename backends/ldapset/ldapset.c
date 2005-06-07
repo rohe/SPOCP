@@ -707,17 +707,17 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 					ld = open_conn(ldaphost, &rc);
 					free(ldaphost);
 
-					if (ld == 0)
+					if (ld == 0) {
+						traceLog( LOG_INFO, "LDAP host (%s) unavailable",
+							ldaphost);
 						r = SPOCP_UNAVAILABLE;
+					}
 					else if (dyn && dyn->size) {
 						if (!dyn->bcp)
 							dyn->bcp =
-								becpool_new(dyn->
-									size);
-						bc = becon_push(o,
-								&P_ldapclose,
-								(void *) ld,
-								dyn->bcp);
+								becpool_new(dyn->size);
+						bc = becon_push(o, &P_ldapclose,
+								(void *) ld, dyn->bcp);
 					}
 				} else
 					ld = (LDAP *) bc->con;
@@ -726,14 +726,10 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 					res = vset_compact(vset, ld, &rc);
 
 					if (res != 0) {
-						if (res->restype == SC_DN
-							&& res->dn)
+						if (res->restype == SC_DN && res->dn)
 							r = SPOCP_SUCCESS;
-						else if ((res->restype ==
-							SC_VAL
-							|| res->restype ==
-							SC_UNDEF)
-							&& res->val)
+						else if ((res->restype == SC_VAL
+								|| res->restype == SC_UNDEF) && res->val)
 							r = SPOCP_SUCCESS;
 						else
 							r = SPOCP_DENIED;
@@ -759,8 +755,10 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 				r = rc;
 
 			scnode_free(scp);
-		} else
+		} else {
+			traceLog(LOG_DEBUG,"Error while parsing boundary condition");
 			r = rc;
+		}
 
 		octarr_free(argv);
 	}

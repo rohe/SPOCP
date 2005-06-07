@@ -21,6 +21,8 @@
 
 #define MAX(a,b) ((a) < (b) ? b : a)
 
+/* #define AVLUS 1 */
+
 spocp_index_t	*
 index_new(int size)
 {
@@ -117,9 +119,6 @@ index_add(spocp_index_t * id, ruleinst_t * ri)
 		DEBUG(SPOCP_DSTORE)
 			traceLog( LOG_INFO, "First rule of it's kind");
 		id = index_new(2);
-#ifdef AVLUS
-		traceLog(LOG_DEBUG, "index_add %p",id);
-#endif
 	}
 	else {
 		DEBUG(SPOCP_DSTORE)
@@ -135,6 +134,11 @@ index_add(spocp_index_t * id, ruleinst_t * ri)
 	}
 
 	id->arr[id->n++] = ri;
+
+#ifdef AVLUS
+	traceLog( LOG_DEBUG, "index_add");
+	index_print( id) ;
+#endif
 
 	return id;
 }
@@ -228,9 +232,9 @@ index_extend( spocp_index_t *a, spocp_index_t *b)
 }
 
 /*!
- * \brief Makes a shallow copy of a spocp_index struct. The shallowness comes from the
- * fact that the ruleinst structs that are pointed to are not duplicated. The pointers
- * are only copied. 
+ * \brief Makes a shallow copy of a spocp_index struct. The shallowness
+ * comes from the fact that the ruleinst structs that are pointed to are
+ * not duplicated. The pointers are only copied. 
  * \param si The spocp_index struct to be copied
  * \result A pointer to a spocp_index that is a shallow copy of the old
  */
@@ -257,5 +261,6 @@ void index_print( spocp_index_t *si)
 	int	i;
 
 	for( i = 0; i < si->n ; i++)
-		traceLog(LOG_DEBUG,"Rule: %p", si->arr[i]);
+		traceLog(LOG_DEBUG,"Rule: %s", si->arr[i]->uid);
 }
+

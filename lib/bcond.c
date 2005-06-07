@@ -994,6 +994,9 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa, checked_t **cr)
 
 	DEBUG(SPOCP_DSTORE)
 		traceLog(LOG_INFO, "%d rules to check", id->n);
+#ifdef AVLUS
+	index_print( id );
+#endif
 
 	for (i = 0; i < id->n; i++) {
 		ri = id->arr[i];
@@ -1047,6 +1050,7 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa, checked_t **cr)
 #ifdef AVLUS
 	traceLog(LOG_INFO,"Blob list");
 	octarr_print( LOG_INFO, *oa );
+	index_print( id );
 #endif
 
 

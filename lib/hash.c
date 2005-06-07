@@ -21,6 +21,8 @@
 #include <wrappers.h>
 #include <macros.h>
 
+/* #define AVLUS 1 */
+
 static void     phash_resize(phash_t * ht);
 
 unsigned int    prime[] = {
@@ -105,10 +107,8 @@ phash_insert(phash_t * ht, atom_t * ap, unsigned int key)
 		if (hv1 == shv) {
 			phash_resize(ht);
 			shv = hv1 = key % ht->size;
-			hv2 = (key % (prime[ht->pnr / 2] - 1)) + 1;	/* must 
-									 * not 
-									 * be
-									 * 0 */
+			/* must not be 0 */
+			hv2 = (key % (prime[ht->pnr / 2] - 1)) + 1;
 			arr = ht->arr;
 		}
 	}
@@ -121,8 +121,12 @@ phash_insert(phash_t * ht, atom_t * ap, unsigned int key)
 			phash_resize(ht);
 
 		return bp;
-	} else
+	} else {
+#ifdef AVLUS
+		oct_print(LOG_DEBUG, "old value", &ap->val);
+#endif
 		return ht->arr[hv1];
+	}
 }
 
 static buck_t  *

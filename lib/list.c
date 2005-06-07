@@ -55,32 +55,39 @@ get_rule_indexes(varr_t * pa, varr_t * in)
 void
 junc_print(int lev, junc_t * jp)
 {
+	char indent[32];
+	int i;
+
+	for ( i = 0 ; i < lev ; i++)
+		indent[i] = " ";
+	indent[i] = '\0' ;
+
 	traceLog(LOG_DEBUG,"|---------------------------->");
 	if (jp->item[SPOC_ATOM])
-		traceLog(LOG_DEBUG,"Junction[%d]: ATOM", lev);
+		traceLog(LOG_DEBUG,"%sATOM", indent);
 	if (jp->item[SPOC_LIST])
-		traceLog(LOG_DEBUG,"Junction[%d]: LIST", lev);
+		traceLog(LOG_DEBUG,"%sLIST", indent);
 	if (jp->item[SPOC_SET])
-		traceLog(LOG_DEBUG,"Junction[%d]: SET", lev);
+		traceLog(LOG_DEBUG,"%sSET", indent);
 	if (jp->item[SPOC_PREFIX])
-		traceLog(LOG_DEBUG,"Junction[%d]: PREFIX", lev);
+		traceLog(LOG_DEBUG,"%sPREFIX", indent);
 	if (jp->item[SPOC_SUFFIX])
-		traceLog(LOG_DEBUG,"Junction[%d]: SUFFIX", lev);
+		traceLog(LOG_DEBUG,"%sSUFFIX", indent);
 	if (jp->item[SPOC_RANGE])
-		traceLog(LOG_DEBUG,"Junction[%d]: RANGE", lev);
+		traceLog(LOG_DEBUG,"%sRANGE", indent);
 	if (jp->item[SPOC_ENDOFLIST])
-		traceLog(LOG_DEBUG,"Junction[%d]: ENDOFLIST", lev);
+		traceLog(LOG_DEBUG,"%sENDOFLIST", indent);
 	if (jp->item[SPOC_ENDOFRULE]) {
 		spocp_index_t *id;
 		int i;
 
-		traceLog(LOG_DEBUG,"Junction[%d]: ENDOFRULE", lev);
+		traceLog(LOG_DEBUG,"%sENDOFRULE", indent);
 		id = jp->item[7]->val.id;
 		for (i = 0; i < id->n; i++) 
-			traceLog(LOG_DEBUG,"Rule: %p", id->arr[i]);
+			traceLog(LOG_DEBUG,"%s Rule: %p", indent,id->arr[i]);
 	}
 	if (jp->item[SPOC_ANY])
-		traceLog(LOG_DEBUG,"Junction[%d]: ANY", lev);
+		traceLog(LOG_DEBUG,"%sANY", indent);
 	traceLog(LOG_DEBUG,">----------------------------|");
 }
 

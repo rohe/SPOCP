@@ -8,6 +8,7 @@
 #include <proto.h>
 #include "ldapset.h"
 
+/* #define AVLUS 1 */
 
 void
 scnode_free(scnode_t * scp)
@@ -95,6 +96,9 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 	for( sp = op->val ; *sp == ' '; sp++) ;
 
 	for ( ; *sp && (*sp != '}' && *sp != ')') ;) {
+#ifdef AVLUS
+		traceLog(LOG_DEBUG,"Next: %s",sp);
+#endif
 		switch (*sp) {
 		case '&':
 		case '|':
@@ -142,6 +146,8 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 				traceLog(LOG_DEBUG,"Find balancin out: %s",cp);
 #endif
 				if (cp == NULL) {
+					traceLog(LOG_ERR,"Could not find balancing '}' at \"%s\"",
+						sp);
 					*rc = SC_SYNTAXERROR;
 					return 0;
 				}
@@ -216,22 +222,27 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 		case '"':
 		case '<':
 		default:
-			c = *sp;
-			d = 0;
-
 			/*
 			* NULL Strings, not allowed 
 			*/
-			if ( *(sp + 1) == c ) {
+#ifdef AVLUS
+			traceLog(LOG_DEBUG, "A string: \"%s\"", sp);
+#endif
+			if (( *sp == '"' && *(sp+1) == '"') ||
+					(*sp == '<' && *(sp+1) == '>')) {
 				scnode_free(tree_top(psc));
 				*rc = SC_SYNTAXERROR;
 				return 0;
 			}
 
+			c = *sp;
+			d = 0;
+
 			/* go to end marker */
 			if(c == '"'||c =='<'){
 				for (cp = ++sp ; *cp && (*cp != c) ; cp++);
 				if (*cp == '\0') {
+					traceLog(LOG_ERR, "Missing end marker");
 					scnode_free(tree_top(psc));
 					*rc = SC_SYNTAXERROR;
 					return 0;
@@ -240,7 +251,7 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 				d = 1;
 			} else {
 #ifdef AVLUS
-				traceLog(LOG_DEBUG, "Just a string: %s", sp);
+				traceLog(LOG_DEBUG, "All: \"%s\"", sp);
 #endif
 				for (cp = sp; *cp && !SC_SPEC(*cp); cp++);
 #ifdef AVLUS
@@ -262,6 +273,15 @@ scnode_get(octet_t * op, spocp_result_t * rc)
 		}
 		while (*sp == ' ')
 			sp++;
+
+#ifdef AVLUS
+		if( nsc ) {
+			char in[256] ;
+
+			memset(in,0,256);
+			scnode_print( nsc, in );
+		}
+#endif
 	}
 
 	if( *sp == '}' || *sp == ')' ) 

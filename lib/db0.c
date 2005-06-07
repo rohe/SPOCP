@@ -98,6 +98,7 @@ branch_add(junc_t * ap, branch_t * bp)
 *							   *
 ************************************************************/
 
+/*
 static junc_t *
 junc_set( junc_t *a, junc_t *b)
 {
@@ -111,6 +112,7 @@ junc_set( junc_t *a, junc_t *b)
 
     return a;
 }
+*/
 
 /************************************************************
 *						   &P_match_uid	*
@@ -482,7 +484,7 @@ static junc_t *
 set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
 {
 	int		n,i;
-	junc_t		*ap = 0, *rp=0;
+	junc_t		*ap = 0 /*, *rp=0*/;
 	varr_t		*va, *dsva;
 	element_t	*elem;
 	dset_t		*ds;
@@ -507,13 +509,11 @@ set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
 		if ((ap = element_add(pl, jp, elem, rt, 0)) == 0)
 			break;
 
-        if (i) {
-            ap = junc_set(ap, rp);
+#ifdef AVLUS
+        if (i=0) {
+			junc_print_r( 2, jp);
         }
-        else {
-	        rp = add_next(pl, ap, ep, rt);
-            ap = rp;
-        }
+#endif
 
 		dsva = varr_add(dsva, ap);
 	}
@@ -554,6 +554,10 @@ rule_end(junc_t * ap, ruleinst_t * ri)
 {
 	branch_t       *bp;
 
+#ifdef AVLUS
+	junc_print( 0, ap );
+#endif
+
 	if ((bp = ARRFIND(ap, SPOC_ENDOFRULE)) == 0) {
 		DEBUG(SPOCP_DSTORE)
 			traceLog(LOG_DEBUG,"New rule end");
@@ -571,6 +575,9 @@ rule_end(junc_t * ap, ruleinst_t * ri)
 			traceLog(LOG_DEBUG,"Old rule end: count [%d]",
 					     bp->count);
 		bp->val.id = index_add(bp->val.id, (void *) ri);
+#ifdef AVLUS
+		index_print( bp->val.id );
+#endif
 	}
 
 	DEBUG(SPOCP_DSTORE)
@@ -616,9 +623,11 @@ list_close(junc_t * ap, element_t **epp, ruleinst_t * ri, int *eor)
 
 		ep = parent;
 
+#ifdef AVLUS
 		DEBUG(SPOCP_DSTORE)
 			traceLog(LOG_DEBUG,"type:%d next:%p memberof:%p",
 				ep->type, ep->next, ep->memberof);
+#endif
 
 	} while ((ep->type == SPOC_LIST || ep->type == SPOC_SET)
 			&& ep->next == 0 && ep->memberof != 0);
@@ -1357,6 +1366,9 @@ add_right(db_t ** db, dbcmd_t * dbc, octarr_t * oa, ruleinst_t ** ri,
 		}
 
 		*ri = rt;
+#ifdef AVLUS
+		junc_print_r(0, (*db)->jp);
+#endif
 	}
 
 	return rc;

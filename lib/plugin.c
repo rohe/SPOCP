@@ -15,13 +15,13 @@
 #include <func.h>
 
 /*
- * ------------------------------------------------------------------------------------ 
+ * -------------------------------------------------------------------------- 
  */
 
 plugin_t       *plugin_get(plugin_t * top, char *name);
 
 /*
- * ------------------------------------------------------------------------------------ 
+ * -------------------------------------------------------------------------- 
  */
 
 /*!
@@ -188,7 +188,14 @@ plugin_load(plugin_t * top, char *name, char *load)
 	Free(modulename);
 
 	if (new == 0 || new->magic != MODULE_MAGIC_COOKIE) {
-		traceLog(LOG_ERR,"%s: Not a proper plugin_struct", name);
+		unsigned long	ul=MODULE_MAGIC_COOKIE;
+
+		if(new)
+			traceLog(LOG_ERR,"%s: Not a proper plugin_struct %ul/%ul",
+				name, new->magic, ul);
+		else
+			traceLog(LOG_ERR,"%s: Failed to load plugin");
+
 		dlclose(handle);
 		return top;
 	}

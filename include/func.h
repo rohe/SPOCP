@@ -355,6 +355,7 @@ boundary_t	*boundary_dup(boundary_t * bp);
 int		 boundary_xcmp(boundary_t * b1p, boundary_t * b2p);
 
 void		junc_print(int lev, junc_t * jp);
+void		junc_print_r(int lev, junc_t * jp);
 
 /*
  * list.c 

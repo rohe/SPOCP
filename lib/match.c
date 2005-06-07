@@ -203,6 +203,11 @@ range2range_match(range_t * ra, slist_t * slp)
 static resset_t	*
 rss_add( resset_t *rs, spocp_index_t *si, comparam_t *comp)
 {
+#ifdef AVLUS
+	traceLog(LOG_DEBUG, "rss_add");
+	index_print( si );
+#endif
+
 	if (comp->blob) { 
 		rs = resset_add( rs, si, *comp->blob);
 		*comp->blob = NULL;
@@ -211,7 +216,8 @@ rss_add( resset_t *rs, spocp_index_t *si, comparam_t *comp)
 		rs = resset_add( rs, si, 0);
 
 #ifdef AVLUS
-	traceLog(LOG_DEBUG,"rss_add %p", rs );
+	traceLog(LOG_DEBUG,"rss_add =>" );
+	resset_print( rs);
 #endif
 	return rs;
 }
@@ -233,7 +239,6 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 		DEBUG(SPOCP_DMATCH) 
 			traceLog(LOG_DEBUG,"ENDOFRULE marker(0)");
 		/*
-		 * THIS IS WHERE BCOND IS CHECKED 
 		 */
 		si = jp->item[SPOC_ENDOFRULE]->val.id ;
 		if (comp->nobe) {
@@ -340,6 +345,9 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 				 */
 				si = vl->item[SPOC_ENDOFRULE]->val.id;
 				if (comp->nobe) {
+#ifdef AVLUS
+					index_print( si );
+#endif
 					res = rss_add( res, si, comp);
 				}
 				else {
@@ -507,7 +515,8 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 		rs = resset_join(rs,element_match_r(ju, ep->next, comp));
 
 #ifdef AVLUS
-	traceLog(LOG_DEBUG,"Next() %p", rs);
+	traceLog(LOG_DEBUG,"Next() => ");
+	resset_print( rs );
 #endif
 
 	return rs;
@@ -677,16 +686,23 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 		comp->all = 1;
 		comp->nobe = 1;
 		for (v = varr_first(set), i = 0; v; v = varr_next(set, v), i++) {
+#ifdef AVLUS
+			traceLog(LOG_DEBUG, "=== element %d in set ===", i+1);
+#endif
 			rs = element_match_r(db, (element_t *) v, comp);
 #ifdef AVLUS
-			traceLog(LOG_DEBUG,"element_match_r returned %p", rs);
+			traceLog(LOG_DEBUG,"___RESULT SET (rs)___");
+			resset_print(rs);
+			traceLog(LOG_DEBUG,"________________");
 #endif
 			if (setrs == 0)
-				setrs = rs;
+				setrs = resset_compact(rs);
 			else {
 				setrs = resset_and(setrs, rs);
 #ifdef AVLUS
-				traceLog(LOG_DEBUG, "spocp_set resset_and %p", setrs);
+				traceLog(LOG_DEBUG,"___RESULT SET (setrs)___");
+				resset_print(setrs);
+				traceLog(LOG_DEBUG,"________________");
 #endif
 			}
 			

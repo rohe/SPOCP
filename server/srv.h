@@ -528,6 +528,7 @@ int	run_plugin_init( srv_t *srv );
 void		saci_init( void );
 spocp_result_t	server_access( conn_t *con );
 spocp_result_t	operation_access( work_info_t *);
+spocp_result_t	rule_access( work_info_t *);
 
 /* tpool.c */
 

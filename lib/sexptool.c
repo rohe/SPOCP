@@ -21,6 +21,8 @@
 #include <func.h>
 #include <wrappers.h>
 
+/* #define AVLUS 1 */
+
 /*!
  * \brief Farses a string that contains a description of the format of Spocp
  *   queries.  format is typically (3:foo%{var}) which is then split into three parts
@@ -158,8 +160,9 @@ sexp_constr( void *comarg, sexparg_t ** ap )
 	format[i] = '\0';
 	argv[i] = 0;
 
-	if (0)
-		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"SEXP Format: [%s]", format);
+#ifdef AVLUS
+	LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"SEXP Format: [%s]", format);
+#endif
 
 	if (sexp_printa(sexp, &size, format, (void **) argv) == 0)
 		res = 0;

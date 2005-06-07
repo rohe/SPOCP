@@ -115,66 +115,44 @@ resset_compact( resset_t *r)
 {
 	resset_t *h, *t;
 
-	while( r && r->si == 0 ) {
-		h = r->next;
-		r->next = 0;
-		resset_free(r);
-		r = h;
+	if (r == NULL)
+		return r;
+
+	for ( h = r->next ; h != NULL ; h = t ) {
+		t = h->next;
+		index_extend( r->si, h->si);
+		resset_free( h );
 	}
 
-	if ( r == NULL)
-		return NULL;
+	r->next = 0;
 
-	h = r;
-
-	for( r = r->next ; r ; ) {
-		if (r->si) {
-			h->next = r;
-			r = r->next;
-		}
-		else {
-			t = r->next;
-			r->next = 0;
-			resset_free(r);
-			r = t;
-		}
-	}
-
-	return h;
+	return r;
 }
 
 resset_t *
 resset_and( resset_t *a, resset_t *b)
 {
-	resset_t	*s,*p;
 	spocp_index_t	*si;
-	int 		m;
 
 	if( a==0 || b == 0)
 		return NULL;
 
-	s = a;
+	resset_compact( a );
+	resset_compact( b );
 
-	for( ; a ; a = a->next) {
-		m = 0;
-		for( p = b; p; p = p->next) {
-			si = index_and(a->si, p->si);
-			if (si) {
-				index_delete(a->si);
-				a->si = si;
-				m = 1;
-			}
-		}
-		if (m == 0) {
-			index_delete( a->si );
-			a->si = 0;
-		}
+	si = index_and(a->si, b->si);
+	if (si) {
+		index_delete(a->si);
+		a->si = si;
 	}
+	else {
+		index_delete( a->si );
+		a->si = 0;
+	}
+
 	resset_free( b );
 
-	s = resset_compact( s );
-
-	return s;
+	return a;
 }
 
 void 

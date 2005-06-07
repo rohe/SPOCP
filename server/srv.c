@@ -918,6 +918,11 @@ com_add(work_info_t *wi)
 		}
 	}
 
+	if (rule_access(wi) != SPOCP_SUCCESS) {
+		traceLog(LOG_INFO, "Operation disallowed");
+		rc = SPOCP_DENIED;
+	}
+
 	if (rc == SPOCP_SUCCESS) {
 		if (conn->transaction) {
 			opstack_t *ops;
