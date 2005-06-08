@@ -26,7 +26,7 @@
 #include <rbtree.h>
 #include <dback.h>
 
-/* #define AVLUS 1 */
+/*#define AVLUS 1*/
 
 static junc_t *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
 			    ruleinst_t * ri, int n);
@@ -484,7 +484,7 @@ static junc_t *
 set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
 {
 	int		n,i;
-	junc_t		*ap = 0 /*, *rp=0*/;
+	junc_t		*ap = 0/*, *rp=0*/;
 	varr_t		*va, *dsva;
 	element_t	*elem;
 	dset_t		*ds;
@@ -506,11 +506,11 @@ set_add( branch_t *bp, element_t *ep, plugin_t *pl, junc_t *jp, ruleinst_t *rt)
 	     v = varr_next(va, v), i++) {
 		DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG, "- set element %d -", i);
 		elem = (element_t *) v;
-		if ((ap = element_add(pl, jp, elem, rt, 0)) == 0)
+		if ((ap = element_add(pl, jp, elem, rt, 1)) == 0)
 			break;
 
 #ifdef AVLUS
-        if (i=0) {
+        if (i==0) {
 			junc_print_r( 2, jp);
         }
 #endif
