@@ -506,7 +506,7 @@ element_rm(junc_t * jp, element_t * ep, ruleinst_t * rt)
 
 		jp->item[ep->type] = 0;
 
-		return 0;
+		return 1;
 	}
 
 	/*
@@ -567,10 +567,7 @@ rule_rm(junc_t * jp, octet_t * rule, ruleinst_t * rt)
 	octet_t         loc;
 
 	DEBUG(SPOCP_DSTORE) {
-		char           *tmp;
-		tmp = oct2strdup(rule, '\\');
-		traceLog(LOG_DEBUG,"- rm rule [%s]", tmp);
-		Free(tmp);
+		oct_print(LOG_DEBUG,"- rm rule", rule);
 	}
 
 	/*

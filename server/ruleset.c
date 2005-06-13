@@ -288,10 +288,11 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 		return NULL;	/* don't do relative */
 
 	oa = path_split(&loc, &pathlen);
-		/*
+
+#ifdef AVLUS
 	if (oa)
 		traceLog(LOG_INFO,"%d levels in path", oa->n );
-		*/
+#endif
 
 	for (i = 0; oa && i < oa->n; i++) {
 		r = nr->down;
@@ -312,7 +313,9 @@ ruleset_find(octet_t * name, ruleset_t * rs)
 	name->val = loc.val + pathlen;
 	name->len = loc.len - pathlen;
 
-	/* traceLog(LOG_INFO,"Found \"%s\"", nr->name);*/ 
+#ifdef AVLUS
+	traceLog(LOG_INFO,"Found \"%s\"", nr->name);
+#endif
 
 	return nr;
 }

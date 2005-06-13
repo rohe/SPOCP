@@ -76,7 +76,7 @@ sexparg_t	**srvq;
 sexparg_t	**operq;
 sexparg_t	**ruleq;
 
-#define AVLUS 1
+/* #define AVLUS 1 */
 
 /*
  * ---------------------------------------------------------------------- 
@@ -336,13 +336,15 @@ saci_init(void)
 static spocp_result_t
 spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 {
-	spocp_result_t	res = SPOCP_DENIED;	/* the default */
 	ruleset_t	*rs = wi->conn->rs;
+#ifdef SACI
+	spocp_result_t	res = SPOCP_DENIED;	/* the default */
 	octet_t		oct;
 	char		*sexp;
 	element_t	*ep = 0;
 	resset_t	*rset = 0;
 	comparam_t	comp;
+#endif
 
 	/* If I'm running on a unix domain socket I implicitly trust
 	 * processes on that machine
@@ -360,7 +362,7 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 	}
 
 #ifdef AVLUS
-	oct_print(LOG_DEBUG,"Looking for ruleset", path);
+	oct_print(LOG_DEBUG,"Looking for ruleset (spocp_access)", path);
 #endif
 
 	/*
@@ -383,6 +385,7 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 		return SPOCP_SUCCESS;
 	}
 
+#ifdef SACI
 #ifdef AVLUS
 	traceLog(LOG_DEBUG,"Making the internal access query");
 #endif
@@ -419,6 +422,10 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 	resset_free( rset );
 
 	return res;
+#else
+	return SPOCP_SUCCESS;
+#endif
+
 }
 
 spocp_result_t
