@@ -28,14 +28,15 @@
 
 /*#define AVLUS 1*/
 
-static junc_t *element_add(plugin_t * pl, junc_t * dvp, element_t * ep,
-			    ruleinst_t * ri, int n);
+static junc_t *
+element_add(plugin_t * pl, junc_t * dvp, element_t * ep, ruleinst_t * ri, int n);
 junc_t	*rm_next(junc_t * ap, branch_t * bp);
 char	*set_item_list(junc_t * dv);
 junc_t	*atom_add(branch_t * bp, atom_t * ap);
 junc_t	*extref_add(branch_t * bp, atom_t * ap);
 junc_t	*list_end(junc_t * arr);
-junc_t	*list_add(plugin_t * pl, branch_t * bp, list_t * lp, ruleinst_t * ri);
+static junc_t *
+list_add(plugin_t * pl, branch_t * bp, list_t * lp, ruleinst_t * ri);
 junc_t	*range_add(branch_t * bp, range_t * rp);
 junc_t	*prefix_add(branch_t * bp, atom_t * ap);
 junc_t	*rule_close(junc_t * ap, ruleinst_t * ri);
@@ -348,7 +349,7 @@ list_end(junc_t * arr)
  * Returns: 
  */
 
-junc_t	 *
+static junc_t	 *
 list_add(plugin_t * pl, branch_t * bp, list_t * lp, ruleinst_t * ri)
 {
 	element_t      *elp;
