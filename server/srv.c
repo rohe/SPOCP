@@ -499,12 +499,14 @@ com_rollback(work_info_t *wi)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ROLLBACK");
 
-	if( conn->transaction ){
+	if (conn->srv->readonly) {
+		r = SPOCP_DENIED;
+	} else if( conn->transaction ){
 		opstack_free( conn->ops );
 		conn->ops = 0;
-	}
-	else 
+	} else { 
 		r = SPOCP_UNWILLING;
+	}
 
 	return postop( wi, r, 0);
 }
@@ -552,8 +554,13 @@ com_delete(work_info_t *wi)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"DELETE requested ");
 
-	/* possible pathspecification but apart from that exactly one argument */
-	r = opinitial( wi, &rs, 1, 1, 1);
+	if (conn->srv->readonly) {
+		r = SPOCP_DENIED;
+	} else {
+		/* possible path specification but apart from that
+		   exactly one argument */
+		r = opinitial( wi, &rs, 1, 1, 1);
+	}
 
 	if (r == SPOCP_SUCCESS){
 		if (rs->db->ri->rules == NULL) {
@@ -598,7 +605,9 @@ com_commit(work_info_t *wi)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"COMMIT requested");
 
-	if (!conn->transaction)
+	if (conn->srv->readonly) {
+		r = SPOCP_DENIED;
+	} else if (!conn->transaction)
 		r = SPOCP_UNWILLING;
 	else {
 		/*
@@ -827,35 +836,37 @@ com_login(work_info_t *wi)
 spocp_result_t
 com_begin(work_info_t *wi)
 {
-	spocp_result_t  rc = SPOCP_SUCCESS;
+	spocp_result_t  r = SPOCP_SUCCESS;
 	conn_t		*conn = wi->conn;
 	ruleset_t      *rs = conn->srv->root;
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"BEGIN requested");
 
-	if (conn->transaction)
-		rc = SPOCP_EXISTS;
-	else if ((rc = operation_access(wi)) == SPOCP_SUCCESS) {
+	if (conn->srv->readonly) {
+		r = SPOCP_DENIED;
+	} else if (conn->transaction) {
+		r = SPOCP_EXISTS;
+	} else if ((r = operation_access(wi)) == SPOCP_SUCCESS) {
 
 		pthread_mutex_lock(&rs->transaction);
 		pthread_rdwr_rlock(&rs->rw_lock);
 
 		if ((conn->rs = ss_dup(rs, SUBTREE)) == 0)
-			rc = SPOCP_OPERATIONSERROR;
+			r = SPOCP_OPERATIONSERROR;
 
 		/*
 		 * to allow read access 
 		 */
 		pthread_rdwr_runlock(&rs->rw_lock);
 
-		if (rc != SPOCP_SUCCESS) {
+		if (r != SPOCP_SUCCESS) {
 			pthread_mutex_unlock(&rs->transaction);
 			conn->transaction = 0;
 		} else
 			conn->transaction = 1;
 	}
 
-	return postop( wi, rc, 0);
+	return postop( wi, r, 0);
 }
 
 /*
@@ -876,7 +887,12 @@ com_subject(work_info_t *wi)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUBJECT definition");
 
-	r = opinitial(wi, &rs, 0, 1, 1) ;
+	if (conn->srv->readonly) {
+		r = SPOCP_DENIED;
+	} else {
+		r = opinitial(wi, &rs, 0, 1, 1) ;
+	}
+
 	if (r == SPOCP_SUCCESS) {
 		if (wi->oparg->n)
 			conn->sri.subject = octarr_pop(wi->oparg);
@@ -905,7 +921,12 @@ com_add(work_info_t *wi)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"ADD rule");
 
-	rc = opinitial( wi, &rs, 1, 1, 3);
+	if (conn->srv->readonly) {
+		rc = SPOCP_DENIED;
+	} else {
+		rc = opinitial( wi, &rs, 1, 1, 3);
+	}
+
 	if (rc == UNKNOWN_RULESET) {
 		octet_t		oct;
 
@@ -964,10 +985,12 @@ com_list(work_info_t *wi)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"LIST requested");
 
-	if (conn->transaction)
-		return postop( wi, SPOCP_UNWILLING, 0);
+	if (conn->transaction) {
+		r = SPOCP_UNWILLING;
+	} else {
+		rc = opinitial(wi, &rs, 1, 0, 0) ;
+	}
 
-	rc = opinitial(wi, &rs, 1, 0, 0) ;
 	if (rc == SPOCP_SUCCESS ) {
 
 /*	
@@ -1031,7 +1054,7 @@ com_summary(work_info_t *wi)
 	element_t	*ep;
 	char		*tmp;
 
-	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUMMARYrequested");
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SUMMARY requested");
 
 	if (conn->transaction)
 		return postop(wi, SPOCP_UNWILLING,0);
@@ -1078,8 +1101,9 @@ com_show(work_info_t *wi)
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"SHOW requested ");
 
-	/* possible pathspecification but apart from that exactly one argument */
+	/* possible path specification but apart from that exactly one argument */
 	r = opinitial(wi, &rs, 1, 1, 1) ;
+
 	if (r == SPOCP_SUCCESS){
 		/*
 		 * get write lock, do operation and release lock 

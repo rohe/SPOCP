@@ -169,24 +169,24 @@ typedef struct _server
 
 	int		timeout ;
 	int		nconn ;		/* max simultaneous connections */
-	time_t		mtime;		/* time of last modification */
-	char		*certificateFile ;
-	char		*privateKey ;
-	char		*caList ;
-	char		*dhFile ;
-	char		*SslEntropyFile ;
-	char		*passwd ;
+	time_t	mtime;		/* time of last modification */
+	char	*certificateFile ;
+	char	*privateKey ;
+	char	*caList ;
+	char	*dhFile ;
+	char	*SslEntropyFile ;
+	char	*passwd ;
 
-	char		*logfile ;
-	char		*pidfile ;
+	char	*logfile ;
+	char	*pidfile ;
 	int		port ;
-	char		*uds ;
-	char		*rulefile ;
+	char	*uds ;
+	char	*rulefile ;
 	int		sslverifydepth ;
-	char		*server_id ;
+	char	*server_id ;
 	int		srvtype ;
 	
-	char		*hostname;
+	char	*hostname;
 
 #ifdef HAVE_SSL
 	int		clientcert ;
@@ -194,8 +194,8 @@ typedef struct _server
 #define DEMAND	1
 #define NONE	2
 
-	void		*ctx;
-	void		*ssl;
+	void	*ctx;
+	void	*ssl;
 			/* security strength factor, not used presently */
 	int		ssf ;
 #endif
@@ -206,6 +206,7 @@ typedef struct _server
 
 	afpool_t	*connections ;	/* pool of connections active/free */
 
+	int		readonly;
 } srv_t ;
 
 /* -------------------------------------------------------------------- */
