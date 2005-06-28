@@ -70,6 +70,23 @@ char	*strndup(const char *old, size_t sz);
 /*! Local shothand alias */
 typedef struct sockaddr SA;
 
+struct _err2str_map spocpc_err2str_map[] = {
+    { SPOCPC_SYNTAXERROR, "Syntax Error"},
+    { SPOCPC_MISSING_CHAR, "Missing characters in input" },
+    { SPOCPC_OK, "OK" },
+    { SPOCPC_SYNTAX_ERROR, "Syntax Error"},
+    { SPOCPC_PROTOCOL_ERROR, "Protocol Error"},
+    { SPOCPC_OTHER, "Unspecified Error" },
+    { SPOCPC_TIMEOUT, "Timeout occured" },
+    { SPOCPC_CON_ERR, "Connecction Problem" },
+    { SPOCPC_PARAM_ERROR, "Parameter Error" },
+    { SPOCPC_STATE_VIOLATION, "State violation" },
+    { SPOCPC_NOSUPPORT, "Function not supported"},
+    { SPOCPC_INTERUPT, "Operation was interupted" },
+    { SPOCPC_UNKNOWN_RESCODE, "What ??"},
+    { 0, NULL }
+} ;
+
 /*! 
  * \var prbuf
  * \brief global variable to hold strings to be printed
