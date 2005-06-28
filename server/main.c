@@ -239,7 +239,7 @@ main(int argc, char **argv)
 		if (strlen(argv[i]) > 512)
 			argv[i][512] = '\0';
 
-	while ((i = getopt(argc, argv, "Dhtf:d:")) != EOF) {
+	while ((i = getopt(argc, argv, "Dhrtf:d:")) != EOF) {
 		switch (i) {
 
 		case 'D':
@@ -259,6 +259,9 @@ main(int argc, char **argv)
 		case 't':
 			conftest = 1;
 			break;
+
+		case 'r':
+			srv.readonly = 1;
 
 		case 'h':
 		default:
