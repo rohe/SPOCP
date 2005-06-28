@@ -1,6 +1,6 @@
 /*!
  * \file struct.h
- * \author Roland hedberg <soalnd@catalogix.se>
+ * \author Roland hedberg <roland.hedberg@adm.umu.se>
  * \brief Basic structs into which the result of the parsing of a S-expression in placed
  */
 /***************************************************************************
@@ -99,9 +99,9 @@
 #define BTYPE 	0xF0
 
 /*! The cache result has expired */
-#define EXPIRED     1
+#define EXPIRED     0x10000000
 /*! The result is cached */
-#define CACHED      2
+#define CACHED      0x20000000
 
 /*
  * ---------------------------------------------------------------------- 
