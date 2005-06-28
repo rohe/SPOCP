@@ -59,7 +59,7 @@ junc_print(int lev, junc_t * jp)
 	int i;
 
 	for ( i = 0 ; i < lev ; i++)
-		indent[i] = " ";
+		indent[i] = ' ';
 	indent[i] = '\0' ;
 
 	traceLog(LOG_DEBUG,"|---------------------------->");
