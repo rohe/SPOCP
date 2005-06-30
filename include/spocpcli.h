@@ -40,6 +40,7 @@ enum spocpc_res
 	SPOCPC_STATE_VIOLATION,
 	SPOCPC_NOSUPPORT,
 	SPOCPC_INTERUPT,
+	SPOCPC_MISSING_ARG,
 	SPOCPC_UNKNOWN_RESCODE
 };
 
@@ -109,19 +110,19 @@ SPOCP	*spocpc_add_server( SPOCP *spocp, char *srv);
 
 SPOCP	*spocpc_set_timeout( SPOCP *spocp, long sec, long usec);
 
-int	spocpc_reopen(SPOCP * spocp, int nsec);
-ssize_t	spocpc_readn(SPOCP * spocp, char *str, ssize_t max);
-ssize_t	spocpc_writen(SPOCP * spocp, char *str, ssize_t max);
-
-int spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid);
+int		spocpc_reopen(SPOCP * spocp, int nsec);
+size_t	spocpc_readn(SPOCP * spocp, char *str, size_t max);
+size_t	spocpc_writen(SPOCP * spocp, char *str, size_t max);
 
 int spocpc_send_add(SPOCP *, octet_t *, octet_t *, octet_t *, octet_t *, queres_t *);
 int spocpc_send_subject(SPOCP *, octet_t *, queres_t *);
+int spocpc_send_list(SPOCP *, octet_t *, queres_t *);
 int spocpc_send_query(SPOCP *, octet_t *, octet_t *, queres_t *);
 int spocpc_send_delete(SPOCP *, octet_t *, octet_t *, queres_t *);
 
 int spocpc_str_send_add(SPOCP *, char *, char *, char *, char *, queres_t *);
 int spocpc_str_send_subject(SPOCP *, char *, queres_t *);
+int spocpc_str_send_list(SPOCP *, char *, queres_t *);
 int spocpc_str_send_query(SPOCP *, char *, char *, queres_t *);
 int spocpc_str_send_delete(SPOCP *, char *, char *, queres_t *);
 
@@ -135,6 +136,11 @@ void free_spocp(SPOCP * s);
 void spocpc_close(SPOCP * spocp);
 
 char *spocpc_err2string( int );
+
+octarr_t	*spocpc_sexp_elements( octet_t *oct, int *rc) ;
+
+void queres_free( queres_t *qr );
+
 /*
 octnode_t *spocpc_octnode_new(void);
 void spocpc_octnode_free(octnode_t *);
@@ -153,7 +159,7 @@ void spocpc_tls_set_demand_server_cert(SPOCP * spocp);
 void spocpc_tls_set_verify_server_cert(SPOCP * spocp);
 
 void	spocpc_use_tls(SPOCP * spocp);
-int	start_tls(SPOCP * spocp);
+int		start_tls(SPOCP * spocp);
 
 #endif
 

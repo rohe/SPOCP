@@ -193,6 +193,25 @@ octarr_pop(octarr_t * oa)
 	return oct;
 }
 
+/*!
+ * \brief Will remove the last octet stored in the octarr struct
+ * \param oa A pointer to the octarr struct
+ * \return A pointer to the octet struct removed from the octarr struct
+ */
+octet_t        *
+octarr_rpop(octarr_t * oa)
+{
+	octet_t        *oct;
+
+	if (oa == 0 || oa->n == 0)
+		return 0;
+
+	oct = oa->arr[oa->n - 1];
+	oa->n--;
+
+	return oct;
+}
+
 /*
  * make no attempt at weeding out duplicates 
  */

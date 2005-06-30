@@ -93,12 +93,15 @@ struct _err2str_map spocpc_err2str_map[] = {
  */
 char prbuf[BUFSIZ];
 
+octarr_t *spocpc_sexp_elements( octet_t *oct, int *rc) ;
+int spocpc_answer_ok(octet_t *resp, queres_t * qr);
+
 int spocpc_str_send_query(SPOCP *, char *, char *, queres_t *);
 int spocpc_str_send_delete(SPOCP *, char *, char *, queres_t *);
 int spocpc_str_send_subject(SPOCP *, char *, queres_t *);
 int spocpc_str_send_add(SPOCP *, char *, char *, char *, char *, queres_t *);
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------*/
 
 /*!
  * \brief Translation from result codes as written on-the-wire and 
@@ -625,183 +628,44 @@ free_spocp(SPOCP * s)
 	}
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
-static int
-sexp_get_len(char **str, int *rc)
+octarr_t *
+spocpc_sexp_elements( octet_t *oct, int *rc)
 {
-	char *ep, *sp = *str;
-	long l;
-
-	/* strtol skips SP (0x20) and allows a leading '-'/'+' so
-	 * I have to check that first, since those are not allowed in
-	 * this context */
-
-	if (*sp == ' ' || *sp == '-' || *sp == '+') {
-		*rc = SPOCPC_SYNTAXERROR;
-		return -1;
-	}
-
-	l = strtol(sp, &ep, 10);
-
-	/* no number read */
-	if (ep == sp) {
-		*rc = SPOCPC_SYNTAXERROR;
-		return -1;
-	}
-
-	/* ep points to the first non digit character or '\0',
-	 * should be ':' */
-
-	if (*ep != ':') {
-		*rc = SPOCPC_SYNTAXERROR;
-		return -1;
-	}
-
-	*str = ++ep;
-
-	return (int) l;
-}
-/*--------------------------------------------------------------------------------*/
-
-static int
-skip_length(char **sexp, int n, int *rc)
-{
-	char *sp = *sexp;
-	int l;
-
-	if ((l = sexp_get_len(&sp, rc)) < 0)
-		return 0;
-
-	n -= (sp - *sexp);
-	if (l > n) {
-		*rc = SPOCPC_MISSING_CHAR;
-		return 0;
-	}
-
-	*sexp = sp;
-	return l;
-}
-
-/*--------------------------------------------------------------------------------*/
-
-static char *
-sexp_get_next_element(char *sexp, int n, int *rc)
-{
-	char *sp = sexp;
-	int l;
-
-	if ((l = sexp_get_len(&sp, rc)) < 0)
-		return 0;
-
-	n -= (sp - sexp);
-	if (l > n) {
-		*rc = SPOCPC_MISSING_CHAR;
-		return 0;
-	} else if (l < n)
-		return sp + l;
-	else
-		return 0;
-}
-
-/*--------------------------------------------------------------------------------*/
-
-static int
-spocpc_sexp_elements(char *resp, int n, octet_t line[], int size, int *rc)
-{
-	char *next, *sp;
-	int l, i;
+	octet_t		ro, *op;
+	octarr_t	*oa=NULL;
 
 	if (spocpc_debug)
 		traceLog(LOG_DEBUG,"spocpc_sexp_elements");
 
-	sp = resp;
-	i = 0;
-	*rc = SPOCPC_OK;
+	while( oct->len && (*rc = get_str( oct, &ro )) == SPOCP_SUCCESS ) {
+		op = oct_new( ro.len, ro.val);
+		oa = octarr_add( oa, op);
+	}
 
-	do {
-		line[i].val = sp;
-
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"n [%d]", n);
-		next = sexp_get_next_element(sp, n, rc);
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"next (%d)", *rc);
-
-		if (next) {
-			l = next - sp;
-			n = (n - l);
-		} else {
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,"No next");
-			if (*rc != SPOCPC_OK)
-				return -1;
-			l = n;
-			n = 0;
-		}
-
-		line[i++].len = l;
-		sp = next;
-	} while (n && next && i < size);
-
-	if (i == size)
-		return -1;
-
-	line[i].len = 0;
-
-	return i;
+	return oa;
 }
 
-/*--------------------------------------------------------------------------------*/
-
+/*----------------------------------------------------------------------------*/
+/* typically buf->val is 3:2002:Ok */
 static int
 sexp_get_response(octet_t * buf, octet_t * code, octet_t * info)
 {
-	size_t l, d, n;
-	char *sp, *cp;
 	int rc;
 
-	code->val = buf->val;
-	code->len = buf->len;
+	/* First part of the response value */
+	rc = get_str( buf, code );
+	if (rc != SPOCP_SUCCESS)
+		return SPOCPC_SYNTAXERROR;
 
-	n = buf->len;
-	sp = code->val;
-
-	if ((l = sexp_get_len(&sp, &rc)) < 0)
-		return rc;
-
-	d = (sp - buf->val);
-	if (l != (n - d))
-		return 0;
-
-	if ((l = sexp_get_len(&sp, &rc)) < 0)
-		return rc;
-
-	n -= (sp - buf->val);
-
-	if (l == 3 && l < n) {
-		code->len = l;
-		code->val = sp;
-
-		n -= 3;
-		if (n) {	/* expects some info too */
-			/* skip the length field */
-			sp += 3;
-			cp = sp;	/* to know where I've been */
-
-			/* is this really a major fault ? */
-			if ((l = sexp_get_len(&sp, &rc)) < 0)
-				return rc;
-
-			info->val = sp;
-			info->len = n - (sp - cp);
-		} else
-			info->len = 0;
-
-		return SPOCPC_OK;
+	if ( buf->len ) {
+		rc = get_str( buf, info );
 	}
+	else 
+		memset( &info, 0, sizeof( octet_t ));
 
-	return SPOCPC_SYNTAXERROR;
+	return SPOCPC_OK;
 }
 
 static int
@@ -1119,7 +983,7 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 	return spocp;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 /*!
  * \brief Tries to reconnect to a Spocp server after the previous connection
@@ -1151,7 +1015,7 @@ spocpc_reopen(SPOCP * spocp, int nsec)
 		return TRUE;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 /*!
  * Writes size bytes to a spocp server, Uses SSL/TLS if active.
@@ -1160,10 +1024,10 @@ spocpc_reopen(SPOCP * spocp, int nsec)
  * \param n The number of bytes to write
  * \return The number of bytes written or -1 if no bytes could be written
  */
-ssize_t
-spocpc_writen(SPOCP * spocp, char *str, ssize_t n )
+size_t
+spocpc_writen(SPOCP * spocp, char *str, size_t n )
 {
-	ssize_t nleft, nwritten = 0 ;
+	size_t nleft, nwritten = 0 ;
 	char *sp;
 	fd_set wset;
 	int retval;
@@ -1225,12 +1089,12 @@ spocpc_writen(SPOCP * spocp, char *str, ssize_t n )
  * \return The number of bytes read or -1 if no bytes could be read
  */
 
-ssize_t
-spocpc_readn(SPOCP * spocp, char *buf, ssize_t size)
+size_t
+spocpc_readn(SPOCP * spocp, char *buf, size_t size)
 {
 	fd_set rset;
 	int retval;
-	ssize_t n = 0;
+	size_t n = 0;
 	struct timeval *tv = &spocp->com_timeout;
 
 	FD_ZERO(&rset);
@@ -1272,7 +1136,7 @@ spocpc_readn(SPOCP * spocp, char *buf, ssize_t size)
 	return (n);
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 static int
 spocpc_get_result_code(octet_t * rc)
@@ -1287,104 +1151,59 @@ spocpc_get_result_code(octet_t * rc)
 	return SPOCPC_UNKNOWN_RESCODE;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
-static int
-spocpc_answer_ok(char *resp, size_t n, queres_t * qr)
+int
+spocpc_answer_ok(octet_t *oct, queres_t * qr)
 {
-	octet_t	code, info;
-	octet_t	elem[32];	/* max 15 blobs */
-	int	res = SPOCPC_TIMEOUT;
-	int	i;
-	char	cent = 0;
+	octet_t		code, info, *op;
+	octarr_t	*oa ;
+	int			res = SPOCPC_TIMEOUT;
+	char		ml = 0, *cv;
 
-	if ((n = spocpc_sexp_elements(resp, n, elem, 32, &res)) < 0)
+	if ((oa = spocpc_sexp_elements(oct, &res)) == NULL)
 		return res;
 
 	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Got %d elements", n);
+		traceLog(LOG_DEBUG,"Got %d elements", oa->n);
 
-	if (n == 1) {
-		if ((res =
-			sexp_get_response(&elem[0], &code,
-			    &info)) != SPOCPC_OK) {
+	while (oa->n) {
+		op = octarr_rpop( oa );
+		res = sexp_get_response(op, &code, &info);
+		if (res != SPOCPC_OK) {
 			if (spocpc_debug)
 				traceLog(LOG_DEBUG,"sexp_response returned %d",
 				    (int) res);
 			return res;
 		}
 
+		cv = code.val ;
 		if (spocpc_debug) {
-			strncpy(prbuf, code.val, code.len);
-			prbuf[code.len] = '\0';
-			traceLog(LOG_DEBUG,"Spocp returned code: [%s]", prbuf);
+			oct_print( LOG_DEBUG, "code", &code );
+			oct_print( LOG_DEBUG, "info", &info );
 		}
 
-		qr->rescode = spocpc_get_result_code(&code);
-		qr->str = strndup(info.val, info.len);
-		qr->blob = 0;
-	} else if (n > 1) {
-		n--;
-		/* first the blobs */
-
-		for (i = 0; i < (int) n; i++) {
-			if ((res =
-				sexp_get_response(&elem[i], &code,
-				    &info)) != SPOCPC_OK) {
-				if (spocpc_debug)
-					traceLog(LOG_DEBUG,"sexp_response returned %d",
-					    (int) res);
-				return res;
+		if ((*cv == '2' || *cv == '3') && *(cv+1) == '0' && *(cv+2) == '1') {
+			if( ml == 0) 
+				ml = *cv;
+			else if (ml != *cv) {
+				res = SPOCPC_PROTOCOL_ERROR;
+				break;
 			}
 
-			/* multilines are resultcodes 201 or 301 followed by 200 resp. 300 */
-			if ((*code.val == '2' || *code.val)
-			    && code.val[1] == '0' && code.val[2] == '1') {
-				if (cent == 0)
-					cent = *code.val;
-				else if (cent != *code.val)
-					return SPOCPC_PROTOCOL_ERROR;
-
-				if (spocpc_debug) {
-					strncpy(prbuf, info.val, info.len);
-					prbuf[info.len] = '\0';
-					traceLog(LOG_DEBUG,"Spocp returned info: [%s]",
-					    prbuf);
-				}
-
-				qr->blob = octarr_add( qr->blob, octdup(&info));
-			} else
-				return SPOCPC_PROTOCOL_ERROR;
+			qr->blob = octarr_add( qr->blob, octdup(&info));
 		}
-
-		/* Then the response code, which must be X00, where X is
-		   the same as in the previous rescode */
-		if ((res =
-			sexp_get_response(&elem[i], &code,
-			    &info)) != SPOCPC_OK) {
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,"sexp_response returned %d",
-				    (int) res);
-			return res;
+		else {
+			qr->rescode = spocpc_get_result_code(&code);
+			qr->str = strndup(info.val, info.len);
 		}
-
-		if (spocpc_debug) {
-			strncpy(prbuf, code.val, code.len);
-			prbuf[code.len] = '\0';
-			traceLog(LOG_DEBUG,"Spocp returned code: [%s]", prbuf);
-		}
-
-		if (cent != *code.val)
-			return SPOCPC_PROTOCOL_ERROR;
-
-		qr->rescode = spocpc_get_result_code(&code);
-		qr->str = strndup(info.val, info.len);
-	}
+	} 
+	octarr_free(oa);
 
 	return res;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 static int
 spocpc_protocol_op(octarr_t *oa, octet_t *prot)
@@ -1454,33 +1273,39 @@ spocpc_just_send_X(SPOCP * spocp, octarr_t *argv)
 	return SPOCPC_OK;
 }
 
-/* ============================================================================== */
-
-/* ============================================================================== */
+/* ========================================================================== */
+/* ========================================================================== */
 
 static int
 spocpc_get_result(SPOCP * spocp, queres_t * qr)
 {
 	char	resp[BUFSIZ];
-	int	ret, n;
+	size_t	n;
+	int		ret=SPOCPC_OK;
+	octet_t	oct;
 
-	if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0) {
-		traceLog(LOG_DEBUG,"Couldn't read anything");
+	while( !qr->rescode ) {
+		if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0) {
+			traceLog(LOG_DEBUG,"Couldn't read anything");
 
-		if (!spocp->rc)
-			return SPOCPC_OTHER;
-		else
+			if (!spocp->rc)
+				return SPOCPC_OTHER;
+			else
+				return spocp->rc;
+		}
+		else if (n == 0 && spocp->rc)
 			return spocp->rc;
+
+		if (spocpc_debug)
+			traceLog(LOG_DEBUG,"Read %d chars", n);
+
+		resp[n] = '\0';
+
+		oct.val = resp ;
+		oct.len = n;
+
+		ret = spocpc_answer_ok( &oct, qr );
 	}
-	else if (n == 0 && spocp->rc)
-		return spocp->rc;
-
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Read %d chars", n);
-
-	resp[n] = '\0';
-
-	ret = spocpc_answer_ok(resp, n, qr);
 
 	if (spocpc_debug)
 		traceLog(LOG_DEBUG,"response: [%s] (%d)", resp, ret);
@@ -1578,7 +1403,8 @@ spocpc_oct_send( SPOCP *spocp, char *type, octet_t **oa, int n, queres_t *qr)
  * Send a Spocp query to a spocp server
  * \param spocp The Spocp session
  * \param path The name of the ruleset
- * \param query The string buffer holding the query in the form of a s-expression
+ * \param query The string buffer holding the query in the canonical
+ * form of a s-expression
  * \param qr A struct into which the result received from the spocp server 
  *   should be placed
  * \return A Spocpc result code
@@ -1590,7 +1416,7 @@ spocpc_str_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
 	int		ret;
 
 	if( query == 0 || *query == 0 )
-		return SPOCP_MISSING_ARG;
+		return SPOCPC_MISSING_ARG;
 
 	argv = argv_make( "QUERY", path, query, 0, 0 );
 
@@ -1639,7 +1465,7 @@ spocpc_str_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 	int		ret;
 
 	if( rule == 0 || *rule == 0 )
-		return SPOCP_MISSING_ARG;
+		return SPOCPC_MISSING_ARG;
 
 	argv = argv_make( "DELETE", path, rule, 0, 0 );
 
@@ -1696,7 +1522,7 @@ spocpc_str_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
 	return ret;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 /*!
  * Send a subject definition to a spocp server
@@ -1738,7 +1564,7 @@ spocpc_str_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
 	int		ret;
 
 	if( rule == 0 || *rule == 0 )
-		return SPOCP_MISSING_ARG;
+		return SPOCPC_MISSING_ARG;
 
 	argv = argv_make( "ADD", path, rule, bcond, info );
 
@@ -1778,7 +1604,42 @@ spocpc_send_add(SPOCP * spocp, octet_t *path, octet_t *rule, octet_t *bcond,
 	return spocpc_oct_send( spocp, "DELETE", oa, 4, qr); 
 }
 
-/*--------------------------------------------------------------------------------*/
+
+/*----------------------------------------------------------------------------*/
+
+int
+spocpc_str_send_list(SPOCP * spocp, char *path, queres_t * qr)
+{
+	octarr_t	*argv;
+	int			ret;
+
+	argv = argv_make( "LIST", path, 0, 0, 0 );
+
+	ret = spocpc_send_X(spocp, argv, qr);
+
+	octarr_free( argv );
+	
+	return ret;
+}
+
+/*----------------------------------------------------------------------------*/
+
+int
+spocpc_send_list(SPOCP * spocp, octet_t *path, queres_t * qr)
+{
+	if (path) {
+		octet_t	*oa[1];
+
+		oa[0] = path;
+
+		return spocpc_oct_send( spocp, "LIST", oa, 1, qr); 
+	}
+	else {
+		return spocpc_oct_send( spocp, "LIST", NULL, 0, qr); 
+	}
+}
+
+/*----------------------------------------------------------------------------*/
 
 /*!
  * \brief Sends a LOGOUT request to a Spocp server
@@ -1861,6 +1722,7 @@ spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
  * \param wid If not zero print the rule ID together with the other information
  * \return A spocpc result code
  */
+/*
 int
 spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 {
@@ -1869,7 +1731,7 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 	octet_t elem[64], part[6];
 	int rc = SPOCPC_TIMEOUT, res;
 
-	if ((re = spocpc_sexp_elements(resp, n, elem, 64, &rc)) == -1)
+	if ((oa = spocpc_sexp_elements(resp, &n, &rc)) == -1)
 		return rc;
 
 	if (spocpc_debug)
@@ -1878,9 +1740,9 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 	if (re == 0)
 		return rc;
 
-	for (j = 0; j < re; j++) {
+	for (j = 0; j < oa->n; j++) {
 
-		l = elem[j].len;
+		l = oa->arr[j].len;
 
 		if (spocpc_debug) {
 			strncpy(prbuf, elem[j].val, elem[j].len);
@@ -1906,10 +1768,10 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 			traceLog(LOG_DEBUG,"content: [%s](%d)", prbuf, content.len);
 		}
 
-		if (strncmp(code.val, "200", 3) == 0) {	/* have gotten everything I'm to get */
+		if (strncmp(code.val, "200", 3) == 0) {	
 			rc = SPOCPC_OK;
 			break;
-		} else if (strncmp(code.val, "201", 3) == 0) {	/* multiline response */
+		} else if (strncmp(code.val, "201", 3) == 0) {	
 			if ((sn =
 				spocpc_sexp_elements(content.val, content.len,
 				    part, 8, &rc)) == -1)
@@ -1959,6 +1821,7 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 
 	return rc;
 }
+*/
 
 /*----------------------------------------------------------------------------*/
 
@@ -1974,3 +1837,11 @@ char *spocpc_err2string( int r )
 	return "";
 }
 
+void queres_free( queres_t *q)
+{
+	if( q ){
+		free( q->str );
+		if (q->blob)
+			octarr_free( q->blob );
+	}
+}

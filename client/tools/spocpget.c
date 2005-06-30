@@ -34,11 +34,10 @@ char *passwd = 0;
 static int
 spocp_list(SPOCP * spocp, char *file)
 {
-	char	resp[BUFSIZ];
-	int	res = 0;
-	ssize_t	n;
-	FILE	*fp;
-	int	rc = SPOCPC_OK;
+	char		resp[BUFSIZ];
+	int			res = 0;
+	FILE		*fp;
+	int			rc = SPOCPC_OK;
 	queres_t	qres;
 
 	memset(resp, 0, BUFSIZ);
@@ -71,12 +70,39 @@ spocp_list(SPOCP * spocp, char *file)
 		qres.rescode != SPOCP_SUCCESS))
 		exit(1);
 
-	if ( spocpc_writen(spocp, "6:4:LIST", 8) != 8 ) return -1;
+	rc = spocpc_str_send_list( spocp, NULL, &qres);
 
-	while (rc == SPOCPC_OK &&
-	    (n = spocpc_readn(spocp, resp, BUFSIZ)) > 0) {
-		rc = spocpc_parse_and_print_list(resp, n, fp, withid);
+	if (rc == SPOCPC_OK) {
+		printf( "code: %d, str: %s\n", qres.rescode, qres.str );
+		if (qres.blob) {
+			octarr_t	*oa = qres.blob, *noa ;
+			octet_t		op,ro;
+			int			i,j;
+			char		*s;
+
+			ro.size = 0;
+			for (i = 0 ; i < oa->n ; i++ ) {
+				octln(&op, oa->arr[i]);
+
+				noa = spocpc_sexp_elements(&op, &rc);
+				if (rc != SPOCP_SUCCESS)
+					break;
+
+				printf("\t");
+				for( j = 0 ; j < noa->n ; j++ ) {
+					s = oct2strdup( noa->arr[j], '%');
+					printf("%s ",s);
+					free(s);
+				}
+				printf("\n");
+			}
+		}
 	}
+	else {
+		printf("ERR: %s\n", spocpc_err2string(rc));
+	}
+
+	queres_free( &qres );
 
 	if (fp != stdout)
 		fclose(fp);
