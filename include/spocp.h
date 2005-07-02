@@ -265,6 +265,7 @@ void		octarr_mr(octarr_t * oa, size_t n);
 void		octarr_free(octarr_t * oa);
 void		octarr_half_free(octarr_t * oa);
 octet_t		*octarr_pop(octarr_t * oa);
+octet_t		*octarr_rpop(octarr_t * oa);
 octet_t		*octarr_rm(octarr_t * oa, int n);
 
 void		octarr_print( int p, octarr_t *oa);
