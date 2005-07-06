@@ -89,11 +89,13 @@ locking_function(int mode, int n, const char *file, int line)
 		MUTEX_UNLOCK(mutex_buf[n]);
 }
 
+/*
 static unsigned long
 id_function(void)
 {
 	return (unsigned long int) THREAD_ID;
 }
+*/
 
 int
 THREAD_setup(void)
@@ -108,7 +110,7 @@ THREAD_setup(void)
 	for (i = 0; i < CRYPTO_num_locks(); i++)
 		MUTEX_SETUP(mutex_buf[i]);
 
-	CRYPTO_set_id_callback(id_function);
+	CRYPTO_set_id_callback(NULL);
 	CRYPTO_set_locking_callback(locking_function);
 
 	return 1;
@@ -768,7 +770,7 @@ tls_start(conn_t * conn, ruleset_t * rs)
 
 	cipher = SSL_get_current_cipher(ssl);
 
-	conn->cipher = Strdup(SSL_CIPHER_get_name(cipher));
+	conn->cipher = Strdup((char *) SSL_CIPHER_get_name(cipher));
 
 	conn->ssl_vers = Strdup(SSL_CIPHER_get_version(cipher));
 

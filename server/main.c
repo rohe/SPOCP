@@ -38,8 +38,8 @@ srv_t           srv;
 int             allow_severity;
 int             deny_severity;
 
-Sigfunc        *
-signal(int signo, Sigfunc * func)
+static Sigfunc        *
+xsignal(int signo, Sigfunc * func)
 {
 	struct sigaction act, oact;
 
@@ -444,11 +444,11 @@ main(int argc, char **argv)
 			srv.type = AF_UNIX;
 		}
 
-		signal(SIGCHLD, sig_chld);
-		signal(SIGPIPE, sig_pipe);
-		signal(SIGINT, sig_int);
-		signal(SIGTERM, sig_term);
-		signal(SIGUSR1, sig_usr1);
+		xsignal(SIGCHLD, sig_chld);
+		xsignal(SIGPIPE, sig_pipe);
+		xsignal(SIGINT, sig_int);
+		xsignal(SIGTERM, sig_term);
+		xsignal(SIGUSR1, sig_usr1);
 
 		clilen = sizeof(cliaddr);
 

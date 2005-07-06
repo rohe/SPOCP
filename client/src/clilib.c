@@ -193,7 +193,7 @@ password_cb(char *buf, int num, int rwflag, void *userdata)
 		return (0);
 	}
 
-	strncpy(buf, num-1, userdata);
+	strncpy(buf, userdata, num-1);
 	return ((int) len);
 }
 
@@ -445,8 +445,10 @@ spocpc_use_tls(SPOCP * spocp)
 int
 spocpc_start_tls(SPOCP * spocp)
 {
-	char sslhost[MAXHOSTNAMELEN];
-	int r;
+	char	sslhost[MAXHOSTNAMELEN];
+	int		r;
+	char	*target;
+	int		cc;
 
 	if (tls_init(spocp) == 0)
 		return 0;
@@ -477,15 +479,26 @@ spocpc_start_tls(SPOCP * spocp)
 		return 0;
 	}
 
-	if (*spocp->cursrv == '/' || strcmp(spocp->cursrv, "localhost") == 0) {
+	target = oct2strdup(spocp->srv->arr[spocp->cursrv], '%');
+
+	if (*target == '/' || (strcmp(target, "localhost") == 0)) {
 		gethostname(sslhost, MAXHOSTNAMELEN);
-		if (check_cert_chain(spocp->ssl, sslhost) == 0) {
+
+		Free( target );	
+
+		if (check_cert_chain(spocp->ssl, (char *) sslhost) == 0) {
 			SSL_free(spocp->ssl);
 			return 0;
 		}
-	} else if (check_cert_chain(spocp->ssl, spocp->cursrv) == 0) {
-		SSL_free(spocp->ssl);
-		return 0;
+	} else {
+		cc = check_cert_chain(spocp->ssl, target);
+
+		Free( target );	
+
+		if (cc== 0) {
+			SSL_free(spocp->ssl);
+			return 0;
+		}
 	}
 
 	spocp->contype = SSL_TLS;
