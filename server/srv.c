@@ -16,6 +16,8 @@
 
 #define UNKNOWN_RULESET 256
 
+spocp_result_t com_find(work_info_t *wi) ;
+
 typedef struct _rescode {
 	int             code;
 	char           *rc;
@@ -1126,9 +1128,11 @@ spocp_result_t
 com_find(work_info_t *wi)
 {
 	spocp_result_t	r = SPOCP_SUCCESS;
+	/*
 	ruleset_t	*rs = wi->conn->rs;
 	ruleinst_t	*ri = 0;
 	char		*uid;
+	*/
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"FIND requested ");
 

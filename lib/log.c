@@ -218,7 +218,7 @@ tracelog_doit(int priority, const char *fmt, va_list ap)
 	/* Mark that the information that was supposed to be written was bigger then
 	   what I allow it to be */
 	if (r == SPOCP_MAXLINE - len) {
-		buf[ SPOCP_MAXLINE -2] = buf[ SPOCP_MAXLINE -3 ] = "=" ;
+		buf[ SPOCP_MAXLINE -2] = buf[ SPOCP_MAXLINE -3 ] = '=' ;
 	}
 
 #if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H 
