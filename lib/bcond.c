@@ -804,7 +804,7 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 		}
 	}
 
-	if (db->dback) {
+	if (dbc) {
 		/*
 		 * create a bcond name that MUST differ from rule ids Since
 		 * rule ids are SHA1 hashes, it consists of lower case letters 

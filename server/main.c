@@ -133,9 +133,10 @@ get_rules( srv_t *srv )
 	dbcmd_t         dbc;
 	struct timeval  start, end;
 
+	memset( &dbc, 0, sizeof( dbcmd_t ));
+	dbc.dback = srv->dback;
+
 	if (srv->dback) {
-		dbc.handle = 0;
-		dbc.dback = srv->dback;
 		/*
 		 * does the persistent database store need any initialization
 		 * ?? * if( srv.dback->init ) srv.dback->init( dbcmd_t *dbc )
@@ -155,8 +156,10 @@ get_rules( srv_t *srv )
 			if (0)
 				gettimeofday(&start, NULL);
 
+			/*
 			dbc.dback = srv->dback;
 			dbc.handle = 0;
+			*/
 
 			r = read_rules(srv, srv->rulefile, &dbc) ;
 			if( r == -1 ) {

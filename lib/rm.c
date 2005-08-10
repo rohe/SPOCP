@@ -119,6 +119,9 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 	jp = bucket->next;
 
 	if (bucket->refc == 0) {
+		DEBUG(SPOCP_DSTORE)
+			traceLog(LOG_DEBUG, "bucket reference down to zero");
+
 		bucket_rm(bp->val.atom, bucket);
 
 		/*
@@ -130,20 +133,24 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 			DEBUG(SPOCP_DSTORE)
 			    traceLog(LOG_DEBUG,"Get rid of the rest of this branch");
 			branch_free(bp);
+
 			return 0;
 		} else {
 			/*
 			 * remove remaining references 
 			 */
+			DEBUG(SPOCP_DSTORE)
+				traceLog(LOG_DEBUG, "junc_free");
 			junc_free(jp);
 			return 1;
 		}
 	}
 
 	r = rm_next(jp, elemp, rt);
+	DEBUG(SPOCP_DSTORE)
+		traceLog( LOG_DEBUG, "rm_next returned %d", r );
 
 	if (r == 0) {		/* one branch gone from the junction */
-
 		if (junction_index(jp) == 0) {
 			DEBUG(SPOCP_DSTORE)
 			    traceLog(LOG_DEBUG,"Junction without any branches");

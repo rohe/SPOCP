@@ -19,7 +19,8 @@
 #include <struct.h>
 #include <plugin.h>
 #include <basefn.h>
-#include <rbtree.h>
+#include <rdb.h>
+/*#include <rbtree.h> */
 #include <dback.h>
 
 #define SHA1HASHLEN 40
@@ -232,11 +233,10 @@ typedef struct _bcondexpr {
 	struct _bconddef	*parent;
 
 	union {
-					/* AND or OR array of
-					   bcondexp_t structs */
+		/* AND or OR array of bcondexp_t structs */
 		struct _varr		*arr;	
 		struct _bcondexpr	*single;	/* NOT */
-		bcspec_t		*spec;		/* SPEC */
+		bcspec_t			*spec;		/* SPEC */
 		struct _bconddef	*ref;		/* REF */
 	} val;
 
@@ -258,13 +258,13 @@ typedef struct _ruleinstance {
 	octet_t		*rule;
 	octet_t		*blob;
 	octet_t		*bcexp;
-	element_t	*ep;	/* only used for bcond checks */
+	element_t	*ep;					/* only used for bcond checks */
 	ll_t		*alias;
 	bcdef_t		*bcond;
 } ruleinst_t;
 
 typedef struct _ruleinfo {
-	rbt_t	*rules;	/* red/black tree */
+	void	*rules;						/* rule database */
 } ruleinfo_t;
 
 /*********** The database *************/

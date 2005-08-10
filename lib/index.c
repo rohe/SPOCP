@@ -68,7 +68,7 @@ index_dup(spocp_index_t * id, ruleinfo_t * ri)
 		r = (ruleinst_t *) id->arr[i];
 
 		if (ri != 0) {
-			new->arr[i] = rbt_search(ri->rules, r->uid);
+			new->arr[i] = rdb_search(ri->rules, r->uid);
 		} else
 			new->arr[i] = id->arr[i];	/* NO new
 							 * ruleinstances ? */

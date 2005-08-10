@@ -41,6 +41,7 @@ conn_init(conn_t * conn)
 		traceLog(LOG_WARNING, "mutex init of connection lock failed"); 
 	if( pthread_mutex_init(&conn->rlock, 0) != 0 )
 		traceLog(LOG_WARNING, "mutex init of reply queue lock failed"); 
+
 }
 
 conn_t         *
@@ -187,6 +188,9 @@ conn_setup(conn_t * conn, srv_t * srv, int fd, char *hostname, char *ipaddr)
 	}
 	else
 		conn->sri.hostname = 0;
+
+	if (conn->srv->dback)
+		conn->dbc.dback = conn->srv->dback;
 
 	conn->rs = srv->root;
 	conn->layer = SPOCP_LAYER_NONE;

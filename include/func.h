@@ -181,11 +181,13 @@ int		 rules(db_t * db);
 
 void		ruleinst_free(ruleinst_t * rt);
 
-ruleinfo_t	 *ruleinfo_new(void);
+ruleinfo_t	*ruleinfo_new(void);
 void		ruleinfo_free(ruleinfo_t *);
-ruleinfo_t	 *ruleinfo_dup(ruleinfo_t * old);
-int		 ruleinfo_print(ruleinfo_t * r);
-ruleinst_t	 *ruleinst_find_by_uid(rbt_t * rules, char *uid);
+ruleinfo_t	*ruleinfo_dup(ruleinfo_t * old);
+int			ruleinfo_print(ruleinfo_t * r);
+ruleinst_t	*ruleinst_find_by_uid(void * rules, char *uid);
+void		ruleinst_uid(unsigned char *, octet_t *, octet_t *, char *); 
+
 
 element_t	  *element_dup(element_t * ep, element_t * memberof);
 element_t	  *element_list_add(element_t * le, element_t * e);

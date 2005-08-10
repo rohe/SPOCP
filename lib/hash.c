@@ -316,6 +316,9 @@ bucket_free(buck_t * bp)
 			junc_free(bp->next);
 
 		buck_free(bp);
+		DEBUG( SPOCP_DSTORE) {
+			traceLog(LOG_DEBUG,"bucket removed");
+		}
 	}
 }
 
@@ -326,6 +329,9 @@ phash_free(phash_t * ht)
 	unsigned int    i;
 
 	if (ht) {
+		DEBUG(SPOCP_DSTORE) {
+			traceLog(LOG_DEBUG,"removing hash struct");
+		}
 		if (ht->arr) {
 			arr = ht->arr;
 			for (i = 0; i < ht->size; i++)
@@ -335,6 +341,10 @@ phash_free(phash_t * ht)
 			Free(ht->arr);
 		}
 		Free(ht);
+
+		DEBUG(SPOCP_DSTORE) {
+			traceLog(LOG_DEBUG,"hash struct removed");
+		}
 	}
 }
 
@@ -347,10 +357,12 @@ bucket_rm(phash_t * ht, buck_t * bp)
 	buck_t        **arr = ht->arr;
 	buck_t        **newarr;
 	size_t          n, size = ht->size;
-	size_t          rc;
+	size_t          rc = 0;
 	int             i;
 
 	i = phash_bucket_index(ht, bp, &rc);
+
+	traceLog(LOG_DEBUG, "bucket index = %d", i);
 
 	if (i == 0)
 		return;

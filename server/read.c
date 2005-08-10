@@ -349,19 +349,18 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 				continue;
 
 			if (bcspec_is(oa->arr[i]) == TRUE) {
-				tmp =
-				    strndup(oa->arr[i]->val + 6,
-					     oa->arr[i]->len - 6);
+				tmp = oct2strdup(oa->arr[i], 0);
 
 				r = dback_read(dbc, tmp, &dat0, &dat1,
 					       &bcname);
 
 				if (dat0.len) {
-					oct_assign(&name, tmp);
+					oct_assign(&name, &tmp[6]);
 					bcdef_add(rs->db, srv->plugin, dbc,
 						  &name, &dat0);
 					octclr(&dat0);
 				}
+
 				Free(tmp);
 			}
 		}
