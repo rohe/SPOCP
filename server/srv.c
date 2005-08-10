@@ -1122,6 +1122,19 @@ com_show(work_info_t *wi)
 	return postop( wi, r, 0);
 }
 
+spocp_result_t
+com_find(work_info_t *wi)
+{
+	spocp_result_t	r = SPOCP_SUCCESS;
+	ruleset_t	*rs = wi->conn->rs;
+	ruleinst_t	*ri = 0;
+	char		*uid;
+
+	LOG(SPOCP_INFO) traceLog(LOG_INFO,"FIND requested ");
+
+	return postop( wi, r, 0);
+}
+
 /*
  * ----------------------------------------------------------------------------- 
  */
@@ -1306,6 +1319,8 @@ get_operation(work_info_t *wi )
 			oper = &com_capa;
 		} else if (strncasecmp(op.val, "SHOW", 4) == 0) {
 			oper = &com_show;
+		} else if (strncasecmp(op.val, "FIND", 4) == 0) {
+			oper = &com_find;
 		}
 		break;
 
