@@ -198,9 +198,10 @@ dback_init(dbcmd_t * dbc)
  */
 /*!
  * \brief Stores information in the persistent storage \param dbc A link to the
- * backend information \param k The key under which the information should be
- * stored. \param o0, o1, s Pieces of the information to be stored \return
- * SPOCP_SUCCESS on success otherwise an hopefully appropriate error code 
+ * backend information 
+ * \param k The key under which the information should be stored. 
+ * \param o0, o1, s Pieces of the information to be stored 
+ * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code 
  */
 spocp_result_t
 dback_save(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
@@ -208,12 +209,19 @@ dback_save(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
 	octet_t        *datum;
 	spocp_result_t  r;
 
-	if (dbc == 0 || dbc->dback == 0)
+	if (dbc == 0 || dbc->dback == 0) {
+		traceLog( LOG_WARNING, "No persistent store available %p:%p", dbc, dbc->dback);
 		return SPOCP_SUCCESS;
+	}
 
 	datum = datum_make(o0, o1, s);
 
+	traceLog( LOG_DEBUG, "Writing to persistent store" );
+
 	dbc->dback->put(dbc, (void *) k, (void *) datum, &r);
+	if (r != SPOCP_SUCCESS ) {
+		traceLog( LOG_WARNING, "Problem writing to persistent store errno=%d", r);
+	}
 
 	oct_free(datum);
 
@@ -314,7 +322,7 @@ dback_all_keys(dbcmd_t * dbc, spocp_result_t * r)
 	if (dbc && dbc->dback == 0)
 		return 0;
 
-	return (octarr_t *) dbc->dback->allkeys(dbc->handle, 0, 0, r);
+	return (octarr_t *) dbc->dback->allkeys(dbc, 0, 0, r);
 }
 
 /*

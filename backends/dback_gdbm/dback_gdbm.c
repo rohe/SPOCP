@@ -14,6 +14,8 @@
 extern gdbm_error gdbm_errno;
 extern char    *gdbm_version;
 
+#define AVLUS 1
+
 /*
  * function prototypes 
  */
@@ -102,32 +104,38 @@ db_gdbm_put(dbcmd_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
 	GDBM_FILE       dbf;
 	char           *key = (char *) vkey;
 	octet_t        *dat = (octet_t *) vdat;
+	int				c;
 
-	if (dbc->handle)
-		dbf = (GDBM_FILE) dbc->handle;
-	else {
-		dbf =
-		    gdbm_open(file, 0, GDBM_WRCREAT | GDBM_SYNC,
-			      S_IRUSR | S_IWUSR, 0);
+	dbf = gdbm_open(file, 0, GDBM_WRCREAT | GDBM_SYNC, S_IRUSR | S_IWUSR, 0);
 
-		if (dbf == 0) {
-			*rc = SPOCP_OPERATIONSERROR;
-			return 0;
-		} else
-			*rc = SPOCP_SUCCESS;
-	}
+	if (dbf == 0) {
+		char *gret;
 
+		traceLog(LOG_DEBUG,"DBACK: Failed to open persistent store; gdbm file %s", file);
+		gret = gdbm_strerror( gdbm_errno );
+		traceLog( LOG_DEBUG,"DBACK: Gdbm reported: %s", gret);
+
+		*rc = SPOCP_OPERATIONSERROR;
+		return 0;
+	} else
+		*rc = SPOCP_SUCCESS;
+
+#ifdef AVLUS
+	traceLog( LOG_DEBUG, "DBACK: Stored under key \"%s\"", key);
+	oct_print(LOG_DEBUG, "DBACK: Datum", dat);
+#endif
 	char2datum(&dkey, key);
 	octet2datum(&dcontent, dat);
 
-	if (gdbm_store(dbf, dkey, dcontent, GDBM_INSERT) == 1)
+	c = gdbm_store(dbf, dkey, dcontent, GDBM_INSERT) ;
+	if (c == 1)
 		*rc = SPOCP_EXISTS;
+	else if( c== -1) {
+		traceLog(LOG_DEBUG,"DBACK: Other gdbm error");
+		*rc = SPOCP_OPERATIONSERROR;
+	}
 
-	/*
-	 * If I got it from someone else I shouldn't close it 
-	 */
-	if (!dbc->handle)
-		gdbm_close(dbf);
+	gdbm_close(dbf);
 
 	return 0;
 }
@@ -145,19 +153,13 @@ db_gdbm_replace(dbcmd_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
 	char           *key = (char *) vkey;
 	octet_t        *dat = (octet_t *) vdat;
 
-	if (dbc->handle)
-		dbf = (GDBM_FILE) dbc->handle;
-	else {
-		dbf =
-		    gdbm_open(file, 0, GDBM_WRCREAT | GDBM_SYNC,
-			      S_IRUSR | S_IWUSR, 0);
+	dbf = gdbm_open(file, 0, GDBM_WRCREAT | GDBM_SYNC, S_IRUSR | S_IWUSR, 0);
 
-		if (dbf == 0) {
-			*rc = SPOCP_OPERATIONSERROR;
-			return 0;
-		} else
-			*rc = SPOCP_SUCCESS;
-	}
+	if (dbf == 0) {
+		*rc = SPOCP_OPERATIONSERROR;
+		return 0;
+	} else
+		*rc = SPOCP_SUCCESS;
 
 	char2datum(&dkey, key);
 	octet2datum(&dcontent, dat);
@@ -165,7 +167,8 @@ db_gdbm_replace(dbcmd_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
 	if (gdbm_store(dbf, dkey, dcontent, GDBM_REPLACE) == 1)
 		*rc = SPOCP_EXISTS;
 
-	gdbm_close(dbf);
+	if (!dbc->handle)
+		gdbm_close(dbf);
 
 	return 0;
 }
@@ -183,17 +186,13 @@ db_gdbm_get(dbcmd_t * dbc, void *vkey, void *null, spocp_result_t * rc)
 	char           *key = (char *) vkey;
 	octet_t        *content = 0;
 
-	if (dbc->handle)
-		dbf = (GDBM_FILE) dbc->handle;
-	else {
-		dbf = gdbm_open(file, 0, GDBM_READER, 0, 0);
+	dbf = gdbm_open(file, 0, GDBM_READER, 0, 0);
 
-		if (dbf == 0) {
-			*rc = SPOCP_OPERATIONSERROR;
-			return 0;
-		} else
-			*rc = SPOCP_SUCCESS;
-	}
+	if (dbf == 0) {
+		*rc = SPOCP_OPERATIONSERROR;
+		return 0;
+	} else
+		*rc = SPOCP_SUCCESS;
 
 	char2datum(&dkey, key);
 
@@ -219,21 +218,20 @@ db_gdbm_delete(dbcmd_t * dbc, void *v0, void *v1, spocp_result_t * rc)
 	GDBM_FILE       dbf;
 	char           *key = (char *) v0;
 
-	if (dbc->handle)
-		dbf = (GDBM_FILE) dbc->handle;
-	else {
-		dbf = gdbm_open(gdbmfile, 0, GDBM_WRITER | GDBM_SYNC, 0, 0);
+	dbf = gdbm_open(gdbmfile, 0, GDBM_WRITER | GDBM_SYNC, 0, 0);
 
-		if (dbf == 0) {
-			*rc = SPOCP_OPERATIONSERROR;
-			return 0;
-		} else
-			*rc = SPOCP_SUCCESS;
-	}
+	if (dbf == 0) {
+		traceLog( LOG_WARNING, "DBACK: Couldn't open GDBM file for deleting" );
+		*rc = SPOCP_OPERATIONSERROR;
+		return 0;
+	} else
+		*rc = SPOCP_SUCCESS;
 
 	char2datum(&dkey, key);
 
 	res = gdbm_delete(dbf, dkey);
+
+	traceLog( LOG_DEBUG, "DBACK: Removing datum connected with key %s, res=%d", key, res );
 
 	if (res == -1)
 		*rc = SPOCP_UNAVAILABLE;
@@ -310,17 +308,21 @@ db_gdbm_allkeys(dbcmd_t * dbc, void *v1, void *v2, spocp_result_t * rc)
 	octarr_t       *oa = 0;
 	char           *file = (char *) dbc->dback->conf;
 
-	if (dbc->handle)
-		dbf = (GDBM_FILE) dbc->handle;
-	else {
-		dbf = gdbm_open(file, 0, GDBM_READER, 0, 0);
+	if (!dbc )
+		return 0;
 
-		if (dbf == 0) {
-			*rc = SPOCP_OPERATIONSERROR;
-			return 0;
-		} else
-			*rc = SPOCP_SUCCESS;
-	}
+	dbf = gdbm_open(file, 0, GDBM_READER, 0, 0);
+
+	if (dbf == 0) {
+		char *ret;
+
+		ret = gdbm_strerror( gdbm_errno );
+		/* will return dbf==0 and gdbm_errno==3 if file doesn't exist */
+		traceLog(LOG_WARNING,"DBACK: GDBM dback return %s when trying to open %s",ret, file);
+
+		*rc = SPOCP_OPERATIONSERROR;
+		return 0;
+	} 
 
 	key = gdbm_firstkey(dbf);
 	while (key.dptr) {
@@ -329,6 +331,8 @@ db_gdbm_allkeys(dbcmd_t * dbc, void *v1, void *v2, spocp_result_t * rc)
 		nextkey = gdbm_nextkey(dbf, key);
 		key = nextkey;
 	}
+
+	gdbm_close( dbf );
 
 	return (void *) oa;
 }
