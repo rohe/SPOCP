@@ -23,7 +23,6 @@
 #include <wrappers.h>
 #include <spocp.h>
 #include <sha1.h>
-#include <rbtree.h>
 #include <dback.h>
 
 /*#define AVLUS 1*/
@@ -788,10 +787,25 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
  * --------------- ruleinst ----------------------------- 
  */
 
+void
+ruleinst_uid(unsigned char *sha1sum, octet_t * rule, octet_t * blob, char *bcname) 
+{
+	struct sha1_context ctx;
+
+	sha1_starts(&ctx);
+
+	sha1_update(&ctx, (uint8 *) rule->val, rule->len);
+	if (bcname)
+		sha1_update(&ctx, (uint8 *) bcname, strlen(bcname));
+	if (blob)
+		sha1_update(&ctx, (uint8 *) blob->val, blob->len);
+
+	sha1_finish(&ctx, (unsigned char *) sha1sum);
+}
+
 static ruleinst_t *
 ruleinst_new(octet_t * rule, octet_t * blob, char *bcname)
 {
-	struct sha1_context ctx;
 	ruleinst_t     *rip;
 	unsigned char   sha1sum[21], *ucp;
 	int	     j;
@@ -808,13 +822,7 @@ ruleinst_new(octet_t * rule, octet_t * blob, char *bcname)
 	else
 		rip->blob = 0;
 
-	sha1_starts(&ctx);
-
-	sha1_update(&ctx, (uint8 *) rule->val, rule->len);
-	if (bcname)
-		sha1_update(&ctx, (uint8 *) bcname, strlen(bcname));
-
-	sha1_finish(&ctx, (unsigned char *) sha1sum);
+	ruleinst_uid( sha1sum, rule, blob, bcname );
 
 	for (j = 0, ucp = (unsigned char *) rip->uid; j < 20; j++, ucp += 2)
 		sprintf((char *) ucp, "%02x", sha1sum[j]);
@@ -923,7 +931,7 @@ P_ruleinst_cmp(void *a, void *b)
 static char    *
 P_ruleinst_print(void *vp)
 {
-	return 0;
+	return Strdup((char *) vp);
 }
 
 static Key
@@ -954,7 +962,7 @@ ruleinfo_dup(ruleinfo_t * ri)
 		return 0;
 
 	new = (ruleinfo_t *) Calloc(1, sizeof(ruleinfo_t));
-	new->rules = rbt_dup(ri->rules, 1);
+	new->rules = rdb_dup(ri->rules, 1);
 
 	return new;
 }
@@ -963,18 +971,18 @@ void
 ruleinfo_free(ruleinfo_t * ri)
 {
 	if (ri) {
-		rbt_free(ri->rules);
+		rdb_free(ri->rules);
 		Free(ri);
 	}
 }
 
 ruleinst_t     *
-ruleinst_find_by_uid(rbt_t * rules, char *uid)
+ruleinst_find_by_uid(void * rules, char *uid)
 {
 	if (rules == NULL)
 		return NULL;
 
-	return (ruleinst_t *) rbt_search(rules, uid);
+	return (ruleinst_t *) rdb_search(rules, uid);
 }
 
 /*
@@ -989,7 +997,11 @@ ruleinst_find_by_uid(rbt_t * rules, char *uid)
 int
 free_rule(ruleinfo_t * ri, char *uid)
 {
-	return rbt_remove(ri->rules, uid);
+	int r;
+	
+	r = rdb_remove(ri->rules, uid);
+	rdb_print( ri->rules);
+	return r;
 }
 
 void
@@ -1004,6 +1016,7 @@ save_rule(db_t * db, dbcmd_t * dbc, octet_t * rule, octet_t * blob,
 {
 	ruleinfo_t     *ri;
 	ruleinst_t     *rt;
+	int				r;
 
 	if (db->ri == 0)
 		db->ri = ri = ruleinfo_new();
@@ -1014,7 +1027,7 @@ save_rule(db_t * db, dbcmd_t * dbc, octet_t * rule, octet_t * blob,
 
 	if (ri->rules == 0)
 		ri->rules =
-		    rbt_init(&P_ruleinst_cmp, &P_ruleinst_free,
+		    rdb_new(&P_ruleinst_cmp, &P_ruleinst_free,
 			     &P_ruleinst_key, &P_ruleinst_dup,
 			     &P_ruleinst_print);
 	else {
@@ -1024,10 +1037,14 @@ save_rule(db_t * db, dbcmd_t * dbc, octet_t * rule, octet_t * blob,
 		}
 	}
 
-	if (db->dback)
+	if (dbc) {
+		traceLog(LOG_DEBUG, "Got persistent store");
 		dback_save(dbc, rt->uid, rule, blob, bcondname);
+	}
 
-	rbt_insert(ri->rules, (item_t) rt);
+	r = rdb_insert(ri->rules, (item_t) rt);
+	traceLog(SPOCP_DEBUG,"rdb_insert %d", r);
+	rdb_print( ri->rules );
 
 	return rt;
 }
@@ -1038,14 +1055,13 @@ nrules(ruleinfo_t * ri)
 	if (ri == 0)
 		return 0;
 	else
-		return rbt_items(ri->rules);
+		return rdb_rules(ri->rules);
 }
 
 int
 rules(db_t * db)
 {
-	if (db == 0 || db->ri == 0 || db->ri->rules == 0
-	    || db->ri->rules->head == 0)
+	if (db == 0 || db->ri == 0 || rdb_rules( db->ri->rules) )
 		return 0;
 	else
 		return 1;
@@ -1156,16 +1172,17 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 	if ((oa && (oa->size - oa->n) < n))
 		octarr_mr(oa, n);
 
-	pa = rbt2varr(db->ri->rules);
+	pa = rdb_all(db->ri->rules);
 
 	for (i = 0; (r = (ruleinst_t *) varr_nth(pa, i)); i++) {
 
 		/*
-		if (1) {
+#ifdef AVLUS
+		 {
 			char	*str;
 			traceLog("...") ;
 			str = oct2strdup( r->rule, '%' );
-			traceLog("Rule[%d]: %s", i, str );
+			traceLog(LOG_DEBUG,"Rule[%d]: %s", i, str );
 			Free(str);
 		}
 		*/
@@ -1177,10 +1194,11 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 		}
 
 		/*
-		if (1) {
+#ifdef AVLUS
+		 {
 			char	*str;
 			str = oct2strdup( oct, '%' );
-			traceLog("Rule[%d] => %s", i, str );
+			traceLog(LOG_DEBUG,"Rule[%d] => %s", i, str );
 			Free(str);
 		}
 		*/
@@ -1188,8 +1206,8 @@ get_all_rules(db_t * db, octarr_t * oa, char *rs)
 		oa = octarr_add(oa, oct);
 
 		/*
-		if (1)
-			traceLog("Added to octarr") ;
+#ifdef AVLUS
+			traceLog(LOG_DEBUG,"Added to octarr") ;
 		*/
 	}
 
@@ -1396,7 +1414,7 @@ ruleinfo_print(ruleinfo_t * r)
 	if (r == 0)
 		return 0;
 
-	rbt_print(r->rules);
+	rdb_print(r->rules);
 
 	return 0;
 }
