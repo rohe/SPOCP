@@ -39,7 +39,7 @@ char           *keyword[] = {
 };
 
 
-#define DEFAULT_PORT    9953	/* we should register one with IANA */
+#define DEFAULT_PORT    4751	/* Registered with IANA */
 #define DEFAULT_TIMEOUT   30
 #define DEFAULT_NTHREADS   5
 #define DEFAULT_SSL_DEPTH  1
