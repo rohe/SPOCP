@@ -344,6 +344,8 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 	element_t	*ep = 0;
 	resset_t	*rset = 0;
 	comparam_t	comp;
+       octarr_t    *on = 0;
+       checked_t   *cr=0;
 #endif
 
 	/* If I'm running on a unix domain socket I implicitly trust
@@ -413,7 +415,8 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 
 	comp.rc = SPOCP_SUCCESS;
 	comp.head = ep;
-	comp.blob = 0;
+       comp.blob = &on;
+       comp.cr = &cr;
 
 	res = allowed(rs->db->jp, &comp, &rset);
 
