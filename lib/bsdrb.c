@@ -69,7 +69,8 @@ bsdrb_insert( void *vp, ruleinst_t *ri )
 	ir = new_rule();
 	ir->ri = ri;
 
-	traceLog( SPOCP_DEBUG, "bsdrb inserting key %s to head %p", ri->uid, vp );
+	DEBUG(SPOCP_DSTORE)
+		traceLog( SPOCP_DEBUG, "bsdrb inserting key %s to head %p", ri->uid, vp );
 
 	r = RB_INSERT( rule_head, rh, ir );
 
@@ -107,7 +108,7 @@ int bsdrb_empty( void *vp )
 {
 	struct rule_head	*rh = (struct rule_head *) vp ;
 
-	return RB_EMPTY( rh ) ? 1 : 0 ;
+	return RB_EMPTY( rh ) ? 0 : 1 ;
 }
 
 varr_t *

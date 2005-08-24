@@ -1037,14 +1037,16 @@ save_rule(db_t * db, dbcmd_t * dbc, octet_t * rule, octet_t * blob,
 		}
 	}
 
-	if (dbc) {
+	if (dbc && dbc->dback) {
 		traceLog(LOG_DEBUG, "Got persistent store");
 		dback_save(dbc, rt->uid, rule, blob, bcondname);
 	}
 
 	r = rdb_insert(ri->rules, (item_t) rt);
-	traceLog(SPOCP_DEBUG,"rdb_insert %d", r);
-	rdb_print( ri->rules );
+	DEBUG(SPOCP_DSTORE) {
+		traceLog(SPOCP_DEBUG,"rdb_insert %d", r);
+		rdb_print( ri->rules );
+	}
 
 	return rt;
 }
@@ -1061,7 +1063,7 @@ nrules(ruleinfo_t * ri)
 int
 rules(db_t * db)
 {
-	if (db == 0 || db->ri == 0 || rdb_rules( db->ri->rules) )
+	if (db == 0 || nrules(db->ri) == 0 )
 		return 0;
 	else
 		return 1;

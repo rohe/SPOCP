@@ -24,8 +24,13 @@ void rdb_free( void *r )
 
 int rdb_rules( void *r )
 {
-	if ( r && !bsdrb_empty(r))
-		return 1;
+	int n;
+
+	if ( r ) {
+		n = bsdrb_empty(r);
+		/*traceLog(LOG_DEBUG, "rdb_rules %d", n );*/
+		return n;
+	}
 	else
 		return 0;
 }
