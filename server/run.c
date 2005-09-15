@@ -203,6 +203,7 @@ static int read_work( srv_t *srv, conn_t *conn )
 			return 1;
 
 		gettimeofday( &conn->op_start, NULL );
+		time(&conn->last_event);
 
 #ifdef AVLUS
 		timestamp("add work item");
@@ -307,6 +308,9 @@ spocp_srv_run(srv_t * srv)
 			 * of this loop is done 
 			 */
 			next = pi->next;
+
+			if(time(NULL) - conn->last_event > conn->srv->timeout)
+				conn->stop = 1;
 
 			/* only close if output queue is empty */
 			/*if (conn->stop && !conn->ops_pending && */
