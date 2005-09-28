@@ -324,7 +324,7 @@ com_capa(work_info_t *wi)
 		}
 	}
 
-	if (oparg->n == 0) {	/* list auth mechs */
+	if (wi->oparg->n == 0) {	/* list auth mechs */
 		const char	*mechs;
 		size_t		mechlen;
 		int		count;
@@ -341,7 +341,7 @@ com_capa(work_info_t *wi)
 		}
 	}
 
-      capa_don:
+      capa_done:
 #endif
 
 	return postop( wi, r, msg );
@@ -356,6 +356,7 @@ com_auth(work_info_t *wi)
 	const char     *data;
 	size_t          len;
 	octet_t         blob;
+    int             wr, r;
 #endif
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
@@ -376,20 +377,18 @@ com_auth(work_info_t *wi)
 	}
 
 	if (conn->sasl_mech == NULL) {	/* start */
-		conn->sasl_mech = oct2strdup(oparg->arr[0], '%');
+		conn->sasl_mech = oct2strdup(wi->oparg->arr[0], '%');
 		wr = sasl_server_start(conn->sasl,
 				       conn->sasl_mech,
-				       oparg->n >
-				       1 ? oparg->arr[1]->val : NULL,
-				       oparg->n >
-				       1 ? oparg->arr[1]->len : 0, &data,
+				       wi->oparg->n > 1 ? wi->oparg->arr[1]->val : NULL,
+				       wi->oparg->n > 1 ? wi->oparg->arr[1]->len : 0,
+                       &data,
 				       &len);
 	} else {		/* step */
 		wr = sasl_server_step(conn->sasl,
-				      oparg->n >
-				      0 ? oparg->arr[0]->val : NULL,
-				      oparg->n >
-				      0 ? oparg->arr[0]->len : 0, &data,
+				      wi->oparg->n > 0 ? wi->oparg->arr[0]->val : NULL,
+				      wi->oparg->n > 0 ? wi->oparg->arr[0]->len : 0,
+                      &data,
 				      &len);
 	}
 
@@ -402,15 +401,17 @@ com_auth(work_info_t *wi)
       check:
 
 	switch (wr) {
+        /* finished with authentication */
 	case SASL_OK:
 		wr = sasl_getprop(conn->sasl, SASL_USERNAME,
 				  (const void **) &conn->sasl_username);
-		add_response_blob(out, SPOCP_MULTI, &blob);
+		add_response_blob(wi->buf, SPOCP_MULTI, &blob);
 		r = SPOCP_SUCCESS;
 		msg = Strdup("Authentication OK");
 		break;
+        /* we need to step some */
 	case SASL_CONTINUE:
-		add_response_blob(out, SPOCP_AUTHDATA, &blob);
+		add_response_blob(wi->buf, SPOCP_AUTHDATA, &blob);
 		r = SPOCP_AUTHINPROGRESS;
 		break;
 	default:
@@ -419,7 +420,8 @@ com_auth(work_info_t *wi)
 		r = SPOCP_AUTHERR;
 		msg = Strdup("Authentication failed");
 	}
-	postop(wi, r, msg);
+
+	return postop(wi, r, msg);
 
 #else
 	return postop( wi, SPOCP_NOT_SUPPORTED, NULL);

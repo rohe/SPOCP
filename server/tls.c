@@ -13,7 +13,7 @@
 
 #include "locl.h"
 
-#ifdef HAVE_SSL
+#if (defined(HAVE_SSL) || defined(HAVE_SASL))
 
 #include <openssl/lhash.h>
 #include <openssl/ssl.h>

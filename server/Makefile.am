@@ -6,13 +6,13 @@ common_SOURCES = iobuf.c conn.c socket.c init.c \
 spocd_SOURCES = main.c srv.c tls.c \
 	config.c tpool.c cpool.c pool.c run.c $(common_SOURCES)
 
-spocd_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la #@SASL_LDFLAGS@ @SASL_LIBS@
+spocd_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la @SASL_LDFLAGS@ @SASL_LIBS@
 
 #debug version
 
 dbg_spocd_SOURCES = $(spocd_SOURCES)
 
-dbg_spocd_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la #@SASL_LDFLAGS@ @SASL_LIBS@
+dbg_spocd_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la @SASL_LDFLAGS@ @SASL_LIBS@
 
 dbg_spocd_LDFLAGS = -static
 
@@ -20,13 +20,13 @@ dbg_spocd_LDFLAGS = -static
 
 adminsrv_SOURCES = adminsrv.c cmp.c readcnf.c util.c config.c
 
-adminsrv_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la #@SASL_LDFLAGS@ @SASL_LIBS@
+adminsrv_LDADD = $(WRAP_LIBS) $(MODULE_LIBS) $(top_builddir)/lib/libspocp.la @SASL_LDFLAGS@ @SASL_LIBS@
 
 adminsrv_LDFLAGS = -static
 
 #
 
-INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include #@SASL_CPPFLAGS@
+INCLUDES = -I$(top_builddir)/include -I$(top_srcdir)/include @SASL_CPPFLAGS@
 
 EXTRA_DIST = srv.h srvconf.h readcnf.h
 
