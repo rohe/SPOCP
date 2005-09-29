@@ -344,7 +344,9 @@ com_capa(work_info_t *wi)
       capa_done:
 #endif
 
-	return postop( wi, r, msg );
+    add_response(wi->buf, r, msg);
+    iobuf_shift(wi->conn->in);
+    return(r);
 }
 
 spocp_result_t
