@@ -111,8 +111,8 @@ SPOCP	*spocpc_add_server( SPOCP *spocp, char *srv);
 SPOCP	*spocpc_set_timeout( SPOCP *spocp, long sec, long usec);
 
 int		spocpc_reopen(SPOCP * spocp, int nsec);
-size_t	spocpc_readn(SPOCP * spocp, char *str, size_t max);
-size_t	spocpc_writen(SPOCP * spocp, char *str, size_t max);
+ssize_t	spocpc_readn(SPOCP * spocp, char *str, size_t max);
+ssize_t	spocpc_writen(SPOCP * spocp, char *str, size_t max);
 
 int spocpc_send_add(SPOCP *, octet_t *, octet_t *, octet_t *, octet_t *, queres_t *);
 int spocpc_send_subject(SPOCP *, octet_t *, queres_t *);

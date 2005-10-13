@@ -1037,10 +1037,10 @@ spocpc_reopen(SPOCP * spocp, int nsec)
  * \param n The number of bytes to write
  * \return The number of bytes written or -1 if no bytes could be written
  */
-size_t
+ssize_t
 spocpc_writen(SPOCP * spocp, char *str, size_t n )
 {
-	size_t nleft, nwritten = 0 ;
+	ssize_t nleft, nwritten = 0 ;
 	char *sp;
 	fd_set wset;
 	int retval;
@@ -1102,12 +1102,12 @@ spocpc_writen(SPOCP * spocp, char *str, size_t n )
  * \return The number of bytes read or -1 if no bytes could be read
  */
 
-size_t
+ssize_t
 spocpc_readn(SPOCP * spocp, char *buf, size_t size)
 {
 	fd_set rset;
 	int retval;
-	size_t n = 0;
+	ssize_t n = 0;
 	struct timeval *tv = &spocp->com_timeout;
 
 	FD_ZERO(&rset);
@@ -1293,7 +1293,7 @@ static int
 spocpc_get_result(SPOCP * spocp, queres_t * qr)
 {
 	char	resp[BUFSIZ];
-	size_t	n;
+	ssize_t	n;
 	int		ret=SPOCPC_OK;
 	octet_t	oct;
 
