@@ -330,7 +330,7 @@ com_capa(work_info_t *wi)
 		int		count;
 		int		wr;
 
-		wr = sasl_listmech(conn->sasl, NULL, NULL, " ", NULL, &mechs,
+		wr = sasl_listmech(conn->sasl, NULL, "SASL:", " ", NULL, &mechs,
 				   &mechlen, &count);
 		if (wr != SASL_OK) {
 			LOG(SPOCP_ERR)
@@ -358,7 +358,8 @@ com_auth(work_info_t *wi)
 	const char     *data;
 	size_t          len;
 	octet_t         blob;
-    int             wr, r;
+    int             wr = -1;
+	int 			r;
 #endif
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
@@ -380,18 +381,22 @@ com_auth(work_info_t *wi)
 
 	if (conn->sasl_mech == NULL) {	/* start */
 		conn->sasl_mech = oct2strdup(wi->oparg->arr[0], '%');
+		if(strstr(conn->sasl_mech, "SASL:"))
+			conn->sasl_mech += 5;
+		else
+			goto check;
 		wr = sasl_server_start(conn->sasl,
-				       conn->sasl_mech,
-				       wi->oparg->n > 1 ? wi->oparg->arr[1]->val : NULL,
-				       wi->oparg->n > 1 ? wi->oparg->arr[1]->len : 0,
-                       &data,
-				       &len);
+				conn->sasl_mech,
+				wi->oparg->n > 1 ? wi->oparg->arr[1]->val : NULL,
+				wi->oparg->n > 1 ? wi->oparg->arr[1]->len : 0,
+				&data,
+				&len);
 	} else {		/* step */
 		wr = sasl_server_step(conn->sasl,
-				      wi->oparg->n > 0 ? wi->oparg->arr[0]->val : NULL,
-				      wi->oparg->n > 0 ? wi->oparg->arr[0]->len : 0,
-                      &data,
-				      &len);
+				wi->oparg->n > 0 ? wi->oparg->arr[0]->val : NULL,
+				wi->oparg->n > 0 ? wi->oparg->arr[0]->len : 0,
+				&data,
+				&len);
 	}
 
 	memset(&blob, 0, sizeof(blob));
