@@ -212,7 +212,7 @@ safe_strcat(char *dest, char *src, int *size)
 	dl = strlen(dest);
 	sl = strlen(src);
 
-	if (sl + dl > *size) {
+	if (sl + dl + 1 > *size) {
 		*size = sl + dl + 128;
 		tmp = realloc(dest, *size);
 		dest = tmp;
