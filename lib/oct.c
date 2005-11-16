@@ -202,7 +202,7 @@ spocp_result_t
 octcpy(octet_t * cpy, octet_t * oct)
 {
 	if (cpy->size == 0) {
-		cpy->val = (char *) Calloc(oct->len, sizeof(char));
+		cpy->val = (char *) Calloc(oct->len + 1, sizeof(char));
 	} else if (cpy->size < oct->len) {
 		if (oct_resize(cpy, oct->len) != SPOCP_SUCCESS)
 			return SPOCP_DENIED;
