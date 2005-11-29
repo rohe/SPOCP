@@ -337,14 +337,17 @@ element_reduce( element_t *ep )
     switch( ep->type ){
     case SPOC_LIST:
         prev = 0;
-        for( ep = ep->e.list->head; ep ; ep = ep->next ) {
+        for( ep = ep->e.list->head; ep ; ep = next ) {
             next = ep->next;
             nep = element_reduce( ep );
+			if (nep == NULL)
+				continue;
             if (ep != nep) {
                 if( prev )
                     prev->next = nep;
                 nep->next = next;
                 ep = nep;
+                next = ep->next;
             }
             prev = ep;
         }

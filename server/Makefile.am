@@ -1,7 +1,7 @@
 bin_PROGRAMS = spocd dbg_spocd adminsrv
 
 common_SOURCES = iobuf.c conn.c socket.c init.c \
-	saci.c ruleset.c util.c read.c ss.c readcnf.c opstack.c reply.c
+	saci.c ruleset.c util.c read.c ss.c readcnf.c opstack.c reply.c collect.c
 
 spocd_SOURCES = main.c srv.c tls.c \
 	config.c tpool.c cpool.c pool.c run.c $(common_SOURCES)

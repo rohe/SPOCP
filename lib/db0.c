@@ -1084,13 +1084,16 @@ get_rule(ruleinfo_t * ri, octet_t *oct)
 }
 
 /*
- * creates an output string that looks like this
+ *! \brief
+ * 	creates an output string that looks like this
  * 
  * path ruleid rule [ boundarycond [ blob ]]
  *
  * If no boundary condition is defined but a blob is, then
  * the boundary condition is represented with "NULL"
- * 
+ * \param r Pointer to the ruleinstance
+ * \param rs The name of the ruleset
+ * \returns Pointer to a newly allocated octet containing the output string
  */
 octet_t	*
 ruleinst_print(ruleinst_t * r, char *rs)

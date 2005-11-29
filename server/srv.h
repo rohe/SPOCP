@@ -574,6 +574,10 @@ opstack_t	*opstack_push( opstack_t *a, opstack_t *b);
 
 /* -------------------------------------------*/
 
+varr_t *collect_indexes(ruleset_t *rs);
+
+/* -------------------------------------------*/
+
 #ifdef HAVE_SSL
 
 int	THREAD_setup( void );

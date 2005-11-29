@@ -118,7 +118,7 @@ typedef struct _atom {
 struct _list;
 struct _range;
 
-/*! \brief Where one element of a S-xpression is stored */
+/*! \brief Where one element of a S-expression is stored */
 typedef struct _element {
 	/*! The type of the element */
 	int             type;

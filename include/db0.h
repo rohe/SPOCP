@@ -80,7 +80,7 @@ typedef struct _strarr {
 	int		size;
 } strarr_t;
 
-/*********** where all the barnches starts *************/
+/*********** where all the branches starts *************/
 
 typedef struct _junc {
 	int	dynamic;

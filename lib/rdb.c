@@ -1,4 +1,6 @@
-/* layer of indirection */
+/* layer of indirection 
+Right now a layer in front of a BSD RedBlack Tree
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
