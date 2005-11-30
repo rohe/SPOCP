@@ -8,7 +8,7 @@
                           oct.c  -  description
                              -------------------
     begin                : Sat Oct 12 2002
-    copyright            : (C) 2002 by Umeå University, Sweden
+    copyright            : (C) 2005 by Umeå University, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in tdup level directory
@@ -106,6 +106,7 @@ oct_assign(octet_t * oct, char *str)
 {
 	oct->val = str;
 	oct->len = strlen(str);
+	/* That size is set to zero will prevent oct_free from freeing the string */
 	oct->size = 0;
 }
 
@@ -851,6 +852,9 @@ void
 octset( octet_t *oct, char *s, int len)
 {
 	oct->val = s;
+	/* Since size is set to the length of the string if this struct 
+	is freed the string is also freed.
+	If this is not what you wanted use oct_assign() instead */
 	oct->len = oct->size = len;
 }
 

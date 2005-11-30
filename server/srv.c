@@ -1112,6 +1112,7 @@ com_show(work_info_t *wi)
     ruleset_t   *rs = wi->conn->rs;
     ruleinst_t  *ri = 0;
     char        *uid;
+	octet_t     *oct;
 
     LOG(SPOCP_INFO) traceLog(LOG_INFO,"SHOW requested ");
 
@@ -1129,7 +1130,9 @@ com_show(work_info_t *wi)
         Free(uid);
 
         if ( ri ){  
-            r = add_response_blob(wi->buf, SPOCP_MULTI, ri->rule);
+			oct = ruleinst_print(ri, rs->name);
+            r = add_response_blob(wi->buf, SPOCP_MULTI, oct);
+			oct_free( oct );
         }
     }
 

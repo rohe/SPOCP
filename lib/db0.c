@@ -1104,7 +1104,7 @@ ruleinst_print(ruleinst_t * r, char *rs)
 
 
 	/* First the path */
-	if (rs) {
+	if (rs && strlen(rs) ) {
 		lr = strlen(rs);
 		snprintf(flen, 1024, "%d:%s", lr, rs);
 	} else {
