@@ -115,7 +115,7 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
 
 			r = SPOCP_DENIED;
 
-			while (r == SPOCP_DENIED && fgets(line, 256, fp)) {
+			while (r == SPOCP_DENIED && fgets(line, 4096, fp)) {
 				if (*line == '#')
 					continue;
 
