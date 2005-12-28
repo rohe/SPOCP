@@ -269,10 +269,10 @@ get_transpsec(void * vp)
 		if (conn->transpsec == 0) {
 			if (conn->subjectDN)
 				conn->transpsec =
-				    sexp_constr((void *) conn, tpsec_X509_wcc);
+				    sexp_constr(vp, tpsec_X509_wcc);
 			else
 				conn->transpsec =
-				    sexp_constr((void *) conn, tpsec_X509);
+				    sexp_constr(vp, tpsec_X509);
 		}
 		return conn->transpsec;
 	} else
