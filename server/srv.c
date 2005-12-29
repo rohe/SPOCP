@@ -477,6 +477,7 @@ com_starttls(work_info_t *wi)
         /*
          * Ready to start TLS/SSL 
          */
+        r = SPOCP_SSL_START;
         traceLog(LOG_INFO,"Setting connection status so main won't touch it") ;
         conn->status = CNST_SSL_REQ;    /* Negotiation in progress */
     }
