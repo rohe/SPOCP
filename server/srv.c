@@ -478,12 +478,28 @@ com_starttls(work_info_t *wi)
          * Ready to start TLS/SSL 
          */
         postop(wi, SPOCP_SSL_START, 0);
-        traceLog(LOG_INFO,"Setting connection status so main wan't touch it") ;
-        conn->status = CNST_SSL_NEG;    /* Negotiation in progress */
+        traceLog(LOG_INFO,"Setting connection status so main won't touch it") ;
+        conn->status = CNST_SSL_REQ;    /* Negotiation in progress */
 
-        /*
-         * If I couldn't create a TLS connection fail completely 
-         */
+    }
+#endif
+
+    return postop( wi, r, 0);
+}
+
+spocp_result_t
+com_tlsneg(work_info_t *wi)
+{
+    spocp_result_t  r = SPOCP_SUCCESS;
+    conn_t          *conn = wi->conn;
+
+    if (conn->status != CNST_SSL_NEG) {
+       r = SPOCP_DENIED;
+    }
+    /*
+     * If I couldn't create a TLS connection fail completely 
+     */
+    else{
         if ((r = tls_start(conn, conn->rs)) != SPOCP_SUCCESS) {
             LOG(SPOCP_ERR) traceLog(LOG_ERR,"Failed to start SSL");
             r = SPOCP_CLOSE;
@@ -493,7 +509,6 @@ com_starttls(work_info_t *wi)
 
         conn->status = CNST_ACTIVE; /* Negotiation done */
     }
-#endif
 
     return postop( wi, r, 0);
 }
@@ -1079,7 +1094,7 @@ com_summary(work_info_t *wi)
         if (ia) {
             for (i = 0; i < ia->n ; i++ ){
                 octset(&oct,((ruleinst_t *)(ia->arr[i]))->uid, SHA1HASHLEN);
-				oct_print(LOG_INFO, "rule", &oct);
+                oct_print(LOG_INFO, "rule", &oct);
                 if ((rc = add_response_blob(out, SPOCP_MULTI, &oct))
                     != SPOCP_SUCCESS)
                     break;
@@ -1089,7 +1104,7 @@ com_summary(work_info_t *wi)
                     break;
                 }
             }
-			varr_free(ia);
+            varr_free(ia);
         }
         else 
             rc = SPOCP_OPERATIONSERROR;
@@ -1112,7 +1127,7 @@ com_show(work_info_t *wi)
     ruleset_t   *rs = wi->conn->rs;
     ruleinst_t  *ri = 0;
     char        *uid;
-	octet_t     *oct;
+    octet_t     *oct;
 
     LOG(SPOCP_INFO) traceLog(LOG_INFO,"SHOW requested ");
 
@@ -1130,9 +1145,9 @@ com_show(work_info_t *wi)
         Free(uid);
 
         if ( ri ){  
-			oct = ruleinst_print(ri, rs->name);
+            oct = ruleinst_print(ri, rs->name);
             r = add_response_blob(wi->buf, SPOCP_MULTI, oct);
-			oct_free( oct );
+            oct_free( oct );
         }
     }
 
@@ -1312,6 +1327,8 @@ get_operation(work_info_t *wi )
             oper = &com_delete;
         } else if (strncasecmp(op.val, "COMMIT", 6) == 0) {
             oper = &com_commit;
+        } else if (strncasecmp(op.val, "TLSNEG", 6) == 0) {
+            oper = &com_tlsneg;
         }
         break;
 
