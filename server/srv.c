@@ -442,7 +442,7 @@ com_auth(work_info_t *wi)
 spocp_result_t
 com_starttls(work_info_t *wi)
 {
-    spocp_result_t  r = SPOCP_SUCCESS;
+    spocp_result_t  r = SPOCP_SSL_START;
     conn_t      *conn = wi->conn;
 
 #if (defined(HAVE_SSL) || defined(HAVE_SASL))
@@ -477,10 +477,8 @@ com_starttls(work_info_t *wi)
         /*
          * Ready to start TLS/SSL 
          */
-        postop(wi, SPOCP_SSL_START, 0);
         traceLog(LOG_INFO,"Setting connection status so main won't touch it") ;
         conn->status = CNST_SSL_REQ;    /* Negotiation in progress */
-
     }
 #endif
 
@@ -500,6 +498,7 @@ com_tlsneg(work_info_t *wi)
      * If I couldn't create a TLS connection fail completely 
      */
     else{
+        traceLog(LOG_INFO,"Waiting for SSL negotiation");
         if ((r = tls_start(conn, conn->rs)) != SPOCP_SUCCESS) {
             LOG(SPOCP_ERR) traceLog(LOG_ERR,"Failed to start SSL");
             r = SPOCP_CLOSE;

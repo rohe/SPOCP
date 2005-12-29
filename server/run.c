@@ -335,7 +335,7 @@ spocp_srv_run(srv_t * srv)
                     maxfd = MAX(maxfd, conn->fd);
                     FD_SET(conn->fd, &wfds);
                 }
-                    if (conn->status != CNST_SSL_NEG) {
+                if (conn->status != CNST_SSL_NEG && conn->status != CNST_SSL_REQ){
                     maxfd = MAX(maxfd, conn->fd);
                     FD_SET(conn->fd, &rfds);
                 }
@@ -449,8 +449,7 @@ spocp_srv_run(srv_t * srv)
                 /*
                  * Get address not hostname of the connection 
                  */
-                if ((err =
-                        spocp_getnameinfo((SA *) &client_addr, len,
+                if ((err = spocp_getnameinfo((SA *) &client_addr, len,
                     hname, NI_MAXHOST, ipaddr, 64)) != 0) {
                     close(client);
                     goto fdloop;
@@ -465,7 +464,7 @@ spocp_srv_run(srv_t * srv)
             }
 
             if (srv->connections) {
-                int             f, a;
+                int  f, a;
                 f = number_of_free(srv->connections);
                 a = number_of_active(srv->connections);
                 traceLog(LOG_INFO,"Active: %d, Free: %d", a, f);
@@ -532,7 +531,7 @@ spocp_srv_run(srv_t * srv)
          * nonblocking as needed.
          */
 
-          fdloop:
+fdloop:
         for (pi = afpool_first(srv->connections); pi; pi = next) {
 
             /*
@@ -542,7 +541,7 @@ spocp_srv_run(srv_t * srv)
             conn = (conn_t *) pi->info;
             next = pi->next;
 
-            if (conn->status == CNST_SSL_NEG)
+            if (conn->status == CNST_SSL_NEG || conn->status == CNST_SSL_REQ)
                 continue;
 
             /*
