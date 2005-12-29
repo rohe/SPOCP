@@ -445,10 +445,6 @@ com_starttls(work_info_t *wi)
     spocp_result_t  r = SPOCP_SSL_START;
     conn_t      *conn = wi->conn;
 
-#if (defined(HAVE_SSL) || defined(HAVE_SASL))
-    int             wr;
-#endif
-
     if (conn->transaction)
         return postop(wi, SPOCP_UNWILLING, NULL);
 
@@ -479,7 +475,7 @@ com_starttls(work_info_t *wi)
          */
         r = SPOCP_SSL_START;
         traceLog(LOG_INFO,"Setting connection status so main won't touch it") ;
-        conn->status = CNST_SSL_REQ;    /* Negotiation in progress */
+        conn->sslstatus = REQUEST;    /* Negotiation in progress */
     }
 #endif
 
@@ -492,7 +488,8 @@ com_tlsneg(work_info_t *wi)
     spocp_result_t  r = SPOCP_SUCCESS;
     conn_t          *conn = wi->conn;
 
-    if (conn->status != CNST_SSL_NEG) {
+    traceLog(LOG_INFO,"SSLNeg %d", conn->sslstatus);
+    if (conn->sslstatus != NEGOTIATION) {
        r = SPOCP_DENIED;
     }
     /*
@@ -507,7 +504,7 @@ com_tlsneg(work_info_t *wi)
         } else
             traceLog(LOG_INFO,"SSL in operation");
 
-        conn->status = CNST_ACTIVE; /* Negotiation done */
+        conn->sslstatus = ACTIVE; /* Negotiation done */
     }
 
     return postop( wi, r, 0);

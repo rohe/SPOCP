@@ -144,6 +144,7 @@ conn_reset(conn_t * conn)
 			conn_close(conn);
 
 		conn->status = CNST_FREE;
+		conn->sslstatus = INACTIVE;
 		conn->fd = 0;
 		conn->operations = 0;
 		conn_env_reset(conn);
@@ -175,6 +176,7 @@ conn_setup(conn_t * conn, srv_t * srv, int fd, char *hostname, char *ipaddr)
 	conn->srv = srv;
 	conn->fd = fd;
 	conn->status = CNST_SETUP;
+	conn->sslstatus = INACTIVE;
 	conn->con_type = NATIVE;
 
 	if (ipaddr && *ipaddr){

@@ -11,7 +11,7 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
-/* #define AVLUS 0 */
+#define AVLUS 0
 
 /*
  * ---------------------------------------------------------------------- 
@@ -158,37 +158,38 @@ run_stop( srv_t *srv, conn_t *conn, pool_item_t *pi )
 
 }
 
-static int read_work( srv_t *srv, conn_t *conn )
+static int read_work( srv_t *srv, conn_t *conn, int flag )
 {
     int     n;
     spocp_result_t  res;
     work_info_t wi;
 
 #ifdef AVLUS
-    traceLog(LOG_DEBUG,"input readable on %d", conn->fd);
+    traceLog(LOG_DEBUG,"read_work:input readable on %d", conn->fd);
 #endif
 
     /*
      * read returns number of bytes read 
      */
-    n = spocp_conn_read(conn);
+	if (flag) {
+	    n = spocp_conn_read(conn);
 
 #ifdef AVLUS
-    traceLog(LOG_DEBUG,"Read returned %d from %d", n, conn->fd);
+	    traceLog(LOG_DEBUG,"read_work:Read returned %d from %d", n, conn->fd);
 #endif
 
-    /*
-     * traceLog(LOG_DEBUG, "[%s]", conn->in->buf ) ; 
-     */
-    if (n == 0) {   /* connection probably
-             * terminated by other side */
-            /* Is there a better check ? */
-        conn->stop = 1;
-        return 1;
-    }
-
+	    /*
+	     * traceLog(LOG_DEBUG, "[%s]", conn->in->buf ) ; 
+	     */
+	    if (n == 0) {   /* connection probably
+	             * terminated by other side */
+	            /* Is there a better check ? */
+	        conn->stop = 1;
+	        return 1;
+	    }
+	}
 #ifdef AVLUS
-    timestamp("read con");
+    timestamp("read_work:read con");
 #endif
 
     while( iobuf_content( conn->in )) {
@@ -197,7 +198,7 @@ static int read_work( srv_t *srv, conn_t *conn )
 
         res = get_operation(&wi);
 #ifdef AVLUS
-        traceLog(LOG_DEBUG,"Getops returned %d", res);
+        traceLog(LOG_DEBUG,"read_work:Getops returned %d", res);
 #endif
         if (res != SPOCP_SUCCESS)
             return 1;
@@ -206,26 +207,26 @@ static int read_work( srv_t *srv, conn_t *conn )
         time(&conn->last_event);
 
 #ifdef AVLUS
-        timestamp("add work item");
+        timestamp("read_work:add work item");
 #endif
 
         if( tpool_add_work(srv->work, &wi) == 0 ) {
             /* place this last in the list */
 #ifdef AVLUS
-            timestamp("add_reply_queur");
+            timestamp("read_work:add_reply_queur");
 #endif
             add_reply_queuer( conn, &wi );
 #ifdef AVLUS
-            timestamp("new iobuf");
+            timestamp("read_work:new iobuf");
 #endif
             wi.buf = iobuf_new(512);
             return_busy( &wi );
 #ifdef AVLUS
-            timestamp("reply add");
+            timestamp("read_work:reply add");
 #endif
             reply_add( conn->head, &wi );
 #ifdef AVLUS
-            timestamp("send_results");
+            timestamp("read_work:send_results");
 #endif
             if (send_results(conn) == 0)
                 res = SPOCP_CLOSE;
@@ -335,7 +336,7 @@ spocp_srv_run(srv_t * srv)
                     maxfd = MAX(maxfd, conn->fd);
                     FD_SET(conn->fd, &wfds);
                 }
-                if (conn->status != CNST_SSL_NEG && conn->status != CNST_SSL_REQ){
+                if (conn->sslstatus != NEGOTIATION && conn->sslstatus != REQUEST){
                     maxfd = MAX(maxfd, conn->fd);
                     FD_SET(conn->fd, &rfds);
                 }
@@ -541,7 +542,7 @@ fdloop:
             conn = (conn_t *) pi->info;
             next = pi->next;
 
-            if (conn->status == CNST_SSL_NEG || conn->status == CNST_SSL_REQ)
+            if (conn->sslstatus == REQUEST && conn->sslstatus == NEGOTIATION)
                 continue;
 
             /*
@@ -564,7 +565,7 @@ fdloop:
              */
 
             if (FD_ISSET(conn->fd, &rfds) && !conn->stop) {
-                if (read_work( srv, conn )) 
+                if (read_work( srv, conn, 1 )) 
                     continue;
             }
 
@@ -592,11 +593,13 @@ fdloop:
                     }
                     else{
 						/* this is a hack */
-						if (conn->status == CNST_SSL_REQ){
+						traceLog(LOG_DEBUG,"Nothing left in the output buffer, state=%d",conn->status);
+						if (conn->sslstatus == REQUEST){
 							iobuf_flush(conn->in);
 							iobuf_add(conn->in,"8:6:TLSNEG");
-							conn->status = CNST_SSL_NEG;
-							read_work(srv,conn);
+							conn->sslstatus = NEGOTIATION;
+							traceLog(LOG_DEBUG,"Placing workitem on the work queue");
+							read_work( srv, conn, 0 );
 						}
 						else
                         	conn->status = CNST_ACTIVE;

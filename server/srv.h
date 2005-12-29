@@ -79,18 +79,21 @@ typedef struct _ruleset {
 /* -------------------------------------- */
 
 /* The connection states. */
+
 #define CNST_FREE	0
 #define CNST_SETUP	1
-
 #define CNST_ACTIVE	2
-
-/* SSL/TLS requested, waiting for the reply to hit the client */
-#define CNST_SSL_REQ    3
-/* SSL/TLS negotiation can be started */
-#define CNST_SSL_NEG	4
-
 #define CNST_STOP	5
 #define CNST_WRITE	6
+
+#define INACTIVE    0
+/* SSL/TLS requested, waiting for the reply to hit the client */
+#define REQUEST    	1
+/* SSL/TLS negotiation can be started */
+#define NEGOTIATION	2
+/* SSL/TLS is in action */
+#define ACTIVE      3
+
 
 /* -------------------------------------- */
 
@@ -227,6 +230,7 @@ typedef struct _conn {
 	int		fd ;	    /* connection filedescriptor */
 	int		fdw ;	    /* for writing if different from reading */
 	int		status ;
+	int 	sslstatus ;
 	int		con_type ;
 	int		ops_pending ;
 	int		stop ;	    /* Set (!= 0) if this connection is
