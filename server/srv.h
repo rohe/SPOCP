@@ -81,10 +81,16 @@ typedef struct _ruleset {
 /* The connection states. */
 #define CNST_FREE	0
 #define CNST_SETUP	1
+
 #define CNST_ACTIVE	2
-#define CNST_SSL_NEG	3
-#define CNST_STOP	4
-#define CNST_WRITE	5
+
+/* SSL/TLS requested, waiting for the reply to hit the client */
+#define CNST_SSL_REQ    3
+/* SSL/TLS negotiation can be started */
+#define CNST_SSL_NEG	4
+
+#define CNST_STOP	5
+#define CNST_WRITE	6
 
 /* -------------------------------------- */
 
@@ -474,6 +480,7 @@ spocp_result_t	com_login( work_info_t *wi );
 spocp_result_t	com_logout( work_info_t *wi );
 spocp_result_t	com_query( work_info_t *wi );
 spocp_result_t	com_starttls( work_info_t *wi );
+spocp_result_t	com_tlsneg( work_info_t *wi );
 spocp_result_t	com_auth( work_info_t *wi );
 spocp_result_t	com_capa( work_info_t *wi );
 spocp_result_t	com_remove( work_info_t *wi );
