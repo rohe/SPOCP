@@ -3,13 +3,13 @@
  */
 
 /***************************************************************************
-                                 dback.c 
-                             -------------------
-    begin                : Fri Mar 12 2004
-    copyright            : (C) 2004 by Stockholm university, Sweden
-    email                : roland@catalogix.se
+								 dback.c 
+							 -------------------
+	begin				 : Fri Mar 12 2004
+	copyright			 : (C) 2004 by Stockholm university, Sweden
+	email				 : roland@catalogix.se
 
-   COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
+   COPYING RESTRICTIONS APPLY.	See COPYRIGHT File in top level directory
    of this package for details.
 
  ***************************************************************************/
@@ -32,7 +32,7 @@
  * ---------------------------------------------------------------------- 
  */
 
-dback_t        *dback_load(char *name, char *load);
+dback_t		   *dback_load(char *name, char *load);
 
 /*
  * ---------------------------------------------------------------------- 
@@ -47,18 +47,18 @@ dback_t        *dback_load(char *name, char *load);
  * library to be loaded \return A pointer to a dback_t struct with all the
  * values filled in. 
  */
-dback_t        *
+dback_t		   *
 dback_load(char *name, char *load)
 {
-	dback_t        *dback = 0;
-	void           *handle;
-	char           *modulename;
+	dback_t		   *dback = 0;
+	void		   *handle;
+	char		   *modulename;
 
 	handle = dlopen(load, RTLD_LAZY);
 
 	if (!handle) {
 		traceLog(LOG_WARNING,"Unable to open %s library: [%s]",
-		    load, dlerror());
+			load, dlerror());
 		return 0;
 	}
 
@@ -126,8 +126,8 @@ datum_make(octet_t * rule, octet_t * blob, char *bcname)
 static spocp_result_t
 datum_parse(octet_t * arg, octet_t * rule, octet_t * blob, char **bcname)
 {
-	spocp_result_t  r;
-	octet_t         oct;
+	spocp_result_t	r;
+	octet_t			oct;
 
 	/*
 	 * the rule spec 
@@ -144,7 +144,7 @@ datum_parse(octet_t * arg, octet_t * rule, octet_t * blob, char **bcname)
 	/*
 	 * the blob spec 
 	 */
-	if (*arg->val == ':') {	/* no blob */
+	if (*arg->val == ':') { /* no blob */
 		blob->len = 0;
 	} else {
 		if ((r = get_str(arg, blob)) != SPOCP_SUCCESS)
@@ -185,7 +185,7 @@ datum_parse(octet_t * arg, octet_t * rule, octet_t * blob, char **bcname)
 spocp_result_t
 dback_init(dbcmd_t * dbc)
 {
-	spocp_result_t  r = SPOCP_UNAVAILABLE;
+	spocp_result_t	r = SPOCP_UNAVAILABLE;
 
 	if (dbc && dbc->dback && dbc && dbc->dback->init)
 		dbc->dback->init(dbc, dbc->dback->conf, 0, &r);
@@ -206,11 +206,12 @@ dback_init(dbcmd_t * dbc)
 spocp_result_t
 dback_save(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
 {
-	octet_t        *datum;
-	spocp_result_t  r;
+	octet_t		   *datum;
+	spocp_result_t	r;
 
 	if (dbc == 0 || dbc->dback == 0) {
-		traceLog( LOG_WARNING, "No persistent store available %p:%p", dbc, dbc->dback);
+		DEBUG(SPOCP_DSRV)
+			traceLog( LOG_WARNING, "No persistent store available %p:%p", dbc, dbc->dback);
 		return SPOCP_SUCCESS;
 	}
 
@@ -241,8 +242,8 @@ dback_save(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
 spocp_result_t
 dback_replace(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
 {
-	octet_t        *datum;
-	spocp_result_t  r;
+	octet_t		   *datum;
+	spocp_result_t	r;
 
 	if (dbc == 0 || dbc->dback == 0)
 		return SPOCP_SUCCESS;
@@ -270,8 +271,8 @@ dback_replace(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
 spocp_result_t
 dback_read(dbcmd_t * dbc, char *key, octet_t * o0, octet_t * o1, char **s)
 {
-	octet_t        *datum = 0;
-	spocp_result_t  r;
+	octet_t		   *datum = 0;
+	spocp_result_t	r;
 
 	if (dbc == 0 || dbc->dback == 0)
 		return SPOCP_UNAVAILABLE;
@@ -295,7 +296,7 @@ dback_read(dbcmd_t * dbc, char *key, octet_t * o0, octet_t * o1, char **s)
 spocp_result_t
 dback_delete(dbcmd_t * dbc, char *key)
 {
-	spocp_result_t  r;
+	spocp_result_t	r;
 
 	if (dbc == 0 || dbc->dback == 0)
 		return SPOCP_SUCCESS;
@@ -316,7 +317,7 @@ dback_delete(dbcmd_t * dbc, char *key)
  * containing all the keys as octet_t structs 
  */
 
-octarr_t       *
+octarr_t	   *
 dback_all_keys(dbcmd_t * dbc, spocp_result_t * r)
 {
 	if (dbc && dbc->dback == 0)
@@ -336,8 +337,8 @@ dback_all_keys(dbcmd_t * dbc, spocp_result_t * r)
 spocp_result_t
 dback_begin(dbcmd_t * dbc)
 {
-	void           *handle;
-	spocp_result_t  r = SPOCP_SUCCESS;
+	void		   *handle;
+	spocp_result_t	r = SPOCP_SUCCESS;
 
 	if (dbc && dbc->dback && dbc->dback->begin) {
 		if ((handle = dbc->dback->begin(dbc, 0, 0, &r)) != 0)
@@ -358,7 +359,7 @@ dback_begin(dbcmd_t * dbc)
 spocp_result_t
 dback_end(dbcmd_t * dbc)
 {
-	spocp_result_t  r = SPOCP_NOT_SUPPORTED;
+	spocp_result_t	r = SPOCP_NOT_SUPPORTED;
 
 	if (dbc && dbc->dback && dbc->dback->end)
 		dbc->dback->end(dbc, 0, 0, &r);
@@ -378,7 +379,7 @@ dback_end(dbcmd_t * dbc)
 spocp_result_t
 dback_commit(dbcmd_t * dbc)
 {
-	spocp_result_t  r = SPOCP_NOT_SUPPORTED;
+	spocp_result_t	r = SPOCP_NOT_SUPPORTED;
 
 	if (dbc && dbc->dback && dbc->dback->commit)
 		dbc->dback->commit(dbc, 0, 0, &r);
@@ -397,7 +398,7 @@ dback_commit(dbcmd_t * dbc)
 spocp_result_t
 dback_rollback(dbcmd_t * dbc)
 {
-	spocp_result_t  r = SPOCP_NOT_SUPPORTED;
+	spocp_result_t	r = SPOCP_NOT_SUPPORTED;
 
 	if (dbc && dbc->dback && dbc->dback->rollback)
 		dbc->dback->rollback(dbc, 0, 0, &r);
