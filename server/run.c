@@ -11,7 +11,9 @@ RCSID("$Id$");
 typedef struct sockaddr SA;
 extern int received_sigterm;
 
+/*
 #define AVLUS 0
+*/
 
 /*
  * ---------------------------------------------------------------------- 
