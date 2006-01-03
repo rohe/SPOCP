@@ -127,6 +127,7 @@ int spocpc_str_send_query(SPOCP *, char *, char *, queres_t *);
 int spocpc_str_send_delete(SPOCP *, char *, char *, queres_t *);
 
 int spocpc_send_logout(SPOCP * spocp);
+int spocpc_send_noop(SPOCP * spocp);
 int spocpc_open_transaction(SPOCP * spocp, queres_t * qr);
 int spocpc_commit(SPOCP * spocp, queres_t * qr);
 int spocpc_attempt_tls(SPOCP * spocp, queres_t * qr);

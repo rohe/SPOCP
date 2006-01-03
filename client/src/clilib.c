@@ -1672,6 +1672,24 @@ spocpc_send_logout(SPOCP * spocp)
 /*----------------------------------------------------------------------------*/
 
 /*!
+ * \brief Sends a NOOP to a Spocp server
+ * \param spocp The Spocp session
+ * \return A spocpc result code
+ */
+
+int
+spocpc_send_noop(SPOCP * spocp)
+{
+	queres_t	qres;
+
+	memset( &qres, 0, sizeof( queres_t));
+
+	return spocpc_oct_send( spocp, "NOOP", NULL, 0, &qres); 
+}
+
+/*----------------------------------------------------------------------------*/
+
+/*!
  * \brief Sends a BEGIN (transaction start) request to a Spocp server
  * \param spocp The Spocp session
  * \param qr A struct into which the result received from the spocp server 

@@ -482,6 +482,7 @@ spocp_result_t	com_rollback( work_info_t *wi );
 spocp_result_t	com_commit( work_info_t *wi );
 spocp_result_t	com_login( work_info_t *wi );
 spocp_result_t	com_logout( work_info_t *wi );
+spocp_result_t	com_noop( work_info_t *wi );
 spocp_result_t	com_query( work_info_t *wi );
 spocp_result_t	com_starttls( work_info_t *wi );
 spocp_result_t	com_tlsneg( work_info_t *wi );

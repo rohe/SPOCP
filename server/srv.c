@@ -561,6 +561,16 @@ com_logout(work_info_t *wi)
  * --------------------------------------------------------------------------------- 
  */
 
+spocp_result_t
+com_noop(work_info_t *wi)
+{
+    return postop( wi, SPOCP_SUCCESS, 0 );
+}
+
+/*
+ * --------------------------------------------------------------------------------- 
+ */
+
 /*
  * format of DELETE
  * 
@@ -1354,6 +1364,8 @@ get_operation(work_info_t *wi )
             oper = &com_show;
         } else if (strncasecmp(op.val, "FIND", 4) == 0) {
             oper = &com_find;
+        } else if (strncasecmp(op.val, "NOOP", 4) == 0) {
+            oper = &com_noop;
         }
         break;
 
