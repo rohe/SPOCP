@@ -1753,7 +1753,7 @@ int
 spocpc_send_capa(SPOCP * spocp, queres_t * qr)
 {
 	int res = SPOCPC_OK;
-#ifdef HAVA_SASL
+#ifdef HAVE_SASL
 	res = spocpc_oct_send ( spocp, "CAPA", NULL, 0, qr);
 #else
 	res = SPOCPC_NOSUPPORT;
