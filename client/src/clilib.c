@@ -49,6 +49,10 @@
 #include <wrappers.h>
 #include <spocpcli.h>
 
+#ifdef HAVE_SASL
+#include <sasl/sasl.h>
+#endif
+
 /* #define AVLUS 1 */
 
 #if!defined(MAXHOSTNAMELEN) || (MAXHOSTNAMELEN < 64)
