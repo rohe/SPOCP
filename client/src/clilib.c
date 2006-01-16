@@ -1774,7 +1774,7 @@ spocpc_send_capa(SPOCP * spocp, queres_t * qr)
 int
 spocpc_auth(SPOCP * spocp, char * mech)
 {
-	return res = SPOCPC_NOSUPPORT
+	return SPOCPC_NOSUPPORT;
 }
 
 /* ============================================================================== */

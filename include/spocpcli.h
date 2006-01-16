@@ -7,6 +7,9 @@
 #ifdef HAVE_SSL
 #include <openssl/ssl.h>
 #endif
+#ifdef HAVE_SASL
+#include <sasl/sasl.h>
+#endif
 
 #ifndef TRUE
 #define TRUE	1
@@ -138,7 +141,7 @@ int spocpc_commit(SPOCP * spocp, queres_t * qr);
 int spocpc_attempt_tls(SPOCP * spocp, queres_t * qr);
 int spocpc_start_tls(SPOCP * spocp);
 
-char *spocpc_send_capa(SPOCP *, querest_t *);
+int spocpc_send_capa(SPOCP *, queres_t *);
 int spocpc_auth(SPOCP *, char *);
 
 void free_spocp(SPOCP * s);
