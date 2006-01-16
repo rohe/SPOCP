@@ -1742,6 +1742,37 @@ spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
 	return res;
 }
 
+/*!
+ * \brief Sends a CAPA request to a Spocp server
+ * \param spocp The Spocp session
+ * \param qr A struct into which the result received from the spocp server 
+ *   should be placed
+ * \return A spocpc result code
+ */
+int
+spocpc_send_capa(SPOCP * spocp, queres_t * qr)
+{
+	int res = SPOCPC_OK;
+#ifdef HAVA_SASL
+	res = spocpc_oct_send ( spocp, "CAPA", NULL, 0, qr);
+#else
+	res = SPOCPC_NOSUPPORT;
+#endif
+	return res;
+}
+
+/*!
+ * \brief Sends a AUTH request to a Spocp server
+ * \param spocp The Spocp session
+ * \param mech  List of space sepparated mechanisms to try.
+ * \return A spocpc result code
+ */
+int
+spocpc_auth(SPOCP * spocp, char * mech)
+{
+	return res = SPOCPC_NOSUPPORT
+}
+
 /* ============================================================================== */
 
 /*! 

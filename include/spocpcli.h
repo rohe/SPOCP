@@ -60,7 +60,8 @@ typedef enum
 {
 	UNCONNECTED,
 	SOCKET,
-	SSL_TLS
+	SSL_TLS,
+	SASL
 } spocp_contype_t;
 
 typedef struct _spocp
@@ -89,6 +90,10 @@ typedef struct _spocp
 
 	SSL_CTX		*ctx;
 	SSL		*ssl;
+#endif
+#ifdef HAVE_SASL
+	sasl_conn_t *sasl;
+	int         sasl_ssf;
 #endif
 
 } SPOCP;
@@ -132,6 +137,9 @@ int spocpc_open_transaction(SPOCP * spocp, queres_t * qr);
 int spocpc_commit(SPOCP * spocp, queres_t * qr);
 int spocpc_attempt_tls(SPOCP * spocp, queres_t * qr);
 int spocpc_start_tls(SPOCP * spocp);
+
+char *spocpc_send_capa(SPOCP *, querest_t *);
+int spocpc_auth(SPOCP *, char *);
 
 void free_spocp(SPOCP * s);
 void spocpc_close(SPOCP * spocp);
