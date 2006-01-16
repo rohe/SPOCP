@@ -301,7 +301,7 @@ return_busy( work_info_t *wi )
 spocp_result_t
 com_capa(work_info_t *wi)
 {
-    spocp_result_t  r = SPOCP_SUCCESS;
+    spocp_result_t  r = SPOCP_UNWILLING;
     const char  *msg = NULL;
     conn_t      *conn = wi->conn;
 
