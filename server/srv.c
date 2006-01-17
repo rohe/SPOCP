@@ -422,10 +422,15 @@ com_auth(work_info_t *wi)
         r = SPOCP_AUTHINPROGRESS;
         break;
     default:
-        LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %d",
+        LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s",
                     sasl_errstring(wr, NULL, NULL));
         r = SPOCP_AUTHERR;
         msg = Strdup("Authentication failed");
+        conn->sasl_mech -= 5;
+        free(conn->sasl_mech);
+        conn->sasl_mech = NULL;
+        sasl_dispose(&conn->sasl);
+        conn->sasl = NULL;
     }
 
     return postop(wi, r, msg);
