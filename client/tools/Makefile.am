@@ -26,4 +26,4 @@ spocpperf_LDADD = ../src/libspocpclient.la
 
 #
 
-INCLUDES =  -I. -I../../include @SASL_CPPFLAGS@
+INCLUDES =  -I. -I${top_srcdir}/include @SASL_CPPFLAGS@
