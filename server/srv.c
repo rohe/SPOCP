@@ -324,13 +324,13 @@ com_capa(work_info_t *wi)
         }
     }
 
-    if (wi->oparg->n == 0) {    /* list auth mechs */
+    { /* get and list auth mechs available to us */
         const char  *mechs;
         size_t      mechlen;
         int     count;
         int     wr;
 
-        wr = sasl_listmech(conn->sasl, NULL, "SASL:", " ", NULL, &mechs,
+        wr = sasl_listmech(conn->sasl, NULL, "SASL:", " SASL:", NULL, &mechs,
                    &mechlen, &count);
         if (wr != SASL_OK) {
             LOG(SPOCP_ERR)
