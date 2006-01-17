@@ -380,17 +380,22 @@ com_auth(work_info_t *wi)
     }
 
     if (conn->sasl_mech == NULL) {  /* start */
-        conn->sasl_mech = oct2strdup(wi->oparg->arr[0], '%');
-        if(strstr(conn->sasl_mech, "SASL:"))
-            conn->sasl_mech += 5;
-        else
-            goto check;
-        wr = sasl_server_start(conn->sasl,
-                conn->sasl_mech,
-                wi->oparg->n > 1 ? wi->oparg->arr[1]->val : NULL,
-                wi->oparg->n > 1 ? wi->oparg->arr[1]->len : 0,
-                &data,
-                &len);
+        char *tmpmech = oct2strdup(wi->oparg->arr[0], 0);
+        tmpmech[strlen(tmpmech) - 1] = '\0';
+        if(strstr(tmpmech, "SASL:"))
+        {
+            int mechlen = (strlen(tmpmech) - 3);
+            conn->sasl_mech = (char *) Malloc(mechlen * sizeof(char));
+            memcpy(conn->sasl_mech, tmpmech + 5, mechlen);
+
+            wr = sasl_server_start(conn->sasl,
+                    conn->sasl_mech,
+                    wi->oparg->n > 1 ? wi->oparg->arr[1]->val : NULL,
+                    wi->oparg->n > 1 ? wi->oparg->arr[1]->len : 0,
+                    &data,
+                    &len);
+        }
+        free(tmpmech);
     } else {        /* step */
         wr = sasl_server_step(conn->sasl,
                 wi->oparg->n > 0 ? wi->oparg->arr[0]->val : NULL,
@@ -422,12 +427,11 @@ com_auth(work_info_t *wi)
         r = SPOCP_AUTHINPROGRESS;
         break;
     default:
-        LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s",
-                    sasl_errstring(wr, NULL, NULL));
+        LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
+                    sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
         r = SPOCP_AUTHERR;
         msg = Strdup("Authentication failed");
-        conn->sasl_mech -= 5;
-        free(conn->sasl_mech);
+        Free(conn->sasl_mech);
         conn->sasl_mech = NULL;
         sasl_dispose(&conn->sasl);
         conn->sasl = NULL;
