@@ -1,6 +1,8 @@
 #include "locl.h"
 #include <sexptool.h>
 
+#define SACI 1
+
 /*
 typedef char   *(argfunc) (conn_t * r);
 
@@ -336,31 +338,32 @@ saci_init(void)
 static spocp_result_t
 spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 {
-	ruleset_t	*rs = wi->conn->rs;
-#ifdef SACI
+	ruleset_t		*rs = wi->conn->rs;
 	spocp_result_t	res = SPOCP_DENIED;	/* the default */
+#ifdef SACI
 	octet_t		oct;
 	char		*sexp;
 	element_t	*ep = 0;
 	resset_t	*rset = 0;
-	comparam_t	comp;
-       octarr_t    *on = 0;
-       checked_t   *cr=0;
+	comparam_t	comp; 
+	octarr_t    *on = 0;
+	checked_t   *cr=0;
 #endif
 
-	/* If I'm running on a unix domain socket I implicitly trust
+	/* 
+	 * If I'm running on a unix domain socket I implicitly trust
 	 * processes on that machine
 	 */
 	if (wi->conn->srv->uds) return SPOCP_SUCCESS;
 
 	/*
-	 * no ruleset or rules means everything is allowed 
+	 * no ruleset or rules means nothing is allowed 
 	 */
 	if (rs == 0 || rules(rs->db) == 0) {
 #ifdef AVLUS
 		traceLog(LOG_ERR,"No rules to tell me what to do");
 #endif
-		return SPOCP_SUCCESS;
+		return res;
 	}
 
 #ifdef AVLUS
@@ -368,23 +371,23 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 #endif
 
 	/*
-	 * No ruleset means everything is allowed !!! 
+	 * No ruleset means nothing is allowed !!! 
 	 */
 	if ((rs = ruleset_find(path, rs)) == 0 || rs->db == 0) {
 #ifdef AVLUS
 		traceLog(LOG_DEBUG,"No ruleset");
 #endif
 
-		return SPOCP_SUCCESS;
+		return res;
 	}
 	/*
 	 * The same if there is no rules in the ruleset 
 	 */
 	if (rs->db->ri->rules == 0) {
 #ifdef AVLUS
-		traceLog(LOG_DEBUG,"No ruleset");
+		traceLog(LOG_DEBUG,"No rules in the ruleset");
 #endif
-		return SPOCP_SUCCESS;
+		return res;
 	}
 
 #ifdef SACI
