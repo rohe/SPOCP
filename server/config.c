@@ -155,13 +155,12 @@ add_overflow_directive(const char *key, const char *value)
 	struct overflow_conf *this = overflow_last;
 
 	if(this != NULL)
-	{
 		this = this->next;
-		overflow_last->next = this;
-	}
 	this = Calloc(sizeof(struct overflow_conf), 1);
 	this->key = strdup(key);
 	this->value = strdup(value);
+	if(overflow_last != NULL)
+		overflow_last->next = this;
 	overflow_last = this;
 	if(!overflow_first)
 		overflow_first = this;
@@ -688,7 +687,7 @@ int
 parse_sasl_conf(void *context, const char *plugin_name,
 		const char *option, const char **result, unsigned *len)
 {
-	int opt_len = (6 + strlen(option));
+	int opt_len = (5 + strlen(option));
 	char *opt;
 
 	if(plugin_name)
@@ -698,19 +697,16 @@ parse_sasl_conf(void *context, const char *plugin_name,
 
 	if(plugin_name)
 	{
-		strcpy(opt, "sasl_");
-		strcat(opt, "plugin_name");
-		strcat(opt, "_");
-		strcat(opt, option);
+		snprintf(opt, opt_len, "sasl_%s_%s", plugin_name, option);
 		*result = get_overflown(opt);
 	}
 
 	if(*result == NULL)
 	{
-		strcpy(opt, "sasl_");
-		strcat(opt, option);
+		snprintf(opt, opt_len, "sasl_%s", option);
 		*result = get_overflown(opt);
 	}
+	Free(opt);
 
 	if(*result != NULL)
 	{
