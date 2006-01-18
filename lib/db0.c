@@ -22,8 +22,14 @@
 #include <func.h>
 #include <wrappers.h>
 #include <spocp.h>
-#include <sha1.h>
 #include <dback.h>
+
+#ifdef HAVE_LIBCRYPTO
+#define uint8  unsigned char
+#include <openssl/evp.h>
+#else
+#include <sha1.h>
+#endif
 
 /*#define AVLUS 1*/
 
@@ -787,11 +793,29 @@ element_add(plugin_t * pl, junc_t * jp, element_t * ep, ruleinst_t * rt,
  * --------------- ruleinst ----------------------------- 
  */
 
-void
+unsigned int
 ruleinst_uid(unsigned char *sha1sum, octet_t * rule, octet_t * blob, char *bcname) 
 {
-	struct sha1_context ctx;
+#ifdef HAVE_LIBCRYPTO
+	EVP_MD_CTX			ctx;	
+	const EVP_MD		*md;
+#else
+	struct sha1_context	ctx;
+#endif
 
+	unsigned int		l;
+
+#ifdef HAVE_LIBCRYPTO
+	md = EVP_sha1();
+	
+	EVP_DigestInit(&ctx, md);
+	EVP_DigestUpdate(&ctx,(uint8 *) rule->val, rule->len);
+	if (bcname)
+		EVP_DigestUpdate(&ctx, (uint8 *) bcname, strlen(bcname));
+	if (blob)
+		EVP_DigestUpdate(&ctx, (uint8 *) blob->val, blob->len);
+	EVP_DigestFinal(&ctx, sha1sum, &l);
+#else
 	sha1_starts(&ctx);
 
 	sha1_update(&ctx, (uint8 *) rule->val, rule->len);
@@ -801,14 +825,24 @@ ruleinst_uid(unsigned char *sha1sum, octet_t * rule, octet_t * blob, char *bcnam
 		sha1_update(&ctx, (uint8 *) blob->val, blob->len);
 
 	sha1_finish(&ctx, (unsigned char *) sha1sum);
+	l = 20;
+#endif
+
+	return l;
 }
 
 static ruleinst_t *
 ruleinst_new(octet_t * rule, octet_t * blob, char *bcname)
 {
 	ruleinst_t     *rip;
-	unsigned char   sha1sum[21], *ucp;
-	int	     j;
+#ifdef HAVE_LIBCRYPTO	
+	unsigned char   sha1sum[EVP_MAX_MD_SIZE];
+#else
+	unsigned char   sha1sum[21];
+#endif
+	unsigned char	*ucp;
+	int				j;
+	unsigned int	l;
 
 	if (rule == 0 || rule->len == 0)
 		return 0;
@@ -822,7 +856,9 @@ ruleinst_new(octet_t * rule, octet_t * blob, char *bcname)
 	else
 		rip->blob = 0;
 
-	ruleinst_uid( sha1sum, rule, blob, bcname );
+	memset(sha1sum,0,20);
+	
+	l = ruleinst_uid( sha1sum, rule, blob, bcname );
 
 	for (j = 0, ucp = (unsigned char *) rip->uid; j < 20; j++, ucp += 2)
 		sprintf((char *) ucp, "%02x", sha1sum[j]);
@@ -1252,7 +1288,7 @@ db_clr( db_t *db)
 	if (db) {
 		junc_free( db->jp );
 		ruleinfo_free( db->ri );
-		bcdef_free( db->bcdef );
+/*		bcdef_free( db->bcdef ); */
 		/* keep the plugins */
 	}
 }
@@ -1262,7 +1298,7 @@ db_free( db_t *db)
 	if (db) {
 		junc_free( db->jp );
 		ruleinfo_free( db->ri );
-		bcdef_free( db->bcdef );
+/*		bcdef_free( db->bcdef ); */
 		plugin_unload_all( db->plugins );
 
 		Free(db);
