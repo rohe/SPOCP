@@ -46,7 +46,6 @@ AC_ARG_ENABLE(mailmatch,	--enable-mailmatch	Enable mailmatch backend, [mailmatch
 AC_ARG_ENABLE(motd,	--enable-motd	Enable motd backend,[motd=yes] )
 AC_ARG_ENABLE(rbl,	--enable-rbl	Enable rbl backend, [rbl=yes] )
 AC_ARG_ENABLE(regexp,	--enable-regexp	Enable regexp backend, [regexp=yes])
-AC_ARG_ENABLE(spocp,	--enable-spocp	Enable spocp backend, [spocp=yes])
 AC_ARG_ENABLE(sql,	--enable-sql	Enable sql backend, [sql=yes])
 AC_ARG_ENABLE(strmatch,	--enable-strmatch	Enable strmatch backend, [strmatch=yes])
 AC_ARG_ENABLE(system,	--enable-system	Enable system backend, [system=yes])
@@ -54,7 +53,9 @@ AC_ARG_ENABLE(time,	--enable-time	Enable time backend, [time=yes])
 AC_ARG_ENABLE(ldapproxy,	--enable-ldapproxy	Enable ldapproxy backend, [ldapproxy=yes])
 AC_ARG_ENABLE(all,	--enable-all	Enable all backends )
 
-AC_ARG_ENABLE(ipv6,   --disable-ipv6    Build WITHOUT ipv6 support,,enable_ipv6=yes) 
+AC_ARG_ENABLE(spocp, --disable-spocp	Build without spocp backend,, [enable_spocp=yes])
+
+AC_ARG_ENABLE(ipv6, --disable-ipv6    Build WITHOUT ipv6 support,,enable_ipv6=yes) 
 
 if test "$enable_ipv6" = yes; then
     AC_DEFINE(USE_IPV6, 1, [If you want support for IPv6])
@@ -68,6 +69,7 @@ AC_CHECK_LIB([resolv], [res_query])
 # not on mac os x Tiger
 AC_CHECK_LIB([pthread], [pthread_mutex_lock])
 AC_CHECK_LIB([idn], [stringprep])
+AC_CHECK_LIB([crypto],[SHA1])
 
 dnl * dynamic modules?
 have_modules=no
@@ -93,7 +95,6 @@ if test $have_modules = yes ; then
     motd=yes
     rbl=yes
     regexp=yes
-    spocp=yes
     sql=yes
     strmatch=yes
     system=yes
@@ -137,9 +138,6 @@ else
   if test "$regexp" = "yes" ; then
     AC_MSG_WARN([regexp backend disabled, ignoring --enable-regexp])
   fi
-  if test "$spocp" = "yes" ; then
-    AC_MSG_WARN([spocp backend disabled, ignoring --enable-spocp])
-  fi
   if test "$sql" = "yes" ; then
     AC_MSG_WARN([sql backend disabled, ignoring --enable-sql])
   fi
@@ -168,7 +166,6 @@ else
   motd=no
   rbl=no
   regexp=no
-  spocp=no
   sql=no
   strmatch=no
   system=no
@@ -185,7 +182,6 @@ AH_TEMPLATE( [HAVE_LIBLBER], [Define to 1 if you have the 'lber' library] )
 AH_TEMPLATE( [HAVE_LIBLDAP], [Define to 1 if you have the 'ldap' library] ) 
 AH_TEMPLATE( [HAVE_LIBGDBM], [Define to 1 if you have the 'gdbm' library] ) 
 AH_TEMPLATE( [HAVE_LIBODBC], [Define to 1 if you have the 'odbc' library] ) 
-#AH_TEMPLATE([HAVE_LIBSPOCPCLIENT],[Define to 1 if you have the 'spocpclient' library]) 
 
 if test "$ldapset" = "yes" ; then
   AC_CHECK_LIB([lber], [ber_read], AC_DEFINE(HAVE_LIBLBER), [ldapset=no])
@@ -201,10 +197,6 @@ if test "$sql" = "yes" ; then
   AC_CHECK_HEADERS([sqlext.h])
 fi
 
-#if test "$spocp" = "yes" ; then
-#  AC_CHECK_LIB([spocpclient], [spocp_send_query], AC_DEFINE(HAVE_LIBSPOCPCLIENT), [sql=no] )
-#fi
-
 AM_CONDITIONAL( BUILD_CERT, test x$cert = xyes ) 
 AM_CONDITIONAL( BUILD_DTIME, test x$difftime = xyes ) 
 AM_CONDITIONAL( BUILD_FFILE, test x$flatfile = xyes ) 
@@ -217,7 +209,7 @@ AM_CONDITIONAL( BUILD_MAILMATCH, test x$mailmatch = xyes )
 AM_CONDITIONAL( BUILD_MOTD, test x$motd = xyes ) 
 AM_CONDITIONAL( BUILD_RBL, test x$rbl = xyes ) 
 AM_CONDITIONAL( BUILD_REGEXP, test x$regexp = xyes ) 
-AM_CONDITIONAL( BUILD_SPOCP, test x$spocp = xyes ) 
+AM_CONDITIONAL( BUILD_SPOCP, test x$enable_spocp = xyes ) 
 AM_CONDITIONAL( BUILD_SQL, test x$sql = xyes ) 
 AM_CONDITIONAL( BUILD_STRMATCH, test x$strmatch = xyes ) 
 AM_CONDITIONAL( BUILD_SYSTEM, test x$system = xyes ) 
@@ -426,6 +418,7 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "@(#)" msg }
 
 dnl                clients/openldap/Makefile
 dnl                clients/exim/Makefile
+dnl		backends/spocp/Makefile \
 
 AC_OUTPUT([./Makefile \
 		backends/cert/Makefile \
@@ -443,7 +436,6 @@ AC_OUTPUT([./Makefile \
 		backends/motd/Makefile \
 		backends/rbl/Makefile \
 		backends/regexp/Makefile \
-		backends/spocp/Makefile \
 		backends/sql/Makefile \
 		backends/strmatch/Makefile \
 		backends/system/Makefile \
