@@ -133,7 +133,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	int             n = 0, f = 0, r;
 	octet_t         *op;
 	octarr_t       *oa = 0;
-	ruleset_t      *rs = 0, *trs;
+	ruleset_t      *rs = 0, *trs, *prs;
 	spocp_result_t  rc = SPOCP_SUCCESS;
 	spocp_charbuf_t	*buf;
 	spocp_chunk_t	*chunk = 0, *ck;
@@ -227,7 +227,14 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			
 			traceLog(LOG_INFO,"Adding rule to ruleset \"%s\"", trs->name);
 
-			r = dbapi_rule_add(&(trs->db), srv->plugin, dbc, oa, NULL);
+			/* walk upwards in the rulesset tree to find the boundary condition if it's
+				not on the same level */
+			for (prs = trs, r = SPOCP_UNAVAILABLE; (r == SPOCP_UNAVAILABLE) && prs; prs = prs->up )
+				r = dbapi_rule_add(&(trs->db), srv->plugin, &(prs->bcd), dbc, oa, NULL);
+				if (r == SPOCP_UNAVAILABLE){
+					traceLog(LOG_INFO,"Unknown boundary condition at this level, trying higher up");
+				}
+					
 			if (r == SPOCP_SUCCESS)
 				n++;
 			else {
@@ -261,7 +268,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			else 
 				val = chunk->next->next->val ;
 
-			if (bcdef_add(rs->db, srv->plugin, dbc, key, val) == 0 )
+			if (bcdef_add(&(rs->bcd), srv->plugin, dbc, key, val) == 0 )
 				rc = SPOCP_LOCAL_ERROR;
 
 			if (to) oct_free( to );
@@ -356,8 +363,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 
 				if (dat0.len) {
 					oct_assign(&name, &tmp[6]);
-					bcdef_add(rs->db, srv->plugin, dbc,
-						  &name, &dat0);
+					bcdef_add(&(rs->bcd), srv->plugin, dbc, &name, &dat0);
 					octclr(&dat0);
 				}
 
@@ -381,8 +387,7 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 
 				if (dat0.len) {
 					oct_assign(&name, tmp);
-					bcdef_add(rs->db, srv->plugin, dbc,
-						  &name, &dat0);
+					bcdef_add(&(rs->bcd), srv->plugin, dbc, &name, &dat0);
 					octclr(&dat0);
 				}
 
