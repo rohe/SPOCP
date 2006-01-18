@@ -619,6 +619,8 @@ read_config(char *file, srv_t * srv)
 		}
 	}
 
+	fclose(fp);
+
 	if (srv->pidfile == 0)
 		srv->pidfile = Strdup("spocd.pid");
 	if (srv->timeout == 0)
