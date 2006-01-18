@@ -1,11 +1,14 @@
+#ifndef HAVE_LIBCRYPTO
+
+#include <string.h>
+
+#include "sha1.h"
+
 /*
  * FIPS 180-1 compliant SHA-1 implementation,
  * by Christophe Devine <devine@cr0.net>;
  * this program is licensed under the GPL.
  */
-
-#include <string.h>
-#include "sha1.h"
 
 #define GET_UINT32(n,b,i)                                       \
 {                                                               \
@@ -256,6 +259,7 @@ sha1_finish(struct sha1_context *ctx, uint8 digest[16])
 	PUT_UINT32(ctx->state[3], digest, 12);
 	PUT_UINT32(ctx->state[4], digest, 16);
 }
+#endif
 
 #ifdef TEST_SHA1
 

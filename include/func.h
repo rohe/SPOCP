@@ -185,8 +185,8 @@ ruleinfo_t	*ruleinfo_new(void);
 void		ruleinfo_free(ruleinfo_t *);
 ruleinfo_t	*ruleinfo_dup(ruleinfo_t * old);
 int			ruleinfo_print(ruleinfo_t * r);
-ruleinst_t	*ruleinst_find_by_uid(void * rules, char *uid);
-void		ruleinst_uid(unsigned char *, octet_t *, octet_t *, char *); 
+ruleinst_t		*ruleinst_find_by_uid(void * rules, char *uid);
+unsigned int	ruleinst_uid(unsigned char *, octet_t *, octet_t *, char *); 
 
 
 element_t	  *element_dup(element_t * ep, element_t * memberof);
@@ -416,16 +416,16 @@ ruleinst_t	 *varr_ruleinst_nth(varr_t * va, int n);
 
 int		 bcspec_is(octet_t * spec);
 
-bcdef_t	*bcdef_add(db_t *, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
-spocp_result_t  bcdef_del(db_t * db, dbcmd_t * dbc, octet_t * name);
-spocp_result_t  bcdef_replace(db_t *, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
-bcdef_t	*bcdef_get(db_t *, plugin_t *, dbcmd_t *, octet_t *, spocp_result_t *);
-void		bcdef_free(bcdef_t * bcd);
+bcdef_t			*bcdef_add(bcdef_t **, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
+spocp_result_t  bcdef_del(bcdef_t **, dbcmd_t * dbc, octet_t * name);
+spocp_result_t  bcdef_replace(bcdef_t **, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
+bcdef_t			*bcdef_get(bcdef_t **, plugin_t *, dbcmd_t *, octet_t *, spocp_result_t *);
+void			bcdef_free(bcdef_t * bcd);
 
 
 spocp_result_t	bcexp_eval(element_t *, element_t *, bcexp_t *, octarr_t **);
 spocp_result_t	bcond_check(element_t *,spocp_index_t *,octarr_t **,checked_t **);
-varr_t		*bcond_users(db_t *, octet_t *);
+varr_t			*bcond_users(bcdef_t *, octet_t *);
 
 /*
  * --- sllist.c --- 
