@@ -494,7 +494,7 @@ com_starttls(work_info_t *wi)
 spocp_result_t
 com_tlsneg(work_info_t *wi)
 {
-    spocp_result_t  r = SPOCP_SUCCESS;
+    spocp_result_t  r = SPOCP_DENIED;
     conn_t          *conn = wi->conn;
 
     traceLog(LOG_INFO,"SSLNeg %d", conn->sslstatus);
@@ -504,6 +504,8 @@ com_tlsneg(work_info_t *wi)
     /*
      * If I couldn't create a TLS connection fail completely 
      */
+
+#ifdef HAVE_SSL
     else{
         traceLog(LOG_INFO,"Waiting for SSL negotiation");
         if ((r = tls_start(conn, conn->rs)) != SPOCP_SUCCESS) {
@@ -515,6 +517,7 @@ com_tlsneg(work_info_t *wi)
 
         conn->sslstatus = ACTIVE; /* Negotiation done */
     }
+#endif
 
     return postop( wi, r, 0);
 }
