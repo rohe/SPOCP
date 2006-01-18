@@ -505,7 +505,7 @@ spocp_srv_run(srv_t * srv)
 
                 if (server_access(conn) != SPOCP_SUCCESS) {
                     traceLog(LOG_INFO,
-                        "connection from %s(%s) DISALLOWED",
+                        "connection %d from %s(%s) DISALLOWED",
                          conn->fd, hname, ipaddr);
 
                     conn_reset(conn);
