@@ -212,17 +212,30 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			if( rdef.rule ) {
 				op = chunk2sexp( rdef.rule ) ;
 				oa = octarr_add(oa, op) ;
+				LOG(SPOCP_DEBUG) {
+					traceLog(LOG_DEBUG,"We've got a rule");
+				}
 			}
 			
 			if( rdef.bcond) {
 				op = chunk2sexp( rdef.bcond ) ;
 				oa = octarr_add(oa, op) ;
+				LOG(SPOCP_DEBUG) {
+					traceLog(LOG_DEBUG,"We've got a boundary condition");
+				}
 			}
 			
 			if( rdef.blob ) {
 				if (!rdef.bcond)
 					oa = octarr_add(oa, str2oct("NULL", 0)) ;
 				oa = octarr_add(oa, octdup(rdef.blob->val)) ;
+				LOG(SPOCP_DEBUG) {
+					traceLog(LOG_DEBUG,"And we have a blob");
+				}
+			}
+
+			LOG(SPOCP_DEBUG) {
+				octarr_print(LOG_DEBUG,oa);
 			}
 			
 			traceLog(LOG_INFO,"Adding rule to ruleset \"%s\"", trs->name);
