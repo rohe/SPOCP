@@ -211,15 +211,20 @@ dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
 }
 
 spocp_result_t
-dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa, 
+dbapi_rule_add(
+	db_t ** dpp, 
+	plugin_t * p, 
+	bcdef_t **rbc,
+	dbcmd_t * dbc, 
+	octarr_t * oa, 
 	void **rule)
 {
-	spocp_result_t  r;
-	ruleinst_t     *ri = 0;
-	bcdef_t        *bcd = 0;
-	octet_t        *bcexp = 0;
-	db_t           *db;
-	char		*tmp;
+	spocp_result_t	r;
+	ruleinst_t		*ri = 0;
+	bcdef_t			*bcd = 0;
+	octet_t			*bcexp = 0;
+	db_t			*db;
+	char			*tmp;
 
 	if (!oa || oa->n == 0)
 		return SPOCP_MISSING_ARG;
@@ -229,8 +234,12 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 	else
 		return SPOCP_UNWILLING;
 
-	if (db == 0)
+	if (db == 0) {
+		LOG(SPOCP_DEBUG) {
+			traceLog(LOG_DEBUG,"New database");
+		}
 		db = db_new();
+	}
 
 	if (oa->n > 1) {
 		/*
@@ -239,8 +248,8 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 		*/
 		bcexp = octarr_rm(oa, 1);
 
-		if (oct2strcmp( bcexp, "NULL") != 0) {
-			bcd = bcdef_get(db, p, dbc, bcexp, &r);
+		if (rbc && oct2strcmp( bcexp, "NULL") != 0) {
+			bcd = bcdef_get(rbc, p, dbc, bcexp, &r);
 			if (bcd == NULL && r != SPOCP_SUCCESS) {
 				LOG(SPOCP_INFO) {
 					tmp = oct2strdup(bcexp, '%');
@@ -251,6 +260,9 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 				}
 				return r;
 			}
+		}
+		else if (rbc == 0) {
+			traceLog(LOG_WARNING,"No where to put the boundary condition");
 		}
 	}
 
@@ -268,7 +280,10 @@ dbapi_rule_add(db_t ** dpp, plugin_t * p, dbcmd_t * dbc, octarr_t * oa,
 		if (rule)
 			*rule = (void *) ri;
 	}
-
+	else if (dpp == 0 && db != NULL) {
+		db_free(db) ;
+	}
+	
 	return r;
 }
 
