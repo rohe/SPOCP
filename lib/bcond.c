@@ -5,7 +5,13 @@
 
 #include <db0.h>
 #include <wrappers.h>
+
+#ifdef HAVE_LIBCRYPTO
+#include <openssl/evp.h>
+#else
 #include <sha1.h>
+#endif
+
 #include <func.h>
 #include <plugin.h>
 #include <spocp.h>
@@ -227,22 +233,42 @@ bcdef_rm(bcdef_t * root, bcdef_t * rm)
  * ---------------------------------------------------------------------- 
  */
 
+#ifdef HAVE_LIBCRYPTO
+#define uint8  unsigned char
+#endif
 
 static char    *
 make_name(char *str, octet_t * input)
 {
+#ifdef HAVE_LIBCRYPTO
+	EVP_MD_CTX ctx;	
+	const EVP_MD *md;
+	unsigned char   sha1sum[EVP_MAX_MD_SIZE], *ucp;
+#else
 	struct sha1_context ctx;
 	unsigned char   sha1sum[21], *ucp;
+#endif
+
 	int             j;
+	unsigned int	l;
+
 
 	if (input == 0 || input->len == 0)
 		return 0;
 
+#ifdef HAVE_LIBCRYPTO
+	md = EVP_sha1();
+	
+	EVP_DigestInit(&ctx, md);
+	EVP_DigestUpdate(&ctx,(uint8 *) input->val, input->len);
+	EVP_DigestFinal(&ctx, sha1sum, &l);
+#else
 	sha1_starts(&ctx);
 
 	sha1_update(&ctx, (uint8 *) input->val, input->len);
 
 	sha1_finish(&ctx, (unsigned char *) sha1sum);
+#endif
 
 	for (j = 1, ucp = (unsigned char *) str; j < 20; j++, ucp += 2)
 		sprintf((char *) ucp, "%02x", sha1sum[j]);
@@ -756,25 +782,22 @@ bcspec_is(octet_t * spec)
 		return FALSE;
 }
 
-/*! \brief Adds a boundary condition definition to the list of others \param
- * db A link to the internal database \param p Pointer to the linked list of
- * registered plugins \param dbc Command parameters connected to the
- * persistent store \param name The name of the boundary condition
- * specification \param data The boundary condition specification \return A
- * pointer to the internal representation of the boundary condition 
+/*! \brief Adds a boundary condition definition to the list of others 
+ * \param db A link to the internal database 
+ * \param p Pointer to the linked list of registered plugins 
+ * \param dbc Command parameters connected to the persistent store 
+ * \param name The name of the boundary condition specification 
+ * \param data The boundary condition specification 
+ * \return A pointer to the internal representation of the boundary condition
  */
 bcdef_t        *
-bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
-	  octet_t * data)
+bcdef_add(bcdef_t **rbc, plugin_t *p, dbcmd_t *dbc, octet_t *name,octet_t *data)
 {
 	bcexp_t        *bce;
 	bcdef_t        *bcd, *bc;
 	char            cname[45], *bcname;
 	stree_t        *st;
 	octet_t         tmp;
-
-	if (db == 0) 
-		return NULL;
 
 	if (*data->val == '(') {
 		if ((st = parse_bcexp(data)) == 0)
@@ -786,7 +809,7 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 
 	bcd = bcdef_new();
 
-	bce = transv_stree(p, st, db->bcdef, bcd);
+	bce = transv_stree(p, st, *rbc, bcd);
 
 	stree_free(st);
 
@@ -821,10 +844,10 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 	bcd->exp = bce;
 
 	if (bcd->name) {
-		if (db->bcdef == 0)
-			db->bcdef = bcd;
+		if (*rbc == 0)
+			*rbc = bcd;
 		else {
-			for (bc = db->bcdef; bc->next; bc = bc->next);
+			for (bc = *rbc; bc->next; bc = bc->next);
 			bc->next = bcd;
 			bcd->prev = bc;
 		}
@@ -838,17 +861,18 @@ bcdef_add(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
  */
 /*! \brief Remove a boundary condition from the internal database. A
  * boundary condition can not be removed if there is rules that uses it!
- * \param db A pointer to the internal database \param dbc Command parameters
- * connected to the persistent store \param name The name of the boundary
- * condition \return A result code, SPOCP_SUCCESS on success 
+ * \param db A pointer to the internal database 
+ * \param dbc Command parameters connected to the persistent store 
+ * \param name The name of the boundary condition 
+ * \return A result code, SPOCP_SUCCESS on success 
  */
 spocp_result_t
-bcdef_del(db_t * db, dbcmd_t * dbc, octet_t * name)
+bcdef_del(bcdef_t **rbc , dbcmd_t * dbc, octet_t * name)
 {
 	bcdef_t        *bcd;
 	char           *bcname;
 
-	bcd = bcdef_find(db->bcdef, name);
+	bcd = bcdef_find(*rbc, name);
 
 	if (bcd->users && varr_len(bcd->users) > 0)
 		return SPOCP_UNWILLING;
@@ -866,7 +890,7 @@ bcdef_del(db_t * db, dbcmd_t * dbc, octet_t * name)
 	 */
 	bcdef_delink(bcd);
 
-	db->bcdef = bcdef_rm(db->bcdef, bcd);
+	bcdef_rm(*rbc, bcd);
 
 	bcdef_free(bcd);
 
@@ -877,14 +901,15 @@ bcdef_del(db_t * db, dbcmd_t * dbc, octet_t * name)
  * ---------------------------------------------------------------------- 
  */
 /*! \brief Replaces on boundary condition with another without changing the
- * name. \param db A pointer to the internal database \param p Pointer to the
+ * name. 
+ *\param db A pointer to the internal database \param p Pointer to the
  * set of plugins that is present \param dbc Command parameters connected to
  * the persistent store \param name The name of the boundary condition \param
  * data The new specification for the boundary condition \return An
  * appropriate result code 
  */
 spocp_result_t
-bcdef_replace(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
+bcdef_replace(bcdef_t **rbc, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 	      octet_t * data)
 {
 	bcdef_t        *bcd;
@@ -903,9 +928,9 @@ bcdef_replace(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 		octcpy(&st->val, data);
 	}
 
-	if ((bcd = bcdef_find(db->bcdef, name)) != 0) {
+	if ((bcd = bcdef_find(*rbc, name)) != 0) {
 
-		bce = transv_stree(p, st, db->bcdef, bcd);
+		bce = transv_stree(p, st, *rbc, bcd);
 
 		bcname = bcname_make(name);
 
@@ -940,7 +965,7 @@ bcdef_replace(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * name,
  * NULL is also returned but together with the result code SPOCP_SUCCESS. 
  */
 bcdef_t        *
-bcdef_get(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * o,
+bcdef_get(bcdef_t **rbc, plugin_t * p, dbcmd_t * dbc, octet_t * o,
 	  spocp_result_t * rc)
 {
 	bcdef_t        *bcd = 0;
@@ -950,11 +975,11 @@ bcdef_get(db_t * db, plugin_t * p, dbcmd_t * dbc, octet_t * o,
 	if (oct2strcmp(o, "NULL") == 0)
 		bcd = NULL;
 	else if ((r = is_bcref(o, &br)) == SPOCP_SUCCESS) {
-		bcd = bcdef_find(db->bcdef, &br);
+		bcd = bcdef_find(*rbc, &br);
 		if (bcd == NULL)
 			*rc = SPOCP_UNAVAILABLE;
 	} else {
-		bcd = bcdef_add(db, p, dbc, 0, o);
+		bcd = bcdef_add(rbc, p, dbc, 0, o);
 		if (bcd == 0)
 			*rc = SPOCP_SYNTAXERROR;
 	}
@@ -1061,17 +1086,18 @@ bcond_check(element_t * ep, spocp_index_t * id, octarr_t ** oa, checked_t **cr)
  * ---------------------------------------------------------------------- 
  */
 /*! \brief A niffty function that allows you to find all rules that are
- * dependent on a specific boundary condition. \param db A pointer to the
- * internal database \param bcname The name of the boundary condition \return
- * A array of pointers to the rules that uses, directly of indirectly, this
+ * dependent on a specific boundary condition. 
+ * \param db A pointer to the internal database 
+ * \param bcname The name of the boundary condition 
+ * \return A array of pointers to the rules that uses, directly of indirectly, this
  * boundary condition 
  */
 varr_t         *
-bcond_users(db_t * db, octet_t * bcname)
+bcond_users(bcdef_t *rbc, octet_t * bcname)
 {
 	bcdef_t        *bcd;
 
-	bcd = bcdef_find(db->bcdef, bcname);
+	bcd = bcdef_find(rbc, bcname);
 
 	return all_rule_users(bcd, 0);
 }
