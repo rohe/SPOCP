@@ -67,7 +67,7 @@ spocp_add_rule(void **vp, octarr_t * oa)
 {
 	db_t          **db = (db_t **) vp;
 
-	return dbapi_rule_add(db, NULL, NULL, oa, NULL);
+	return dbapi_rule_add(db, NULL, NULL, NULL, oa, NULL);
 }
 
 void           *
