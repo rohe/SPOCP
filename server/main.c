@@ -40,7 +40,8 @@ int             deny_severity;
 
 #ifdef HAVE_SASL
 static const struct sasl_callback sasl_cb[] = {
-    { SASL_CB_GETOPT, &parse_sasl_conf, NULL }
+    { SASL_CB_GETOPT, &parse_sasl_conf, NULL },
+	{ SASL_CB_LIST_END, NULL, NULL}
 };
 #endif
 
