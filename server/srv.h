@@ -62,13 +62,14 @@ typedef struct _spocp_iobuf {
 
 typedef struct _regexp {
 	regex_t	preg ;
-	char	 *regex ;
+	char	*regex ;
 } regexp_t ;
 	
 typedef struct _ruleset {
 	pthread_rdwr_t	rw_lock;
 	pthread_mutex_t	transaction ;
 	db_t		*db ;
+	bcdef_t		*bcd;
 	char		*name ;
 	struct _ruleset	*left ;
 	struct _ruleset	*right ;
@@ -172,7 +173,7 @@ typedef struct _server
 	int		listen_fd ; /* listen socket */
 	pthread_mutex_t	mlock ;	/* listener lock */
 	int		type ;	/* AF_INET, AF_INET6 or AF_LOCAL */	
-	char		*id ;
+	char	*id ;
 
 	int		threads ;
 

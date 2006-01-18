@@ -274,7 +274,7 @@ typedef struct _db {
 	ruleinfo_t	*ri;
 	/* junc_t		*acit; */
 	plugin_t	*plugins;
-	bcdef_t		*bcdef;
+/*	bcdef_t		*bcdef; */
 	dback_t		*dback;
 } db_t;
 
