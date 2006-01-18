@@ -427,6 +427,10 @@ spocp_result_t	tls_start( conn_t *conn, ruleset_t *rs )	;
 int		read_config( char *file, srv_t *srv );
 spocp_result_t	conf_get( void *vp, int arg, void **res );
 int		set_backend_cachetime( srv_t *srv );
+#ifdef HAVE_SASL
+int parse_sasl_conf(void *, const char *,
+		        const char *, const char **, unsigned *);
+#endif
 
 /* */
 

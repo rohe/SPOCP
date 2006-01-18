@@ -38,6 +38,16 @@ char           *keyword[] = {
 	"pidfile", "maxconn", "clientcert", NULL
 };
 
+#ifdef HAVE_SASL
+struct overflow_conf {
+	const char * key;
+	const char * value;
+	struct overflow_conf *next;
+};
+
+struct overflow_conf *overflow_first = NULL;
+struct overflow_conf *overflow_last = NULL;
+#endif
 
 #define DEFAULT_PORT    4751	/* Registered with IANA */
 #define DEFAULT_TIMEOUT   30
@@ -137,6 +147,39 @@ static char **strchop( char *s, int *argc)
 
 	return arr;
 }
+
+#ifdef HAVE_SASL
+static void
+add_overflow_directive(const char *key, const char *value)
+{
+	struct overflow_conf *this = overflow_last;
+
+	if(this != NULL)
+	{
+		this = this->next;
+		overflow_last->next = this;
+	}
+	this = Calloc(sizeof(struct overflow_conf), 1);
+	this->key = strdup(key);
+	this->value = strdup(value);
+	overflow_last = this;
+	if(!overflow_first)
+		overflow_first = this;
+}
+
+static const char
+*get_overflown(const char *key)
+{
+	struct overflow_conf *this = overflow_first;
+
+	for(; this != NULL; this = this->next)
+		if((strcmp(this->key, key) == 0))
+			break;
+	if(this)
+		return(this->value);
+	return(NULL);
+}
+#endif
 
 /*------------------------------------------------------------------ */
 
@@ -323,7 +366,11 @@ read_config(char *file, srv_t * srv)
 					break;
 
 			if (keyword[i] == 0) {
+#ifdef HAVE_SASL
+				add_overflow_directive(s, cp);
+#else
 				traceLog(LOG_ERR, err_msg, n, "Unknown keyword");
+#endif
 				continue;
 			}
 
@@ -636,3 +683,41 @@ read_config(char *file, srv_t * srv)
 	return 1;
 }
 
+#ifdef HAVE_SASL
+int
+parse_sasl_conf(void *context, const char *plugin_name,
+		const char *option, const char **result, unsigned *len)
+{
+	int opt_len = (6 + strlen(option));
+	char *opt;
+
+	if(plugin_name)
+		opt_len += (strlen(plugin_name) + 1);
+
+	opt = Calloc(1, opt_len);
+
+	if(plugin_name)
+	{
+		strcpy(opt, "sasl_");
+		strcat(opt, "plugin_name");
+		strcat(opt, "_");
+		strcat(opt, option);
+		*result = get_overflown(opt);
+	}
+
+	if(*result == NULL)
+	{
+		strcpy(opt, "sasl_");
+		strcat(opt, option);
+		*result = get_overflown(opt);
+	}
+
+	if(*result != NULL)
+	{
+		if(len)
+			*len = strlen(*result);
+		return(SASL_OK);
+	}
+	return(SASL_FAIL);
+}
+#endif

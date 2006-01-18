@@ -38,6 +38,12 @@ srv_t           srv;
 int             allow_severity;
 int             deny_severity;
 
+#ifdef HAVE_SASL
+static const struct sasl_callback sasl_cb[] = {
+    { SASL_CB_GETOPT, &parse_sasl_conf, NULL }
+};
+#endif
+
 static Sigfunc        *
 xsignal(int signo, Sigfunc * func)
 {
@@ -383,7 +389,7 @@ main(int argc, char **argv)
 
 #ifdef HAVE_SASL
 		{
-			int             r = sasl_server_init(NULL, "spocp");
+			int             r = sasl_server_init(sasl_cb, "spocp");
 			if (r != SASL_OK) {
 				traceLog( LOG_ERR,
 				    "Unable to initialized SASL library: %s",
