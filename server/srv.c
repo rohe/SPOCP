@@ -642,7 +642,7 @@ com_commit(work_info_t *wi)
     spocp_result_t  r = SPOCP_SUCCESS;
     conn_t      *conn = wi->conn;
     opstack_t   *ops;
-    ruleset_t   **rspp;
+    ruleset_t   **rspp, *trs;
     int     i, n;
 
     LOG(SPOCP_INFO) traceLog(LOG_INFO,"COMMIT requested");
@@ -678,9 +678,17 @@ com_commit(work_info_t *wi)
         for( ops = conn->ops; r == SPOCP_SUCCESS && ops; ops = ops->next ) {
             switch( ops->oper){
             case( SPOCP_ADD ):
-                r = dbapi_rule_add(&(ops->rs->db),
-                    conn->srv->plugin, &conn->dbc, ops->oparg,
-                    &ops->rule);
+				for (trs = conn->rs, r = SPOCP_UNAVAILABLE;
+				 		(r == SPOCP_UNAVAILABLE) && trs; trs = trs->up) {
+                	r = dbapi_rule_add(&(ops->rs->db),
+                    	conn->srv->plugin, &trs->bcd, &conn->dbc, ops->oparg,
+                    	&ops->rule);
+					if (r == SPOCP_UNAVAILABLE){
+						LOG(SPOCP_DEBUG) {
+		                    traceLog(LOG_DEBUG,"Unknown boundary condition on this level, trying higher up");
+		                }
+					}    
+				}
                 break;
             case( SPOCP_DEL ):
                 ops->rollback = rollback_info( ops->rs->db,
@@ -702,9 +710,17 @@ com_commit(work_info_t *wi)
                         NULL, ops->rule);
                     break;
                 case( SPOCP_DEL ):
-                    r = dbapi_rule_add(&(ops->rs->db),
-                        conn->srv->plugin, &conn->dbc,
-                        wi->oparg, NULL);
+					for (trs = ops->rs, r = SPOCP_UNAVAILABLE;
+					 		(r == SPOCP_UNAVAILABLE) && trs; trs = trs->up) {
+                    	r = dbapi_rule_add(&(ops->rs->db),
+                        	conn->srv->plugin, &(trs->bcd), &conn->dbc,
+                        	wi->oparg, NULL);
+						if (r == SPOCP_UNAVAILABLE){
+							LOG(SPOCP_DEBUG) {
+			                    traceLog(LOG_DEBUG,"Unknown boundary condition on this level, trying higher up");
+			                }
+						}    
+					}
                     break;
                 }
             }
@@ -996,11 +1012,20 @@ com_add(work_info_t *wi)
             /*
              * get write lock, do operation and release lock 
              */
+			ruleset_t	*trs;
+
             pthread_rdwr_wlock(&rs->rw_lock);
 
-            rc = dbapi_rule_add(&(rs->db), srv->plugin, &conn->dbc,
-                wi->oparg, NULL);
-
+			for (trs = rs, rc = SPOCP_UNAVAILABLE;
+			 	(rc == SPOCP_UNAVAILABLE) && trs; trs = trs->up) {
+            	rc = dbapi_rule_add(&(rs->db), srv->plugin, &(trs->bcd), &conn->dbc,
+                	wi->oparg, NULL);
+				if( rc == SPOCP_UNAVAILABLE){
+					LOG(SPOCP_DEBUG) {
+	                    traceLog(LOG_DEBUG,"Unknown boundary condition on this level, trying higher up");
+	                }
+				}
+			}
             pthread_rdwr_wunlock(&rs->rw_lock);
         }
     }
