@@ -418,7 +418,6 @@ static /**/const char *const rcsid[] = { (const char *)rcsid, "@(#)" msg }
 
 dnl                clients/openldap/Makefile
 dnl                clients/exim/Makefile
-dnl		backends/spocp/Makefile \
 
 AC_OUTPUT([./Makefile \
 		backends/cert/Makefile \
@@ -436,6 +435,7 @@ AC_OUTPUT([./Makefile \
 		backends/motd/Makefile \
 		backends/rbl/Makefile \
 		backends/regexp/Makefile \
+		backends/spocp/Makefile \
 		backends/sql/Makefile \
 		backends/strmatch/Makefile \
 		backends/system/Makefile \
