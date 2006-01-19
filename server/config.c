@@ -366,7 +366,9 @@ read_config(char *file, srv_t * srv)
 
 			if (keyword[i] == 0) {
 #ifdef HAVE_SASL
-				add_overflow_directive(s, cp);
+				if((strncmp("sasl_", s, 5) == 0))
+					add_overflow_directive(s, cp);
+				else
 #else
 				traceLog(LOG_ERR, err_msg, n, "Unknown keyword");
 #endif
