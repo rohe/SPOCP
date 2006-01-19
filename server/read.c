@@ -253,7 +253,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			else {
 				LOG(SPOCP_WARNING){
 				    oct_print(LOG_WARNING,"Failed to add rule", oa->arr[0]);
-					traceLog(LOG_INFO,"Result on add: %d", r);
+					traceLog(LOG_INFO,"Reason for failure: \"%s\"", spocp_result_str(r));
 				}
 				f++;
 			}
