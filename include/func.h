@@ -486,5 +486,10 @@ void		add_checked( ruleinst_t *ri, spocp_result_t rc,
 void 		checked_print( checked_t *c );
 
 
+/*
+ * spocp_result
+ */
+char *spocp_result_str( spocp_result_t r);
+
 #endif
 
