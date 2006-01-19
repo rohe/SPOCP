@@ -369,9 +369,8 @@ read_config(char *file, srv_t * srv)
 				if((strncmp("sasl_", s, 5) == 0))
 					add_overflow_directive(s, cp);
 				else
-#else
-				traceLog(LOG_ERR, err_msg, n, "Unknown keyword");
 #endif
+				traceLog(LOG_ERR, err_msg, n, "Unknown keyword");
 				continue;
 			}
 
