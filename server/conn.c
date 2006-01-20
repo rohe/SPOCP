@@ -105,10 +105,6 @@ conn_env_reset(conn_t * con)
 			sasl_dispose(&con->sasl);
 			con->sasl = 0;
 		}
-		if (con->sasl_username) {
-			Free(con->sasl_username);
-			con->sasl_username = 0;
-		}
 #endif
 	}
 }
