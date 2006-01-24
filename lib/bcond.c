@@ -257,6 +257,7 @@ make_name(char *str, octet_t * input)
 		return 0;
 
 #ifdef HAVE_LIBCRYPTO
+	traceLog(LOG_DEBUG,"Using EVP_sha1 to create unique identifier (bcond)");
 	md = EVP_sha1();
 	
 	EVP_DigestInit(&ctx, md);
@@ -570,7 +571,7 @@ bcdef_delink(bcdef_t * bcd)
  */
 
 /*
- * expects a sepc of the form {...}{...}:.... 
+ * expects a spec of the form {...}{...}:.... 
  */
 
 static spocp_result_t
@@ -783,7 +784,7 @@ bcspec_is(octet_t * spec)
 }
 
 /*! \brief Adds a boundary condition definition to the list of others 
- * \param db A link to the internal database 
+ * \param db A link to the present set of boundary conditions 
  * \param p Pointer to the linked list of registered plugins 
  * \param dbc Command parameters connected to the persistent store 
  * \param name The name of the boundary condition specification 
@@ -827,7 +828,8 @@ bcdef_add(bcdef_t **rbc, plugin_t *p, dbcmd_t *dbc, octet_t *name,octet_t *data)
 		}
 	}
 
-	if (dbc) {
+	/* If there is a persistent store */
+	if (dbc && dbc->dback) {
 		/*
 		 * create a bcond name that MUST differ from rule ids Since
 		 * rule ids are SHA1 hashes, it consists of lower case letters 
@@ -879,14 +881,16 @@ bcdef_del(bcdef_t **rbc , dbcmd_t * dbc, octet_t * name)
 	if (bcd->rules && varr_len(bcd->rules) > 0)
 		return SPOCP_UNWILLING;
 
-	bcname = bcname_make(name);
 
-	dback_delete(dbc, bcname);
-	Free(bcname);
+	if (dbc && dbc->dback){
+		bcname = bcname_make(name);
+		dback_delete(dbc, bcname);
+		Free(bcname);
+	}
 
 	/*
-	 * this boundary conditions might have links to other those links
-	 * should be removed 
+	 * this boundary conditions might have links to other links
+	 * which should then also be removed 
 	 */
 	bcdef_delink(bcd);
 
@@ -902,11 +906,12 @@ bcdef_del(bcdef_t **rbc , dbcmd_t * dbc, octet_t * name)
  */
 /*! \brief Replaces on boundary condition with another without changing the
  * name. 
- *\param db A pointer to the internal database \param p Pointer to the
- * set of plugins that is present \param dbc Command parameters connected to
- * the persistent store \param name The name of the boundary condition \param
- * data The new specification for the boundary condition \return An
- * appropriate result code 
+ * \param db A pointer to the internal database 
+ * \param p Pointer to the set of plugins that is present 
+ * \param dbc Command parameters connected to the persistent store 
+ * \param name The name of the boundary condition 
+ * \param data The new specification for the boundary condition 
+ * \return An appropriate result code 
  */
 spocp_result_t
 bcdef_replace(bcdef_t **rbc, plugin_t * p, dbcmd_t * dbc, octet_t * name,
@@ -932,9 +937,12 @@ bcdef_replace(bcdef_t **rbc, plugin_t * p, dbcmd_t * dbc, octet_t * name,
 
 		bce = transv_stree(p, st, *rbc, bcd);
 
-		bcname = bcname_make(name);
 
-		dback_replace(dbc, bcname, data, 0, 0);
+		if (dbc && dbc->dback){
+			bcname = bcname_make(name);
+			dback_replace(dbc, bcname, data, 0, 0);
+			Free( bcname);
+		}
 
 		bcexp_free(bcd->exp);
 
