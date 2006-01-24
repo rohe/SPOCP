@@ -544,7 +544,7 @@ fdloop:
             conn = (conn_t *) pi->info;
             next = pi->next;
 
-            if (conn->sslstatus == REQUEST && conn->sslstatus == NEGOTIATION)
+            if (conn->sslstatus == REQUEST || conn->sslstatus == NEGOTIATION)
                 continue;
 
             /*
