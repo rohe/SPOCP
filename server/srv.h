@@ -95,6 +95,9 @@ typedef struct _ruleset {
 /* SSL/TLS is in action */
 #define ACTIVE      3
 
+/* Phased operations, first 4 (0-3) used for phases  */
+#define PS_STARTTLS 4
+#define PS_AUTH		8
 
 /* -------------------------------------- */
 
@@ -233,6 +236,7 @@ typedef struct _conn {
 	int		status ;
 	int 	sslstatus ;
 	int		con_type ;
+	int		phase;
 	int		ops_pending ;
 	int		stop ;	    /* Set (!= 0) if this connection is
 				       to be closed */
