@@ -596,12 +596,23 @@ fdloop:
                     else{
 						/* this is a hack */
 						traceLog(LOG_DEBUG,"Nothing left in the output buffer, state=%d",conn->status);
-						if (conn->sslstatus == REQUEST){
-							iobuf_flush(conn->in);
-							iobuf_add(conn->in,"8:6:TLSNEG");
-							conn->sslstatus = NEGOTIATION;
-							traceLog(LOG_DEBUG,"Placing workitem on the work queue");
-							read_work( srv, conn, 0 );
+						if (conn->phase){
+							if (conn->phase & PS_STARTTLS){
+								iobuf_flush(conn->in);
+								/* this should be made more intelligent */
+								iobuf_add(conn->in,"10:8:STARTTLS");
+								conn->sslstatus = NEGOTIATION;
+								traceLog(LOG_DEBUG,"Placing workitem on the work queue");
+								read_work( srv, conn, 0 );
+							}
+							/*
+							else if (conn->phase & PS_AUTH){
+								iobuf_flush(conn->in);
+								iobuf_add(conn->in,"6:4:AUTH");
+								traceLog(LOG_DEBUG,"Placing workitem on the work queue");
+								read_work( srv, conn, 0 );
+							}
+							*/
 						}
 						else
                         	conn->status = CNST_ACTIVE;
