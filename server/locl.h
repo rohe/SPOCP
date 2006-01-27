@@ -58,6 +58,7 @@
 
 #ifdef HAVE_SASL
 #include <sasl/sasl.h>
+#include <sasl/saslutil.h>
 #endif
 
 #ifdef HAVE_LIBWRAP
