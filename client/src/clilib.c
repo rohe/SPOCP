@@ -51,6 +51,7 @@
 
 #ifdef HAVE_SASL
 #include <sasl/sasl.h>
+#include <sasl/saslutil.h>
 #endif
 
 /* #define AVLUS 1 */
@@ -1069,7 +1070,19 @@ spocpc_writen(SPOCP * spocp, char *str, size_t n )
 				    (int) nleft);
 			else
 #endif
+			{
+#ifdef HAVE_SASL
+				if(spocp->sasl_ssf && *spocp->sasl_ssf > 0)
+				{
+					const char *enc_data;
+					size_t enc_len;
+					sasl_encode(spocp->sasl, sp, nleft, &enc_data, &enc_len);
+					sp = enc_data;
+					nleft = enc_len;
+				}
+#endif
 				nwritten = write(spocp->fd, sp, nleft);
+			}
 
 			if (nwritten <= 0) {;
 				if (errno == EINTR)
@@ -1136,7 +1149,22 @@ spocpc_readn(SPOCP * spocp, char *buf, size_t size)
 			n = SSL_read(spocp->ssl, (void *) buf, (int) size);
 		else
 #endif
+		{
 			n = read(spocp->fd, buf, size);
+#ifdef HAVE_SASL
+			if(spocp->sasl_ssf && *spocp->sasl_ssf > 0)
+			{
+				const char *plain_data;
+				size_t plain_len;
+				sasl_decode(spocp->sasl, buf, n, &plain_data, &plain_len);
+				if(plain_len <= size)
+				{
+					memcpy(buf, plain_data, plain_len);
+					n = plain_len;
+				}
+			}
+#endif
+		}
 
 		if (n <= 0) {
 			if (errno == EINTR) {
@@ -1772,9 +1800,84 @@ spocpc_send_capa(SPOCP * spocp, queres_t * qr)
  * \return A spocpc result code
  */
 int
-spocpc_auth(SPOCP * spocp, char * mech)
+spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
 {
-	return SPOCPC_NOSUPPORT;
+	int res = SPOCPC_OK;
+#ifdef HAVE_SASL
+	memset(qr, 0, sizeof(queres_t));
+	char *server_name = strdup(spocp->srv->arr[spocp->cursrv]->val);
+	char *port = strstr(server_name, ":");
+	int res2, res4;
+	*port = '\0';
+	sasl_client_init(NULL);
+	res2 = sasl_client_new("spocp", server_name, NULL, NULL, NULL, 0, &spocp->sasl);
+	{
+		const char *out = NULL;
+		char *outcode = NULL;
+		sasl_interact_t *interact = NULL;
+		unsigned int outlen;
+		const char *mechused = NULL;
+		octarr_t *argv;
+		char *mechsend;
+		{
+			sasl_security_properties_t secprops;
+			secprops.min_ssf = 0;
+			secprops.max_ssf = 8192;
+			secprops.maxbufsize = 1024;
+			secprops.property_names = NULL;
+			secprops.property_values = NULL;
+			secprops.security_flags = SASL_SEC_NOANONYMOUS;
+			sasl_setprop(spocp->sasl, SASL_SEC_PROPS, &secprops);
+		}
+		sasl_client_start(spocp->sasl, mechs, &interact, &out, &outlen, &mechused);
+		mechsend = Malloc(sizeof(char) * strlen(mechused) + 5);
+		sprintf(mechsend, "SASL:");
+		strcat(mechsend, mechused);
+		if(out)
+		{
+			unsigned outlen2 = 0;
+			outcode = Malloc(outlen * 4);
+			sasl_encode64(out, outlen, outcode, outlen * 4, &outlen2);
+		}
+
+		argv = argv_make("AUTH", mechsend, outcode, 0, 0);
+		res = spocpc_send_X(spocp, argv, qr);
+		octarr_free(argv);
+	}
+	do{
+		octarr_t *argv;
+		unsigned decodelen = 0;
+		char *serverdecode = NULL;
+		sasl_interact_t *interact = NULL;
+		const char *data_out = NULL;
+		char *step_dataout = NULL;
+		unsigned data_len = 0;
+		if(qr->blob)
+		{
+			serverdecode = Malloc(qr->blob->arr[0]->len);
+			sasl_decode64(qr->blob->arr[0]->val, qr->blob->arr[0]->len, serverdecode, qr->blob->arr[0]->len, &decodelen);
+		}
+		res4 = sasl_client_step(spocp->sasl, serverdecode, decodelen, &interact, &data_out, &data_len);
+		Free(serverdecode);
+		if(data_out)
+		{
+			unsigned outlen2 = 0;
+			step_dataout = Malloc(data_len * 4);
+			sasl_encode64(data_out, data_len, step_dataout, data_len * 4, &outlen2);
+		}
+		argv = argv_make("AUTH", step_dataout, 0, 0, 0);
+		memset(qr, 0, sizeof(queres_t));
+		res = spocpc_send_X(spocp, argv, qr);
+		if(step_dataout)
+			Free(step_dataout);
+	} while(res4 == SASL_CONTINUE);
+	if(res4 == SASL_OK)
+		sasl_getprop(spocp->sasl, SASL_SSF,
+				(const void **) &spocp->sasl_ssf);
+#else
+	res = SPOCPC_NOSUPPORT;
+#endif
+	return res;
 }
 
 /* ============================================================================== */
