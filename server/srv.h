@@ -283,7 +283,8 @@ typedef struct _conn {
 #endif
 #ifdef HAVE_SASL
 	sasl_conn_t	*sasl;
-	int		sasl_ssf;
+	/* sasl security strength factor */
+	int		*sasl_ssf;
 	char		*sasl_mech;
 	char		*sasl_username;
 #endif

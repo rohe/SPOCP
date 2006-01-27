@@ -354,19 +354,30 @@ com_auth(work_info_t *wi)
 {
 	const char	*msg = NULL;
 	conn_t		*conn = wi->conn;
+	int				r;
 #ifdef HAVE_SASL
 	const char	   *data;
 	size_t			len;
 	octet_t			blob;
 	int				wr = -1;
-	int				r;
 #endif
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
 	if (conn->transaction) 
 		return postop(wi, SPOCP_UNWILLING ,msg);
 
+    if ((r = operation_access(wi)) != SPOCP_SUCCESS) {
+        return postop(wi, r, msg);
+	}
+
 #ifdef HAVE_SASL
+	if(conn->phase & PS_AUTH)
+	{
+		wr = sasl_getprop(conn->sasl, SASL_SSF,
+				(const void **) &conn->sasl_ssf);
+		conn->phase = 0;
+		return SPOCP_SUCCESS;
+	}
 
 	if (conn->sasl == NULL) {
 		wr = sasl_server_new("spocp",
@@ -379,66 +390,112 @@ com_auth(work_info_t *wi)
 		}
 	}
 
-	if (conn->sasl_mech == NULL) {	/* start */
-		char *tmpmech = oct2strdup(wi->oparg->arr[0], 0);
-		tmpmech[strlen(tmpmech) - 1] = '\0';
-		if(strstr(tmpmech, "SASL:"))
-		{
-			int mechlen = (strlen(tmpmech) - 3);
-			conn->sasl_mech = (char *) Malloc(mechlen * sizeof(char));
-			memcpy(conn->sasl_mech, tmpmech + 5, mechlen);
+    if (conn->sasl_mech == NULL) {  /* start */
+        if(!wi->oparg)
+        {
+            wr = SASL_FAIL;
+            goto check;
+        }
+        char *tmpmech = oct2strdup(wi->oparg->arr[0], 0);
+        tmpmech[strlen(tmpmech)] = '\0';
+        if(strstr(tmpmech, "SASL:"))
+        {
+            int mechlen = (strlen(tmpmech) - 3);
+            unsigned inlen = 0;
+            char *clientin = NULL;
+            conn->sasl_mech = (char *) Malloc(mechlen);
+            memcpy(conn->sasl_mech, tmpmech + 5, mechlen);
+            {
+                sasl_security_properties_t secprops;
+                secprops.min_ssf = 1;
+                secprops.max_ssf = 8192;
+                secprops.maxbufsize = 1024;
+                secprops.property_names = NULL;
+                secprops.property_values = NULL;
+                secprops.security_flags = SASL_SEC_NOANONYMOUS;
+                sasl_setprop(conn->sasl, SASL_SEC_PROPS, &secprops);
+            }
+            if(wi->oparg->n > 1)
+            {
+                clientin = Malloc(wi->oparg->arr[1]->len);
+                sasl_decode64(wi->oparg->arr[1]->val, wi->oparg->arr[1]->len, clientin, wi->oparg->arr[1]->len, &inlen);
+            }
 
-			wr = sasl_server_start(conn->sasl,
-					conn->sasl_mech,
-					wi->oparg->n > 1 ? wi->oparg->arr[1]->val : NULL,
-					wi->oparg->n > 1 ? wi->oparg->arr[1]->len : 0,
-					&data,
-					&len);
-		}
-		free(tmpmech);
-	} else {		/* step */
-		wr = sasl_server_step(conn->sasl,
-				wi->oparg->n > 0 ? wi->oparg->arr[0]->val : NULL,
-				wi->oparg->n > 0 ? wi->oparg->arr[0]->len : 0,
-				&data,
-				&len);
-	}
+            wr = sasl_server_start(conn->sasl,
+                    conn->sasl_mech, clientin, inlen, &data, &len);
+            if(clientin)
+                Free(clientin);
+        }
+        free(tmpmech);
+    } else {        /* step */
+            unsigned inlen = 0;
+            char *clientin = NULL;
+            if(wi->oparg)
+            {
+                clientin = Malloc(wi->oparg->arr[0]->len);
+                sasl_decode64(wi->oparg->arr[0]->val, wi->oparg->arr[0]->len, clientin, wi->oparg->arr[0]->len, &inlen);
+            }
 
-	memset(&blob, 0, sizeof(blob));
-	if (data) {
-		blob.val = (char *) data;
-		blob.len = len;
-	}
+        wr = sasl_server_step(conn->sasl,
+                clientin,
+                inlen,
+                &data,
+                &len);
+    }
+
+    memset(&blob, 0, sizeof(blob));
+    if (data) {
+        blob.val = Malloc(len * 4);
+        sasl_encode64(data, len, blob.val, len * 4, &blob.len);
+    }
 
 	  check:
 
-	switch (wr) {
-		/* finished with authentication */
-	case SASL_OK:
-		wr = sasl_getprop(conn->sasl, SASL_USERNAME,
-				  (const void **) &conn->sasl_username);
-		add_response_blob(wi->buf, SPOCP_MULTI, &blob);
-		r = SPOCP_SUCCESS;
-		msg = Strdup("Authentication OK");
-		break;
-		/* we need to step some */
-	case SASL_CONTINUE:
-		add_response_blob(wi->buf, SPOCP_AUTHDATA, &blob);
-		r = SPOCP_AUTHINPROGRESS;
-		break;
-	default:
-		LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
-					sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
-		r = SPOCP_AUTHERR;
-		msg = Strdup("Authentication failed");
-		Free(conn->sasl_mech);
-		conn->sasl_mech = NULL;
-		sasl_dispose(&conn->sasl);
-		conn->sasl = NULL;
-	}
+    switch (wr) {
+        /* finished with authentication */
+    case SASL_OK:
+        {
+			int *sasl_ssf = NULL;
+            wr = sasl_getprop(conn->sasl, SASL_USERNAME,
+                    (const void **) &conn->sasl_username);
+            wr = sasl_getprop(conn->sasl, SASL_SSF,
+                    (const void **) &sasl_ssf);
+            if(*sasl_ssf > 0)
+            {
+#ifdef HAVE_SSL
+                if(conn->sslstatus != INACTIVE)
+                {
+                    LOG(SPOCP_ERR)
+                        traceLog(LOG_ERR,"Layering violation: SSL already in operation");
+                    r = SPOCP_STATE_VIOLATION;
+                    break;
+                }
+#endif
+            }
+            if(blob.len > 0)
+                add_response_blob(wi->buf, SPOCP_MULTI, &blob);
+            r = SPOCP_SUCCESS;
+            msg = Strdup("Authentication OK");
+			conn->phase = PS_AUTH | 1;
+        }
+        break;
+        /* we need to step some */
+    case SASL_CONTINUE:
+        if(blob.len > 0)
+            add_response_blob(wi->buf, SPOCP_AUTHDATA, &blob);
+        r = SPOCP_AUTHINPROGRESS;
+        break;
+    default:
+        LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
+                sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
+        r = SPOCP_AUTHERR;
+        msg = Strdup("Authentication failed");
+		conn->stop = 1;
+    }
 
-	return postop(wi, r, msg);
-
+    /*spocp_result_t result = postop(wi, r, msg);*/
+    add_response(conn->out, r, msg);
+    return postop(wi, r, NULL);
 #else
 	return postop( wi, SPOCP_NOT_SUPPORTED, NULL);
 #endif
@@ -448,7 +505,7 @@ com_auth(work_info_t *wi)
  * --------------------------------------------------------------------------------- 
  */
 
-spocp_result_t
+    spocp_result_t
 com_starttls(work_info_t *wi)
 {
 	spocp_result_t	r = SPOCP_SSL_START;
@@ -466,11 +523,11 @@ com_starttls(work_info_t *wi)
 #else
 
 #ifdef HAVE_SASL
-	if (conn->sasl != NULL) {
-		LOG(SPOCP_ERR)
-			traceLog(LOG_ERR,"Layering violation: SASL already in operation");
-		r = SPOCP_STATE_VIOLATION;	/* FIXME definiera och ... */
-	} else
+    if (conn->sasl_ssf && *conn->sasl_ssf > 0) {
+        LOG(SPOCP_ERR)
+            traceLog(LOG_ERR,"Layering violation: SASL already in operation");
+        r = SPOCP_STATE_VIOLATION;  /* XXX definiera och ... */
+    } else
 #endif
 #ifdef HAVE_SSL
 	if (conn->ssl != NULL) {
@@ -519,7 +576,7 @@ com_starttls(work_info_t *wi)
 	return postop( wi, r, 0);
 }
 
-spocp_result_t
+    spocp_result_t
 com_tlsneg(work_info_t *wi)
 {
 	spocp_result_t	r = SPOCP_DENIED;
@@ -1486,7 +1543,6 @@ static void
 send_and_flush_results(conn_t * conn)
 {
 	send_results(conn);
-
 	spocp_conn_write(conn);
 }
 

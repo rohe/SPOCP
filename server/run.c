@@ -605,14 +605,12 @@ fdloop:
 								traceLog(LOG_DEBUG,"Placing workitem on the work queue");
 								read_work( srv, conn, 0 );
 							}
-							/*
 							else if (conn->phase & PS_AUTH){
 								iobuf_flush(conn->in);
 								iobuf_add(conn->in,"6:4:AUTH");
 								traceLog(LOG_DEBUG,"Placing workitem on the work queue");
 								read_work( srv, conn, 0 );
 							}
-							*/
 						}
 						else
                         	conn->status = CNST_ACTIVE;

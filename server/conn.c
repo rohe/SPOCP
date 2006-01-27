@@ -103,8 +103,9 @@ conn_env_reset(conn_t * con)
 		}
 		if (con->sasl) {
 			sasl_dispose(&con->sasl);
-			con->sasl = 0;
+			con->sasl = NULL;
 		}
+		con->sasl_ssf = NULL;
 #endif
 	}
 }
@@ -351,8 +352,37 @@ conn_readn(conn_t * ct, char *str, size_t max)
 			if (errno == EINTR || errno == 0)
 				n = 0;
 			else
-				return -1;
+				n = -1;
 		}
+#ifdef HAVE_SASL
+		else
+		{
+			if((ct->sasl_ssf && *ct->sasl_ssf > 0) && n > 0)
+			{
+				const char *plaindata;
+				unsigned plainlen;
+				int wr = sasl_decode(ct->sasl,
+						str, n,
+						&plaindata, &plainlen);
+				if(wr == SASL_OK)
+				{
+					if(plainlen <= max)
+					{
+						memcpy(str, plaindata, plainlen);
+						n = plainlen;
+					}
+					else
+						n = 0;
+				}
+				else
+				{
+					n = -1;
+					ct->stop = 1;
+				}
+			}
+		}
+#endif
+
 	} else {		/* timed out */
 		;
 	}
@@ -368,7 +398,7 @@ conn_readn(conn_t * ct, char *str, size_t max)
  * ---------------------------------------------------------------------- 
  */
 
-int
+	int
 spocp_conn_read(conn_t * conn)
 {
 	int             n;
@@ -376,42 +406,94 @@ spocp_conn_read(conn_t * conn)
 
 	pthread_mutex_lock(&io->lock);
 
-/*
-	traceLog(LOG_DEBUG,"is00 [buf]%p [p]%p [r]%p [w]%p [left]%d",
-	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
-	    io->w - io->buf, io->left );
-*/
+	/*
+	   traceLog(LOG_DEBUG,"is00 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	   io->buf, io->p, io->r, io->w, io->left);
+	   traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	   io->w - io->buf, io->left );
+	 */
 
 	n = conn->readn(conn, io->w, io->left);
-
 	if (n > 0) {
+#ifdef SASL
+		if(conn->sasl_ssf && *conn->sasl_ssf > 0)
+		{
+			char *plain_read;
+			size_t plain_len;
+			sasl_decode(conn->sasl,
+					io->w, n,
+					&plain_read, &plain_len);
+			if((io->left - plain_len) >= 0)
+			{
+				strncpy(io->w, plain_read, plain_len);
+				n = plain_len;
+			}
+			else
+				n = 0;
+		}
+#endif
+
 		io->left -= n;
 		io->w += n;
-		*io->w = '\0'; 
-/*
-		traceLog(LOG_DEBUG, "spocp_conn_read: %d %d", io->left, io->w - io->buf);
-*/
+		*io->w = '\0';
+		/*
+		   traceLog(LOG_DEBUG, "spocp_conn_read: %d %d", io->left, io->w - io->buf);
+		 */
 	}
 
-/*
-	traceLog(LOG_DEBUG,"is01 [buf]%p [p]%p [r]%p [w]%p [left]%d",
-	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
-	    io->w - io->buf, io->left );
-*/
+	/*
+	   traceLog(LOG_DEBUG,"is01 [buf]%p [p]%p [r]%p [w]%p [left]%d",
+	   io->buf, io->p, io->r, io->w, io->left);
+	   traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
+	   io->w - io->buf, io->left );
+	 */
 	pthread_mutex_unlock(&io->lock);
 
 	return n;
 }
 
-int
+	int
 spocp_conn_write(conn_t * conn)
 {
 	int             n, l;
 	spocp_iobuf_t  *out = conn->out;
 
 	pthread_mutex_lock(&out->lock);
+#ifdef HAVE_SASL
+	if(conn->sasl_ssf && *conn->sasl_ssf > 0)
+	{
+		const int *maxout;
+		char *plain_data = Malloc(out->w - out->r);
+		char *plain_point = plain_data;
+		char *crypt_data = Malloc(1);
+		size_t plain_len = out->w - out->r;
+		size_t tot_len = 0;
+		int bufdiff;
+		memcpy(plain_data, out->r, out->w - out->r);
+
+		sasl_getprop(conn->sasl, SASL_MAXOUTBUF, (const void**) &maxout);
+
+		do
+		{
+			size_t tmp_len = plain_len;
+			size_t crypt_len;
+			const char *tmp_data;
+			if(plain_len > *maxout)
+				tmp_len = *maxout;
+			sasl_encode(conn->sasl,
+					plain_point, tmp_len,
+					(const char **)&tmp_data, &crypt_len);
+			crypt_data = Realloc(crypt_data, crypt_len);
+			memcpy(crypt_data, tmp_data, crypt_len);
+			tot_len += crypt_len;
+			plain_len -= tmp_len;
+		} while(plain_len > 0);
+		memcpy(out->r, crypt_data, tot_len);
+		bufdiff = tot_len - (out->w - out->r);
+		out->w += bufdiff;
+		out->left -= bufdiff;
+	}
+#endif
 
 	n = conn->writen(conn, out->r, out->w - out->r);
 
