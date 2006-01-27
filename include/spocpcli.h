@@ -64,7 +64,6 @@ typedef enum
 	UNCONNECTED,
 	SOCKET,
 	SSL_TLS,
-	SASL
 } spocp_contype_t;
 
 typedef struct _spocp
@@ -96,7 +95,7 @@ typedef struct _spocp
 #endif
 #ifdef HAVE_SASL
 	sasl_conn_t *sasl;
-	int         sasl_ssf;
+	int         *sasl_ssf;
 #endif
 
 } SPOCP;
@@ -142,7 +141,7 @@ int spocpc_attempt_tls(SPOCP * spocp, queres_t * qr);
 int spocpc_start_tls(SPOCP * spocp);
 
 int spocpc_send_capa(SPOCP *, queres_t *);
-int spocpc_auth(SPOCP *, char *);
+int spocpc_auth(SPOCP *, char *, queres_t *);
 
 void free_spocp(SPOCP * s);
 void spocpc_close(SPOCP * spocp);
