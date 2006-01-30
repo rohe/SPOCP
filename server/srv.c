@@ -293,6 +293,7 @@ return_busy( work_info_t *wi )
 	return postop( wi, SPOCP_BUSY, NULL );
 }
 
+#ifdef HAVE_SASL
 static int
 init_sasl(conn_t *conn)
 {
@@ -312,6 +313,8 @@ init_sasl(conn_t *conn)
 	}
 	return(wr);
 }
+#endif
+
 /* ---------------------------------------------------------------------- *
  * Get the SASL capabilities
  * ---------------------------------------------------------------------- */
