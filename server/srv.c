@@ -293,12 +293,31 @@ return_busy( work_info_t *wi )
 	return postop( wi, SPOCP_BUSY, NULL );
 }
 
+static int
+init_sasl(conn_t *conn)
+{
+	sasl_security_properties_t secprops;
+	int wr = sasl_server_new("spocp",
+			conn->srv->hostname,
+			NULL, NULL, NULL, NULL, 0, &conn->sasl);
+	if(wr == SASL_OK)
+	{
+		secprops.min_ssf = 1;
+		secprops.max_ssf = 8192;
+		secprops.maxbufsize = 1024;
+		secprops.property_names = NULL;
+		secprops.property_values = NULL;
+		secprops.security_flags = SASL_SEC_NOANONYMOUS;
+		wr = sasl_setprop(conn->sasl, SASL_SEC_PROPS, &secprops);
+	}
+	return(wr);
+}
 /* ---------------------------------------------------------------------- *
  * Get the SASL capabilities
  * ---------------------------------------------------------------------- */
 
 
-spocp_result_t
+	spocp_result_t
 com_capa(work_info_t *wi)
 {
 	spocp_result_t	r = SPOCP_SUCCESS;
@@ -311,7 +330,7 @@ com_capa(work_info_t *wi)
 
 #ifdef HAVE_SASL
 	if (conn->sasl == NULL) {
-		int wr;
+		int wr = init_sasl(conn);
 
 		wr = sasl_server_new("spocp",
 					 conn->srv->hostname,
@@ -377,9 +396,7 @@ com_auth(work_info_t *wi)
 	}
 
 	if (conn->sasl == NULL) {
-		wr = sasl_server_new("spocp",
-					 conn->srv->hostname,
-					 NULL, NULL, NULL, NULL, 0, &conn->sasl);
+		wr = init_sasl(conn);
 		if (wr != SASL_OK) {
 			LOG(SPOCP_ERR)
 				traceLog(LOG_ERR,"Failed to create SASL context");
@@ -402,16 +419,6 @@ com_auth(work_info_t *wi)
             char *clientin = NULL;
             conn->sasl_mech = (char *) Malloc(mechlen);
             memcpy(conn->sasl_mech, tmpmech + 5, mechlen);
-            {
-                sasl_security_properties_t secprops;
-                secprops.min_ssf = 1;
-                secprops.max_ssf = 8192;
-                secprops.maxbufsize = 1024;
-                secprops.property_names = NULL;
-                secprops.property_values = NULL;
-                secprops.security_flags = SASL_SEC_NOANONYMOUS;
-                sasl_setprop(conn->sasl, SASL_SEC_PROPS, &secprops);
-            }
             if(wi->oparg->n > 1)
             {
                 clientin = Malloc(wi->oparg->arr[1]->len);
