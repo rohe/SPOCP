@@ -375,7 +375,7 @@ com_auth(work_info_t *wi)
 	const char	   *data;
 	size_t			len;
 	octet_t			blob;
-	int				wr = -1;
+	int				wr = SASL_OK;
 #endif
 
 	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
@@ -396,21 +396,15 @@ com_auth(work_info_t *wi)
 
 	if (conn->sasl == NULL) {
 		wr = init_sasl(conn);
-		if (wr != SASL_OK) {
+		if (wr != SASL_OK)
 			LOG(SPOCP_ERR)
 				traceLog(LOG_ERR,"Failed to create SASL context");
-			goto check;
-		}
 	}
 
-    if (conn->sasl_mech == NULL) {  /* start */
-        if(!wi->oparg)
-        {
+	if(conn->sasl_mech == NULL && wi->oparg == NULL)
             wr = SASL_FAIL;
-            goto check;
-        }
+	else if (conn->sasl_mech == NULL && wr == SASL_OK) {  /* start */
         char *tmpmech = oct2strdup(wi->oparg->arr[0], 0);
-        tmpmech[strlen(tmpmech)] = '\0';
         if(strstr(tmpmech, "SASL:"))
         {
             int mechlen = (strlen(tmpmech) - 3);
@@ -429,78 +423,80 @@ com_auth(work_info_t *wi)
             if(clientin)
                 Free(clientin);
         }
-        free(tmpmech);
-    } else {        /* step */
-            unsigned inlen = 0;
-            char *clientin = NULL;
-            if(wi->oparg)
-            {
-                clientin = Malloc(wi->oparg->arr[0]->len);
-                sasl_decode64(wi->oparg->arr[0]->val, wi->oparg->arr[0]->len, clientin, wi->oparg->arr[0]->len, &inlen);
-            }
+		else
+			wr = SASL_FAIL;
+		Free(tmpmech);
+	}
+	else if(wr == SASL_OK)
+	{        /* step */
+		unsigned inlen = 0;
+		char *clientin = NULL;
+		if(wi->oparg)
+		{
+			clientin = Malloc(wi->oparg->arr[0]->len);
+			sasl_decode64(wi->oparg->arr[0]->val, wi->oparg->arr[0]->len, clientin, wi->oparg->arr[0]->len, &inlen);
+		}
 
-        wr = sasl_server_step(conn->sasl,
-                clientin,
-                inlen,
-                &data,
-                &len);
-    }
+		wr = sasl_server_step(conn->sasl,
+				clientin,
+				inlen,
+				&data,
+				&len);
+	}
 
-    memset(&blob, 0, sizeof(blob));
-    if (data) {
-        blob.val = Malloc(len * 4);
-        sasl_encode64(data, len, blob.val, len * 4, &blob.len);
-    }
+	memset(&blob, 0, sizeof(blob));
+	if (data) {
+		blob.val = Malloc(len * 4);
+		sasl_encode64(data, len, blob.val, len * 4, &blob.len);
+	}
 
-	  check:
-
-    switch (wr) {
-        /* finished with authentication */
-    case SASL_OK:
-        {
-			int *sasl_ssf = NULL;
-            wr = sasl_getprop(conn->sasl, SASL_USERNAME,
-                    (const void **) &conn->sasl_username);
-            wr = sasl_getprop(conn->sasl, SASL_AUTHUSER,
-                    (const void **) &conn->sasl_authuser);
-            wr = sasl_getprop(conn->sasl, SASL_SSF,
-                    (const void **) &sasl_ssf);
-            if(*sasl_ssf > 0)
-            {
+	switch (wr) {
+		/* finished with authentication */
+		case SASL_OK:
+			{
+				int *sasl_ssf = NULL;
+				wr = sasl_getprop(conn->sasl, SASL_USERNAME,
+						(const void **) &conn->sasl_username);
+				wr = sasl_getprop(conn->sasl, SASL_AUTHUSER,
+						(const void **) &conn->sasl_authuser);
+				wr = sasl_getprop(conn->sasl, SASL_SSF,
+						(const void **) &sasl_ssf);
+				if(*sasl_ssf > 0)
+				{
 #ifdef HAVE_SSL
-                if(conn->sslstatus != INACTIVE)
-                {
-                    LOG(SPOCP_ERR)
-                        traceLog(LOG_ERR,"Layering violation: SSL already in operation");
-                    r = SPOCP_STATE_VIOLATION;
-                    break;
-                }
+					if(conn->sslstatus != INACTIVE)
+					{
+						LOG(SPOCP_ERR)
+							traceLog(LOG_ERR,"Layering violation: SSL already in operation");
+						r = SPOCP_STATE_VIOLATION;
+						break;
+					}
 #endif
-            }
-            if(blob.len > 0)
-                add_response_blob(wi->buf, SPOCP_MULTI, &blob);
-            r = SPOCP_SUCCESS;
-            msg = Strdup("Authentication OK");
-			conn->phase = PS_AUTH | 1;
-        }
-        break;
-        /* we need to step some */
-    case SASL_CONTINUE:
-        if(blob.len > 0)
-            add_response_blob(wi->buf, SPOCP_AUTHDATA, &blob);
-        r = SPOCP_AUTHINPROGRESS;
-        break;
-    default:
-        LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
-                sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
-        r = SPOCP_AUTHERR;
-        msg = Strdup("Authentication failed");
-		conn->stop = 1;
-    }
+				}
+				if(blob.len > 0)
+					add_response_blob(wi->buf, SPOCP_MULTI, &blob);
+				r = SPOCP_SUCCESS;
+				msg = Strdup("Authentication OK");
+				conn->phase = PS_AUTH | 1;
+			}
+			break;
+			/* we need to step some */
+		case SASL_CONTINUE:
+			if(blob.len > 0)
+				add_response_blob(wi->buf, SPOCP_AUTHDATA, &blob);
+			r = SPOCP_AUTHINPROGRESS;
+			break;
+		default:
+			LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
+					sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
+			r = SPOCP_AUTHERR;
+			msg = Strdup("Authentication failed");
+			conn->stop = 1;
+	}
 
-    /*spocp_result_t result = postop(wi, r, msg);*/
-    add_response(conn->out, r, msg);
-    return postop(wi, r, NULL);
+	/*spocp_result_t result = postop(wi, r, msg);*/
+	add_response(conn->out, r, msg);
+	return postop(wi, r, NULL);
 #else
 	return postop( wi, SPOCP_NOT_SUPPORTED, NULL);
 #endif
