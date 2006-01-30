@@ -297,19 +297,19 @@ return_busy( work_info_t *wi )
 static int
 init_sasl(conn_t *conn)
 {
-	sasl_security_properties_t secprops;
+	sasl_security_properties_t *secprops = Calloc(1, sizeof(sasl_security_properties_t));
 	int wr = sasl_server_new("spocp",
 			conn->srv->hostname,
 			NULL, NULL, NULL, NULL, 0, &conn->sasl);
 	if(wr == SASL_OK)
 	{
-		secprops.min_ssf = 1;
-		secprops.max_ssf = 8192;
-		secprops.maxbufsize = 1024;
-		secprops.property_names = NULL;
-		secprops.property_values = NULL;
-		secprops.security_flags = SASL_SEC_NOANONYMOUS;
-		wr = sasl_setprop(conn->sasl, SASL_SEC_PROPS, &secprops);
+		secprops->min_ssf = 1;
+		secprops->max_ssf = 8192;
+		secprops->maxbufsize = 1024;
+		secprops->property_names = NULL;
+		secprops->property_values = NULL;
+		secprops->security_flags = SASL_SEC_NOANONYMOUS;
+		wr = sasl_setprop(conn->sasl, SASL_SEC_PROPS, secprops);
 	}
 	return(wr);
 }
@@ -335,9 +335,6 @@ com_capa(work_info_t *wi)
 	if (conn->sasl == NULL) {
 		int wr = init_sasl(conn);
 
-		wr = sasl_server_new("spocp",
-					 conn->srv->hostname,
-					 NULL, NULL, NULL, NULL, 0, &conn->sasl);
 		if (wr != SASL_OK) {
 			LOG(SPOCP_ERR)
 				traceLog(LOG_ERR,"Failed to create SASL context");
