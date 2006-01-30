@@ -385,9 +385,8 @@ com_auth(work_info_t *wi)
 	if (conn->transaction) 
 		return postop(wi, SPOCP_UNWILLING ,msg);
 
-    if ((r = operation_access(wi)) != SPOCP_SUCCESS) {
+    if ((r = operation_access(wi)) != SPOCP_SUCCESS)
         return postop(wi, r, msg);
-	}
 
 #ifdef HAVE_SASL
 	if(conn->phase & PS_AUTH)
@@ -465,6 +464,8 @@ com_auth(work_info_t *wi)
 			int *sasl_ssf = NULL;
             wr = sasl_getprop(conn->sasl, SASL_USERNAME,
                     (const void **) &conn->sasl_username);
+            wr = sasl_getprop(conn->sasl, SASL_AUTHUSER,
+                    (const void **) &conn->sasl_authuser);
             wr = sasl_getprop(conn->sasl, SASL_SSF,
                     (const void **) &sasl_ssf);
             if(*sasl_ssf > 0)
@@ -668,6 +669,7 @@ com_logout(work_info_t *wi)
 spocp_result_t
 com_noop(work_info_t *wi)
 {
+    operation_access(wi);
 	return postop( wi, SPOCP_SUCCESS, 0 );
 }
 

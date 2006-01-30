@@ -30,8 +30,8 @@ static sexpargfunc get_ssl_issuer;
 #endif
 #ifdef HAVE_SASL
 static sexpargfunc get_sasl_mech;
-static sexpargfunc get_sasl_uid;
-static sexpargfunc get_sasl_realm;
+static sexpargfunc get_sasl_username;
+static sexpargfunc get_sasl_authuser;
 static sexpargfunc get_sasl_ssf;
 #endif
 static sexpargfunc get_transpsec;
@@ -53,8 +53,8 @@ const sexparg_t           transf[] = {
 #endif
 #ifdef HAVE_SASL
 	{"sasl_mech", get_sasl_mech, 'a', FALSE},
-	{"sasl_uid", get_sasl_uid, 'a', FALSE},
-	{"sasl_realm", get_sasl_realm, 'a', FALSE},
+	{"sasl_username", get_sasl_username, 'a', FALSE},
+	{"sasl_authuser", get_sasl_authuser, 'a', FALSE},
 	{"sasl_ssf", get_sasl_ssf, 'a', TRUE},
 #endif
 	{"transportsec", get_transpsec, 'l', FALSE}
@@ -73,7 +73,7 @@ char           *tpsec[] = {
 	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher}))",
 	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher})(7:autname4:X509(7:subject%{ssl_subject})(6:issuer%{ssl_issuer})))",
 	"(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))",
-	"(12:TransportSec(9:mechanism%{sasl_mech})(2:id(3:uid%{sasl_uid})(5:realm%{sasl_realm}))(3:ssf%{sasl_ssf}))"
+	"(12:TransportSec(9:mechanism%{sasl_mech})(2:id(8:username%{sasl_username})(8:authuser%{sasl_authuser}))(3:ssf%{sasl_ssf}))"
 };
 
 sexparg_t	**tpsec_X509;
@@ -277,15 +277,15 @@ get_sasl_mech(void * c)
 }
 
 static char    *
-get_sasl_uid(void * c)
+get_sasl_username(void * c)
 {
 	return ((( work_info_t *) c)->conn->sasl_username);
 }
 
 static char    *
-get_sasl_realm(void * c)
+get_sasl_authuser(void * c)
 {
-	return ((( work_info_t *) c)->conn->sasl_realm);
+	return ((( work_info_t *) c)->conn->sasl_authuser);
 }
 
 static char    *
@@ -324,10 +324,10 @@ get_transpsec(void * vp)
 #endif
 #ifdef HAVE_SASL
 		if(conn->sasl != NULL) {
-			if (conn->transpsec == 0) {
+			if (conn->transpsec == 0)
 				if (conn->sasl_ssf)
 					conn->transpsec = sexp_constr(vp, tpsec_sasl);
-			}
+			return conn->transpsec;
 		}
 #endif
 		return "";

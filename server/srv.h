@@ -287,7 +287,7 @@ typedef struct _conn {
 	int		*sasl_ssf;
 	char		*sasl_mech;
 	char		*sasl_username;
-	char        *sasl_realm;
+	char        *sasl_authuser;
 #endif
 
 #ifdef HAVE_SSL
