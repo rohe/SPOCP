@@ -666,7 +666,6 @@ com_logout(work_info_t *wi)
 spocp_result_t
 com_noop(work_info_t *wi)
 {
-    operation_access(wi);
 	return postop( wi, SPOCP_SUCCESS, 0 );
 }
 
