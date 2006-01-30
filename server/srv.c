@@ -320,10 +320,10 @@ com_capa(work_info_t *wi)
 			LOG(SPOCP_ERR)
 				traceLog(LOG_ERR,"Failed to create SASL context");
 			r = SPOCP_OTHER;
-			goto capa_done;
 		}
 	}
 
+	if(r == SPOCP_SUCCESS)
 	{ /* get and list auth mechs available to us */
 		const char	*mechs;
 		size_t		mechlen;
@@ -331,17 +331,14 @@ com_capa(work_info_t *wi)
 		int		wr;
 
 		wr = sasl_listmech(conn->sasl, NULL, "SASL:", " SASL:", NULL, &mechs,
-				   &mechlen, &count);
+				&mechlen, &count);
 		if (wr != SASL_OK) {
 			LOG(SPOCP_ERR)
 				traceLog(LOG_ERR,"Failed to generate SASL mechanism list");
 			r = SPOCP_OTHER;
-		} else {
+		} else
 			msg = mechs;
-		}
 	}
-
-	  capa_done:
 #endif
 
 	add_response(wi->buf, r, msg);
