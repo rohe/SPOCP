@@ -28,6 +28,12 @@ static sexpargfunc get_ssl_cipher;
 static sexpargfunc get_ssl_subject;
 static sexpargfunc get_ssl_issuer;
 #endif
+#ifdef HAVE_SASL
+static sexpargfunc get_sasl_mech;
+static sexpargfunc get_sasl_uid;
+static sexpargfunc get_sasl_realm;
+static sexpargfunc get_sasl_ssf;
+#endif
 static sexpargfunc get_transpsec;
 
 
@@ -45,6 +51,12 @@ const sexparg_t           transf[] = {
 	{"ssl_subject", get_ssl_subject, 'a', FALSE},
 	{"ssl_issuer", get_ssl_issuer, 'a', FALSE},
 #endif
+#ifdef HAVE_SASL
+	{"sasl_mech", get_sasl_mech, 'a', FALSE},
+	{"sasl_uid", get_sasl_uid, 'a', FALSE},
+	{"sasl_realm", get_sasl_realm, 'a', FALSE},
+	{"sasl_ssf", get_sasl_ssf, 'a', TRUE},
+#endif
 	{"transportsec", get_transpsec, 'l', FALSE}
 };
 
@@ -55,15 +67,18 @@ int             ntransf = (sizeof(transf) / sizeof(transf[0]));
 #define TPSEC_X509	0
 #define TPSEC_X509_WCC	1
 #define TPSEC_KERB	2
+#define TPSEC_SASL  3
 
 char           *tpsec[] = {
 	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher}))",
 	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher})(7:autname4:X509(7:subject%{ssl_subject})(6:issuer%{ssl_issuer})))",
-	"(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))"
+	"(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))",
+	"(12:TransportSec(9:mechanism%{sasl_mech})(2:id(3:uid%{sasl_uid})(5:realm%{sasl_realm}))(3:ssf%{sasl_ssf}))"
 };
 
 sexparg_t	**tpsec_X509;
 sexparg_t	**tpsec_X509_wcc;
+sexparg_t   **tpsec_sasl;
 
 #endif
 
@@ -254,6 +269,34 @@ get_ssl_issuer(void * c)
 }
 #endif
 
+#ifdef HAVE_SASL
+static char    *
+get_sasl_mech(void * c)
+{
+	return ((( work_info_t *) c)->conn->sasl_mech);
+}
+
+static char    *
+get_sasl_uid(void * c)
+{
+	return ((( work_info_t *) c)->conn->sasl_username);
+}
+
+static char    *
+get_sasl_realm(void * c)
+{
+	return ((( work_info_t *) c)->conn->sasl_realm);
+}
+
+static char    *
+get_sasl_ssf(void * c)
+{
+	char *new_ssf = Calloc(1, 20);
+	snprintf(new_ssf, 19, "%d", *((work_info_t *) c)->conn->sasl_ssf);
+	return(new_ssf);
+}
+#endif
+
 /*
  * ---------------------------------------------------------------------- 
  */
@@ -264,8 +307,8 @@ get_transpsec(void * vp)
 	/*
 	 * XXX fixa SPOCP_LAYER-jox här 
 	 */
-#ifdef HAVE_SSL
 	conn_t *conn= (( work_info_t * ) vp)->conn ;
+#ifdef HAVE_SSL
 
 	if (conn->ssl != NULL) {
 		if (conn->transpsec == 0) {
@@ -278,6 +321,14 @@ get_transpsec(void * vp)
 		}
 		return conn->transpsec;
 	} else
+#endif
+#ifdef HAVE_SASL
+		if(conn->sasl != NULL) {
+			if (conn->transpsec == 0) {
+				if (conn->sasl_ssf)
+					conn->transpsec = sexp_constr(vp, tpsec_sasl);
+			}
+		}
 #endif
 		return "";
 
@@ -306,6 +357,13 @@ saci_init(void)
 		traceLog(LOG_ERR,"Could not parse TPSEC_X509_WCC");
 	else
 		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed TPSEC_X509_WCC OK");
+#endif
+#ifdef HAVE_SASL
+	tpsec_sasl = parse_format(tpsec[TPSEC_SASL], transf, ntransf);
+	if (tpsec_sasl == 0)
+		traceLog(LOG_ERR,"Could not parse TPSEC_SASL");
+	else
+		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed TPSEC_SASL OK");
 #endif
 	/*
 	 * tpsec_kerb = parse_format( tpsec[TPSEC_KERB], transf ) ; 
