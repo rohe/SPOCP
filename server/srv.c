@@ -337,9 +337,11 @@ com_capa(work_info_t *wi)
 	const char	*msg = NULL;
 	conn_t		*conn = wi->conn;
 
-	LOG(SPOCP_INFO) traceLog(LOG_INFO,"Attempt to authenticate");
+    if ((r = operation_access(wi)) != SPOCP_SUCCESS)
+        return postop(wi, r, msg);
 	if (conn->transaction)
 		return postop( wi, SPOCP_UNWILLING, 0);
+
 
 #ifdef HAVE_SASL
 	if (conn->sasl == NULL) {
