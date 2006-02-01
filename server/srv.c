@@ -382,7 +382,7 @@ com_auth(work_info_t *wi)
 	conn_t		*conn = wi->conn;
 	int				r;
 #ifdef HAVE_SASL
-	const char	   *data;
+	const char	   *data = NULL;
 	size_t			len;
 	octet_t			blob;
 	int				wr = SASL_OK;
@@ -457,7 +457,8 @@ com_auth(work_info_t *wi)
 	}
 
 	memset(&blob, 0, sizeof(blob));
-	if (data) {
+	if (data && wr == SASL_OK)
+	{
 		blob.val = Malloc(len * 4);
 		sasl_encode64(data, len, blob.val, len * 4, &blob.len);
 	}
