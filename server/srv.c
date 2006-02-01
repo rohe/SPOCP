@@ -303,8 +303,18 @@ init_sasl(conn_t *conn)
 			NULL, NULL, NULL, NULL, 0, &conn->sasl);
 	if(wr == SASL_OK)
 	{
-		secprops->min_ssf = 1;
-		secprops->max_ssf = 8192;
+#ifdef HAVE_SSL
+		if(conn->sslstatus != INACTIVE)
+		{
+			secprops->min_ssf = 0;
+			secprops->max_ssf = 0;
+		}
+		else
+#endif
+		{
+			secprops->min_ssf = 1;
+			secprops->max_ssf = 8192;
+		}
 		secprops->maxbufsize = 1024;
 		secprops->property_names = NULL;
 		secprops->property_values = NULL;
@@ -393,8 +403,10 @@ com_auth(work_info_t *wi)
 		conn->phase = 0;
 		return SPOCP_SUCCESS;
 	}
+	else if(conn->sasl_ssf)
+		return postop(wi, SPOCP_STATE_VIOLATION)
 
-	if (conn->sasl == NULL) {
+	else if (conn->sasl == NULL) {
 		wr = init_sasl(conn);
 		if (wr != SASL_OK)
 			LOG(SPOCP_ERR)
