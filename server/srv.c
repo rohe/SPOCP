@@ -456,7 +456,7 @@ com_auth(work_info_t *wi)
 	}
 
 	memset(&blob, 0, sizeof(blob));
-	if (data && wr == SASL_OK)
+	if (data)
 	{
 		blob.val = Malloc(len * 4);
 		sasl_encode64(data, len, blob.val, len * 4, &blob.len);
