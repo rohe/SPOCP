@@ -366,12 +366,11 @@ com_capa(work_info_t *wi)
 				traceLog(LOG_ERR,"Failed to generate SASL mechanism list");
 			r = SPOCP_OTHER;
 		} else
-			msg = mechs;
+			msg = strdup(mechs);
 	}
 #endif
 
-	add_response(wi->buf, r, msg);
-	iobuf_shift(wi->conn->in);
+	postop(wi, r, msg);
 	return(r);
 }
 
