@@ -502,13 +502,10 @@ com_auth(work_info_t *wi)
 			LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
 					sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
 			r = SPOCP_AUTHERR;
-			msg = Strdup("Authentication failed");
 			conn->stop = 1;
 	}
 
-	/*spocp_result_t result = postop(wi, r, msg);*/
-	add_response(conn->out, r, msg);
-	return postop(wi, r, NULL);
+	return postop(wi, r, msg);
 #else
 	return postop( wi, SPOCP_NOT_SUPPORTED, NULL);
 #endif
