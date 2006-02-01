@@ -404,7 +404,7 @@ com_auth(work_info_t *wi)
 		return SPOCP_SUCCESS;
 	}
 	else if(conn->sasl_ssf)
-		return postop(wi, SPOCP_STATE_VIOLATION)
+		return postop(wi, SPOCP_STATE_VIOLATION, msg);
 
 	else if (conn->sasl == NULL) {
 		wr = init_sasl(conn);
