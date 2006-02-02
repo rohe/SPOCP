@@ -300,8 +300,9 @@ tls_init(SPOCP * spocp)
 		    (void *) spocp->passwd);
 	}
 
-	if (!SSL_CTX_use_PrivateKey_file(spocp->ctx, spocp->privatekey,
-		SSL_FILETYPE_PEM)) {
+	if (spocp->privatekey && !SSL_CTX_use_PrivateKey_file(
+				spocp->ctx, spocp->privatekey,
+				SSL_FILETYPE_PEM)) {
 		if (spocpc_debug)
 			traceLog(LOG_DEBUG,"Failed to load private key file, passwd=%s",
 			    spocp->passwd);
