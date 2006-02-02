@@ -1077,7 +1077,7 @@ spocpc_writen(SPOCP * spocp, char *str, size_t n )
 					const char *enc_data;
 					size_t enc_len;
 					sasl_encode(spocp->sasl, sp, nleft, &enc_data, &enc_len);
-					sp = enc_data;
+					sp = (char*)enc_data;
 					nleft = enc_len;
 				}
 #endif
@@ -1804,13 +1804,21 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
 {
 	int res = SPOCPC_OK;
 #ifdef HAVE_SASL
-	memset(qr, 0, sizeof(queres_t));
 	char *server_name = strdup(spocp->srv->arr[spocp->cursrv]->val);
 	char *port = strstr(server_name, ":");
-	int res2, res4;
-	*port = '\0';
+	int res_sa;
+	memset(qr, 0, sizeof(queres_t));
+
+	if(spocp->sasl_ssf)
+		return(SPOCPC_STATE_VIOLATION);
+
+	if(port)
+		*port = '\0';
+
 	sasl_client_init(NULL);
-	res2 = sasl_client_new("spocp", server_name, NULL, NULL, NULL, 0, &spocp->sasl);
+	res_sa = sasl_client_new("spocp", server_name, NULL, NULL, NULL, 0, &spocp->sasl);
+
+	if(res_sa == SASL_OK)
 	{
 		const char *out = NULL;
 		char *outcode = NULL;
@@ -1829,7 +1837,7 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
 			secprops.security_flags = SASL_SEC_NOANONYMOUS;
 			sasl_setprop(spocp->sasl, SASL_SEC_PROPS, &secprops);
 		}
-		sasl_client_start(spocp->sasl, mechs, &interact, &out, &outlen, &mechused);
+		res_sa = sasl_client_start(spocp->sasl, mechs, &interact, &out, &outlen, &mechused);
 		mechsend = Malloc(sizeof(char) * strlen(mechused) + 5);
 		sprintf(mechsend, "SASL:");
 		strcat(mechsend, mechused);
@@ -1843,8 +1851,12 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
 		argv = argv_make("AUTH", mechsend, outcode, 0, 0);
 		res = spocpc_send_X(spocp, argv, qr);
 		octarr_free(argv);
+		if(outcode)
+			Free(outcode);
+		Free(mechsend);
 	}
-	do{
+	while(res_sa == SASL_CONTINUE)
+	{
 		octarr_t *argv;
 		unsigned decodelen = 0;
 		char *serverdecode = NULL;
@@ -1857,7 +1869,7 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
 			serverdecode = Malloc(qr->blob->arr[0]->len);
 			sasl_decode64(qr->blob->arr[0]->val, qr->blob->arr[0]->len, serverdecode, qr->blob->arr[0]->len, &decodelen);
 		}
-		res4 = sasl_client_step(spocp->sasl, serverdecode, decodelen, &interact, &data_out, &data_len);
+		res_sa = sasl_client_step(spocp->sasl, serverdecode, decodelen, &interact, &data_out, &data_len);
 		Free(serverdecode);
 		if(data_out)
 		{
@@ -1870,10 +1882,13 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
 		res = spocpc_send_X(spocp, argv, qr);
 		if(step_dataout)
 			Free(step_dataout);
-	} while(res4 == SASL_CONTINUE);
-	if(res4 == SASL_OK)
+	}
+
+	if(res_sa == SASL_OK)
 		sasl_getprop(spocp->sasl, SASL_SSF,
 				(const void **) &spocp->sasl_ssf);
+	if(res_sa != SASL_OK && res == SPOCPC_OK)
+		res = SPOCPC_OTHER;
 #else
 	res = SPOCPC_NOSUPPORT;
 #endif
