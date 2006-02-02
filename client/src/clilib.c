@@ -1799,10 +1799,11 @@ spocpc_send_capa(SPOCP * spocp, queres_t * qr)
  * \param mech  List of space sepparated mechanisms to try.
  * \param qr    A queres_t struct holding server response.
  * \param callbacks a void casted sasl_callback_t.
+ * \param secprops  a void casted sasl_security_properties_t.
  * \return A spocpc result code
  */
 int
-spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr, void *callbacks)
+spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr, void *callbacks, void *secprops)
 {
 	int res = SPOCPC_OK;
 #ifdef HAVE_SASL
@@ -1829,16 +1830,19 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr, void *callbacks)
 		const char *mechused = NULL;
 		octarr_t *argv;
 		char *mechsend;
+		sasl_security_properties_t tmp_secprops;
+
+		if(!secprops)
 		{
-			sasl_security_properties_t secprops;
-			secprops.min_ssf = 0;
-			secprops.max_ssf = 8192;
-			secprops.maxbufsize = 1024;
-			secprops.property_names = NULL;
-			secprops.property_values = NULL;
-			secprops.security_flags = SASL_SEC_NOANONYMOUS;
-			sasl_setprop(spocp->sasl, SASL_SEC_PROPS, &secprops);
+			tmp_secprops.min_ssf = 0;
+			tmp_secprops.max_ssf = 8192;
+			tmp_secprops.maxbufsize = 1024;
+			tmp_secprops.property_names = NULL;
+			tmp_secprops.property_values = NULL;
+			tmp_secprops.security_flags = SASL_SEC_NOANONYMOUS;
+			secprops = &tmp_secprops;
 		}
+		sasl_setprop(spocp->sasl, SASL_SEC_PROPS, (sasl_security_properties_t *)secprops);
 		res_sa = sasl_client_start(spocp->sasl, mechs, &interact, &out, &outlen, &mechused);
 		mechsend = Malloc(sizeof(char) * strlen(mechused) + 5);
 		sprintf(mechsend, "SASL:");
