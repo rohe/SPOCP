@@ -63,7 +63,7 @@ typedef enum
 {
 	UNCONNECTED,
 	SOCKET,
-	SSL_TLS,
+	SSL_TLS
 } spocp_contype_t;
 
 typedef struct _spocp
