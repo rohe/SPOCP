@@ -1797,10 +1797,12 @@ spocpc_send_capa(SPOCP * spocp, queres_t * qr)
  * \brief Sends a AUTH request to a Spocp server
  * \param spocp The Spocp session
  * \param mech  List of space sepparated mechanisms to try.
+ * \param qr    A queres_t struct holding server response.
+ * \param callbacks a void casted sasl_callback_t.
  * \return A spocpc result code
  */
 int
-spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
+spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr, void *callbacks)
 {
 	int res = SPOCPC_OK;
 #ifdef HAVE_SASL
@@ -1815,7 +1817,7 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr)
 	if(port)
 		*port = '\0';
 
-	sasl_client_init(NULL);
+	sasl_client_init((sasl_callback_t *)callbacks);
 	res_sa = sasl_client_new("spocp", server_name, NULL, NULL, NULL, 0, &spocp->sasl);
 
 	if(res_sa == SASL_OK)

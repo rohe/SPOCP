@@ -141,7 +141,7 @@ int spocpc_attempt_tls(SPOCP * spocp, queres_t * qr);
 int spocpc_start_tls(SPOCP * spocp);
 
 int spocpc_send_capa(SPOCP *, queres_t *);
-int spocpc_auth(SPOCP *, char *, queres_t *);
+int spocpc_auth(SPOCP *, char *, queres_t *, void *);
 
 void free_spocp(SPOCP * s);
 void spocpc_close(SPOCP * spocp);
