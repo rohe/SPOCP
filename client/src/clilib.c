@@ -496,7 +496,9 @@ spocpc_start_tls(SPOCP * spocp)
 			SSL_free(spocp->ssl);
 			return 0;
 		}
-		select(spocp->fd + 1, &rfds, &wfds, NULL, &tv);
+		err = select(spocp->fd + 1, &rfds, &wfds, NULL, &tv);
+		if(err == -1)
+			return(0);
 	}
 
 	target = oct2strdup(spocp->srv->arr[spocp->cursrv], '%');
