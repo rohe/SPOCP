@@ -397,7 +397,7 @@ com_auth(work_info_t *wi)
         return postop(wi, r, msg);
 
 #ifdef HAVE_SASL
-	if(conn->phase & PS_AUTH)
+	if((conn->phase - PS_AUTH) == 1)
 	{
 		wr = sasl_getprop(conn->sasl, SASL_SSF,
 				(const void **) &conn->sasl_ssf);
@@ -499,12 +499,14 @@ com_auth(work_info_t *wi)
 			if(blob.len > 0)
 				add_response_blob(wi->buf, SPOCP_AUTHDATA, &blob);
 			r = SPOCP_AUTHINPROGRESS;
+			conn->phase = PS_AUTH | 2;
 			break;
 		default:
 			LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
 					sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
 			r = SPOCP_AUTHERR;
 			conn->stop = 1;
+			conn->phase = 0;
 	}
 
 	return postop(wi, r, msg);
@@ -1531,8 +1533,12 @@ get_operation(work_info_t *wi )
 	}
 
 	if (*oper == 0) {
-		return SPOCP_UNKNOWNCOMMAND;
 		traceLog(LOG_INFO,"Unknown command");
+		return SPOCP_UNKNOWNCOMMAND;
+	}
+	else if(conn->phase & PS_AUTH && oper != com_auth) {
+		traceLog(LOG_INFO, "State violation in sasl negotiation.");
+		return SPOCP_STATE_VIOLATION;
 	}
 	else {
 		wi->routine = oper;
