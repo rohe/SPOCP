@@ -301,9 +301,9 @@ spocp_srv_run(srv_t * srv)
                      strerror(err));
 
             /*
-             * DEBUG( SPOCP_DSRV ) traceLog(LOG_DEBUG,"fd=%d [status: %d,
-             * ops_pending:%d]", conn->fd, conn->status,
-             * conn->ops_pending); 
+            DEBUG( SPOCP_DSRV ) 
+				traceLog(LOG_DEBUG,"fd=%d [status: %d,ops_pending:%d]", 
+				conn->fd, conn->status,conn->ops_pending);
              */
 
             /*
@@ -544,9 +544,11 @@ fdloop:
             conn = (conn_t *) pi->info;
             next = pi->next;
 
+			/*
             if (conn->sslstatus == REQUEST || conn->sslstatus == NEGOTIATION)
                 continue;
-
+			*/
+			
             /*
              * wasn't around when the select was done 
              */
