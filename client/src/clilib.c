@@ -596,6 +596,13 @@ spocpc_close(SPOCP * spocp)
 		spocp->ssl = 0;
 	}
 #endif
+#ifdef HAVE_SASL
+	if (spocp->sasl) {
+		sasl_dispose(&spocp->sasl);
+		spocp->sasl_ssf = NULL;
+		sasl_done();
+	}
+#endif
 
 	close(spocp->fd);
 	spocp->fd = 0;
