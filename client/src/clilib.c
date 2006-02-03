@@ -1047,6 +1047,7 @@ spocpc_reopen(SPOCP * spocp, int nsec)
 	cur = oa->arr[spocp->cursrv]->val;	/* Retry the same first */
 
 	fd = spocpc_connect( cur, nsec );
+	spocp->contype = SOCKET;
 
 	if (spocp->fd <= 0 )
 		spocp->fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
