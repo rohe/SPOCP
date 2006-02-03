@@ -361,10 +361,9 @@ check_cert_chain(SSL * ssl, char *host)
 
 	r = X509_NAME_get_text_by_NID(xn, NID_commonName, hostname, 256);
 	if (spocpc_debug)
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,
-			    "Peers hostname: %s, connections hostname: %s",
-			    hostname, host);
+		traceLog(LOG_DEBUG,
+		    "Peers hostname: %s, connections hostname: %s",
+		    hostname, host);
 
 /*
   if (strcasecmp(peer_CN,host)) {
@@ -478,11 +477,26 @@ spocpc_start_tls(SPOCP * spocp)
 		traceLog(LOG_DEBUG,"SSL_connect");
 
 	/* Initiates the TLS handshake with a server */
-	if ((r = SSL_connect(spocp->ssl)) <= 0) {
-		traceLog(LOG_ERR,"SSL connect failed %d", r);
-		print_tls_errors();
-		SSL_free(spocp->ssl);
-		return 0;
+	while((r= SSL_connect(spocp->ssl)) <= 0)
+	{
+		int err = SSL_get_error(spocp->ssl, r);
+		struct timeval tv = {0, 100};
+		fd_set rfds;
+		fd_set wfds;
+		FD_ZERO(&rfds);
+		FD_ZERO(&wfds);
+		if(err == SSL_ERROR_WANT_READ)
+			FD_SET(spocp->fd, &rfds);
+		else if(err == SSL_ERROR_WANT_WRITE)
+			FD_SET(spocp->fd, &wfds);
+		else
+		{
+			traceLog(LOG_ERR,"SSL connect failed %d", r);
+			print_tls_errors();
+			SSL_free(spocp->ssl);
+			return 0;
+		}
+		select(spocp->fd + 1, &rfds, &wfds, NULL, &tv);
 	}
 
 	target = oct2strdup(spocp->srv->arr[spocp->cursrv], '%');
