@@ -609,6 +609,7 @@ spocpc_close(SPOCP * spocp)
 
 	if (spocp->contype == SSL_TLS) {
 		SSL_shutdown(spocp->ssl);
+		SSL_free(spocp->ssl);
 		spocp->ssl = 0;
 	}
 #endif
