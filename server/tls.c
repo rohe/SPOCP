@@ -348,7 +348,7 @@ ssl_socket_close(conn_t * conn)
 		/*
 		 * due to the bidirectional shutdown 
 		 */
-		if ((ret = SSL_shutdown(ssl)) == 0)
+		if(((ret = SSL_shutdown(ssl)) == 0) && (SSL_get_shutdown(ssl) & SSL_RECEIVED_SHUTDOWN))
 			ret = SSL_shutdown(ssl);
 
 		if (ret < 0) {
