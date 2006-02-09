@@ -428,7 +428,8 @@ com_auth(work_info_t *wi)
             if(wi->oparg->n > 1)
             {
                 clientin = Malloc(wi->oparg->arr[1]->len);
-                sasl_decode64(wi->oparg->arr[1]->val, wi->oparg->arr[1]->len, clientin, wi->oparg->arr[1]->len, &inlen);
+                sasl_decode64(wi->oparg->arr[1]->val, wi->oparg->arr[1]->len,
+						clientin, wi->oparg->arr[1]->len, &inlen);
             }
 
             wr = sasl_server_start(conn->sasl,
@@ -447,7 +448,8 @@ com_auth(work_info_t *wi)
 		if(wi->oparg)
 		{
 			clientin = Malloc(wi->oparg->arr[0]->len);
-			sasl_decode64(wi->oparg->arr[0]->val, wi->oparg->arr[0]->len, clientin, wi->oparg->arr[0]->len, &inlen);
+			sasl_decode64(wi->oparg->arr[0]->val, wi->oparg->arr[0]->len,
+					clientin, wi->oparg->arr[0]->len, &inlen);
 		}
 
 		wr = sasl_server_step(conn->sasl,
@@ -502,7 +504,8 @@ com_auth(work_info_t *wi)
 			conn->phase = PS_AUTH | 2;
 			break;
 		default:
-			LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
+			LOG(SPOCP_ERR)
+				traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
 					sasl_errstring(wr, NULL, NULL),
 					conn->sasl_mech ? conn->sasl_mech : "",
 					conn->sasl_mech ? strlen(conn->sasl_mech): 0);
