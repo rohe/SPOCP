@@ -418,7 +418,7 @@ com_auth(work_info_t *wi)
             wr = SASL_FAIL;
 	else if (conn->sasl_mech == NULL && wr == SASL_OK) {  /* start */
         char *tmpmech = oct2strdup(wi->oparg->arr[0], 0);
-		if(strncmp(tmpmech, "SASL:", 5))
+		if(strncmp(tmpmech, "SASL:", 5) == 0)
         {
             int mechlen = (strlen(tmpmech) - 4);
             unsigned inlen = 0;
