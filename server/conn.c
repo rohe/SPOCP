@@ -492,6 +492,7 @@ spocp_conn_write(conn_t * conn)
 		bufdiff = tot_len - (out->w - out->r);
 		out->w += bufdiff;
 		out->left -= bufdiff;
+		Free(crypt_data);
 	}
 #endif
 
