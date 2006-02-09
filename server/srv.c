@@ -503,7 +503,9 @@ com_auth(work_info_t *wi)
 			break;
 		default:
 			LOG(SPOCP_ERR) traceLog(LOG_ERR,"SASL start/step failed: %s (mech %s (%d))",
-					sasl_errstring(wr, NULL, NULL), conn->sasl_mech, strlen(conn->sasl_mech));
+					sasl_errstring(wr, NULL, NULL),
+					conn->sasl_mech ? conn->sasl_mech : "",
+					conn->sasl_mech ? strlen(conn->sasl_mech): 0);
 			r = SPOCP_AUTHERR;
 			conn->stop = 1;
 			conn->phase = 0;
