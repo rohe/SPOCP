@@ -420,7 +420,7 @@ com_auth(work_info_t *wi)
         char *tmpmech = oct2strdup(wi->oparg->arr[0], 0);
         if(strstr(tmpmech, "SASL:"))
         {
-            int mechlen = (strlen(tmpmech) - 3);
+            int mechlen = (strlen(tmpmech) - 4);
             unsigned inlen = 0;
             char *clientin = NULL;
             conn->sasl_mech = (char *) Malloc(mechlen);
