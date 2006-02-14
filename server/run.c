@@ -175,6 +175,9 @@ static int read_work( srv_t *srv, conn_t *conn, int flag )
      */
 	if (flag) {
 #ifdef HAVE_SASL
+        /* if we're in sasl phase where we are about to put ssf on the
+         *  connection, don't read from connection, wait until the phase is
+         *  reset. */
         if((conn->phase - PS_AUTH) != 1)
         {
 #endif
