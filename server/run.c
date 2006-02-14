@@ -174,6 +174,10 @@ static int read_work( srv_t *srv, conn_t *conn, int flag )
      * read returns number of bytes read 
      */
 	if (flag) {
+#ifdef HAVE_SASL
+        if((conn->phase - PS_AUTH) != 1)
+        {
+#endif
 	    n = spocp_conn_read(conn);
 
 #ifdef AVLUS
@@ -189,6 +193,9 @@ static int read_work( srv_t *srv, conn_t *conn, int flag )
 	        conn->stop = 1;
 	        return 1;
 	    }
+#ifdef HAVE_SASL
+        }
+#endif
 	}
 #ifdef AVLUS
     timestamp("read_work:read con");
