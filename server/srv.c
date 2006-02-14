@@ -490,7 +490,7 @@ com_auth(work_info_t *wi)
 #endif
 				}
 				if(blob.len > 0)
-					add_response_blob(wi->buf, SPOCP_MULTI, &blob);
+					add_response_blob(wi->buf, SPOCP_AUTHDATA, &blob);
 				r = SPOCP_SUCCESS;
 				msg = Strdup("Authentication OK");
 				conn->phase = PS_AUTH | 1;
