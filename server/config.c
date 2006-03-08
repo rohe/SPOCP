@@ -26,16 +26,17 @@ RCSID("$Id$");
 #define NTHREADS		10
 #define TIMEOUT			11
 #define LOGGING			12
-#define SSLVERIFYDEPTH		13
+#define SSLVERIFYDEPTH	13
 #define PIDFILE			14
 #define MAXCONN			15
-#define CLIENTCERT              16
+#define CLIENTCERT		16
+#define NAME			17
 
 char           *keyword[] = {
 	"__querty__", "rulefile", "port", "unixdomainsocket", "certificate",
 	"privatekey", "calist", "dhfile", "entropyfile",
 	"passwd", "threads", "timeout", "log", "sslverifydepth",
-	"pidfile", "maxconn", "clientcert", NULL
+	"pidfile", "maxconn", "clientcert", "name", NULL
 };
 
 #ifdef HAVE_SASL
@@ -248,6 +249,9 @@ conf_get(void *vp, int arg, void **res)
 		*res = (void *) &srv->nconn;
 		break;
 
+	case NAME:
+		*res = &srv->name;
+		break;
 	}
 
 	return SPOCP_SUCCESS;
@@ -500,7 +504,7 @@ read_config(char *file, srv_t * srv)
 
 			case PIDFILE:
 				if (srv->pidfile)
-					free(srv->pidfile);
+					Free(srv->pidfile);
 				srv->pidfile = Strdup(cp);
 				break;
 
@@ -531,6 +535,11 @@ read_config(char *file, srv_t * srv)
 
 				break;
 #endif
+			case NAME:
+				if (srv->name)
+					Free(srv->name);
+				srv->name = Strdup(cp);
+				break;
 			}
 			break;
 

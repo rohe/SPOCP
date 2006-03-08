@@ -27,8 +27,8 @@ RCSID("$Id$");
 typedef void    Sigfunc(int);
 void            sig_pipe(int signo);
 void            sig_chld(int signo);
-int 		received_sigterm = 0;
-int		reread_rulefile = 1;
+int 			received_sigterm = 0;
+int				reread_rulefile = 1;
 
 srv_t           srv;
 
@@ -236,12 +236,6 @@ main(int argc, char **argv)
 
 	srv.hostname = Strdup(localhost);
 
-	localcontext = (char *) Calloc(strlen(localhost) + strlen("//") + 1,
-				       sizeof(char));
-
-	/* Flawfinder: ignore */
-	sprintf(localcontext, "//%s", localhost);
-
 	/*
 	 * truncating input strings to reasonable length
 	 */
@@ -284,36 +278,6 @@ main(int argc, char **argv)
 
 	srv.root = ruleset_new(0);
 
-	/*
-	 * where I put the access rules for access to this server and its
-	 * rules 
-	 */
-	snprintf(path, MAXNAMLEN, "%s/server", localcontext);
-	oct.val = path;
-	oct.len = strlen(path);
-	if ((rs = ruleset_create(&oct, srv.root)) == 0)
-		exit(1);
-	/* this because of a side effect of ruleset_create() */
-	oct.val = path;
-	oct.len = strlen(path);
-	/* Not needed */
-	/* rs = ruleset_find( &oct, srv.root );*/
-	rs->db = db_new();
-
-	/*
-	 * access rules for operations 
-	 */
-	snprintf(path, MAXNAMLEN, "%s/operation", localcontext);
-	oct.val = path;
-	oct.len = strlen(path);
-	if ((rs = ruleset_create(&oct, srv.root)) == 0)
-		exit(1);
-	oct.val = path;
-	oct.len = strlen(path);
-	/* Not needed */
-	/* rs = ruleset_find( &oct, srv.root ); */
-	rs->db = db_new();
-
 	if (srv_init(&srv, cnfg) < 0)
 		exit(1);
 
@@ -327,6 +291,42 @@ main(int argc, char **argv)
 		spocp_open_log(srv.logfile, debug);
 	else if (debug)
 		spocp_open_log(0, debug);
+
+	if (srv.name){
+		localcontext = (char *) Calloc(strlen(srv.name) + strlen("//") + 1,
+				       sizeof(char));
+
+		/* Flawfinder: ignore */
+		sprintf(localcontext, "//%s", srv.name);		
+	}
+	else {
+		localcontext = (char *) Calloc(strlen(localhost) + strlen("//") + 1,
+				       sizeof(char));
+
+		/* Flawfinder: ignore */
+		sprintf(localcontext, "//%s", localhost);
+	}
+
+	/*
+	 * where I put the access rules for access to this server and its
+	 * rules 
+	 */
+	snprintf(path, MAXNAMLEN, "%s/server", localcontext);
+	oct_assign(&oct, path);
+	if ((rs = ruleset_create(&oct, srv.root)) == 0)
+		exit(1);
+
+	rs->db = db_new();
+
+	/*
+	 * access rules for operations 
+	 */
+	snprintf(path, MAXNAMLEN, "%s/operation", localcontext);
+	oct_assign(&oct, path);
+	if ((rs = ruleset_create(&oct, srv.root)) == 0)
+		exit(1);
+
+	rs->db = db_new();
 
 
 	LOG(SPOCP_INFO) {

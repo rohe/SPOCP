@@ -200,6 +200,7 @@ typedef struct _server
 	int		srvtype ;
 	
 	char	*hostname;
+	char	*name;
 
 #ifdef HAVE_SSL
 	int		clientcert ;
