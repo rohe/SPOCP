@@ -272,7 +272,8 @@ dbapi_rule_add(
 		Free(tmp);
 	}
 
-	if ((r = add_right(&db, dbc, oa, &ri, bcd))) {
+	r = add_right(&db, dbc, oa, &ri, bcd);
+	if (r == SPOCP_SUCCESS) {
 		*dpp = db;
 
 		if (bcd)
