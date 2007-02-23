@@ -451,5 +451,5 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 		octarr_free(oa);
 	}
 
-	return f;
+	return n;
 }
