@@ -137,6 +137,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	spocp_result_t  rc = SPOCP_SUCCESS;
 	spocp_charbuf_t	*buf;
 	spocp_chunk_t	*chunk = 0, *ck;
+	spocp_chunkwrap_t   *cw;
 	spocp_ruledef_t	rdef;
 	struct stat	statbuf;
 
@@ -176,7 +177,22 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	 * the length of the 'string'. '\' hex hex is probably going to be the 
 	 * choice 
 	 */
-	while (rc == SPOCP_SUCCESS && ( chunk = get_object( buf, 0 )) != 0 ) {
+	while (rc == SPOCP_SUCCESS ) {
+	    cw = get_object( buf, 0 );
+	    if (cw->status == 0) {
+	        Free(cw);
+	        break;
+	    }
+	    else if (cw->status == -1) {
+	        rc = SPOCP_LOCAL_ERROR;
+            Free(cw);
+            break;
+        }
+        else {
+            chunk = cw->chunk;
+            Free(cw);
+        }
+	    
 		if (oct2strcmp(chunk->val, ";include ") == 0) {	/* include
 								 * file */
 			ck = chunk->next;

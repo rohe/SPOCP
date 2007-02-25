@@ -6,19 +6,22 @@
 
 /*--------------------------------------------------------------------------------*/
 
-spocp_chunk_t        *
+spocp_chunkwrap_t        *
 get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 {
 	spocp_chunk_t        *np = 0, *pp;
 	char		c;
+	spocp_chunkwrap_t *result;
 
+    result = (spocp_chunkwrap_t *) Calloc(1, sizeof(spocp_chunkwrap_t));
+    
 	if (head == 0)
 		head = pp = get_chunk(ib);
 	else
 		for (pp = head; pp->next; pp = pp->next);
 
 	if (pp == 0)
-		return 0;
+		return result;
 
 	/* It's a S-expression */
 	if (*pp->val->val == '/' || oct2strcmp(pp->val, "(") == 0) {
@@ -35,7 +38,8 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 		if (np == 0) {
 			traceLog(LOG_ERR, "Error in rulefile" ) ;
 			chunk_free(head);
-			return 0;
+			result->status = -1;
+			return result;
 		}
 
 		for (; pp->next; pp = pp->next);
@@ -55,7 +59,8 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 				if (pp == 0) {
 					traceLog(LOG_ERR, "Error in rulefile" ) ;
 					chunk_free(head);
-					return 0;
+        			result->status = -1;
+        			return result;
 				}
 
 				for (; pp->next; pp = pp->next);
@@ -83,21 +88,26 @@ get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 			else if( pp == 0) {
 				traceLog(LOG_ERR,"Parse error at \"%s\"", ib->start);
 				chunk_free(head);
-				return 0;
+    			result->status = -1;
+    			return result;
 			}
 		}
 		else {
 			traceLog(LOG_ERR,"Error in rulefile") ;
 			chunk_free(head);
-			return 0;
+			result->status = -1;
+			return result;
 		}
 	}
 
-	if (pp)
-		return head;
+	if (pp) {
+		result->status = 1;
+		result->chunk = head;
+		return result;
+	}
 	else {
 		chunk_free( head );
-		return 0;
+		return result;
 	}
 }
 

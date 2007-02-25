@@ -62,6 +62,7 @@ as_read_rules( char *file, rule_t **rule)
 	spocp_result_t  rc = SPOCP_SUCCESS;
 	spocp_charbuf_t	buf;
 	spocp_chunk_t	*chunk = 0, *ck;
+	spocp_chunkwrap_t	*chunkwrap;
 	spocp_ruledef_t	rdef;
 	rule_t		*top = 0, *nr;
 	element_t	*ep;
@@ -95,7 +96,23 @@ as_read_rules( char *file, rule_t **rule)
 	 * the length of the 'string'. '\' hex hex is probably going to be the 
 	 * choice 
 	 */
-	while (rc == SPOCP_SUCCESS && ( chunk = get_object( &buf, 0 )) != 0 ) {
+	while (rc == SPOCP_SUCCESS) {
+	    chunkwrap = get_object( &buf, 0 );
+	    if (chunkwrap->status == 0){
+	        Free(chunkwrap);
+	        break;
+	    }
+	    else if (chunkwrap->status == -1) {
+	        rc = SPOCP_LOCAL_ERROR;
+	        Free(chunkwrap);
+	        break;
+	    }
+	    else {
+	        chunk = chunkwrap->chunk;
+	        /* don't need the wrap any more */
+	        Free(chunkwrap);
+	    }
+	        
 		if (oct2strcmp(chunk->val, ";include ") == 0) {	/* include
 								 * file */
 			ck = chunk->next;
@@ -205,6 +222,7 @@ int main( int argc, char **argv )
 	rule_t		*top = 0, *r;
 	spocp_charbuf_t scb;
 	spocp_chunk_t	*sc = 0;
+	spocp_chunkwrap_t	*cw = 0;
 	octet_t		*op,loc, *ext = 0;
 	spocp_result_t	rc, sr = SPOCP_SUCCESS;
 	char 		*cnfg = 0, str[1024], answ[32];
@@ -288,7 +306,20 @@ int main( int argc, char **argv )
 	if (extended) 
 		ext = oct_new( 1024, 0);
 
-	while ((sc = get_object( &scb, 0 )) != NULL) {
+	while(1) {
+	    cw = get_object( &scb, 0 );
+	    if (cw->status == 0){
+	        Free(cw);
+	        break;
+	    }
+	    else if (cw->status == -1){
+	        Free(cw);
+	        exit(-1);
+	    }
+	    else{
+	        sc = cw->chunk;
+	        Free(cw);
+	    }
 		op = chunk2sexp( sc ) ;
 		if( oct2strcpy( op, str, 1024, '%') > 0 ) {
 			printf("%s", str);
