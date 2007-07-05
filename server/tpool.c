@@ -184,6 +184,7 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
          * and this caller doesn't want to wait 
          */
         if (tpool->do_not_block_when_full) {
+	    afpool_unlock( afp );
             return 0;
         }
 

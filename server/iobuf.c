@@ -55,7 +55,7 @@ iobuf_insert(spocp_iobuf_t * io, char *where, char *src, int srclen)
 
         if (io->left < (unsigned int) srclen )
 		if((rc = iobuf_resize( io, srclen, 0 )) != SPOCP_SUCCESS) 
-			return rc ;
+		    goto unlock;
 
 	/* the number of bytes to move */
 	dlen = io->w - where;
@@ -66,6 +66,7 @@ iobuf_insert(spocp_iobuf_t * io, char *where, char *src, int srclen)
 	io->w += srclen;
 	io->left -= srclen ;
 
+ unlock:
 	pthread_mutex_unlock(&io->lock);
 
 	return rc ;
@@ -207,7 +208,7 @@ iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 spocp_result_t
 iobuf_add(spocp_iobuf_t * io, char *s)
 {
-	spocp_result_t  rc;
+	spocp_result_t  rc = SPOCP_SUCCESS;
 	int             n;
 
 	if (s == 0 || *s == 0)
@@ -230,7 +231,7 @@ iobuf_add(spocp_iobuf_t * io, char *s)
 	 */
 	if ((int) io->left < n)
 		if ((rc = iobuf_resize(io, n - io->left, 0)) != SPOCP_SUCCESS)
-			return rc;
+		    goto unlock;
 
 	memcpy(io->w, s, n);
 
@@ -238,15 +239,17 @@ iobuf_add(spocp_iobuf_t * io, char *s)
 	*io->w = '\0';
 	io->left -= n;
 
+ unlock:
+
 	pthread_mutex_unlock(&io->lock);
 
-	return SPOCP_SUCCESS;
+	return rc;
 }
 
 spocp_result_t
 iobuf_addn(spocp_iobuf_t * io, char *s, size_t n)
 {
-	spocp_result_t  rc;
+	spocp_result_t  rc = SPOCP_SUCCESS;
 
 	if (s == 0 || *s == 0)
 		return SPOCP_SUCCESS;	/* no error */
@@ -258,7 +261,7 @@ iobuf_addn(spocp_iobuf_t * io, char *s, size_t n)
 	 */
 	if ( io->left < n)
 		if ((rc = iobuf_resize(io, n - io->left, 0)) != SPOCP_SUCCESS)
-			return rc;
+		    goto unlock;
 
 	memcpy(io->w, s, n);
 
@@ -266,14 +269,15 @@ iobuf_addn(spocp_iobuf_t * io, char *s, size_t n)
 	*io->w = '\0';
 	io->left -= n;
 
+ unlock:
 	pthread_mutex_unlock(&io->lock);
-	return SPOCP_SUCCESS;
+	return rc;
 }
 
 spocp_result_t
 iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 {
-	spocp_result_t  rc;
+	spocp_result_t  rc = SPOCP_SUCCESS;
 	size_t          l, lf;
 	char            lenfield[8];
 
@@ -296,7 +300,7 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 	 */
 	if (io->left < l)
 		if ((rc = iobuf_resize(io, l - io->left, 0)) != SPOCP_SUCCESS)
-			return rc;
+		    goto unlock;
 
 	snprintf(lenfield, 8, "%u:", (unsigned int) s->len);
 
@@ -310,9 +314,11 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 	*io->w = '\0';
 	io->left -= l;
 
+
+ unlock:
 	pthread_mutex_unlock(&io->lock);
 
-	return SPOCP_SUCCESS;
+	return rc;
 }
 
 void
