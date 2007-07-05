@@ -304,8 +304,10 @@ oct_split(octet_t * o, char c, char ec, int flag, int max)
 	for (sp = oct->val, l = oct->len, i = 0; l && (max == 0 || i < max);
 	     sp = cp) {
 		for (cp = sp, n = 0; l; cp++, n++, l--) {
-			if (*cp == ec)
+			if (*cp == ec) {
+				l--;
 				cp++;	/* skip escaped characters */
+			}
 			if (*cp == c)
 				break;
 		}

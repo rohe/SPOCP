@@ -253,9 +253,6 @@ make_name(char *str, octet_t * input)
 	unsigned int	l;
 
 
-	if (input == 0 || input->len == 0)
-		return 0;
-
 #ifdef HAVE_LIBCRYPTO
 	traceLog(LOG_DEBUG,"Using EVP_sha1 to create unique identifier (bcond)");
 	md = EVP_sha1();
@@ -271,7 +268,7 @@ make_name(char *str, octet_t * input)
 	sha1_finish(&ctx, (unsigned char *) sha1sum);
 #endif
 
-	for (j = 1, ucp = (unsigned char *) str; j < 20; j++, ucp += 2)
+	for (j = 0, ucp = (unsigned char *) str+1; j < 20; j++, ucp += 2)
 		sprintf((char *) ucp, "%02x", sha1sum[j]);
 
 	str[0] = '_';
