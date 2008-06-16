@@ -3,7 +3,7 @@
                            iobuf.c  -  description
                              -------------------
     begin                : Sat Oct 12 2002
-    copyright            : (C) 2002 by Umeå University, Sweden
+    copyright            : (C) 2002 by Umeï¿½ University, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
@@ -153,14 +153,18 @@ iobuf_shift(spocp_iobuf_t * io)
 spocp_result_t
 iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 {
-	int             nr, nw, np;
+	int             nr, nw, np, ret;
 	char           *tmp;
 
-	if (io == 0)
-		return SPOCP_OPERATIONSERROR;
+	if (io == 0) {
+		ret = SPOCP_OPERATIONSERROR;
+		goto dontunlock;
+	}
 
-	if (io->bsize == SPOCP_MAXBUF)
-		return SPOCP_BUF_OVERFLOW;
+	if (io->bsize == SPOCP_MAXBUF) {
+		ret = SPOCP_BUF_OVERFLOW;
+		goto dontunlock;
+	}
 
 	if (lock)
 		pthread_mutex_lock(&io->lock);
@@ -168,8 +172,10 @@ iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 	nr = io->bsize;
 
 	if (increase) {
-		if (io->bsize + increase > SPOCP_MAXBUF)
-			return SPOCP_BUF_OVERFLOW;
+		if (io->bsize + increase > SPOCP_MAXBUF) {
+			ret = SPOCP_BUF_OVERFLOW;
+			goto unlock;
+		}
 		else if (increase < SPOCP_IOBUFSIZE)
 			io->bsize += SPOCP_IOBUFSIZE;
 		else
@@ -199,10 +205,14 @@ iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 	io->w = io->buf + nw;
 	io->p = io->buf + np;
 
+	ret = SPOCP_SUCCESS;
+	
+	unlock:
 	if (lock)
 		pthread_mutex_unlock(&io->lock);
 
-	return SPOCP_SUCCESS;
+	dontunlock:
+	return ret;
 }
 
 spocp_result_t
