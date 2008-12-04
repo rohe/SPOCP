@@ -484,6 +484,8 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 	Free(sexp);
 	element_free(ep);
 	resset_free( rset );
+	if ( *(comp.cr))
+		checked_free( *(comp.cr) );
 
 	return res;
 #else

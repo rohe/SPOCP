@@ -113,6 +113,8 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 				if(xrs)
 					*rset = resset_join(*rset, xrs);
 			}
+			if ( *(comp.cr))
+				checked_free( *(comp.cr) );
 		}
 #ifdef AVLUS
 		/*DEBUG(SPOCP_DSRV)*/ if (rset) {
