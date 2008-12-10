@@ -10,9 +10,6 @@ typedef struct _ptree {
 	struct _ptree  *part;
 } ptree_t;
 
-
-char           *strndup(const char *old, size_t sz);
-
 /*
  * ----------------------------------------------------------------------------- 
  */

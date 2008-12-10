@@ -60,10 +60,6 @@ struct overflow_conf *overflow_last = NULL;
 #define SYSTEM 20
 #define PLUGIN 21
 #define DBACK  22
- 
-#ifdef HAVE_STRNDUP
-char *strndup(const char *s, size_t n);
-#endif
 
 /*
  * roughly 
