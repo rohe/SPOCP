@@ -1,0 +1,3 @@
+debian/tmp/usr/bin/spocd
+debian/tmp/usr/bin/adminsrv
+debian/tmp/usr/sbin/*

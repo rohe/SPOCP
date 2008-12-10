@@ -1,0 +1,33 @@
+Source: spocp
+Section: network
+Priority: extra
+Maintainer: Stefan Wold <stefan.wold@it.su.se>
+Build-Depends: cdbs, debhelper (>= 5), libssl-dev, libsasl2-dev, libxml2-dev, libldap2-dev
+Standards-Version: 3.7.2
+
+Package: libspocp
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl0.9.8, libsasl2, libxml2, libldap-2.4-2
+Description: Simple Policy Control Protocol (SPOCP) - libraries
+ SPOCP (pronounced as SPOCP is short for Simple Policy Control Protocol) is a very efficient rule-based authorization engine.
+
+Package: spocp-client
+Section: network
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl0.9.8, libsasl2, libxml2, libldap-2.4-2, libspocp
+Description: Simple Policy Control Protocol (SPOCP) - client
+ SPOCP (pronounced as SPOCP is short for Simple Policy Control Protocol) is a very efficient rule-based authorization engine.
+
+Package: spocp-server
+Section: network
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libssl0.9.8, libsasl2, libxml2, libldap-2.4-2, libspocp
+Description: Simple Policy Control Protocol (SPOCP) - server
+ SPOCP (pronounced as SPOCP is short for Simple Policy Control Protocol) is a very efficient rule-based authorization engine.
+
+Package: libspocp-dev
+Section: libdevel
+Architecture: any
+Description: Simple Policy Control Protocol (SPOCP) - development files
+ SPOCP (pronounced as SPOCP is short for Simple Policy Control Protocol) is a very efficient rule-based authorization engine.

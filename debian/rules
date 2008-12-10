@@ -1,0 +1,26 @@
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+#include /usr/share/cdbs/1/rules/simple-patchsys.mk
+include /usr/share/cdbs/1/class/autotools.mk
+#include /usr/share/cdbs/1/class/makefile.mk
+
+# Add here any variable or target overrides you need.
+DEB_MAKE_ENVVARS := CFLAGS="-DSACI -g -DSTATS"
+DEB_CONFIGURE_EXTRA_FLAGS := --with-libxml=2 --with-ssl --with-sasl
+
+post-patches:: debian/stamp-autogen
+
+debian/stamp-autogen:
+	make -f Setup.mk
+
+install/spocp-client::
+	find debian/tmp/usr/bin -type f -a ! -name spocd -a ! -name adminsrv | while read file; do \
+		mkdir -p debian/spocp-client/usr/bin; \
+		install -m0755 $$file debian/spocp-client/usr/bin/; \
+	done
+
+clean::
+	rm -f debian/stamp-autogen
+	make -f Setup.mk clean
+
