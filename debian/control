@@ -2,7 +2,7 @@ Source: spocp
 Section: net
 Priority: extra
 Maintainer: Stefan Wold <stefan.wold@it.su.se>
-Build-Depends: cdbs, debhelper (>= 5), libssl-dev, libsasl2-dev, libxml2-dev, libldap2-dev
+Build-Depends: cdbs, debhelper (>= 5), libssl-dev, libsasl2-dev, libxml2-dev, libldap2-dev, libtool
 Standards-Version: 3.7.2
 
 Package: libspocp
