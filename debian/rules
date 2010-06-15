@@ -11,6 +11,12 @@ DEB_CONFIGURE_EXTRA_FLAGS := --with-libxml=2 --with-ssl --with-sasl
 
 post-patches:: debian/stamp-autogen
 
+post-install/libspocp:: 
+	ln -s /usr/lib/libspocpbasic.so.2 debian/libspocp/usr/lib/libspocpbasic.so
+	ln -s /usr/lib/libspocpclient.so.2 debian/libspocp/usr/lib/libspocpclient.so
+	ln -s /usr/lib/libspocpplugin.so.0  debian/libspocp/usr/lib/libspocpplugin.so
+	ln -s /usr/lib/libspocp.so.2 debian/libspocp/usr/lib/libspocp.so
+
 debian/stamp-autogen:
 	make -f Setup.mk
 
