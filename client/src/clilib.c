@@ -1047,11 +1047,23 @@ spocpc_reopen(SPOCP * spocp, int nsec)
 
 	cur = oa->arr[spocp->cursrv]->val;	/* Retry the same first */
 
+	if (spocpc_debug)
+		traceLog(LOG_DEBUG,"spocpc_reopen: Retrying same server first : %s", cur);
+
 	spocp->fd = spocpc_connect( cur, nsec );
+
+	if (spocpc_debug)
+		traceLog(LOG_DEBUG,"spocpc_reopen: First connection result : %d", spocp->fd);
+
 	spocp->contype = SOCKET;
 
 	if (spocp->fd <= 0 )
+	{
+		if (spocpc_debug)
+			traceLog(LOG_DEBUG,"spocpc_reopen: Trying other servers in round-robin");
+
 		spocp->fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
+	}
 
 	if (spocp->fd <= 0)
 		return FALSE;
