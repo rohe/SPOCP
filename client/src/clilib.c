@@ -757,6 +757,9 @@ spocpc_connect(char *srv, int nsec)
 
 		sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
+		if (spocpc_debug)
+			traceLog(LOG_DEBUG,"spocpc_connect: socket () returned fd %d", sockfd);
+
 		if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *) &one,
 			sizeof(int)) < 0) {
 			traceLog(LOG_ERR,"Unable to disable nagle: %.100s",
@@ -859,6 +862,8 @@ spocpc_connect(char *srv, int nsec)
 		}
 	}
 
+	if (spocpc_debug)
+		traceLog(LOG_DEBUG,"spocpc_connect: Returning fd %d", sockfd);
 
 	return sockfd;
 }
