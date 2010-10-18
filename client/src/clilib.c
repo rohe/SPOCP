@@ -756,6 +756,17 @@ spocpc_connect(char *srv, int nsec)
 		port = atoi(cp);
 
 		sockfd = socket(AF_INET, SOCK_STREAM, 0);
+		if (sockfd == 0)
+		{
+			int t_fd;
+
+			/* Uh oh, we use 'return 0' to signal failure. Must get another file descriptor. */
+			t_fd = socket(AF_INET, SOCK_STREAM, 0);
+			if (spocpc_debug)
+				traceLog(LOG_DEBUG,"spocpc_connect: Uh oh, we got socket() fd 0 so I got another one");
+			close(sockfd);
+			sockfd = t_fd;
+		}
 
 		if (spocpc_debug)
 			traceLog(LOG_DEBUG,"spocpc_connect: socket () returned fd %d", sockfd);
