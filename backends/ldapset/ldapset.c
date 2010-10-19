@@ -705,14 +705,16 @@ ldapset_test(cmd_param_t * cpp, octet_t * blob)
 
 					ldaphost = oct2strdup(o, 0);
 					ld = open_conn(ldaphost, &rc);
-					free(ldaphost);
 
 					if (ld == 0) {
 						traceLog( LOG_INFO, "LDAP host (%s) unavailable",
 							ldaphost);
 						r = SPOCP_UNAVAILABLE;
 					}
-					else if (dyn && dyn->size) {
+
+					free(ldaphost);
+
+					if (ld != 0 && dyn && dyn->size) {
 						if (!dyn->bcp)
 							dyn->bcp =
 								becpool_new(dyn->size);
