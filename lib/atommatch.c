@@ -211,7 +211,7 @@ range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
                     
 #ifdef USE_IPV6
                 case SPOC_IPV6:
-                    memset(&i6a, 0, sizeof(struct in_6addr));
+                    /*memset(&i6a, 0, sizeof(struct in_6addr));*/
                     if (is_ipv6(op, &i6a) != SPOCP_SUCCESS)
                         break;
                     /*
