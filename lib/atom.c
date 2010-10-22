@@ -19,16 +19,20 @@
 #include <hashfunc.h>
 #include <wrappers.h>
 
-atom_t         *
+/*@null@*/ atom_t *
 atom_new(octet_t * op)
 {
-    atom_t         *ap;
+    atom_t          *ap;
     
-    ap = (atom_t *) Calloc(1,sizeof(atom_t));
+    ap = (atom_t *) Calloc(1, sizeof(atom_t));
     
     if (op) {
-        octcpy(&ap->val, op);
-        ap->hash = lhash((unsigned char *) op->val, op->len, 0);
+        if (octcpy(&ap->val, op) != SPOCP_SUCCESS) { 
+            atom_free(ap);
+            return NULL;
+        }
+            
+        ap->hash = lhash((unsigned char *) op->val, (unsigned int) op->len, 0);
     } 
     
     return ap;
@@ -52,10 +56,12 @@ atom_free(atom_t * ap)
  * --------------------------------------------------------------- 
  */
 
-atom_t  *
+/*@null@*/ atom_t  *
 get_atom(octet_t * op, spocp_result_t * rc)
 {
-    octet_t         oct;
+    octet_t oct;
+    
+    memset(&oct, 0, sizeof(octet_t));
     
     if ((*rc = get_str(op, &oct)) != SPOCP_SUCCESS) {
         return 0;

@@ -22,9 +22,10 @@
  * different static return information can not be added. 
  * \param jp A pointer to the junction where the endoflist array are 
  * \return on success a pointer to the first element in the endoflist 
- *  array otherwise 0 
+ *  array otherwise NULL 
  */
-ruleinst_t     *
+ 
+/*@null@*/ ruleinst_t     *
 allowing_rule(junc_t *jp)
 {
     junc_t         *njp;
@@ -47,7 +48,7 @@ allowing_rule(junc_t *jp)
             return dbp->val.ri;
     }
 
-    return 0;
+    return NULL;
 }
 
 /*! The function which is the starting point for access control, that is

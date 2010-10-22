@@ -20,9 +20,9 @@ typedef struct _atom {
 	octet_t         val;
 } atom_t;
 
-atom_t  *atom_new(octet_t * op);
+/*@null@*/ atom_t *atom_new(octet_t * op);
 void    atom_free(atom_t * ap);
-atom_t  *get_atom(octet_t * op, spocp_result_t * rc);
+/*@null@*/ atom_t *get_atom(octet_t * op, spocp_result_t * rc);
 char    *atom2str(atom_t *ap);
 
 #endif /* __ATOM_H */

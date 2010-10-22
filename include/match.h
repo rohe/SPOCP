@@ -28,7 +28,7 @@ resset_t    *element_match_r(junc_t * db, element_t * ep, comparam_t * comp);
 
 /* ---------------- aci.c --------------------- */
 
-ruleinst_t      *allowing_rule(junc_t *jp);
+/*@null@*/ ruleinst_t *allowing_rule(junc_t *jp);
 
 spocp_result_t  allowed(junc_t * jp, comparam_t *comp, resset_t **rspp);
 
