@@ -8,15 +8,7 @@
 #include <cache.h>
 #include <spocp.h>
 #include <wrappers.h>
-
-/*!
- * \brief checks if a byte array is a representation of a integer, and if so
- *  does the conversion.
- * \param op The byte array
- * \param l A Pointer to a long int where the integer value can be stored
- * \return A Spocp return code
- */
-spocp_result_t  is_numeric(octet_t * op, long *l);
+#include <verify.h>
 
 /*!
  * \brief Given the present time and how long this result should be cached, 

@@ -72,8 +72,11 @@ get_atom(octet_t * op, spocp_result_t * rc)
 
 char *
 atom2str(atom_t *ap) {
-    char str[1024];
+    char str[1024], *tmp;
     
-    snprintf(str, 1024, "%s[%u]", oct2strdup(&ap->val, 0), ap->hash);
+    tmp = oct2strdup(&ap->val, '\0');
+    (void) snprintf(str, 1024, "%s[%u]", tmp, ap->hash);
+    Free(tmp);
+    
     return Strdup(str);
 }
