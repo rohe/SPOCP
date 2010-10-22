@@ -17,11 +17,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <struct.h>
-#include <func.h>
+#include <octet.h>
+#include <resset.h>
 #include <spocp.h>
 #include <macros.h>
 #include <wrappers.h>
+#include <log.h>
 
 /* #define AVLUS 1 */
 
@@ -30,20 +31,14 @@
  */
 
 resset_t *
-resset_new( spocp_index_t *t, octarr_t *blob )
+resset_new( ruleinst_t *ri, octarr_t *blob )
 {
 	resset_t *rs;
 
 	rs = (resset_t *) Malloc( sizeof(resset_t));
-	rs->si = index_cp(t);
+	rs->ri = ri;
 	rs->blob = blob ;
 	rs->next = 0;
-
-#ifdef AVLUS
-	traceLog(LOG_DEBUG,"====----____");
-	resset_print(rs);
-	traceLog(LOG_DEBUG,"____----====");
-#endif
 
 	return rs;
 }
@@ -52,14 +47,7 @@ void
 resset_free( resset_t *rs)
 {
 	if( rs) {
-#ifdef AVLUS 
-		traceLog(LOG_DEBUG,"resset_free %p", rs);
-#endif
-		index_delete( rs->si );
 		if (rs->blob ) {
-#ifdef AVLUS 
-			traceLog(LOG_DEBUG,"octarr_free %p", rs->blob);
-#endif
 			octarr_free( rs->blob );
 		}
 		if (rs->next) {
@@ -69,15 +57,22 @@ resset_free( resset_t *rs)
 	}
 }
 
+/*!
+ * \brief Adds a resset_t struct to a list of such.
+ * \param rs The, possibly empty, list to which the new resset_t struct should
+ *  be added
+ * \param ri A pointer to a ruleinst_t struct, representing a rule that are
+ *  part of this result set.
+ * \param blob A octarr_t struct containing blobs that are bound to the 
+ *  rules in this result set
+ * \return The head of the list.
+ */
 resset_t *
-resset_add( resset_t *rs, spocp_index_t *t, octarr_t *blob)
+resset_add( resset_t *rs, ruleinst_t *ri, octarr_t *blob)
 {
 	resset_t *head, *tail;
 
-	tail = resset_new( t, blob );
-#ifdef AVLUS
-	traceLog(LOG_DEBUG,"resset_add tail %p", tail);
-#endif
+	tail = resset_new( ri, blob );
 
 	if (rs)
 		head = rs;
@@ -91,14 +86,18 @@ resset_add( resset_t *rs, spocp_index_t *t, octarr_t *blob)
 	return head;
 }
 
+/*!
+ * \brief Joins two lists of resset_t list
+ * \param a A pointer to a list of resset_t struct's.
+ * \param a A pointer to another list of resset_t struct's.
+ * \return A pointer to the head of the combined list.
+ */
+
 resset_t *
-resset_join( resset_t *a, resset_t *b)
+resset_extend( resset_t *a, resset_t *b)
 {
 	resset_t *head;
 
-#ifdef AVLUS
-	traceLog(LOG_DEBUG,"resset_join %p %p", a, b);
-#endif
 	if (a) {
 		head = a;
 		while( a->next)
@@ -110,61 +109,16 @@ resset_join( resset_t *a, resset_t *b)
 		return b;
 }
 
-resset_t *
-resset_compact( resset_t *r)
-{
-	resset_t *h, *t;
-
-	if (r == NULL)
-		return r;
-
-	for ( h = r->next ; h != NULL ; h = t ) {
-		t = h->next;
-		index_extend( r->si, h->si);
-		resset_free( h );
-	}
-
-	r->next = 0;
-
-	return r;
-}
-
-resset_t *
-resset_and( resset_t *a, resset_t *b)
-{
-	spocp_index_t	*si;
-
-	if( a==0 || b == 0)
-		return NULL;
-
-	resset_compact( a );
-	resset_compact( b );
-
-	si = index_and(a->si, b->si);
-	if (si) {
-		index_delete(a->si);
-		a->si = si;
-	}
-	else {
-		index_delete( a->si );
-		a->si = 0;
-	}
-
-	resset_free( b );
-
-	return a;
-}
-
 void 
 resset_print( resset_t *rs)
 {
 	if (rs == 0)
 		return;
 
-	if (rs->si)
-		index_print(rs->si);
+	if (rs->ri)
+		ruleinst_print(rs->ri, "/");
 	else 
-		traceLog(LOG_DEBUG,"No ruleindex");
+		traceLog(LOG_DEBUG,"No rules??");
 
 	if (rs->blob)
 		octarr_print(LOG_DEBUG, rs->blob);
@@ -173,6 +127,19 @@ resset_print( resset_t *rs)
 
 	if (rs->next)
 		resset_print(rs->next);
+}
+
+int 
+resset_len(resset_t *rsp)
+{
+    int i;
+    
+    if (rsp== 0) {
+        return 0;
+    }
+    
+    for (i=1; rsp->next; rsp=rsp->next, i++) ;
+    return i;
 }
 
 /* ---------------------------------------------------------------------- */

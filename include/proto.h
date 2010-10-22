@@ -17,7 +17,8 @@
 #define HEX_LOWER(c)	( (c) >= 'a' && (c) <= 'f' )
 #define HEX_UPPER(c)	( (c) >= 'A' && (c) <= 'F' )
 #define HEX(c)		( DIGIT(c) || HEX_LOWER(c) || HEX_UPPER(c) )
-#define BASE64(c)	( ALPHA(c) || DIGIT(c) || (c) == '+' || (c) == '/' )
+#define BASE64(c)	( ALPHA(c) || DIGIT(c) || (c) == '+' || (c) == '/' || \
+        (c) == '=' )
 #define WHITESPACE(c)	( (c) == ' ' || (c) == '\n' || (c) == '\t' || \
 		(c) == '\v' || (c) == '\r' || (c) == '\f' )
 
@@ -32,8 +33,8 @@
 		(c) ==  '_' ||	(c) ==  ':' || (c) == '*' || \
 		(c) ==  '+' || (c) ==  '=' )
 
-#define TOKENCHAR(c)	(TCHAR(c) || ASCII_LOWER(c) || \
-		ASCII_UPPER(c) || DIGIT(c)) 
+#define TOKENCHAR(c)	(TCHAR(c) || ASCII_LOWER(c) || ASCII_UPPER(c) \
+                        || DIGIT(c)) 
 
 #define LISTDELIM(c)     ( (c) == '(' || (c) == ')' )
 /*

@@ -1,15 +1,25 @@
-/*! \file lib/check.c \author Roland Hedberg <roland@catalogix.se> 
+/*
+ *  check.c
+ *  xcode_spocp
+ *
+ *  Created by Roland Hedberg.
+ *  Copyright 2009 Umeå Universitet. All rights reserved.
+ *
  */
 
 #include <string.h>
 
-#include <db0.h>
+#include <check.h>
+#include <ruleinst.h>
+#include <octet.h>
+#include <result.h>
+
 #include <wrappers.h>
-#include <func.h>
+#include <log.h>
 
 /* #define AVLUS 1 */
 
-static checked_t *
+checked_t *
 checked_new( ruleinst_t *ri, spocp_result_t rc, octet_t *blob)
 {
 	checked_t *cr;
@@ -68,7 +78,7 @@ add_checked( ruleinst_t *ri, spocp_result_t rc, octet_t *blob, checked_t **cr)
 {
 	checked_t *c, *nc;
 
-	c = checked_new( ri,rc,blob );
+	c = checked_new(ri, rc, blob);
 
 	if( *cr == 0 )
 		*cr = c;
@@ -81,10 +91,10 @@ add_checked( ruleinst_t *ri, spocp_result_t rc, octet_t *blob, checked_t **cr)
 void
 checked_print( checked_t *c )
 {
-	traceLog(LOG_DEBUG,"--Checked--");
-	oct_print(LOG_DEBUG,"rule", c->ri->rule );
-        traceLog(LOG_DEBUG,"rc=%d", c->rc );
+	traceLog(LOG_DEBUG, "--Checked--");
+	oct_print(LOG_DEBUG, "rule", c->ri->rule );
+        traceLog(LOG_DEBUG, "rc=%d", c->rc );
 	if ( c->blob )	
-		oct_print(LOG_DEBUG,"blob", c->blob );
+		oct_print(LOG_DEBUG, "blob", c->blob );
 }
 

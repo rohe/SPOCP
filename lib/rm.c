@@ -15,12 +15,20 @@
 
 #include <string.h>
 
-#include <macros.h>
-#include <db0.h>
-#include <struct.h>
-#include <func.h>
 #include <wrappers.h>
 #include <spocp.h>
+#include <macros.h>
+#include <log.h>
+
+#include <octet.h>
+#include <ruleinst.h>
+#include <element.h>
+#include <skiplist.h>
+#include <ssn.h>
+#include <db0.h>
+#include <branch.h>
+#include <hash.h>
+#include <rm.h>
 
 int	atom_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
 int	range_rm(branch_t * bp, element_t * ep, ruleinst_t * rt);
@@ -49,7 +57,7 @@ junction_index(junc_t * jp)
 	int             i, r;
 
 	for (i = 0, r = 0; i < NTYPES; i++)
-		if (jp->item[i])
+		if (jp->branch[i])
 			r++;
 
 	return r;
@@ -80,6 +88,19 @@ rm_next(junc_t * jp, element_t * elemp, ruleinst_t * rt)
 	return r;
 }
 
+static int _gone(int r, junc_t *jp)
+{
+    if (r == 0) {	/* one branch gone from the junction */
+        
+        if (junction_index(jp) == 0) {
+            DEBUG(SPOCP_DSTORE)
+                traceLog(LOG_DEBUG, "Junction without any branches");
+            junc_free(jp);
+        }
+    }
+    
+    return r;
+}    
 /************************************************************
 *                                                           *
 ************************************************************/
@@ -99,16 +120,12 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 	int             r;
 
 	if (bp->val.atom == 0)
-		return 0;
+		return -1;
 
-	bucket = phash_search(bp->val.atom, ap, ap->hash);
-	/*
-	 * bucket == 0 should be impossible, should I still check ? 
-	 */
+	bucket = phash_search(bp->val.atom, ap);
 	if (bucket == 0)
-		return 0;
+		return -1;
 
-	bucket->refc--;
 	DEBUG(SPOCP_DSTORE) {
 		char           *tmp;
 		tmp = oct2strdup(&ap->val, '\\');
@@ -118,49 +135,31 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 
 	jp = bucket->next;
 
-	if (bucket->refc == 0) {
+	if ((r = _gone(rm_next(jp, elemp, rt), jp)) == 0) {
+		bucket->next = 0;
+    }
+
+    if (r == 0 && bucket->refc == 1) {
 		DEBUG(SPOCP_DSTORE)
-			traceLog(LOG_DEBUG, "bucket reference down to zero");
-
+        traceLog(LOG_DEBUG, "bucket reference down to zero");
+        
 		bucket_rm(bp->val.atom, bucket);
-
+        
 		/*
 		 * last in hashtable ? 
 		 */
-		if (phash_index(bp->val.atom) == 0) {
+		if (phash_empty(bp->val.atom)) {
 			phash_free(bp->val.atom);
 			bp->val.atom = 0;
-			DEBUG(SPOCP_DSTORE)
-			    traceLog(LOG_DEBUG,"Get rid of the rest of this branch");
-			branch_free(bp);
 
 			return 0;
-		} else {
-			/*
-			 * remove remaining references 
-			 */
-			DEBUG(SPOCP_DSTORE)
-				traceLog(LOG_DEBUG, "junc_free");
-			junc_free(jp);
-			return 1;
 		}
 	}
+    
+    if (r >= 0)
+        bucket->refc--;
 
-	r = rm_next(jp, elemp, rt);
-	DEBUG(SPOCP_DSTORE)
-		traceLog( LOG_DEBUG, "rm_next returned %d", r );
-
-	if (r == 0) {		/* one branch gone from the junction */
-		if (junction_index(jp) == 0) {
-			DEBUG(SPOCP_DSTORE)
-			    traceLog(LOG_DEBUG,"Junction without any branches");
-			junc_free(jp);
-			bucket->next = 0;
-		}
-	} else if (r == -1)	/* the junctions is gone */
-		bucket->next = 0;
-
-	return 1;
+	return r;
 }
 
 /************************************************************
@@ -176,33 +175,20 @@ atom_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 int
 range_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
 {
-	junc_t         *jp;
-	int             rc, dtype = ep->e.range->lower.type & 0x07;
+	junc_t          *jp;
+	int             value_type = ep->e.range->lower.type & RTYPE;
+    int             r;
+    spocp_result_t  rc;
 
-	jp = sl_range_rm(bp->val.range[dtype], ep->e.range, &rc);
+	jp = bsl_rm_range(bp->val.range[value_type], ep->e.range, &rc);
 
-	if (rc == 1) {
-		junc_free(jp);
-		branch_free(bp);
-		return 0;
-	}
+	if (rc != SPOCP_SUCCESS)
+        return -1;
 
-	rc = rm_next(jp, ep, rt);
-
-	if (rc == 0) {		/* one branch gone from the junction */
-
-		/*
-		 * could this really happen ?? 
-		 */
-		if (junction_index(jp) == 0) {
-			DEBUG(SPOCP_DSTORE)
-			    traceLog(LOG_DEBUG,"Junction without any branches");
-			junc_free(jp);
-			return -1;
-		}
-	}
-
-	return 1;
+    if ((r =_gone(rm_next(jp, ep, rt), jp)) == 0 )
+        bp->val.range[value_type] = 0;
+    
+    return r;
 }
 
 /************************************************************
@@ -219,35 +205,22 @@ static int
 ssn_rm(branch_t * bp, ssn_t * ssn, char *sp, int direction, element_t * ep,
        ruleinst_t * rt)
 {
-	junc_t         *jp;
-	int             r;
+	junc_t  *jp;
+	int     r;
 
 	jp = ssn_delete(&ssn, sp, direction);
 
+    if (jp == 0)
+        return -1;
+    
 	if (ssn == 0) {
 		branch_free(bp);
 		return 0;
 	}
 
-	if (jp) {
-		r = rm_next(jp, ep, rt);
-
-		if (r == 0) {	/* one branch gone from the junction */
-
-			/*
-			 * could this really happen ?? 
-			 */
-			if (junction_index(jp) == 0) {
-				DEBUG(SPOCP_DSTORE)
-					traceLog(LOG_DEBUG,
-					    "Junction without any branches");
-				junc_free(jp);
-				return -1;
-			}
-		}
-	}
-
-	return 1;
+    r = _gone(rm_next(jp, ep, rt), jp);
+    
+    return r;
 }
 
 /************************************************************
@@ -303,66 +276,43 @@ suffix_rm(branch_t * bp, element_t * elemp, ruleinst_t * rt)
 int
 rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt)
 {
-	branch_t       *bp;
-	junc_t         *rjp;
-	int             r;
+	branch_t    *bp;
+	junc_t      *rjp;
+    int         r;
 
 	bp = ARRFIND(jp, SPOC_ENDOFLIST);
-
-	bp->count--;
 
 	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"EOL Branch [%d]", bp->count);
 
 	rjp = bp->val.list;
 
-	if (bp->count == 0) {
-		DEBUG(SPOCP_DSTORE)
-		    traceLog(LOG_DEBUG,"Get rid of the rest of this branch");
+    if ((r = _gone(rm_next(rjp, ep, rt), rjp)) == 0) {
+        bp->val.list = 0;
+    }
 
+    if (r < 0)
+        return -1;
+    
+	if (bp->count == 1) {
+		DEBUG(SPOCP_DSTORE)
+        traceLog(LOG_DEBUG,"Get rid of the rest of this branch");
+        
 		branch_free(bp);
-
+        
 		DEBUG(SPOCP_DSTORE)
-		    traceLog(LOG_DEBUG,"No type %d branch at this junction any more",
+        traceLog(LOG_DEBUG,"No type %d branch at this junction any more",
 			     SPOC_ENDOFLIST);
-
-		jp->item[SPOC_ENDOFLIST] = 0;
-
+        
+		jp->branch[SPOC_ENDOFLIST] = 0;
+        
 		return 0;
 	}
-
-	r = rm_next(rjp, ep, rt);
-
-	if (r == 0) {		/* one branch gone from the junction */
-
-		if (junction_index(rjp) == 0) {
-			DEBUG(SPOCP_DSTORE)
-			    traceLog(LOG_DEBUG,"Junction without any branches");
-			junc_free(rjp);
-			bp->val.list = 0;
-		}
-	}
-
-	return 1;
+    else {
+        bp->count--;
+        return r;
+    }
 }
 
-/************************************************************
-*                                                           *
-************************************************************/
-/*
- * 
- * Arguments:
- * 
- * Returns: 
- */
-/*
- * void rm_index( spocp_index_t *ip, ruleinst_t *rt ) { int i, j ;
- * 
- * for( i = 0 ; i < ip->n ; i++ ) { if( ip->arr[i] == rt ) { if( i + 1 ==
- * ip->n ) * the last one * ip->arr[i] = 0 ; else { for( j = i+1 ; j < ip->n
- * ; i++, j++ ) { ip->arr[i] = ip->arr[j] ; } }
- * 
- * ip->n-- ; ip->arr[ip->n] = 0 ; } } } 
- */
 
 /************************************************************
 *                                                           *
@@ -377,8 +327,7 @@ rm_endoflist(junc_t * jp, element_t * ep, ruleinst_t * rt)
 int
 rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt)
 {
-	branch_t	*bp;
-	spocp_index_t	*inx;
+	branch_t        *bp;
 
 	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"rm end_of_rule");
 	bp = ARRFIND(jp, SPOC_ENDOFRULE);
@@ -386,14 +335,7 @@ rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt)
 	bp->count--;
 
 	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Branch count=%d", bp->count);
-	inx = bp->val.id;
-
-	index_rm(inx, rt);
-
-	if (inx->n == 0) {
-		branch_free(bp);
-		return 0;
-	}
+    branch_free(bp);
 
 	/*
 	 * there is no next element 
@@ -415,27 +357,12 @@ rm_endofrule(junc_t * jp, element_t * ep, ruleinst_t * rt)
 int
 list_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
 {
-	element_t      *elemp;
 	list_t         *lp = ep->e.list;
 	junc_t         *njp = bp->val.list;
-	int             r;
 
 	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"rm list");
 
-	elemp = lp->head;
-
-	r = element_rm(njp, elemp, rt);
-
-	/*
-	 * DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG, "rm list; is there anything more?") ;
-	 * 
-	 * if( r == 0 ) { njp->item[ elemp->type ] = 0 ;
-	 * 
-	 * if( junction_index( njp ) == 0 ) { junc_free( njp ) ; bp->val.list
-	 * = 0 ; } } 
-	 */
-
-	return 1;
+	return element_rm(njp, lp->head, rt);
 }
 
 
@@ -472,80 +399,61 @@ set_rm(branch_t * bp, element_t * ep, ruleinst_t * rt)
 	return 1;
 }
 
-/************************************************************
-*                                                           *
+/***********************************************************
+*              PUBLIC INTERFACES                           *
 ************************************************************/
-/*
- * 
- * Arguments:
- * 
- * Returns: 
- */
 
 int
 element_rm(junc_t * jp, element_t * ep, ruleinst_t * rt)
 {
 	branch_t       *bp;
-	int             r = 0, n;
+	int             r = 0;
 
 	bp = ARRFIND(jp, ep->type);
 
 	if (bp == 0) {		/* Ooops, how did that happen, can't delete
-				 * something that isn't there */
+                         * something that isn't there */
 		DEBUG(SPOCP_DSTORE)
-		    traceLog(LOG_DEBUG,"missing branch where there shold be one");
-		return -2;
-	}
-
-	bp->count--;
-
-	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Branch: [%d]", bp->count);
-
-	if (bp->count == 0) {
-		DEBUG(SPOCP_DSTORE)
-		    traceLog(LOG_DEBUG,"element_rm; branch counter down to zero");
-		branch_free(bp);
-
-		/*
-		 * have to do the junction handling here since the type is
-		 * unknown further up 
-		 */
-
-		jp->item[ep->type] = 0;
-
-		return 1;
+		    traceLog(LOG_DEBUG,"missing branch where there should be one");
+		return -1;
 	}
 
 	/*
 	 * type dependent part 
 	 */
 	switch (ep->type) {
-	case SPOC_ATOM:
-		r = atom_rm(bp, ep, rt);
-		break;
+        case SPOC_ATOM:
+            r = atom_rm(bp, ep, rt);
+            break;
 
+        case SPOC_PREFIX:
+            r = prefix_rm(bp, ep, rt);
+            break;
 
-	case SPOC_PREFIX:
-		r = prefix_rm(bp, ep, rt);
-		break;
+        case SPOC_SUFFIX:
+            r = suffix_rm(bp, ep, rt);
+            break;
 
-	case SPOC_SUFFIX:
-		r = suffix_rm(bp, ep, rt);
-		break;
+        case SPOC_RANGE:
+            r = range_rm(bp, ep, rt);
+            break;
 
-	case SPOC_RANGE:
-		break;
+        case SPOC_LIST:
+            r = list_rm(bp, ep, rt);
+            break;
 
-	case SPOC_LIST:
-		r = list_rm(bp, ep, rt);
-		break;
-
-	case SPOC_SET:
-		break;
+        case SPOC_SET:
+            break;
 
 	}
 
-	if (r == 0) {
+    if (r < 0)
+        return r;
+    
+    DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"Branch: [%d]", bp->count);
+    
+
+	if (r == 0 && bp->count == 1) {
 		/*
 		 * that branch is gone 
 		 */
@@ -553,16 +461,18 @@ element_rm(junc_t * jp, element_t * ep, ruleinst_t * rt)
 		    traceLog(LOG_DEBUG,"rm element; no type %d branch anymore",
 			     ep->type);
 
-		jp->item[ep->type] = 0;
+		jp->branch[ep->type] = 0;
 
-		n = junction_index(jp);
-		DEBUG(SPOCP_DSTORE)
-			traceLog(LOG_DEBUG,"rm element; junction index %d", n);
-		if (n == 0)
+        /*
+		if (junction_index(jp) == 0)
 			junc_free(jp);
+        */
+        return 0;
 	}
-
-	return 1;
+    else {
+        bp->count--;
+        return r;
+    }
 }
 
 spocp_result_t
@@ -580,10 +490,9 @@ rule_rm(junc_t * jp, octet_t * rule, ruleinst_t * rt)
 	/*
 	 * decouple 
 	 */
-	loc.val = rule->val;
-	loc.len = rule->len;
+	octln(&loc, rule);
 
-	if ((rc = element_get(&loc, &ep)) != SPOCP_SUCCESS)
+	if ((rc = get_element(&loc, &ep)) != SPOCP_SUCCESS)
 		return rc;
 
 	DEBUG(SPOCP_DSTORE) traceLog(LOG_DEBUG,"---");
@@ -592,7 +501,7 @@ rule_rm(junc_t * jp, octet_t * rule, ruleinst_t * rt)
 		r = element_rm(jp, ep, rt);
 	}
 
-	if (r == 1)
+	if (r >= 0)
 		return SPOCP_SUCCESS;
 	else
 		return SPOCP_OPERATIONSERROR;

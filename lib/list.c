@@ -3,7 +3,7 @@
                           list.c  -  description
                              -------------------
     begin                : Tue Nov 05 2002
-    copyright            : (C) 2002 by Umeå University, Sweden
+    copyright            : (C) 2010 by UmeŒ University, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
@@ -19,125 +19,82 @@
 #include <string.h>
 
 #include <db0.h>
-#include <struct.h>
-#include <func.h>
+#include <element.h>
+#include <branch.h>
 #include <proto.h>
 #include <spocp.h>
 #include <wrappers.h>
 #include <macros.h>
+#include <log.h>
+#include <ruleinst.h>
+#include <atommatch.h>
+#include <ssn.h>
+#include <range.h>
+#include <list.h>
+#include <match.h>
 
-
+/*
 varr_t         *get_rec_all_rules(junc_t * jp, varr_t * in);
-varr_t         *subelem_lte_match(junc_t *, element_t *, varr_t *, varr_t *);
-varr_t         *subelem_match_lte(junc_t *, element_t *, varr_t *, varr_t *,
+varr_t         *subelem_inv_match(junc_t *, element_t *, varr_t *, varr_t *);
+varr_t         *subelem_match(junc_t *, element_t *, varr_t *, varr_t *,
 				  spocp_result_t *);
 varr_t         *get_rule_indexes(varr_t *, varr_t *);
 varr_t         *get_all_to_next_listend(junc_t *, varr_t *, int);
+*/
+static varr_t   *get_rec_all_rules(junc_t * jp, varr_t * in);
 
 
 /********************************************************************/
 
-varr_t         *
+static varr_t         *
 get_rule_indexes(varr_t * pa, varr_t * in)
 {
-	unsigned int    i;
 	void           *v;
 
-	for (i = 0; (v = varr_nth(pa, i)); i++)
+	for (v = varr_first(pa); v; v = varr_next(pa, v)) 
 		in = get_rec_all_rules(v, in);
 
 	varr_free(pa);
 	return in;
 }
 
-/****************************************************************************/
-
-void
-junc_print(int lev, junc_t * jp)
-{
-	char indent[32];
-	int i;
-
-	for ( i = 0 ; i < lev ; i++)
-		indent[i] = ' ';
-	indent[i] = '\0' ;
-
-	traceLog(LOG_DEBUG,"|---------------------------->");
-	if (jp->item[SPOC_ATOM])
-		traceLog(LOG_DEBUG,"%sATOM", indent);
-	if (jp->item[SPOC_LIST])
-		traceLog(LOG_DEBUG,"%sLIST", indent);
-	if (jp->item[SPOC_SET])
-		traceLog(LOG_DEBUG,"%sSET", indent);
-	if (jp->item[SPOC_PREFIX])
-		traceLog(LOG_DEBUG,"%sPREFIX", indent);
-	if (jp->item[SPOC_SUFFIX])
-		traceLog(LOG_DEBUG,"%sSUFFIX", indent);
-	if (jp->item[SPOC_RANGE])
-		traceLog(LOG_DEBUG,"%sRANGE", indent);
-	if (jp->item[SPOC_ENDOFLIST])
-		traceLog(LOG_DEBUG,"%sENDOFLIST", indent);
-	if (jp->item[SPOC_ENDOFRULE]) {
-		spocp_index_t *id;
-		int i;
-
-		traceLog(LOG_DEBUG,"%sENDOFRULE", indent);
-		id = jp->item[7]->val.id;
-		for (i = 0; i < id->n; i++) 
-			traceLog(LOG_DEBUG,"%s Rule: %p", indent,id->arr[i]);
-	}
-	if (jp->item[SPOC_ANY])
-		traceLog(LOG_DEBUG,"%sANY", indent);
-	traceLog(LOG_DEBUG,">----------------------------|");
-}
-
 /*************************************************************************/
 /*
- * Match rule elements where the subelement is LTE 
+ * Get recursively all rules below a certain junction.
  */
-
-/********************************************************************/
-/*
- * get recursively all rules 
- */
-
 /********************************************************************/
 
-varr_t         *
+static varr_t         *
 get_rec_all_rules(junc_t * jp, varr_t * in)
 {
 	varr_t         *pa = 0;
-	spocp_index_t	*id;
-	int             i;
 
-	if (jp->item[SPOC_ENDOFRULE]) {
-		id = jp->item[SPOC_ENDOFRULE]->val.id;
-		for (i = 0; i < id->n; i++)
-			in = varr_ruleinst_add(in, id->arr[i]);
+	if (jp->branch[SPOC_ENDOFRULE]) {
+        in = varr_ruleinst_add(in, jp->branch[SPOC_ENDOFRULE]->val.ri);
 	}
 
-	if (jp->item[SPOC_LIST])
-		in = get_rec_all_rules(jp->item[SPOC_LIST]->val.list, in);
+	if (jp->branch[SPOC_LIST])
+		in = get_rec_all_rules(jp->branch[SPOC_LIST]->val.list, in);
 
-	if (jp->item[SPOC_ENDOFLIST])
-		in = get_rec_all_rules(jp->item[SPOC_ENDOFLIST]->val.list, in);
+	if (jp->branch[SPOC_ENDOFLIST])
+		in = get_rec_all_rules(jp->branch[SPOC_ENDOFLIST]->val.list, in);
 	/*
 	 * --- 
 	 */
 
-	if (jp->item[SPOC_ATOM])
-		pa = get_all_atom_followers(jp->item[SPOC_ATOM], pa);
+	if (jp->branch[SPOC_ATOM])
+		pa = get_all_atom_followers(jp->branch[SPOC_ATOM], pa);
 
-	if (jp->item[SPOC_PREFIX])
-		pa = get_all_ssn_followers(jp->item[SPOC_PREFIX], SPOC_PREFIX,
+	if (jp->branch[SPOC_PREFIX])
+		pa = get_all_ssn_followers(jp->branch[SPOC_PREFIX], SPOC_PREFIX,
 					   pa);
 
-	if (jp->item[SPOC_SUFFIX])
-		pa = get_all_ssn_followers(jp->item[SPOC_SUFFIX], SPOC_SUFFIX,
+	if (jp->branch[SPOC_SUFFIX])
+		pa = get_all_ssn_followers(jp->branch[SPOC_SUFFIX], SPOC_SUFFIX,
 					   pa);
 
-	if (jp->item[SPOC_RANGE])
-		pa = get_all_range_followers(jp->item[SPOC_RANGE], pa);
+	if (jp->branch[SPOC_RANGE])
+		pa = get_all_range_followers(jp->branch[SPOC_RANGE], pa);
 
 	/*
 	 * --- 
@@ -151,24 +108,23 @@ get_rec_all_rules(junc_t * jp, varr_t * in)
 
 /*************************************************************************/
 
-varr_t         *
+static varr_t         *
 get_all_to_next_listend(junc_t * jp, varr_t * in, int lev)
 {
-	int             i;
 	varr_t         *pa = 0;
 	junc_t         *ju;
 	void           *v;
 
 	DEBUG(SPOCP_DMATCH) junc_print(lev, jp);
 
-	if (jp->item[SPOC_ENDOFRULE]);	/* shouldn't get here */
+	if (jp->branch[SPOC_ENDOFRULE]);	/* shouldn't get here */
 
-	if (jp->item[SPOC_LIST])
-		in = get_all_to_next_listend(jp->item[SPOC_LIST]->val.list, in,
+	if (jp->branch[SPOC_LIST])
+		in = get_all_to_next_listend(jp->branch[SPOC_LIST]->val.list, in,
 					     lev + 1);
 
-	if (jp->item[SPOC_ENDOFLIST]) {
-		ju = jp->item[SPOC_ENDOFLIST]->val.list;
+	if (jp->branch[SPOC_ENDOFLIST]) {
+		ju = jp->branch[SPOC_ENDOFLIST]->val.list;
 		lev--;
 		if (lev >= 0)
 			pa = varr_junc_add(pa, ju);
@@ -180,42 +136,30 @@ get_all_to_next_listend(junc_t * jp, varr_t * in, int lev)
 	 * --- 
 	 */
 
-	if (jp->item[SPOC_ATOM])
-		pa = get_all_atom_followers(jp->item[SPOC_ATOM], pa);
+	if (jp->branch[SPOC_ATOM])
+		pa = get_all_atom_followers(jp->branch[SPOC_ATOM], pa);
 
-	if (jp->item[SPOC_PREFIX])
-		pa = get_all_ssn_followers(jp->item[SPOC_PREFIX], SPOC_PREFIX,
+	if (jp->branch[SPOC_PREFIX])
+		pa = get_all_ssn_followers(jp->branch[SPOC_PREFIX], SPOC_PREFIX,
 					   pa);
 
-	if (jp->item[SPOC_SUFFIX])
-		pa = get_all_ssn_followers(jp->item[SPOC_SUFFIX], SPOC_SUFFIX,
+	if (jp->branch[SPOC_SUFFIX])
+		pa = get_all_ssn_followers(jp->branch[SPOC_SUFFIX], SPOC_SUFFIX,
 					   pa);
 
-	if (jp->item[SPOC_RANGE])
-		pa = get_all_range_followers(jp->item[SPOC_RANGE], pa);
+	if (jp->branch[SPOC_RANGE])
+		pa = get_all_range_followers(jp->branch[SPOC_RANGE], pa);
 
 	/*
 	 * --- 
 	 */
 
 	if (pa) {
-		for (i = 0; (v = varr_nth(pa, i)); i++)
+        for (v = varr_first(pa); v; v = varr_next(pa, v)) 
 			in = get_all_to_next_listend(v, in, lev);
 	}
 
 	return in;
-}
-
-/*************************************************************************/
-
-static varr_t  *
-range2range_match_lte(range_t * rp, slist_t ** sarr, varr_t * pap)
-{
-	int             dtype = rp->lower.type & 0x07;
-
-	pap = sl_range_lte_match(sarr[dtype], rp, pap);
-
-	return pap;
 }
 
 /*************************************************************************/
@@ -235,13 +179,15 @@ suffix2suffix_match_lte(atom_t * ap, ssn_t * pssn, varr_t * pap)
 }
 
 /*************************************************************************/
-
-varr_t         *
-subelem_lte_match(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id)
+/* This is the inverse search. This should give you all the items in the
+ * database that are more specific than the given.
+ */
+static varr_t         *
+subelem_inv_match(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id)
 {
 	branch_t       *bp;
 	junc_t         *np;
-	varr_t         *nap, *arr;
+	varr_t         *nap, *arr, *tmp;
 	int             i;
 	varr_t         *set;
 	void           *v;
@@ -258,42 +204,33 @@ subelem_lte_match(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id)
 
 	case SPOC_PREFIX:	/* prefixes or atoms */
 		if ((bp = ARRFIND(jp, SPOC_ATOM)) != 0) {
-			pap =
-			    prefix2atoms_match(ep->e.atom->val.val,
-					       bp->val.atom, pap);
+			pap = prefix2atoms_match(ep->e.atom->val.val, bp->val.atom, pap);
 		}
 
 		if ((bp = ARRFIND(jp, SPOC_PREFIX)) != 0) {
-			pap =
-			    prefix2prefix_match_lte(ep->e.atom, bp->val.prefix,
-						    pap);
+			pap = prefix2prefix_match_lte(ep->e.atom, bp->val.prefix, pap);
 		}
 		break;
 
 	case SPOC_SUFFIX:	/* suffixes or atoms */
 		if ((bp = ARRFIND(jp, SPOC_ATOM)) != 0) {
-			pap =
-			    suffix2atoms_match(ep->e.atom->val.val,
-					       bp->val.atom, pap);
+			pap = suffix2atoms_match(ep->e.atom->val.val, bp->val.atom, pap);
 		}
 
 		if ((bp = ARRFIND(jp, SPOC_SUFFIX)) != 0) {
-			pap =
-			    suffix2suffix_match_lte(ep->e.atom, bp->val.suffix,
-						    pap);
+			pap = suffix2suffix_match_lte(ep->e.atom, bp->val.suffix, pap);
 		}
 		break;
 
 	case SPOC_RANGE:	/* ranges or atoms */
 		if ((bp = ARRFIND(jp, SPOC_ATOM)) != 0) {
-			pap =
-			    range2atoms_match(ep->e.range, bp->val.atom, pap);
+			pap = range2atoms_match(ep->e.range, bp->val.atom, pap);
 		}
 
 		if ((bp = ARRFIND(jp, SPOC_RANGE)) != 0) {
-			pap =
-			    range2range_match_lte(ep->e.range, bp->val.range,
-						  pap);
+			tmp = bsl_inv_match_ranges(bp->val.range, ep->e.range);
+            pap = varr_or(pap, tmp, 1);
+            varr_free(tmp);
 		}
 		break;
 
@@ -306,7 +243,7 @@ subelem_lte_match(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id)
 			 * Since this is in effect parallell path, I have to
 			 * do it over and over again 
 			 */
-			nap = subelem_lte_match(jp, elem, nap, id);
+			nap = subelem_inv_match(jp, elem, nap, id);
 		}
 		pap = varr_or(pap, nap, 0);
 		break;
@@ -317,7 +254,7 @@ subelem_lte_match(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id)
 		for (ep = ep->e.list->head; ep; ep = ep->next) {
 			nap = 0;
 			for (i = 0; (v = varr_nth(arr, i)); i++) {
-				nap = subelem_lte_match(v, ep, nap, id);
+				nap = subelem_inv_match(v, ep, nap, id);
 			}
 			varr_free(arr);
 			/*
@@ -338,23 +275,23 @@ subelem_lte_match(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id)
 /****************************************************************************/
 
 /*
- * Match rule elements where the subelement is LTE 
+ * This is the normal case, list all rules where the query are more specific
  */
 
-varr_t         *
-subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
+static varr_t         *
+subelem_match(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 		  spocp_result_t * rc)
 {
-	branch_t       *bp;
-	junc_t         *np;
-	varr_t         *nap, *arr;
-	int             i;
-	slist_t       **slpp;
-	varr_t         *set;
-	void           *v;
+	branch_t    *bp;
+	junc_t      *np;
+	varr_t      *nap, *arr;
+	int         i;
+	slist_t     **slpp;
+	varr_t      *set;
+	void        *v;
 
 	/*
-	 * DEBUG( SPOCP_DMATCH ) traceLog( LOG_DEBUG,"subelem_match_lte") ; 
+	 * DEBUG( SPOCP_DMATCH ) traceLog( LOG_DEBUG,"subelem_match") ; 
 	 */
 
 	/*
@@ -363,7 +300,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 	if ((bp = ARRFIND(jp, SPOC_ENDOFRULE))) {	/* Can't get much
 							 * further */
-		id = varr_or(id, (void *) bp->val.id, 1);
+		id = varr_or(id, (void *) bp->val.ri, 1);
 	}
 
 	switch (ep->type) {
@@ -410,9 +347,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 			for (i = 0; i < DATATYPES; i++) {
 				if (slpp[i]) {
-					nap =
-					    atom2range_match(ep->e.atom,
-							     slpp[i], i, rc);
+					nap = bsl_match_atom(slpp[i], ep->e.atom, rc);
 					if (nap) {
 						pap = varr_or(pap, nap, 0);
 						varr_free(nap);
@@ -449,9 +384,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 			for (i = 0; i < DATATYPES; i++) {
 				if (slpp[i]) {
-					nap =
-					    range2range_match(ep->e.range,
-							      slpp[i]);
+					nap = bsl_match_range(slpp[i], ep->e.range);
 					if (nap) {
 						pap = varr_or(pap, nap, 0);
 						varr_free(nap);
@@ -466,7 +399,7 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 		set = ep->e.set;
 		for (v = varr_first(set); v; v = varr_next(set, v)) {
 			nap =
-			    subelem_match_lte(jp, (element_t *) v, nap, id,
+			    subelem_match(jp, (element_t *) v, nap, id,
 					      rc);
 		}
 		break;
@@ -480,10 +413,8 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 			for (ep = ep->e.list->head; ep; ep = ep->next) {
 				nap = 0;
-				for (i = 0; (v = varr_nth(arr, i)); i++) {
-					nap =
-					    subelem_match_lte(v, ep, nap, id,
-							      rc);
+                for (v = varr_first(arr); v; v = varr_next(arr, v)) {
+					nap = subelem_match(v, ep, nap, id, rc);
 				}
 				varr_free(arr);
 				/*
@@ -499,13 +430,10 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 			 * if the number of elements in the ep list is fewer
 			 * collect all alternative until the end of the arr
 			 * list is found 
-			 */
+             */
+			 /* traceLog(LOG_INFO,"Gather until end of list") ; */
 
-			/*
-			 * traceLog(LOG_INFO,"Gather until end of list") ; 
-			 */
-
-			for (i = 0; (v = varr_nth(arr, i)); i++)
+            for (v = varr_first(arr); v; v = varr_next(arr, v))
 				pap = get_all_to_next_listend(v, pap, 0);
 		}
 		break;
@@ -517,13 +445,12 @@ subelem_match_lte(junc_t * jp, element_t * ep, varr_t * pap, varr_t * id,
 
 /****************************************************************************/
 
-static varr_t  *
+varr_t  *
 adm_list(junc_t * jp, subelem_t * sub, spocp_result_t * rc)
 {
-	varr_t         *nap = 0, *res, *pap = 0;
-	int             i;
-	varr_t         *id = 0;
-	void           *v;
+	varr_t  *nap = 0, *res, *pap = 0;
+	varr_t  *id = 0;
+	void    *v;
 
 	if (jp == 0)
 		return 0;
@@ -536,22 +463,21 @@ adm_list(junc_t * jp, subelem_t * sub, spocp_result_t * rc)
 	/*
 	 * just the single list tag should actually match everything 
 	 */
-	if (jp->item[1] == 0)
+	if (jp->branch[1] == 0)
 		return get_rec_all_rules(jp, 0);
 
-	jp = jp->item[1]->val.list;
+	jp = jp->branch[1]->val.list;
 
 	pap = varr_junc_add(0, jp);
 
 	for (; sub; sub = sub->next) {
 		res = 0;
 
-		for (i = 0; (v = varr_nth(pap, i)); i++) {
+        for (v = varr_first(pap); v; v = varr_next(pap, v)) {
 			if (sub->direction == LT)
-				nap = subelem_lte_match(v, sub->ep, nap, id);
+				nap = subelem_inv_match(v, sub->ep, nap, id);
 			else
-				nap =
-				    subelem_match_lte(v, sub->ep, nap, id, rc);
+				nap = subelem_match(v, sub->ep, nap, id, rc);
 		}
 
 		varr_free(pap);
@@ -566,8 +492,9 @@ adm_list(junc_t * jp, subelem_t * sub, spocp_result_t * rc)
 	}
 
 	/*
-	 * traceLog(LOG_INFO, "Done all subelements, %d junctions to follow through",
-	 * pap->n ) ; 
+	 * traceLog(LOG_INFO, 
+     *      "Done all subelements, %d junctions to follow through",
+	 *      pap->n ) ; 
 	 */
 
 	/*
@@ -575,7 +502,7 @@ adm_list(junc_t * jp, subelem_t * sub, spocp_result_t * rc)
 	 * junctions which have to be followed to the end 
 	 */
 
-	for (i = 0; (v = varr_nth(pap, i)); i++) {
+	for (v = varr_first(pap); v; v = varr_next(pap, v)) {
 		id = get_rec_all_rules(v, id);
 	}
 
@@ -584,72 +511,23 @@ adm_list(junc_t * jp, subelem_t * sub, spocp_result_t * rc)
 
 /********************************************************************/
 
-static subelem_t *
-pattern_parse(octarr_t * pattern)
-{
-	subelem_t      *res = 0, *sub, *pres = 0;
-	element_t      *ep;
-	octet_t         oct, **arr;
-	int             i;
-
-	for (i = 0, arr = pattern->arr; i < pattern->n; i++, arr++) {
-		sub = subelem_new();
-
-		if (*((*arr)->val) == '+')
-			sub->direction = GT;
-		else if (*((*arr)->val) == '-')
-			sub->direction = LT;
-		else
-			return 0;
-
-		if (*((*arr)->val + 1) == '(')
-			sub->list = 1;
-
-		octln(&oct, *arr);
-		/*
-		 * skip the +/- sign 
-		 */
-		oct.val++;
-		oct.len--;
-
-		if (element_get(&oct, &ep) != SPOCP_SUCCESS) {
-			subelem_free(sub);
-			subelem_free(res);
-			return 0;
-		}
-
-		sub->ep = ep;
-		if (res == 0)
-			res = pres = sub;
-		else {
-			pres->next = sub;
-			pres = sub;
-		}
-	}
-
-	return res;
-}
-
 /********************************************************************/
 
 spocp_result_t
-get_matching_rules(db_t * db, octarr_t * pat, octarr_t * oa, char *rs)
+get_matching_rules(db_t * db, octarr_t *pat, octarr_t **oap, char *rs)
 {
 	spocp_result_t  rc = SPOCP_SUCCESS;
-	subelem_t      *sub;
-	varr_t         *ip;
-	octet_t        *oct, *arr[2];
+	subelem_t       *sub;
+	varr_t          *ip;
+	octet_t         *oct, *arr[2];
 	int             i;
-	ruleinst_t     *r;
+	ruleinst_t      *r;
 	unsigned int    ui;
+    octarr_t        *oa;
 
 	if ((sub = pattern_parse(pat)) == 0) {
 		return SPOCP_SYNTAXERROR;
 	}
-
-	/*
-	 * traceLog(LOG_INFO, "Parsed the subelements OK" ) ; 
-	 */
 
 	/*
 	 * get the IDs for the matching rules 
@@ -667,6 +545,11 @@ get_matching_rules(db_t * db, octarr_t * pat, octarr_t * oa, char *rs)
 	if (ip) {
 		ui = varr_len(ip);
 
+        if (*oap == NULL)
+            *oap = oa = octarr_new(ui+1);
+        else
+            oa = *oap;
+        
 		if ((unsigned int) (oa->size - oa->n) < ui)
 			octarr_mr(oa, ui);
 

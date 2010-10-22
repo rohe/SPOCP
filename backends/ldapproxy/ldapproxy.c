@@ -40,6 +40,10 @@
 #include <arpa/nameser_compat.h>
 #endif
 
+#ifndef LDAP_DEPRECATED
+#define LDAP_DEPRECATED 1
+#endif
+
 #include "lber.h"
 #include "ldap.h"
 
@@ -52,7 +56,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
-#include <func.h>
+#include <log.h>
 
 befunc ldapproxy_test;
 
@@ -223,7 +227,7 @@ dnssrv_lookup( char *domain, char *proto )
 
 	snprintf( dname, dsize, "_%s._tcp.%s", proto, domain);
 
-	printf( "dname: %s\n", dname );
+	/* printf( "dname: %s\n", dname ); */
 
 	res_init() ;
 
@@ -296,18 +300,20 @@ fqdn2dn( char *fqdn )
 
 	arr = line_split( fqdn, '.', 0, 0, 0, &n );
 
-	for( i=0, len=0; arr[i]; i++) len += strlen(arr[i]) + 4 ;
+	for( i=0, len=0; i < n ; i++) 
+        len += strlen(arr[i]) + 4 ;
 
 	dn = ( char *) calloc (len+1, sizeof( char ));
 
-	for( i=0, tp=dn; arr[i]; i++ ) {
+	for( i=0, tp=dn; i < n ; i++ ) {
 		sprintf( tp, "dc=%s,", arr[i]);
 		tp += strlen( tp);
 	}
 	--tp;
 	*tp = '\0';
 
-	for( i=0; arr[i]; i++ ) free( arr[i] );
+	for( i=0; i < n; i++ ) 
+        free( arr[i] );
 	free(arr);
 
 	return dn;

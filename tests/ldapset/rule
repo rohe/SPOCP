@@ -1,0 +1,7 @@
+(ldaptest (home)(away))
+
+//lingon-catalogix-se.local/server/(server(ip)(host))
+//lingon-catalogix-se.local/operation/(operation QUERY(server(ip)(host)))
+//lingon-catalogix-se.local/operation/(operation SUMMARY(server(ip)(host)))
+//lingon-catalogix-se.local/operation/(operation LOGOUT(server(ip)(host)))
+

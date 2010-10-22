@@ -17,11 +17,22 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <struct.h>
-#include <func.h>
+#include <basic.h>
+/*#include <element.h>*/
+#include <atom.h>
+#include <resset.h>
+#include <hash.h>
+#include <element.h>
+#include <ssn.h>
+#include <branch.h>
+#include <db0.h>
+#include <bcondfunc.h>
 #include <spocp.h>
 #include <macros.h>
 #include <wrappers.h>
+#include <verify.h>
+#include <log.h>
+#include <match.h>
 
 /*#define AVLUS 1*/
 
@@ -57,7 +68,7 @@ atom2atom_match(atom_t * ap, phash_t * pp)
 		traceLog(LOG_DEBUG,">>>>>>>>>>>>>>>>>>>");
 	}
 
-	bp = phash_search(pp, ap, ap->hash);
+	bp = phash_search(pp, ap);
 
 	if (bp)
 		return bp->next;
@@ -90,75 +101,6 @@ atom2suffix_match(atom_t * ap, ssn_t * pp)
 }
 
 varr_t         *
-atom2range_match(atom_t * ap, slist_t * slp, int vtype, spocp_result_t * rc)
-{
-	boundary_t      value;
-	octet_t        *vo;
-	int             r = 1;
-
-	value.type = vtype | EQ;
-	vo = &value.v.val;
-
-	DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"-ATOM->RANGE: %s", ap->val.val);
-
-	/*
-	 * make certain that the atom is of the right type 
-	 */
-	switch (vtype) {
-	case SPOC_DATE:
-		if (is_date(&ap->val) == SPOCP_SUCCESS) {
-			vo->val = ap->val.val;
-			vo->len = ap->val.len - 1;	/* without the Z at
-							 * the end */
-		} else
-			r = 0;
-		break;
-
-	case SPOC_TIME:
-		if (is_time(&ap->val) == SPOCP_SUCCESS)
-			hms2int(&ap->val, &value.v.num);
-		else
-			r = 0;
-		break;
-
-	case SPOC_NUMERIC:
-		if (is_numeric(&ap->val, &value.v.num) != SPOCP_SUCCESS)
-			r = 0;
-		break;
-
-	case SPOC_IPV4:
-		if (is_ipv4(&ap->val, &value.v.v4) != SPOCP_SUCCESS)
-			r = 0;
-		break;
-
-#ifdef USE_IPV6
-	case SPOC_IPV6:
-		if (is_ipv6(&ap->val, &value.v.v6) != SPOCP_SUCCESS)
-			r = 0;
-		break;
-#endif
-
-	case SPOC_ALPHA:
-		vo->val = ap->val.val;
-		vo->len = ap->val.len;
-		break;
-	}
-
-	if (!r) {
-		*rc = SPOCP_SYNTAXERROR;
-		DEBUG(SPOCP_DMATCH)
-			traceLog(LOG_DEBUG,"Wrong format [%s]", ap->val.val);
-		return 0;
-	} else {
-		DEBUG(SPOCP_DMATCH) {
-			traceLog(LOG_DEBUG,"skiplist match");
-		}
-
-		return sl_match(slp, &value);
-	}
-}
-
-varr_t         *
 prefix2prefix_match(atom_t * prefa, ssn_t * prefix)
 {
 	return atom2prefix_match(prefa, prefix);
@@ -168,12 +110,6 @@ varr_t         *
 suffix2suffix_match(atom_t * prefa, ssn_t * suffix)
 {
 	return atom2suffix_match(prefa, suffix);
-}
-
-varr_t         *
-range2range_match(range_t * ra, slist_t * slp)
-{
-	return sl_range_match(slp, ra);
 }
 
 /*
@@ -201,64 +137,55 @@ range2range_match(range_t * ra, slist_t * slp)
  */
 
 static resset_t	*
-rss_add( resset_t *rs, spocp_index_t *si, comparam_t *comp)
+rss_add( resset_t *rs, ruleinst_t *ri, comparam_t *comp)
 {
-#ifdef AVLUS
-	traceLog(LOG_DEBUG, "rss_add");
-	index_print( si );
-#endif
-
 	if (comp->blob) { 
-		rs = resset_add( rs, si, *comp->blob);
+		rs = resset_add(rs, ri, *comp->blob);
 		*comp->blob = NULL;
 	}
 	else
-		rs = resset_add( rs, si, 0);
+		rs = resset_add( rs, ri, 0);
 
-#ifdef AVLUS
-	traceLog(LOG_DEBUG,"rss_add =>" );
-	resset_print( rs);
-#endif
 	return rs;
 }
 
 static resset_t  *
 ending(junc_t * jp, element_t *ep, comparam_t * comp)
 {
-	branch_t	*bp;
-	element_t	*nep;
-	junc_t		*vl = 0;
+	branch_t        *bp;
+	element_t       *nep;
+	junc_t          *vl = 0;
 	spocp_result_t	r = SPOCP_DENIED;
-	resset_t 	*res = 0;
-	spocp_index_t	*si;
+	resset_t        *res = 0;
+    ruleinst_t      *ri;
 
 	if (!jp)
 		return 0;
 
-	if (jp->item[SPOC_ENDOFRULE]) {
+	if (jp->branch[SPOC_ENDOFRULE]) {
 		DEBUG(SPOCP_DMATCH) 
 			traceLog(LOG_DEBUG,"ENDOFRULE marker(0)");
 		/*
 		 */
-		si = jp->item[SPOC_ENDOFRULE]->val.id ;
+		ri = jp->branch[SPOC_ENDOFRULE]->val.ri ;
 		if (comp->nobe) {
-			res = rss_add( res, si, comp);
+			res = rss_add( res, ri, comp);
 		}
-		else if ((r = bcond_check(comp->head,si,comp->blob,comp->cr))
+		else if ((r = bcond_check(comp->head, ri, comp->blob, comp->cr))
 				== SPOCP_SUCCESS) {
 #ifdef AVLUS
 			traceLog(LOG_DEBUG,"ENDOFRULE"); 
 #endif
-			res = rss_add( res, si, comp);
+			res = rss_add( res, ri, comp);
 			
 			if (!comp->all)
 				return res;
 		}
 	}
 
-	if (jp->item[SPOC_ENDOFLIST]) {
+	if (jp->branch[SPOC_ENDOFLIST]) {
 
-		bp = jp->item[SPOC_ENDOFLIST];
+		bp = jp->branch[SPOC_ENDOFLIST];
 
 		if (ep) {
 
@@ -278,18 +205,18 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 			if (ep->next == 0 && ep->memberof == 0) {
 				vl = bp->val.list;
 
-				if (vl && vl->item[SPOC_ENDOFRULE]) {
+				if (vl && vl->branch[SPOC_ENDOFRULE]) {
 					DEBUG(SPOCP_DMATCH) 
 						traceLog(LOG_DEBUG,
 							"ENDOFRULE marker(1)");
 					/*
 					 * THIS IS WHERE BCOND IS CHECKED 
 					 */
-					si = vl->item[SPOC_ENDOFRULE]->val.id;
-					r = bcond_check(comp->head, si, comp->blob,
+					ri = vl->branch[SPOC_ENDOFRULE]->val.ri;
+					r = bcond_check(comp->head, ri, comp->blob,
 						comp->cr);
 					if (r == SPOCP_SUCCESS) {
-						res = rss_add( res, si, comp);
+						res = rss_add( res, ri, comp);
 
 						if(!comp->all)
 							return res;
@@ -313,8 +240,8 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 
 			while (nep->memberof) {
 
-				if (vl->item[SPOC_ENDOFLIST])
-					bp = vl->item[SPOC_ENDOFLIST];
+				if (vl->branch[SPOC_ENDOFLIST])
+					bp = vl->branch[SPOC_ENDOFLIST];
 				else
 					break;
 
@@ -332,10 +259,9 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 			}
 
 			if (nep->next) {
-				res = resset_join(res,
-					element_match_r(vl, nep->next, comp));
+				res = resset_extend(res,element_match_r(vl, nep->next, comp));
 
-			} else if (vl->item[SPOC_ENDOFRULE]) {
+			} else if (vl->branch[SPOC_ENDOFRULE]) {
 				DEBUG(SPOCP_DMATCH) 
 					traceLog(LOG_DEBUG,
 						"ENDOFRULE marker(3)",
@@ -343,18 +269,17 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 				/*
 				 * THIS IS WHERE BCOND IS CHECKED 
 				 */
-				si = vl->item[SPOC_ENDOFRULE]->val.id;
+				ri = vl->branch[SPOC_ENDOFRULE]->val.ri;
 				if (comp->nobe) {
 #ifdef AVLUS
-					index_print( si );
+					ruleinst_print( ri );
 #endif
-					res = rss_add( res, si, comp);
+					res = rss_add( res, ri, comp);
 				}
 				else {
-					r = bcond_check(comp->head, si, comp->blob,
-						comp->cr);
+					r = bcond_check(comp->head, ri, comp->blob, comp->cr);
 					if (r == SPOCP_SUCCESS) {
-						res = rss_add( res, si, comp);
+						res = rss_add( res, ri, comp);
 					}
 				}
 			}
@@ -369,32 +294,29 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 		} else {
 			vl = bp->val.list;
 			while(1) {
-				if (vl->item[SPOC_ENDOFRULE]) {
+				if (vl->branch[SPOC_ENDOFRULE]) {
 					DEBUG(SPOCP_DMATCH) 
-						traceLog(LOG_DEBUG,
-						    "ENDOFRULE marker(4)");
+						traceLog(LOG_DEBUG, "ENDOFRULE marker(4)");
 					/*
 					 * THIS IS WHERE BCOND IS CHECKED 
 					 */
-					si = vl->item[SPOC_ENDOFRULE]->val.id;
+					ri = vl->branch[SPOC_ENDOFRULE]->val.ri;
 					if (comp->nobe) {
-						res = rss_add( res, si, comp);
+						res = rss_add( res, ri, comp);
 					}
 					else {
-						r = bcond_check(comp->head, si,
-							comp->blob, comp->cr);
+						r = bcond_check(comp->head, ri, comp->blob, comp->cr);
 						if (r == SPOCP_SUCCESS) { 
-							res = rss_add(res,si,comp);
+							res = rss_add(res, ri, comp);
 						}
 					}
 					break;
 				} 
 				else {
-					bp = vl->item[SPOC_ENDOFLIST];
+					bp = vl->branch[SPOC_ENDOFLIST];
 					if (bp) {
 						DEBUG(SPOCP_DMATCH) 
-							traceLog(LOG_DEBUG,
-							    "ENDOFLIST marker");
+							traceLog(LOG_DEBUG, "ENDOFLIST marker");
 						vl = bp->val.list;
 					}
 					else
@@ -411,7 +333,6 @@ ending(junc_t * jp, element_t *ep, comparam_t * comp)
 	return res;
 }
 
-/*****************************************************************/
 /*****************************************************************/
 
 static resset_t  *
@@ -433,7 +354,7 @@ do_arr(varr_t * a, element_t * e, comparam_t * comp)
 		r = next( jp, e, comp );
 
 		if (!r || comp->all)
-			r = resset_join(r,element_match_r(jp, e, comp));
+			r = resset_extend(r,element_match_r(jp, e, comp));
 #ifdef AVLUS
 		DEBUG(SPOCP_DMATCH)
 			resset_print(r);
@@ -444,7 +365,7 @@ do_arr(varr_t * a, element_t * e, comparam_t * comp)
 				break;
 			}
 			else
-				rs = resset_join(rs,r);
+				rs = resset_extend(rs,r);
 		}
 	}
 
@@ -482,7 +403,7 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 				break;
 			}
 
-			bp = ju->item[SPOC_ENDOFLIST];
+			bp = ju->branch[SPOC_ENDOFLIST];
 
 			if (bp)
 				ju = bp->val.list;
@@ -491,7 +412,7 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 
 			ep = ep->memberof;
 
-		} while (ep->next == 0 && ju->item[SPOC_ENDOFLIST]);
+		} while (ep->next == 0 && ju->branch[SPOC_ENDOFLIST]);
 
 		/*
 		if (ep->memberof == 0) {
@@ -501,7 +422,7 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 			if ( sep == ep )
 				return rs;
 
-			if ((rs = resset_join(rs,ending(ju, ep, comp))) &&
+			if ((rs = resset_extend(rs,ending(ju, ep, comp))) &&
 				!comp->all) 
 				return rs;
 		}
@@ -512,7 +433,7 @@ next(junc_t * ju, element_t * ep, comparam_t * comp)
 		traceLog(LOG_DEBUG,"Do Next");
 
 	if (ep->next)
-		rs = resset_join(rs,element_match_r(ju, ep->next, comp));
+		rs = resset_extend(rs,element_match_r(ju, ep->next, comp));
 
 #ifdef AVLUS
 	traceLog(LOG_DEBUG,"Next() => ");
@@ -563,7 +484,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 
 		if (avp) {
 			DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"matched prefix");
-			rs = resset_join(rs, do_arr(avp, ep, comp));
+			rs = resset_extend(rs, do_arr(avp, ep, comp));
 			if (rs && !comp->all)
 				return rs;
 		}
@@ -588,7 +509,7 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 			}
 #endif
 
-			rs = resset_join(rs,do_arr(avp, ep, comp));
+			rs = resset_extend(rs,do_arr(avp, ep, comp));
 			if (rs && !comp->all)
 				return rs;
 		}
@@ -604,10 +525,9 @@ atom_match(junc_t * db, element_t * ep, comparam_t * comp)
 
 		for (i = 0; i < DATATYPES; i++) {
 			if (slp[i]) {
-				avp = atom2range_match(atom, slp[i], i,
-					&comp->rc);
+				avp = bsl_match_atom(slp[i], atom, &comp->rc);
 				if (avp) {
-					rs=resset_join(rs,do_arr(avp,ep,comp));
+					rs = resset_extend(rs, do_arr(avp, ep, comp));
 					if (rs && !comp->all)
 						break;
 				}
@@ -657,12 +577,12 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 	 */
 
 	if (ep == 0) {
-		DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"No more elements in input");
+		DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG, "No more elements in input");
 		return NULL;
 	}
 
 	if ((bp = ARRFIND(db, SPOC_ANY)) != 0) {
-		res = resset_join(res,
+		res = resset_extend(res,
 			  element_match_r(bp->val.next, ep->next, comp));
 		if (!comp->all)
 			return res;
@@ -671,9 +591,9 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 	switch (ep->type) {
 	case SPOC_ATOM:
 		DEBUG(SPOCP_DMATCH) {
-			oct_print(LOG_INFO,"Checking ATOM",&ep->e.atom->val);
+			oct_print(LOG_INFO, "Checking ATOM", &ep->e.atom->val);
 		}
-		res = resset_join(res,atom_match(db, ep, comp));
+		res = resset_extend(res, atom_match(db, ep, comp));
 		break;
 
 	case SPOC_SET:
@@ -686,25 +606,9 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 		comp->all = 1;
 		comp->nobe = 1;
 		for (v = varr_first(set), i = 0; v; v = varr_next(set, v), i++) {
-#ifdef AVLUS
-			traceLog(LOG_DEBUG, "=== element %d in set ===", i+1);
-#endif
+
 			rs = element_match_r(db, (element_t *) v, comp);
-#ifdef AVLUS
-			traceLog(LOG_DEBUG,"___RESULT SET (rs)___");
-			resset_print(rs);
-			traceLog(LOG_DEBUG,"________________");
-#endif
-			if (setrs == 0)
-				setrs = resset_compact(rs);
-			else {
-				setrs = resset_and(setrs, rs);
-#ifdef AVLUS
-				traceLog(LOG_DEBUG,"___RESULT SET (setrs)___");
-				resset_print(setrs);
-				traceLog(LOG_DEBUG,"________________");
-#endif
-			}
+            setrs = resset_extend(setrs, rs);
 			
 			if (setrs == 0)
 				break;
@@ -717,21 +621,13 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 		}
 		comp->all = old;
 		comp->nobe = 0;
-		if (setrs) {
-			if( bcond_check(comp->head, setrs->si, comp->blob, comp->cr)
+        for (rs = setrs; rs; rs = rs->next) {
+			if( bcond_check(comp->head, rs->ri, comp->blob, comp->cr)
 			    == SPOCP_SUCCESS) {
-				res = rss_add( res, setrs->si, comp);
-#ifdef AVLUS
-				traceLog(LOG_DEBUG,">>> RESULT SET %p>>>", res);
-				resset_print(res);
-				traceLog(LOG_DEBUG,"<<<<<<<<<<<<<<<<<<");
-#endif
+				res = rss_add( res, rs->ri, comp);
 			}
-#ifdef AVLUS
-			traceLog(LOG_DEBUG, "spocp_set resset_free %p", setrs);
-#endif
-			resset_free(setrs);
 		}
+        resset_free(setrs);
 		break;
 
 	case SPOC_PREFIX:
@@ -742,7 +638,7 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 			 * got a set of plausible branches and more elements
 			 */
 			if (avp) 
-				res = resset_join(res,do_arr(avp, ep->next, comp));
+				res = resset_extend(res, do_arr(avp, ep->next, comp));
 		}
 		break;
 
@@ -754,7 +650,7 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 			 * got a set of plausible branches and more elements
 			 */
 			if (avp) 
-				res = resset_join(res,do_arr(avp, ep->next, comp));
+				res = resset_extend(res, do_arr(avp, ep->next, comp));
 		}
 		break;
 
@@ -765,13 +661,13 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 			i = ep->e.range->lower.type & 0x07;
 
 			if (slp[i])	/* no use testing otherwise */
-				avp = range2range_match(ep->e.range, slp[i]);
+				avp = bsl_match_range(slp[i], ep->e.range);
 
 			/*
 			 * got a set of plausible branches 
 			 */
 			if (avp) 
-				res = resset_join(res,do_arr(avp, ep->next, comp));
+				res = resset_extend(res, do_arr(avp, ep->next, comp));
 		}
 		break;
 
@@ -779,14 +675,14 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 		DEBUG(SPOCP_DMATCH) traceLog(LOG_DEBUG,"Checking LIST");
 		if ((bp = ARRFIND(db, SPOC_LIST)) != 0) {
 			rs = element_match_r(bp->val.list, ep->e.list->head, comp);
-			res = resset_join(res, rs);
+			res = resset_extend(res, rs);
 		}
 		break;
 
 	case SPOC_ENDOFLIST:
 		bp = ARRFIND(db, SPOC_ENDOFLIST);
 		if (bp)
-			res = resset_join( res, next(bp->val.list, ep, comp));
+			res = resset_extend( res, next(bp->val.list, ep, comp));
 		else
 			return 0;
 		break;		/* never reached */
@@ -797,3 +693,42 @@ element_match_r(junc_t * db, element_t * ep, comparam_t * comp)
 #endif
 	return res;
 }
+
+/****************************************************************************/
+
+void
+junc_print(int lev, junc_t * jp)
+{
+    ruleinst_t  *ri;
+	char        indent[32];
+	int         i;
+    
+	for ( i = 0 ; i < lev ; i++)
+		indent[i] = ' ';
+	indent[i] = '\0' ;
+    
+	traceLog(LOG_DEBUG,"|---------------------------->");
+	if (jp->branch[SPOC_ATOM])
+		traceLog(LOG_DEBUG,"%sATOM", indent);
+	if (jp->branch[SPOC_LIST])
+		traceLog(LOG_DEBUG,"%sLIST", indent);
+	if (jp->branch[SPOC_SET])
+		traceLog(LOG_DEBUG,"%sSET", indent);
+	if (jp->branch[SPOC_PREFIX])
+		traceLog(LOG_DEBUG,"%sPREFIX", indent);
+	if (jp->branch[SPOC_SUFFIX])
+		traceLog(LOG_DEBUG,"%sSUFFIX", indent);
+	if (jp->branch[SPOC_RANGE])
+		traceLog(LOG_DEBUG,"%sRANGE", indent);
+	if (jp->branch[SPOC_ENDOFLIST])
+		traceLog(LOG_DEBUG,"%sENDOFLIST", indent);
+	if (jp->branch[SPOC_ENDOFRULE]) {
+		traceLog(LOG_DEBUG,"%sENDOFRULE", indent);
+		ri = jp->branch[7]->val.ri;
+        traceLog(LOG_DEBUG,"%s Rule: %d", indent, ri->uid);
+	}
+	if (jp->branch[SPOC_ANY])
+		traceLog(LOG_DEBUG,"%sANY", indent);
+	traceLog(LOG_DEBUG,">----------------------------|");
+}
+

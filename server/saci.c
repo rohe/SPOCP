@@ -60,7 +60,7 @@ const sexparg_t           transf[] = {
 	{"transportsec", get_transpsec, 'l', FALSE}
 };
 
-int             ntransf = (sizeof(transf) / sizeof(transf[0]));
+int     ntransf = (sizeof(transf) / sizeof(transf[0]));
 
 #ifdef HAVE_SSL
 
@@ -69,7 +69,7 @@ int             ntransf = (sizeof(transf) / sizeof(transf[0]));
 #define TPSEC_KERB	2
 #define TPSEC_SASL  3
 
-char           *tpsec[] = {
+char    *tpsec[] = {
 	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher}))",
 	"(12:TransportSec(4:vers%{ssl_vers})(12:chiphersuite%{ssl_cipher})(7:autname4:X509(7:subject%{ssl_subject})(6:issuer%{ssl_issuer})))",
 	"(12:TransportSec(4:vers%{kerb_vers})(7:autname8:kerberos%{kerb_realm}%{kerb_localpart}))",
@@ -82,18 +82,18 @@ sexparg_t   **tpsec_sasl;
 
 #endif
 
-char	*srvquery =
+char    *srvquery =
     "(6:server(2:ip%{ip})(4:host%{host})%{transportsec})";
 char	*operquery =
     "(9:operation%{operation}(6:server(2:ip%{ip})(4:host%{host})%{transportsec}))";
 char	*rulequery =
-		"(8:spocpaci(8:argument%{arguments})(9:operation%{operation})(7:subject%{subject}))";
+    "(8:spocpaci(8:argument%{arguments})(9:operation%{operation})(7:subject%{subject}))";
 
 sexparg_t	**srvq;
 sexparg_t	**operq;
 sexparg_t	**ruleq;
 
-/* #define AVLUS 1 */
+/* #define _SACI_DEBUG 1 */
 
 /*
  * ---------------------------------------------------------------------- 
@@ -154,7 +154,7 @@ get_inv_host(void * vp)
 
 	arr = line_split(conn->sri.hostname, '.', 0, 0, 0, &n);
 
-	for (i = 0, j = n; i < (n + 1) / 2; i++, j--) {
+	for (i = 0, j = (n-1); i < (n / 2); i++, j--) {
 		if (i == j)
 			break;
 		sp = arr[i];
@@ -162,7 +162,7 @@ get_inv_host(void * vp)
 		arr[j] = sp;
 	}
 
-	for (i = 0; i <= n; i++)
+	for (i = 0; i < n; i++)
 		format[i] = 'a';
 	format[i] = '\0';
 
@@ -307,8 +307,8 @@ get_transpsec(void * vp)
 	/*
 	 * XXX fixa SPOCP_LAYER-jox här 
 	 */
-	conn_t *conn= (( work_info_t * ) vp)->conn ;
 #ifdef HAVE_SSL
+	conn_t *conn= (( work_info_t * ) vp)->conn ;
 
 	if (conn->ssl != NULL) {
 		if (conn->transpsec == 0) {
@@ -323,14 +323,15 @@ get_transpsec(void * vp)
 	} else
 #endif
 #ifdef HAVE_SASL
-		if(conn->sasl != NULL) {
+		if(conn->srv->use_sasl && conn->sasl != NULL) {
 			if (conn->transpsec == 0)
 				if (conn->sasl_ssf)
 					conn->transpsec = sexp_constr(vp, tpsec_sasl);
 			return conn->transpsec;
 		}
 #endif
-		return "";
+    
+    return "";
 
 }
 
@@ -340,30 +341,37 @@ get_transpsec(void * vp)
  */
 
 void
-saci_init(void)
+saci_init(int use_ssl, int use_sasl)
 {
 	/* sexparg_t **tp_sec_kerb ; 
 	 */
 
 #ifdef HAVE_SSL
-	tpsec_X509 = parse_format(tpsec[TPSEC_X509], transf, ntransf);
-	if (tpsec_X509 == 0)
-		traceLog(LOG_ERR,"Could not parse TPSEC_X509");
+    if (use_ssl) {
+        tpsec_X509 = parse_format(tpsec[TPSEC_X509], transf, ntransf);
+        if (tpsec_X509 == 0)
+            traceLog(LOG_ERR,"Could not parse TPSEC_X509");
 	else
-		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed TPSEC_X509 OK");
+            LOG(SPOCP_DEBUG) 
+                traceLog(LOG_DEBUG,"Parsed TPSEC_X509 OK");
 
-	tpsec_X509_wcc = parse_format(tpsec[TPSEC_X509_WCC], transf, ntransf);
-	if (tpsec_X509_wcc == 0)
-		traceLog(LOG_ERR,"Could not parse TPSEC_X509_WCC");
-	else
-		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed TPSEC_X509_WCC OK");
+        tpsec_X509_wcc = parse_format(tpsec[TPSEC_X509_WCC], transf, ntransf);
+        if (tpsec_X509_wcc == 0)
+            traceLog(LOG_ERR,"Could not parse TPSEC_X509_WCC");
+        else
+            LOG(SPOCP_DEBUG) 
+                traceLog(LOG_DEBUG,"Parsed TPSEC_X509_WCC OK");
+    }
 #endif
 #ifdef HAVE_SASL
-	tpsec_sasl = parse_format(tpsec[TPSEC_SASL], transf, ntransf);
-	if (tpsec_sasl == 0)
-		traceLog(LOG_ERR,"Could not parse TPSEC_SASL");
-	else
-		LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"Parsed TPSEC_SASL OK");
+    if (use_sasl) {
+        tpsec_sasl = parse_format(tpsec[TPSEC_SASL], transf, ntransf);
+        if (tpsec_sasl == 0)
+            traceLog(LOG_ERR,"Could not parse TPSEC_SASL");
+        else
+            LOG(SPOCP_DEBUG) 
+                traceLog(LOG_DEBUG,"Parsed TPSEC_SASL OK");
+    }
 #endif
 	/*
 	 * tpsec_kerb = parse_format( tpsec[TPSEC_KERB], transf ) ; 
@@ -399,32 +407,33 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 	ruleset_t		*rs = wi->conn->rs;
 	spocp_result_t	res = SPOCP_DENIED;	/* the default */
 #ifdef SACI
-	octet_t		oct;
-	char		*sexp;
-	element_t	*ep = 0;
-	resset_t	*rset = 0;
-	comparam_t	comp; 
-	octarr_t    *on = 0;
-	checked_t   *cr=0;
+	octet_t         oct;
+	char            *sexp;
+	element_t       *ep = 0;
+	resset_t        *rset = 0;
+	comparam_t      comp; 
+	octarr_t        *on = 0;
+	checked_t       *cr=0;
 #endif
 
 	/* 
 	 * If I'm running on a unix domain socket I implicitly trust
 	 * processes on that machine
 	 */
-	if (wi->conn->srv->uds) return SPOCP_SUCCESS;
+	if (wi->conn->srv->uds) 
+        return SPOCP_SUCCESS;
 
 	/*
 	 * no ruleset or rules means nothing is allowed 
 	 */
 	if (rs == 0 || rules(rs->db) == 0) {
-#ifdef AVLUS
+#ifdef _SACI_DEBUG
 		traceLog(LOG_ERR,"No rules to tell me what to do");
 #endif
 		return res;
 	}
 
-#ifdef AVLUS
+#ifdef _SACI_DEBUG
 	oct_print(LOG_DEBUG,"Looking for ruleset (spocp_access)", path);
 #endif
 
@@ -432,24 +441,22 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 	 * No ruleset means nothing is allowed !!! 
 	 */
 	if ((rs = ruleset_find(path, rs)) == 0 || rs->db == 0) {
-#ifdef AVLUS
-		traceLog(LOG_DEBUG,"No ruleset");
-#endif
-
+        oct_print(LOG_DEBUG,"Couldn't find the ruleset", path);
 		return res;
 	}
+    
 	/*
 	 * The same if there is no rules in the ruleset 
 	 */
 	if (rs->db->ri->rules == 0) {
-#ifdef AVLUS
+#ifdef _SACI_DEBUG
 		traceLog(LOG_DEBUG,"No rules in the ruleset");
 #endif
 		return res;
 	}
 
 #ifdef SACI
-#ifdef AVLUS
+#ifdef _SACI_DEBUG
 	traceLog(LOG_DEBUG,"Making the internal access query");
 #endif
 	sexp = sexp_constr(wi, arg);
@@ -459,7 +466,7 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 
 	oct_assign(&oct, sexp);
 
-	if ((res = element_get(&oct, &ep)) != SPOCP_SUCCESS) {
+	if ((res = get_element(&oct, &ep)) != SPOCP_SUCCESS) {
 		traceLog(LOG_ERR,"The S-expression \"%s\" didn't parse OK", sexp);
 
 		Free(sexp);
@@ -476,16 +483,16 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 
 	comp.rc = SPOCP_SUCCESS;
 	comp.head = ep;
-       comp.blob = &on;
-       comp.cr = &cr;
+    comp.blob = &on;
+    comp.cr = &cr;
 
 	res = allowed(rs->db->jp, &comp, &rset);
 
 	Free(sexp);
 	element_free(ep);
 	resset_free( rset );
-	if ( *(comp.cr))
-		checked_free( *(comp.cr) );
+    if ( *(comp.cr))
+        checked_free( *(comp.cr) );
 
 	return res;
 #else
@@ -497,17 +504,25 @@ spocp_access(work_info_t *wi, sexparg_t ** arg, octet_t *path)
 spocp_result_t
 server_access(conn_t * con)
 {
-	work_info_t	wi;
-	char		path[MAXNAMLEN + 1];
-	octet_t		oct;
+	work_info_t     wi;
+	char            path[MAXNAMLEN + 1];
+	octet_t         oct;
+	spocp_result_t  r;
 
-	snprintf(path, MAXNAMLEN, "%s/server", localcontext);
+	snprintf(path, MAXNAMLEN, "//%s/server", con->srv->localcontext);
 	oct_assign(&oct, path);
 
 	memset(&wi,0,sizeof(work_info_t));
 	wi.conn = con;
 
-	return spocp_access( &wi, srvq, &oct);
+	r = spocp_access( &wi, srvq, &oct);
+	if (r != SPOCP_SUCCESS) {
+        snprintf(path, MAXNAMLEN, "//*/server");
+        oct_assign(&oct, path);
+        r = spocp_access( &wi, srvq, &oct);
+    }		
+
+    return r;
 }
 
 spocp_result_t
@@ -517,13 +532,19 @@ operation_access(work_info_t *wi)
 	octet_t			oct;
 	spocp_result_t  r;
 
-	snprintf(path, MAXNAMLEN, "%s/operation", localcontext);
+	snprintf(path, MAXNAMLEN, "//%s/operation", wi->conn->srv->localcontext);
 	oct_assign(&oct, path);
 
 	r = spocp_access(wi, operq, &oct);
 
-	if (r != SPOCP_SUCCESS)
-		traceLog(LOG_INFO,"Operation disallowed");
+	if (r != SPOCP_SUCCESS) {
+        snprintf(path, MAXNAMLEN, "//*/operation");
+        oct_assign(&oct, path);
+        r = spocp_access(wi, operq, &oct);
+    }
+		
+	if (r != SPOCP_SUCCESS) 
+        traceLog(LOG_INFO,"Operation disallowed");
 
 	return r;
 }

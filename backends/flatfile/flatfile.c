@@ -20,6 +20,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include <log.h>
 
 befunc          flatfile_test;
 
@@ -134,22 +135,17 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
 						    line_split(cp, ',', '\\',
 							       0, 0, &ne);
 
-						for (j = 0; j <= ne; j++) {
-							sp = rmlt(arr[j]);
-							for (i = 2;
-							     i < argv->n;
-							     i++) {
-								if (oct2strcmp
-								    (argv->
-								     arr[i],
-								     sp) == 0)
+						for (j = 0; j < ne; j++) {
+							sp = rmlt(arr[j], 0);
+							for (i = 2; i < argv->n; i++) {
+								if (oct2strcmp(argv->arr[i], sp) == 0)
 									break;
 							}
 
 							if (i < argv->n)
 								break;
 						}
-						if (j <= ne)
+						if (j < ne)
 							r = SPOCP_SUCCESS;
 
 						charmatrix_free(arr);

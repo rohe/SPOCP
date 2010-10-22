@@ -1,0 +1,367 @@
+
+/***************************************************************************
+			  func.h  -  description
+				 -------------------
+	begin		: Mon Jun 3 2002
+	copyright		: (C) 2002 by SPOCP
+	email		: roland@catalogix.se
+ ***************************************************************************/
+
+#ifndef _FUNC_H
+#define _FUNC_H
+
+#include <config.h>
+
+#include <sys/time.h>
+#include <struct.h>
+#include <db0.h>
+#include <spocp.h>
+#include <varr.h>
+#include <plugin.h>
+#include <dback.h>
+
+/*
+ * server.c 
+ */
+
+int		 server(FILE * fp, junc_t * cdb, int can);
+
+/*
+ * match.c 
+ */
+
+junc_t	 *atom2atom_match(atom_t * ap, phash_t * pp);
+varr_t	 *atom2prefix_match(atom_t * ap, ssn_t * pp);
+varr_t	 *atom2suffix_match(atom_t * ap, ssn_t * pp);
+varr_t	 *atom2range_match(atom_t * ap, slist_t * slp, int vtype,
+				 spocp_result_t * rc);
+varr_t	 *prefix2prefix_match(atom_t * prefa, ssn_t * prefix);
+varr_t	 *suffix2suffix_match(atom_t * prefa, ssn_t * suffix);
+varr_t	 *range2range_match(range_t * ra, slist_t * slp);
+
+/*
+ * parr_t *atom_match( junc_t *db, element_t *ep, spocp_result_t *rc ) ;
+ * 
+ * element_t *skip_list_tails( element_t *ep ) ; junc_t *ending( junc_t *ap,
+ * element_t *ep ) ; void *do_extref( erset_t *erp, element_t *ep ) ; junc_t
+ * *do_branches( parr_t *avp, element_t *ep ) ; 
+ */
+
+resset_t	*element_match_r(junc_t *, element_t *, comparam_t *);
+
+/*
+ * input.c 
+ */
+
+void		set_memberof(varr_t * va, element_t * group);
+
+/*
+ * io.c 
+ */
+
+size_t	  Writen(int fd, size_t n, char *str);
+ssize_t	 Readn(int fd, size_t max, char *str);
+
+/*
+ * string.c 
+ */
+
+strarr_t	   *strarr_new(int size);
+strarr_t	   *strarr_add(strarr_t * sa, char *value);
+void		strarr_free(strarr_t * sa);
+
+void		oct_assign(octet_t * oct, char *s);
+
+char	   *lstrndup(char *s, int len);
+
+/*
+ * free.c 
+ */
+
+void		list_free(list_t * lp);
+void		branch_free(branch_t * bp);
+void		boundary_free(boundary_t * bp);
+void		junc_free(junc_t * dbv);
+/*
+ * void ref_free( ref_t *ref ) ; 
+ */
+
+/*
+ * element.c 
+ */
+
+
+/*
+ * hash.c 
+ */
+
+varr_t	*get_all_atom_followers(branch_t * bp, varr_t * in);
+varr_t	*prefix2atoms_match(char *prefix, phash_t * ht, varr_t * pa);
+varr_t	*suffix2atoms_match(char *suffix, phash_t * ht, varr_t * pa);
+varr_t	*range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa);
+
+void	bucket_rm(phash_t * ht, buck_t * bp);
+
+/*
+ * db0.c 
+ */
+
+db_t	   *db_new(void);
+void		db_clr( db_t *db);
+void		db_free( db_t *db);
+
+
+branch_t	   *brancharr_find(junc_t * arr, int type);
+void		brancharr_free(junc_t * ap);
+int		 free_rule(ruleinfo_t * ri, char *uid);
+void		free_all_rules(ruleinfo_t * ri);
+
+
+spocp_result_t
+ add_right(db_t ** db, dbcmd_t * dbc, octarr_t * oa, ruleinst_t ** ri,
+	   bcdef_t * bcd);
+
+octet_t         *ruleinst_print(ruleinst_t * r, char *rs);
+octet_t         *get_blob(ruleinst_t * ri);
+ruleinst_t      *get_rule(ruleinfo_t * ri, octet_t *uid);
+spocp_result_t  get_all_rules(db_t * db, octarr_t * oa, char *rs);
+varr_t          *get_rec_all_rules(junc_t * jp, varr_t * in);
+varr_t          *get_all_bcond_followers(branch_t * bp, varr_t * in);
+int             rules(db_t * db);
+
+void		ruleinst_free(ruleinst_t * rt);
+
+ruleinfo_t	*ruleinfo_new(void);
+void		ruleinfo_free(ruleinfo_t *);
+ruleinfo_t	*ruleinfo_dup(ruleinfo_t * old);
+int			ruleinfo_print(ruleinfo_t * r);
+ruleinst_t		*ruleinst_find_by_uid(void * rules, char *uid);
+unsigned int	ruleinst_uid(unsigned char *, octet_t *, octet_t *, char *); 
+
+/*
+element_t	  *element_dup(element_t * ep, element_t * memberof);
+element_t	  *element_list_add(element_t * le, element_t * e);
+element_t	  *element_set_add(element_t * le, element_t * e);
+
+element_t	*element_new_atom( octet_t *);
+element_t	*element_new_list( element_t *);
+element_t	*element_new_set( varr_t *);
+*
+/*
+ * raci_t *saci_new( void ) ;
+ * 
+ * 
+ * raci_t *raci_new( void ) ; int P_raci_print( void *vp ) ; void *P_raci_dup( 
+ * void *vp ) ; void P_raci_free( void *vp ) ; 
+ */
+
+/*
+ * index.c 
+ */
+
+int             index_rm(spocp_index_t * id, ruleinst_t * ri);
+void            index_free(spocp_index_t * id);
+void            index_delete(spocp_index_t * id);
+void            index_extend(spocp_index_t *, spocp_index_t *);
+void            index_print(spocp_index_t *);
+spocp_index_t   *index_new(int size);
+spocp_index_t   *index_dup(spocp_index_t * id, ruleinfo_t * ri);
+spocp_index_t   *index_cp(spocp_index_t *);
+spocp_index_t   *index_add(spocp_index_t * id, ruleinst_t * ri);
+spocp_index_t   *index_and(spocp_index_t *, spocp_index_t *);
+
+/*
+ * resset.c
+ */
+
+resset_t	*resset_new( spocp_index_t *,octarr_t *) ;
+resset_t	*resset_add( resset_t *, spocp_index_t *,octarr_t *) ;
+resset_t	*resset_join( resset_t *,resset_t *) ;
+resset_t	*resset_and( resset_t *,resset_t *) ;
+resset_t	*resset_compact( resset_t *) ;
+void		resset_free(resset_t *) ;
+void		resset_print(resset_t *);
+
+qresult_t	*qresult_new( spocp_result_t, resset_t *rs );
+qresult_t	*qresult_add( qresult_t *, spocp_result_t, resset_t *rs );
+qresult_t	*qresult_join( qresult_t *, qresult_t * );
+void		qresult_free( qresult_t *);
+
+/*
+ * tree.c 
+ */
+
+/*
+ * link_t *create_link( rnode_t *rn1, rnode_t *rn2 ) ; link_t *find_link(
+ * rnode_t *rn1, rnode_t *rn2 ) ; rnode_t *tree_add( limit_t *lp, boundary_t
+ * *bp ) ; int cmp_boundary( boundary_t *b1p, boundary_t *b2p ) ; rnode_t
+ * *tree_find( rnode_t *head, boundary_t *bp, int type ) ; 
+ */
+
+/*
+ * subelement.c 
+ */
+
+subelem_t	  *subelement_dup(subelem_t * se);
+int		 to_subelements(octet_t * arg, octarr_t * oa);
+subelem_t	  *octarr2subelem(octarr_t * oa, int dir);
+
+
+/*
+ * ssn.c 
+ */
+
+junc_t  *ssn_insert(ssn_t ** top, char *str, int direction);
+varr_t  *ssn_match(ssn_t * pssn, char *sp, int direction);
+junc_t  *ssn_delete(ssn_t ** top, char *sp, int direction);
+ssn_t   *ssn_dup(ssn_t *, ruleinfo_t * ri);
+varr_t  *ssn_lte_match(ssn_t * pssn, char *sp, int direction,
+				  varr_t * res);
+varr_t  *get_all_ssn_followers(branch_t * bp, int type, varr_t * pa);
+void    ssn_free(ssn_t *);
+
+/*
+ * parr.c 
+ */
+
+/* void		parr_nullterm(parr_t * pp);*/
+
+parr_t      *ll2parr(ll_t * ll);
+
+void		P_null_free(item_t vp);
+
+int         P_strcasecmp(item_t a, item_t b);
+int         P_strcmp(item_t a, item_t b);
+int         P_pcmp(item_t a, item_t b);
+item_t      P_strdup(item_t vp);
+char        *P_strdup_char(item_t vp);
+item_t      P_pcpy(item_t i, item_t j);
+void		P_free(item_t vp);
+
+/*
+ * -- 
+ */
+
+void		spocp_print(junc_t * dv, int level, int indent);
+
+/*
+ * del.c 
+ */
+
+/*
+ * junc_t *element_rm( junc_t *ap, element_t *ep, int id ) ;
+ */
+spocp_result_t  rule_rm(junc_t * ap, octet_t * rule, ruleinst_t * rt);
+
+/*
+ * slist.c 
+ */
+
+slist_t     *sl_init(int max);
+slnode_t    *sl_find(slist_t * slp, boundary_t * item, cmpfn *cmp);
+varr_t      *sl_match(slist_t * slp, boundary_t * item);
+varr_t      *sl_range_match(slist_t * slp, range_t * rp);
+junc_t      *sl_add_range(slist_t * slp, range_t * rp);
+junc_t      *sl_range_rm(slist_t * slp, range_t * rp, int *rc);
+varr_t      *sl_range_lte_match(slist_t * slp, range_t * rp, varr_t * pa);
+void		sl_free_slist(slist_t * slp);
+slist_t     *sl_dup(slist_t * old, ruleinfo_t * ri);
+
+varr_t      *get_all_range_followers(branch_t * bp, varr_t * pa);
+
+subelem_t	*subelem_new(void);
+void		subelem_free(subelem_t * sep);
+
+char 		*boundary_print(boundary_t * bp);
+boundary_t	*boundary_dup(boundary_t * bp);
+int         boundary_xcmp(boundary_t * b1p, boundary_t * b2p);
+
+void		junc_print(int lev, junc_t * jp);
+void		junc_print_r(int lev, junc_t * jp);
+
+/*
+ * list.c 
+ */
+
+spocp_result_t  get_matching_rules(db_t *, octarr_t *, octarr_t *, char *);
+
+
+/*
+ * dup.c 
+ */
+
+/*
+ * aci.c 
+ */
+
+ruleinst_t      *allowing_rule(junc_t * ap);
+spocp_result_t  allowed(junc_t * ap, comparam_t * comp, resset_t **);
+
+
+/*
+ * ----- 
+ */
+
+varr_t      *varr_ruleinst_add(varr_t * va, ruleinst_t * ju);
+ruleinst_t	*varr_ruleinst_pop(varr_t * va);
+ruleinst_t	*varr_ruleinst_nth(varr_t * va, int n);
+
+/*
+ * ----- 
+ */
+
+int             bcspec_is(octet_t * spec);
+
+bcdef_t			*bcdef_add(bcdef_t **, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
+spocp_result_t  bcdef_del(bcdef_t **, dbcmd_t * dbc, octet_t * name);
+spocp_result_t  bcdef_replace(bcdef_t **, plugin_t *, dbcmd_t *, octet_t *, octet_t *);
+bcdef_t			*bcdef_get(bcdef_t **, plugin_t *, dbcmd_t *, octet_t *, spocp_result_t *);
+void			bcdef_free(bcdef_t * bcd);
+
+
+spocp_result_t	bcexp_eval(element_t *, element_t *, bcexp_t *, octarr_t **);
+spocp_result_t	bcond_check(element_t *,spocp_index_t *,octarr_t **,checked_t **);
+varr_t			*bcond_users(bcdef_t *, octet_t *);
+
+/*
+ * --- sllist.c --- 
+ */
+
+slnode_t	   *sl_new(boundary_t * item, int n, slnode_t * tail);
+void		sl_free_node(slnode_t * slp);
+void		sl_free_slist(slist_t * slp);
+int		 sl_rand(slist_t * slp);
+void		sl_rec_insert(slnode_t * old, slnode_t * new, int n);
+slnode_t	   *sl_rec_delete(slnode_t * node, boundary_t * item, int n);
+slnode_t	   *sl_rec_find(slnode_t * node, boundary_t * item, int n,
+				int *flag);
+slnode_t	   *sl_delete(slist_t * slp, boundary_t * item);
+void		sl_print(slist_t * slp);
+slnode_t	   *sl_insert(slist_t * slp, boundary_t * item);
+slnode_t	   *sln_dup(slnode_t * old);
+
+/*
+ * sum.c
+ */
+
+element_t	*get_indexes( junc_t *jp );
+
+/*
+ * check.c
+ */
+
+void            checked_free( checked_t *c );
+checked_t       *checked_rule( ruleinst_t *ri, checked_t **cr);
+spocp_result_t	checked_res( ruleinst_t *ri, checked_t **cr);
+void            add_checked( ruleinst_t *ri, spocp_result_t rc,
+                            octet_t *blob, checked_t **cr);
+void            checked_print( checked_t *c );
+
+
+/*
+ * spocp_result
+ */
+char *spocp_result_str( spocp_result_t r);
+
+#endif
+

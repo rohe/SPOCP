@@ -18,9 +18,10 @@
 #include <unistd.h>
 #include <string.h>
 
+#include <log.h>
 #include "spocpcli.h"
 
-/*================================================================================*/
+/*==========================================================================*/
 /*
  Expected usage:
 
@@ -29,6 +30,8 @@
  If spocpquery is missing it will take queries from STDIN 
  */
 
+char *label(int code);
+
 static void
 print_usage(char *prog)
 {
@@ -36,21 +39,34 @@ print_usage(char *prog)
 	printf("\t or %s [-d] [-a] -s spocpserver < file \n", prog);
 }
 
+char *OK = "OK";
+char *DENIED = "DENIED";
+
+char *label(int code)
+{
+    if (code == SPOCP_SUCCESS) {
+        return OK;
+    }
+    else {
+        return DENIED;
+    }
+}
+
 int
 main(int argc, char **argv)
 {
-	char	buf[BUFSIZ], *cp, *sp, *tmp;
-	int	i = 0, ok = 0, r, j;
-	SPOCP	*spocp;
+	char        buf[BUFSIZ], *cp, *sp, *tmp;
+	int         i = 0, ok = 0, r, j, test=0;
+	SPOCP       *spocp;
 	char		*sserv = NULL ;
 	queres_t	qres;
 	octet_t		**o;
 	octet_t		*query, *path = 0;
-	int		advanced = 0;
+	int         advanced = 0;
 
 	spocpc_debug = 0;
 
-	while ((i = getopt(argc, argv, "adhs:")) != EOF) {
+	while ((i = getopt(argc, argv, "adhs:t")) != EOF) {
 		switch (i) {
 
 		case 'd':
@@ -65,6 +81,10 @@ main(int argc, char **argv)
 			advanced = 1;
 			break;
 
+        case 't':
+            test = 1;
+            break;
+                
 		case 'h':
 			print_usage(argv[0]);
 			exit(0);
@@ -85,7 +105,7 @@ main(int argc, char **argv)
 
 	argc -= optind;
 	argv += optind;
-
+    
 	if (argc) {
 		for (i = 0; i < argc; i++) {
 			if (advanced)
@@ -141,12 +161,12 @@ main(int argc, char **argv)
 			}
 
 			if (advanced)
-				query = oct_new(0, buf);
+				query = oct_new(0, sp);
 			else
-				query = sexp_normalize( buf );
+				query = sexp_normalize(sp);
 
 			if( query == 0 ) {
-				fprintf(stderr,"[%s] not a s-expression\n", buf);
+				fprintf(stderr,"[%s] not a s-expression\n", sp);
 				continue ;
 			}
 
@@ -157,11 +177,16 @@ main(int argc, char **argv)
 			r = spocpc_send_query(spocp, path, query, &qres);
 
 			if (r == SPOCPC_OK) {
-				if (ok >= 0 && qres.rescode != ok) {
-					tmp = oct2strdup(query, 0);
-					printf("%d != %d on %s\n",
-					    qres.rescode, ok,  tmp);
-					free(tmp);	
+				if (ok >= 0 ) {
+                    if (qres.rescode != ok) {
+                        tmp = oct2strdup(query, 0);
+                        printf("\n%s != %s on %s\n",
+                               label(qres.rescode), label(ok),  tmp);
+                        free(tmp);
+                    }
+                    else {
+                        printf(".");
+                    }
 				}
 				else {
 					if ( qres.rescode == SPOCP_SUCCESS) {
@@ -186,6 +211,7 @@ main(int argc, char **argv)
 		}
 	}
 
+    printf("\n");
 	spocpc_send_logout(spocp);
 	spocpc_close(spocp);
 	free_spocp(spocp);

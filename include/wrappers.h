@@ -30,7 +30,7 @@ char	*Strcat(char *dest, char *src, int *size);
 char	*Strndup(char *s, size_t n);
 
 #ifndef HAVE_STRNDUP
-char           *strndup(const char *old, size_t sz);
+char    *strndup(const char *old, size_t sz);
 #endif
 
 #ifndef HAVE_STRLCAT
@@ -51,6 +51,6 @@ char	*xStrdup(char *s);
 char	*xStrcat(char *dest, char *src, int *size);
 char	*xStrndup(char *s, size_t n);
 void	xFree(void *vp);
-int	P_fclose(void *v);
+int     P_fclose(void *v);
 
 #endif

@@ -12,13 +12,19 @@
  ***************************************************************************/
 
 #include <config.h>
+#include <syslog.h>
+#include <stdio.h>
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #include <string.h>
 
 #include <wrappers.h>
-#include <func.h>
+#include <log.h>
+#include <result.h>
 
+/* #include <func.h> */
 /* #define AVLUS 1 */
 
 void	*
@@ -75,7 +81,7 @@ Free( void *v )
 	xFree(v);
 #else
 	free(v);
-#endif
+#endif 
 }
 
 void           *
@@ -285,7 +291,7 @@ xStrdup(char *s)
 {
 	char           *sp = strdup(s);
 
-	traceLog(LOG_DEBUG,"%p(%d)-strdup\n", sp, strlen(s));
+	traceLog(LOG_DEBUG,"%p(%d)-strdup", sp, strlen(s));
 
 	if (sp == 0)
 		FatalError("Out of memory", 0, 0);

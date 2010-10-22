@@ -1,7 +1,4 @@
 #include "locl.h"
-/*
- * RCSID("$Id$"); 
- */
 
 typedef struct _ptree {
 	int             list;
@@ -9,6 +6,10 @@ typedef struct _ptree {
 	struct _ptree  *next;
 	struct _ptree  *part;
 } ptree_t;
+
+#ifndef HAVE_STRNDUP
+char *strndup(const char *old, size_t sz);
+#endif
 
 /*
  * ----------------------------------------------------------------------------- 
@@ -117,30 +118,39 @@ recreate_sexp(octet_t * o, ptree_t * ptp)
 }
 
 /*
- * ----------------------------------------------------------------------------- 
- * The format of the rule file
- *
+ * --------------------------------------------------------------------------
+
+ The format of the rule file
+ 
+ line     = ( comment | global | rule | include | bconddef ) 
+ comment  = "#" text CR
+ rule     = "(" S_exp ")" [1*SP bcond [ 1*SP blob]] CR
+ global   = key "=" value
+ bconddef = key ":=" value
+ include  = ";include" filename 
+
+ * --------------------------------------------------------------------------
  */
 
 int
-read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
+read_rules(srv_t * srv, char *file, dbackdef_t * dbc)
 {
-	FILE           *fp;
-	char           *sp, *tmp;
-	int             n = 0, f = 0, r;
-	octet_t         *op;
-	octarr_t       *oa = 0;
-	ruleset_t      *rs = 0, *trs, *prs;
-	spocp_result_t  rc = SPOCP_SUCCESS;
-	spocp_charbuf_t	*buf;
-	spocp_chunk_t	*chunk = 0, *ck;
+	FILE                *fp;
+	char                *sp, *tmp;
+	int                 n = 0, f = 0, r;
+	octet_t             *op;
+	octarr_t            *oa = 0;
+	ruleset_t           *rs = 0, *trs, *prs;
+	spocp_result_t      rc = SPOCP_SUCCESS;
+	spocp_charbuf_t     *buf;
+	spocp_chunk_t       *chunk = 0, *ck;
 	spocp_chunkwrap_t   *cw;
-	spocp_ruledef_t	rdef;
-	struct stat	statbuf;
+	spocp_ruledef_t     rdef;
+	struct stat         statbuf;
 
 	if ((fp = fopen(file, "r")) == 0) {
-		LOG(SPOCP_EMERG) traceLog(LOG_ERR,"couldn't open rule file \"%s\"",
-					  file);
+		LOG(SPOCP_EMERG) 
+            traceLog(LOG_ERR,"couldn't open rule file \"%s\"", file);
 		op = oct_new( 256, NULL);
 		sp = getcwd(op->val, op->size);
 		traceLog(LOG_ERR,"I'm in \"%s\"", sp);
@@ -194,8 +204,8 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 								 * file */
 			ck = chunk->next;
 			tmp = oct2strdup( ck->val, 0 ) ;
-			LOG(SPOCP_DEBUG) traceLog(LOG_DEBUG,"include directive \"%s\"",
-						  tmp);
+			LOG(SPOCP_DEBUG) 
+                traceLog(LOG_DEBUG,"include directive \"%s\"", tmp);
 			if ((rc = read_rules(srv, tmp, dbc)) < 0) {
 				traceLog(LOG_ERR,"Include problem");
 			}
@@ -207,12 +217,9 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				oct_print(LOG_INFO,"ruleset", chunk->val);
 #endif
 				if ((trs = ruleset_find( chunk->val, rs)) == NULL) {
-					octet_t oct;
-
-					octln( &oct, chunk->val);
-					rs = ruleset_create(chunk->val, rs);
-					trs = ruleset_find(&oct, rs);
-					trs->db = db_new();
+                    trs = ruleset_add(&rs, NULL, chunk->val);
+                    if (trs == NULL)
+                        return 0;
 				}
 
 				ck = chunk->next;
@@ -249,16 +256,18 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 
 			LOG(SPOCP_DEBUG) {
 				octarr_print(LOG_DEBUG,oa);
-			}
-			
-			traceLog(LOG_INFO,"Adding rule to ruleset \"%s\"", trs->name);
+                traceLog(LOG_INFO,"Adding rule to ruleset \"%s\"", trs->name);
+			}			
 
-			/* walk upwards in the rulesset tree to find the boundary condition if it's
-				not on the same level */
-			for (prs = trs, r = SPOCP_UNAVAILABLE; (r == SPOCP_UNAVAILABLE) && prs; prs = prs->up )
-				r = dbapi_rule_add(&(trs->db), srv->plugin, &(prs->bcd), dbc, oa, NULL);
+			/* walk upwards in the rulesset tree to find the boundary 
+             condition if it's not on the same level */
+			for (prs = trs, r = SPOCP_UNAVAILABLE; 
+                 (r == SPOCP_UNAVAILABLE) && prs; prs = prs->up )
+				r = dbapi_rule_add(&(trs->db), srv->plugin, &(prs->bcd), dbc, 
+                                   oa, NULL);
 				if (r == SPOCP_UNAVAILABLE){
-					traceLog(LOG_INFO,"Unknown boundary condition at this level, trying higher up");
+					traceLog(LOG_INFO,
+                        "Unknown boundary condition at this level, trying higher up");
 				}
 					
 			if (r == SPOCP_SUCCESS)
@@ -266,7 +275,8 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 			else {
 				LOG(SPOCP_WARNING){
 				    oct_print(LOG_WARNING,"Failed to add rule", oa->arr[0]);
-					traceLog(LOG_INFO,"Reason for failure: \"%s\"", spocp_result_str(r));
+					traceLog(LOG_INFO,"Reason for failure: \"%s\"", 
+                             spocp_result_str(r));
 				}
 				f++;
 			}
@@ -286,8 +296,7 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 				}
 				else {
 					LOG( SPOCP_WARNING )
-						traceLog(LOG_WARNING,
-						    "Error in bconddef");
+						traceLog(LOG_WARNING,"Error in bconddef");
 					f++;
 					chunk_free( chunk ) ;
 					continue ;
@@ -311,24 +320,12 @@ read_rules(srv_t * srv, char *file, dbcmd_t * dbc)
 	if (rc != SPOCP_SUCCESS)
 		return -1;
 	else {
-		LOG(SPOCP_INFO) traceLog(LOG_INFO,"Stored %d rules, failed %d", n, f);
-
+		LOG(SPOCP_INFO) 
+            traceLog(LOG_INFO,"Stored %d rules, failed %d", n, f);
 		return f;
 	}
 }
 
-/***************************************************************
-
- Structure of the rule file:
-
- line     = ( comment | global | ruledef | include | bconddef ) 
- comment  = "#" text CR
- rule     = "(" S_exp ")" [1*SP bcond [ 1*SP blob]] CR
- global   = key "=" value
- bconddef = key ":=" value
- include  = ";include" filename
-
- ***************************************************************/
 
 static octet_t *
 bcref_create(char *bcname)
@@ -352,21 +349,22 @@ bcref_create(char *bcname)
  */
 
 int
-dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
+dback_read_rules(dbackdef_t * dbc, srv_t * srv, spocp_result_t * rc)
 {
-	octarr_t       *oa = 0, *roa = 0;
-	spocp_result_t  r;
-	int             i, f = 0, n = 0;
+	octarr_t        *oa = 0, *roa = 0;
+	int             i, n = 0;
+    spocp_result_t  r;
 	octet_t         dat0, dat1, *bcond, name;
-	char           *bcname = 0, *tmp;
-	ruleset_t      *rs;
+	char            *bcname = 0, *tmp;
+	ruleset_t       *rs;
 
-	oa = dback_all_keys(dbc, &r);
+    *rc = SPOCP_SUCCESS;
+	oa = dback_all_keys(dbc, rc);
 
 	memset(&dat0, 0, sizeof(octet_t));
 	memset(&dat1, 0, sizeof(octet_t));
 
-	if (r == SPOCP_SUCCESS && oa && oa->n) {
+	if (*rc == SPOCP_SUCCESS && oa && oa->n) {
 
 		if (srv->root == 0)
 			srv->root = ruleset_new(0);
@@ -386,9 +384,13 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 			if (bcspec_is(oa->arr[i]) == TRUE) {
 				tmp = oct2strdup(oa->arr[i], 0);
 
-				r = dback_read(dbc, tmp, &dat0, &dat1,
-					       &bcname);
-
+				r = dback_read(dbc, tmp, &dat0, &dat1, &bcname);
+                if (r != SPOCP_SUCCESS) {
+                    *rc = r;
+                    Free(tmp);
+                    return 0;
+                }
+                
 				if (dat0.len) {
 					oct_assign(&name, &tmp[6]);
 					bcdef_add(&(rs->bcd), srv->plugin, dbc, &name, &dat0);
@@ -410,9 +412,12 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 				    strndup(oa->arr[i]->val + 6,
 					     oa->arr[i]->len - 6);
 
-				r = dback_read(dbc, tmp, &dat0, &dat1,
-					       &bcname);
-
+				r = dback_read(dbc, tmp, &dat0, &dat1, &bcname);
+                if (r != SPOCP_SUCCESS) {
+                    *rc = r;
+                    return 0;
+                }
+                
 				if (dat0.len) {
 					oct_assign(&name, tmp);
 					bcdef_add(&(rs->bcd), srv->plugin, dbc, &name, &dat0);
@@ -430,6 +435,11 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 				continue;
 			tmp = oct2strdup(oa->arr[i], 0);
 			r = dback_read(dbc, tmp, &dat0, &dat1, &bcname);
+            if (r != SPOCP_SUCCESS) {
+                *rc = r;
+                Free(tmp);
+                return 0;
+            }
 			Free(tmp);
 
 			roa = octarr_add(roa, octdup(&dat0));
@@ -445,16 +455,14 @@ dback_read_rules(dbcmd_t * dbc, srv_t * srv, spocp_result_t * rc)
 				octarr_add(roa, octdup(&dat1));
 				octclr(&dat1);
 			}
-
-			if ((r =
-			     spocp_add_rule((void **) &(rs->db),
-					    roa)) == SPOCP_SUCCESS)
+            
+            r = spocp_add_rule((void **) &(rs->db), roa);
+			if ( r == SPOCP_SUCCESS)
 				n++;
 			else {
-				LOG(SPOCP_WARNING)
-				    traceLog(LOG_WARNING,"Failed to add rule: \"%s\"",
-					     dat0.val);
-				f++;
+                *rc = r;
+                Free(tmp);
+                return 0;
 			}
 			octarr_free(roa);
 

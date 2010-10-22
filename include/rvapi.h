@@ -1,29 +1,15 @@
-#include <struct.h>
+#ifndef __RVAPI_H
+#define __RVAPI_H
+
+#include <element.h>
 #include <spocp.h>
 
-int             element_size(element_t * e);
-int             element_type(element_t * e);
-element_t      *element_find_list(element_t * e, octet_t * tag);
-element_t      *element_first(element_t * e);
-element_t      *element_last(element_t * e);
-element_t      *element_nth(element_t * e, int n);
-element_t      *element_next(element_t * e, element_t * ep);
-void            element_reverse(element_t * e);
-element_t      *element_copy(element_t * e);
-element_t      *element_parent(element_t * e);
+element_t       *element_new_atom( octet_t *oct );
+element_t       *new_member( element_t *parent, element_t *original);
 
-void           *element_data(element_t * e);
+octarr_t        *parse_path(octet_t * o);
+char            *parse_intervall(octet_t * o, int *start, int *end);
 
-element_t      *element_eval(octet_t * spec, element_t * e, spocp_result_t *rc);
+element_t       *element_dup(element_t * ep);
 
-int             element_cmp(element_t * a, element_t * b);
-
-void            element_free(element_t * e);
-
-#define element_next( elem )  ((elem) ? (((element_t *)(elem))->next) : NULL ) ;
-
-element_t      *element_list_add(element_t * e, element_t * a);
-
-octet_t        *atoms_join(element_t * e, char *sep);
-
-octet_t        *element_atom_sub(octet_t * val, element_t * ep);
+#endif

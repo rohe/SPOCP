@@ -1,5 +1,4 @@
 #include "locl.h"
-RCSID("$Id$");
 
 #define MAX_NUMBER_OF_CONNECTIONS 64
 
@@ -7,9 +6,7 @@ static afpool_t *
 cpool_new(int nc)
 {
 	afpool_t       *afpool = 0;
-	pool_item_t    *pi;
 	pool_t         *pool;
-	conn_t         *con;
 	int             i;
 
 	if (0)
@@ -27,12 +24,7 @@ cpool_new(int nc)
 
 	if (nc) {
 		for (i = 0; i < nc; i++) {
-			con = conn_new();
-
-			pi = (pool_item_t *) Calloc(1, sizeof(pool_item_t));
-			pi->info = (void *) con;
-
-			pool_add(pool, pi);
+			pool_add(pool, pool_item_new((void *) conn_new()));
 		}
 	}
 
@@ -44,22 +36,15 @@ cpool_new(int nc)
 int
 srv_init(srv_t * srv, char *cnfg)
 {
-	/*
-	fprintf(stderr, "init_server\n");
-	fprintf(stderr, "Read config\n");
-	*/
 
 	if (read_config(cnfg, srv) == 0)
 		return -1;
-
-	/*
-	 * fprintf( stderr, "New ruleset\n" ) ; 
-	 */
 
 	if (srv->root == 0)
 		srv->root = ruleset_new(0);
 
 	pthread_mutex_init(&(srv->mutex), NULL);
+	pthread_mutex_init(&(srv->mlock), NULL);
 
 	/*
 	 * max number of simultaneously open connections 
@@ -67,6 +52,8 @@ srv_init(srv_t * srv, char *cnfg)
 	if (srv->nconn == 0)
 		srv->nconn = MAX_NUMBER_OF_CONNECTIONS;
 
+	if (0)
+		traceLog(LOG_INFO,"max simultaneous connections: %d\n", srv->nconn);
 	srv->connections = cpool_new(srv->nconn);
 
 	return 0;
@@ -86,7 +73,7 @@ srv_free( srv_t *srv)
 		tpool_destroy( srv->work, 1);
 
 	if (srv->root)
-		ruleset_free( srv->root, 1 );
+		remove_ruleset_tree( srv->root );
 
 	if (srv->plugin) 
 		plugin_unload_all( srv->plugin);

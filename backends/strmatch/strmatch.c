@@ -8,6 +8,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include <log.h>
 
 /*
  * There are two valid cases:

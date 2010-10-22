@@ -1,0 +1,21 @@
+#
+# test
+#
+
+(test (host 
+       (* suffix .catalogix.se)) 
+      (uid))
+
+(test3	(host (* suffix .catalogix.se))
+	(uid))
+
+(test2 (host (* suffix .catalogix.se))
+       (uid))
+
+(isstudent (uid))
+
+//*/server/(server(ip)(host))
+//*/operation/(operation QUERY(server(ip)(host)))
+//*/operation/(operation SUMMARY(server(ip)(host)))
+//*/operation/(operation LOGOUT(server(ip)(host)))
+

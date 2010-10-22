@@ -22,6 +22,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include <log.h>
 
 befunc          gdbm_test;
 int             P_gdbm_close(void *vp);

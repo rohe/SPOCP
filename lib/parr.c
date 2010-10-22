@@ -16,9 +16,10 @@
 
 #define START_ARR_SIZE  4
 
-#include <struct.h>
+#include <parr.h>
+#include <ll.h>
+#include <result.h>
 #include <wrappers.h>
-#include <func.h>
 
 
 parr_t         *
@@ -79,12 +80,15 @@ parr_t         *
 parr_add_nondup(parr_t * ap, item_t vp)
 {
 	int             i;
+    spocp_result_t  rc;
 
 	if (ap) {
 		for (i = 0; i < ap->n; i++)
-			if (ap->cf && (ap->cf(ap->vect[i], vp) == 0)) {
-				ap->refc[i] += 1;
-				return ap;
+			if (ap->cf && (ap->cf(ap->vect[i], vp, &rc) == 0)) {
+                if (rc==SPOCP_SUCCESS) {
+                    ap->refc[i] += 1;
+                    return ap;
+                }
 			}
 	}
 
@@ -95,23 +99,22 @@ parr_add_nondup(parr_t * ap, item_t vp)
  * --------------------------------------------------------------- 
  */
 
+/*
 void
 parr_nullterm(parr_t * pp)
 {
 	parr_add(pp, 0);
 
-	/*
-	 * don't really want to add a null item 
-	 */
 	pp->n--;
 }
+*/
 
 /*
  * ---------------------------------------------------------------- 
  */
 
 parr_t         *
-parr_dup(parr_t * ap, item_t ref)
+parr_dup(parr_t * ap)
 {
 	parr_t         *res;
 	int             i;
@@ -124,7 +127,7 @@ parr_dup(parr_t * ap, item_t ref)
 	for (i = 0; i < ap->n; i++) {
 		res->refc[i] = ap->refc[i];
 		if (ap->df)
-			res->vect[i] = ap->df(ap->vect[i], ref);
+			res->vect[i] = ap->df(ap->vect[i]);
 		else
 			res->vect[i] = ap->vect[i];
 	}
@@ -145,7 +148,7 @@ parr_join(parr_t * to, parr_t * from, int dup)
 
 	if (!to) {
 		if (dup)
-			to = parr_dup(from, 0);
+			to = parr_dup(from);
 		else
 			to = from;
 	} else if (from) {
@@ -168,14 +171,14 @@ parr_xor(parr_t * to, parr_t * from, int dup)
 
 	if (!to) {
 		if (dup)
-			to = parr_dup(from, 0);
+			to = parr_dup(from);
 		else
 			to = from;
 	} else if (from) {
 		for (i = 0; i < from->n; i++) {
 			if (to
 			    && (r = parr_find_index(to, from->vect[i])) >= 0) {
-				parr_rm_index(&to, r);
+				parr_rm_index(&to, r, 1);
 			} else
 				to = parr_add_nondup(to, from->vect[i]);
 		}
@@ -192,6 +195,7 @@ item_t
 parr_common(parr_t * avp1, parr_t * avp2)
 {
 	int             i, j;
+    spocp_result_t  rc;
 
 	if (!avp1 || !avp2)
 		return 0;
@@ -199,9 +203,10 @@ parr_common(parr_t * avp1, parr_t * avp2)
 	for (i = 0; i < avp1->n; i++) {
 		for (j = 0; j < avp2->n; j++) {
 			if (avp1->cf) {
-				if (avp1->cf(avp1->vect[i], avp2->vect[j]) ==
-				    0)
-					return avp1->vect[i];
+				if (avp1->cf(avp1->vect[i], avp2->vect[j], &rc) == 0)
+                    if (rc==SPOCP_SUCCESS) {
+                        return avp1->vect[i];
+                    }
 			} else if (avp1->vect[i] == avp1->vect[j])
 				return avp1->vect[i];
 		}
@@ -211,14 +216,15 @@ parr_common(parr_t * avp1, parr_t * avp2)
 }
 
 /*
- * create a new array the contains itemsthat appear in both arrays. I don't
+ * create a new array the contains items that appear in both arrays. I don't
  * care about ref counters here 
  */
 parr_t         *
 parr_or(parr_t * a1, parr_t * a2)
 {
-	parr_t         *res = 0;
+	parr_t          *res = 0;
 	int             i, j;
+    spocp_result_t  rc;
 
 	if (!a1 || !a2)
 		return 0;
@@ -226,8 +232,9 @@ parr_or(parr_t * a1, parr_t * a2)
 	for (i = 0; i < a1->n; i++) {
 		for (j = 0; j < a2->n; j++) {
 			if (a1->cf) {
-				if (a1->cf(a1->vect[i], a2->vect[j]) == 0)
-					res = parr_add(res, a1->vect[i]);
+				if (a1->cf(a1->vect[i], a2->vect[j], &rc) == 0)
+                    if (rc == SPOCP_SUCCESS)
+                        res = parr_add(res, a1->vect[i]);
 			} else if (a1->vect[i] == a2->vect[j])
 				res = parr_add(res, a1->vect[i]);
 		}
@@ -245,7 +252,7 @@ parr_and(parr_t * a1, parr_t * a2)
 {
 	parr_t         *res = 0;
 
-	res = parr_dup(a1, 0);
+	res = parr_dup(a1);
 
 	return parr_join(res, a2, 1);
 }
@@ -285,8 +292,10 @@ P_strcasecmp(item_t a, item_t b)
 }
 
 int
-P_strcmp(item_t a, item_t b)
+P_strcmp(item_t a, item_t b, spocp_result_t *rc)
 {
+    *rc = SPOCP_SUCCESS;
+    
 	return strcmp((char *) a, (char *) b);
 }
 
@@ -341,14 +350,17 @@ int
 parr_find_index(parr_t * pp, item_t pattern)
 {
 	int             i;
+    spocp_result_t  rc;
 
 	if (pp == 0)
 		return -1;
 
 	for (i = 0; i < pp->n; i++)
 		if (pp->cf) {
-			if (pp->cf(pp->vect[i], pattern) == 0)
-				return i;
+			if (pp->cf(pp->vect[i], pattern, &rc) == 0)
+                if (rc == SPOCP_SUCCESS) {
+                    return i;
+                }
 		} else if (pp->vect[i] == pattern)
 			return i;
 
@@ -393,9 +405,9 @@ parr_nth(parr_t * pp, int i)
  */
 
 void
-parr_rm_index(parr_t ** ppp, int i)
+parr_rm_index(parr_t ** ppp, int i, int enforce)
 {
-	int             j;
+	int            j, _free = 1;
 	parr_t         *pp = *ppp;
 
 	if (pp == 0)
@@ -406,23 +418,30 @@ parr_rm_index(parr_t ** ppp, int i)
 
 	/*
 	 * If there are more than one reference to this item don't delete it 
+     * unless enforce is true
 	 */
 
 	if (pp->refc[i] > 1) {
-		pp->refc[i] -= 1;
-		return;
+        if (enforce)
+            _free = 0;
+        else {
+            pp->refc[i] -= 1;
+            return;
+        }
 	}
 
 	/*
 	 * the last item and the refcount for that item is 1 
 	 */
+    
 	if (pp->n == 1 && i == 0 && pp->refc[0] == 1) {
 		parr_free(pp);
 		*ppp = 0;
 		return;
 	}
 
-	pp->ff(pp->vect[i]);
+    if (_free && pp->ff)
+        pp->ff(pp->vect[i]);
 
 	/*
 	 * reshuffle 
@@ -458,7 +477,7 @@ parr_rm_item(parr_t ** ppp, item_t vp)
 	if ((i = parr_get_index(*ppp, vp)) < 0)
 		return;
 
-	parr_rm_index(ppp, i);
+	parr_rm_index(ppp, i, 1);
 }
 
 /*
@@ -475,8 +494,8 @@ parr_items(parr_t * pp)
 }
 
 /*
- * Decrease the refcount with i and if it reaches or is less than 0 remove the 
- * pointer 
+ * Decrease the refcount with delta and if it reaches or is less than 0 
+ * remove the pointer.
  */
 
 void
@@ -516,25 +535,3 @@ parr_dec_refcount(parr_t ** ppp, int delta)
 	}
 }
 
-/*
- * ---------------------------------------------------------------- 
- */
-
-parr_t         *
-ll2parr(ll_t * ll)
-{
-	parr_t         *pp;
-	int             i;
-	node_t         *np;
-
-	pp = parr_new(ll->n, ll->cf, 0, ll->df, ll->pf);
-
-	for (i = 0, np = ll->head; i < ll->n; i++, np = np->next) {
-		pp->refc[i] = 1;
-		pp->vect[i] = np->payload;
-	}
-
-	pp->n = ll->n;
-
-	return pp;
-}

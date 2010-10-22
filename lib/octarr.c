@@ -20,7 +20,9 @@
 #include <config.h>
 
 #include <string.h>
+#include <stdio.h>
 
+#include <octet.h>
 #include <spocp.h>
 #include <wrappers.h>
 
@@ -125,20 +127,15 @@ octarr_mr(octarr_t * oa, size_t n)
 	}
 }
 /*! 
- * \brief Will free a octarr struct, but will not attempt to free the octet structs
- *     that are stored within the octarr struct.
+ * \brief Will free a octarr struct, but will not attempt to free the octet 
+ *     structs that are stored within the octarr struct.
  * \param oa A pointer to the octarr to be freed.
  */
 void
 octarr_half_free(octarr_t * oa)
 {
-	int             i;
-
 	if (oa) {
 		if (oa->size) {
-			for (i = 0; i < oa->n; i++)
-				Free(oa->arr[i]);
-
 			Free(oa->arr);
 		}
 		Free(oa);
@@ -219,16 +216,16 @@ octarr_rpop(octarr_t * oa)
  * not the fastest way you could do this 
  */
 /*!
- * \brief Adds all the octets stored in one octarr struct to another, removing them
- *   at the same time from the first. If the target is non existent the source is
- *   returned. If both target and source is not NULL, then the source octarr will
- *   be removed.
+ * \brief Adds all the octets stored in one octarr struct to another, 
+ *  removing them at the same time from the first. If the target is non 
+ *  existent the source is returned. If both target and source is not NULL, 
+ *  then the source octarr will be removed.
  * \param target The octarr into which the octet structs should be moved
  * \param source The octarr struct from which the octet structs are picked
  * \return A octarr struct with all the octet structs in it.
  */
 octarr_t       *
-octarr_join(octarr_t * target, octarr_t * source)
+octarr_extend(octarr_t * target, octarr_t * source)
 {
 	octet_t        *o;
 
@@ -276,7 +273,7 @@ octarr_rm(octarr_t * oa, int n)
  */
 
 /*!
- * \brief splits a octetstrin into pieces at the places where a specific
+ * \brief splits a octet string into pieces at the places where a specific
  *   octet occurs.
  * \param o The octet to be split
  * \param c The octet at which the string should be split
@@ -301,22 +298,20 @@ oct_split(octet_t * o, char c, char ec, int flag, int max)
 	oct = octdup(o);
 	oa = octarr_new(4);
 
-	for (sp = oct->val, l = oct->len, i = 0; l && (max == 0 || i < max);
+	for (sp = oct->val, l = oct->len, i = 1; l && (max == 0 || i < max);
 	     sp = cp) {
 		for (cp = sp, n = 0; l; cp++, n++, l--) {
-			if (*cp == ec) {
-				l--;
+			if (*cp == ec)
 				cp++;	/* skip escaped characters */
-			}
 			if (*cp == c)
 				break;
 		}
+        
 		oct->len = n;
-
 		octarr_add(oa, oct);
 
 		if (flag)
-			for (cp++; *cp == c; cp++, l--);
+			for (; *cp == c; cp++, l--);
 		else if (l)
 			cp++, l--;
 		else {
@@ -325,12 +320,23 @@ oct_split(octet_t * o, char c, char ec, int flag, int max)
 		}
 
 		oct = oct_new(0, 0);
-		oct->val = cp;
+		oct->base = oct->val = cp;
+        i++ ;
 	}
 
-	if (oct)
-		octarr_add(oa, oct);
-
+    if ((max != 0) && (max == i)) {
+		oct = oct_new(0, 0);
+        oct->len = l;
+		oct->base = oct->val = sp;
+    }
+    
+	if (oct) {
+        if (oct->len)
+            octarr_add(oa, oct);
+        else 
+            oct_free(oct);
+    }
+    
 	return oa;
 }
 
@@ -349,4 +355,13 @@ octarr_print( int pri, octarr_t *oa)
 			oct_print(pri, leading ,oa->arr[i]);
 		}
 	}
+}
+
+int octarr_len(octarr_t *oa)
+{
+    if(oa)
+        return oa->n;
+    else {
+        return -1;
+    }
 }

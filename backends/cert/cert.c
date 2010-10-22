@@ -22,6 +22,7 @@
 #include <spocp.h>
 #include <srvconf.h>
 #include <wrappers.h>
+#include <log.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

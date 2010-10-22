@@ -52,7 +52,8 @@ struct dback_struct {
 	 */
 	/*! start a transaction against a datastore */
 	dbackfn        *begin;
-	/*! ends a transaction against a datastore, without commiting any changes  */
+	/*! ends a transaction against a datastore, without commiting any 
+        changes  */
 	dbackfn        *end;
 	/*! commit a transaction against a datastore */
 	dbackfn        *commit;
@@ -71,25 +72,29 @@ struct dback_struct {
 typedef struct _dback_cmd_param {
 	dback_t        *dback;
 	void           *handle;
-} dbcmd_t;
+} dbackdef_t;
 
 /*
  * ---------------------------------------------------------------------- 
  */
 
-dback_t        *dback_load(char *name, char *load);
+octet_t         *datum_make(octet_t * rule, octet_t * blob, char *bcname);
+spocp_result_t  datum_parse(octet_t * arg, octet_t * rule, octet_t * blob, 
+                            char **bcname);
+
+dback_t         *dback_load(char *name, char *load);
 
 /*
  * dback_t *init_dback( plugin_t *pl ) ; 
  */
-spocp_result_t  dback_init(dbcmd_t * dbc);
+spocp_result_t  dback_init(dbackdef_t * dbc);
 
-spocp_result_t  dback_save(dbcmd_t * d, char *, octet_t *, octet_t *, char *);
-spocp_result_t  dback_replace(dbcmd_t * d, char *, octet_t *, octet_t *,
+spocp_result_t  dback_save(dbackdef_t * d, char *, octet_t *, octet_t *, char *);
+spocp_result_t  dback_replace(dbackdef_t * d, char *, octet_t *, octet_t *,
 			      char *);
-spocp_result_t  dback_read(dbcmd_t * d, char *, octet_t *, octet_t *, char **);
-spocp_result_t  dback_delete(dbcmd_t * d, char *key);
-octarr_t       *dback_all_keys(dbcmd_t * dbc, spocp_result_t * r);
+spocp_result_t  dback_read(dbackdef_t * d, char *, octet_t *, octet_t *, char **);
+spocp_result_t  dback_delete(dbackdef_t * d, char *key);
+octarr_t       *dback_all_keys(dbackdef_t * dbc, spocp_result_t * r);
 
 /*
  * void *dback_open( dback_t *dback, spocp_result_t *r ) ; spocp_result_t
@@ -98,8 +103,8 @@ octarr_t       *dback_all_keys(dbcmd_t * dbc, spocp_result_t * r);
  * *h, octet_t *, spocp_result_t * ) ; 
  */
 
-spocp_result_t  dback_begin(dbcmd_t * d);
-spocp_result_t  dback_end(dbcmd_t * d);
-spocp_result_t  dback_commit(dbcmd_t *);
-spocp_result_t  dback_rollback(dbcmd_t *);
+spocp_result_t  dback_begin(dbackdef_t * d);
+spocp_result_t  dback_end(dbackdef_t * d);
+spocp_result_t  dback_commit(dbackdef_t *);
+spocp_result_t  dback_rollback(dbackdef_t *);
 #endif

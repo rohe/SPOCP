@@ -15,32 +15,33 @@
 
 #include <string.h>
 
-#include <db0.h>
-#include <func.h>
+#include <index.h>
+#include <rdb.h>
+
 #include <wrappers.h>
+#include <log.h>
 
 #define MAX(a,b) ((a) < (b) ? b : a)
 
 /* #define AVLUS 1 */
+
+/*!
+ * \brief Creates and initializes a spocp index struct
+ * \param size The size of the rule instance array
+ * \return A newly created spocp index struct
+ */
 
 spocp_index_t	*
 index_new(int size)
 {
 	spocp_index_t	*new;
 
-	new = (spocp_index_t *) Malloc(sizeof(spocp_index_t));
+	new = (spocp_index_t *) Calloc(1, sizeof(spocp_index_t));
 
 	if (size) {
 		new->size = size;
 		new->arr = (ruleinst_t **) Calloc(size, sizeof(ruleinst_t *));
-#ifdef AVLUS
-		traceLog(LOG_DEBUG,"index_new size %d -> %p", size, new->arr);
-#endif
-	} else {
-		new->size = 0;
-		new->arr = 0;
-	}
-	new->n = 0;
+	} 
 
 	return new;
 }
@@ -59,9 +60,6 @@ index_dup(spocp_index_t * id, ruleinfo_t * ri)
 	ruleinst_t	 *r;
 
 	new = index_new(id->size);
-#ifdef AVLUS
-	traceLog(LOG_DEBUG, "index_dup %p",id);
-#endif
 
 	for (i = 0; i < id->n; i++) {
 
@@ -70,8 +68,7 @@ index_dup(spocp_index_t * id, ruleinfo_t * ri)
 		if (ri != 0) {
 			new->arr[i] = rdb_search(ri->rules, r->uid);
 		} else
-			new->arr[i] = id->arr[i];	/* NO new
-							 * ruleinstances ? */
+			new->arr[i] = id->arr[i];	/* NO new ruleinstances ? */
 
 		new->n++;
 	}
@@ -107,6 +104,12 @@ void index_delete( spocp_index_t *si)
 	}
 }
 
+/*!
+ * \brief Add a rule instance to the index array
+ * \param id Pointer to the index struct
+ * \param ri Pointer to the rule instance
+ * \return Pointer to the index struct
+ */
 spocp_index_t		*
 index_add(spocp_index_t * id, ruleinst_t * ri)
 {
@@ -173,9 +176,9 @@ index_rm(spocp_index_t * id, ruleinst_t * ri)
 }
 
 /*!
- * \brief Creates a spocp_index that contains the ruleinst pointers that appears in 
- * both of the spocp_index'es given. Non-invasive, that is neither a not b is affected
- * by the and'ing.
+ * \brief Creates a spocp_index that contains the ruleinst pointers that 
+ *  appears in both of the spocp_index'es given. Non-invasive, that is 
+ *  neither a not b is affected by the and'ing.
  * \param a The first spocp_index
  * \param b The second spocp_index
  * \result A newly allocated spocp_index containing the the result, if there are no
@@ -191,17 +194,12 @@ index_and( spocp_index_t *a, spocp_index_t *b)
 		return NULL;
 
 	res = index_new(MAX(a->n, b->n));
-#ifdef AVLUS
-	traceLog(LOG_DEBUG, "index_and %p",res);
-#endif
 
 	for (i = 0; i < a->n; i++)
 		for( j = 0; j < b->n; j++)
 			if (a->arr[i] == b->arr[j])
 				res->arr[res->n++] = a->arr[i];
 	
-	/* traceLog(LOG_DEBUG,"index_and => %d rules", res->n);*/
-
 	if (res->n == 0) {
 		index_delete( res );
 		return NULL;
@@ -211,11 +209,11 @@ index_and( spocp_index_t *a, spocp_index_t *b)
 }
 
 /*!
- * \brief Adds the set of ruleinst pointers that appears in a spocp_index struct
- * to another spocp_index struct
+ * \brief Adds the set of ruleinst pointers that appears in a spocp_index 
+ *  struct to another spocp_index struct
  * \param a The spocp_index struct to which the pointer should be added
- * \param b The spocp_index struct which pointer should be added. Duplicates will be
- * avoided
+ * \param b The spocp_index struct which pointer should be added. 
+ *  Duplicates will be avoided
  */
 void
 index_extend( spocp_index_t *a, spocp_index_t *b)

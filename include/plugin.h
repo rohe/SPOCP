@@ -3,15 +3,16 @@
  * \author Roland Hedberg <roland@catalogix.se>
  * \brief Struct definitions and function prototypes for backends 
  */
-#ifndef __plugin_h
-#define __plugin_h
+#ifndef __PLUGIN_H
+#define __PLUGIN_H
 
+/*
 #include <config.h>
+*/
 
-#include <time.h>
-
-#include <struct.h>
-#include <be.h>
+#include <element.h>
+#include <varr.h>
+#include <cache.h>
 
 #if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H
 #include <pthread.h>
@@ -19,56 +20,7 @@
 
 #include <spocp.h>
 #include <rdwr.h>
-
-struct _pdyn;
-struct _varr;
-
-
-struct _cmd_param;
-
-
-/*
- * ---------------------------------------------------------------------- 
- */
-
-/****** caching **********************/
-
-/*! \brief Struct for keeping cached values */ 
-typedef struct {
-	/*! A hash of the query that produced this cachevalue */
-	unsigned int    hash;
-	/*! A 'dynamic' blob to be returned */
-	octet_t         blob;
-	/*! When this cache becomes invalid */
-	unsigned int    timeout;
-	/*! The cached result */
-	int             res;
-} cacheval_t;
-
-/*! \brief Information about how long things should be cached */
-typedef struct cachetime_t {
-	/*! The cache time */
-	time_t          limit;
-	/*! A pattern that can be applied to a query to see if this information should
-	 *  be used when caching */
-	octet_t         pattern;
-	/*! The next piece of caching information */
-	struct cachetime_t *next;
-} cachetime_t;
-
-/*
- * ------------------------------------ 
- */
-
-/*! \brief A set of cached results */
-typedef struct {
-	/*! an array in which to store the cached results */
-	struct _varr   *va;
-#if defined HAVE_LIBPTHREAD || defined HAVE_PTHREAD_H
-	/*! A read/write lock on the cache */
-	pthread_rdwr_t  rw_lock;
-#endif
-} cache_t;
+#include <be.h>
 
 /*
  * ------------------------------------ 
@@ -159,24 +111,24 @@ typedef struct plugin_t {
 	 * to be loaded really is a spocp backend */
 	unsigned long	magic;
 	/*! The runtime stuff */
-	pdyn_t		*dyn;
+	pdyn_t          *dyn;
 	/*! Runtime statistics */
-	stat_t		*stat;
+	stat_t          *stat;
 	/*! the dynamic library handle */ 
-	void		*handle;	
+	void            *handle;	
 	/*! where the plugin can keep its data */
-	void		*conf;	
+	void            *conf;	
 	/*! The name by which the backend should be known to the server*/
-	char		*name;
+	char            *name;
 	/*! A pointer to the backend test function */
-	befunc		*test;
+	befunc          *test;
 	/*! A pointer to the backend initialization function */
-	beinitfn	*init;
+	beinitfn        *init;
 	/*! A pointer to a set of commands that should be used when specified
 	 * directives appear in the configuration file */
-	conf_com_t	*ccmds;
+	conf_com_t      *ccmds;
 	/*! For the backend to release all it's private configuration */
-	conf_free	*free;
+	conf_free       *free;
 } plugin_t;
 
 /*! The Spocp library major version number */
@@ -198,7 +150,7 @@ typedef struct plugin_t {
                                 NULL, \
                                 NULL
 
-/*! default struct settings for a persistent store backend */
+/*! default struct settings for a persistent backend store */
 #define SPOCP20_DBACK_STUFF	MODULE_MAGIC_NUMBER_MAJOR, \
 				MODULE_MAGIC_NUMBER_MINOR, \
 				__FILE__, \
@@ -214,7 +166,7 @@ typedef struct plugin_t {
 time_t          cachetime_set(octet_t * str, cachetime_t * ct);
 cachetime_t    *cachetime_new(octet_t * s);
 void            cachetime_free(cachetime_t * s);
-void		cache_free( cache_t *cp );
+void            cache_free( cache_t *cp );
 
 /*
  * ---------------------------------------------------------------------- 
@@ -223,8 +175,8 @@ void		cache_free( cache_t *cp );
 pdyn_t         *pdyn_new(int size);
 void            pdyn_free(pdyn_t * pdp);
 
-void		plugin_unload( plugin_t * );
-void		plugin_unload_all( plugin_t * );
+void            plugin_unload( plugin_t * );
+void            plugin_unload_all( plugin_t * );
 
 /*
  * ---------------------------------------------------------------------- 
@@ -243,7 +195,8 @@ plugin_t       *init_plugin(plugin_t * top);
 plugin_t       *plugin_match(plugin_t * top, octet_t * oct);
 /*! Defined in lib/plugin.c */
 plugin_t       *plugin_get(plugin_t * top, char *name);
-plugin_t       *plugin_load(plugin_t * top, char *name, char *load);
+plugin_t       *plugin_load(plugin_t * top, char *name, char *load, 
+                            plugin_t * stat);
 void            plugin_display(plugin_t * pl);
 int             plugin_add_cachedef(plugin_t * top, char *s);
 

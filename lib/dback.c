@@ -24,9 +24,9 @@
 #include <dback.h>
 #include <plugin.h>
 #include <wrappers.h>
-#include <func.h>
 #include <macros.h>
 #include <proto.h>
+#include <log.h>
 
 /*
  * ---------------------------------------------------------------------- 
@@ -38,14 +38,16 @@ dback_t		   *dback_load(char *name, char *load);
  * ---------------------------------------------------------------------- 
  */
 /*!
- * \brief Does all the dynamic link loader stuff, that is opens the dynamic library 
- * and connects the defined symbols to functions in the library. Possible
- * initialization functions contained in the library is NOT run by this
- * routine. There exists functions that are necessary for a well functioning
- * persisten datastore if any of these are not present then this routine will
- * fail. \param name The name of the plugin \param load The filename of the
- * library to be loaded \return A pointer to a dback_t struct with all the
- * values filled in. 
+ * \brief Does all the dynamic link loader stuff, that is opens the dynamic
+ *  library and connects the defined symbols to functions in the library. 
+ *  Possible initialization functions contained in the library is NOT run by 
+ *  this routine. 
+ *  There exists functions that are necessary for a well functioning
+ *  persistent datastore if any of these are not present then this routine will
+ *  fail. 
+ *  \param name The name of the plugin 
+ *  \param load The filename of the library to be loaded 
+ *  \return A pointer to a dback_t struct with all the values filled in. 
  */
 dback_t		   *
 dback_load(char *name, char *load)
@@ -84,10 +86,9 @@ dback_load(char *name, char *load)
  * ---------------------------------------------------------------------- 
  */
 
-static octet_t *
+octet_t *
 datum_make(octet_t * rule, octet_t * blob, char *bcname)
 {
-	octet_t		*oct = 0;
 	int		len = 0;
 	unsigned int	size;
 	char		*str;
@@ -106,13 +107,7 @@ datum_make(octet_t * rule, octet_t * blob, char *bcname)
 
 	sexp_printv(str, &size, "olola", rule, ":", blob, ":", bcname);
 
-	oct = (octet_t *) Malloc(sizeof(octet_t));
-
-	oct->val = str;
-	oct->size = len;
-	oct->len = len - size;
-
-	return oct;
+	return str2oct(str, 1);
 }
 
 /*
@@ -123,7 +118,7 @@ datum_make(octet_t * rule, octet_t * blob, char *bcname)
  * The arg has the following format <rulelen> ':' rule ':' [<bloblen> ':'
  * blob] ':' [<bcnamelen> ':' bcname] created by datum_make() 
  */
-static spocp_result_t
+spocp_result_t
 datum_parse(octet_t * arg, octet_t * rule, octet_t * blob, char **bcname)
 {
 	spocp_result_t	r;
@@ -177,17 +172,18 @@ datum_parse(octet_t * arg, octet_t * rule, octet_t * blob, char **bcname)
  * ---------------------------------------------------------------------- 
  */
 /*!
- * \brief Runs the initialization function present in the database backend library
- * \param dbc A link to the backend information \return SPOCP_SUCCESS on
- * success otherwise an appropriate error code 
+ * \brief Runs the initialization function present in the database 
+ *  backend library
+ * \param dbc A link to the backend information 
+ * \return SPOCP_SUCCESS on success otherwise an appropriate error code 
  */
 
 spocp_result_t
-dback_init(dbcmd_t * dbc)
+dback_init(dbackdef_t * dbc)
 {
 	spocp_result_t	r = SPOCP_UNAVAILABLE;
 
-	if (dbc && dbc->dback && dbc && dbc->dback->init)
+	if (dbc && dbc->dback && dbc->dback->init)
 		dbc->dback->init(dbc, dbc->dback->conf, 0, &r);
 
 	return r;
@@ -197,31 +193,35 @@ dback_init(dbcmd_t * dbc)
  * ---------------------------------------------------------------------- 
  */
 /*!
- * \brief Stores information in the persistent storage \param dbc A link to the
- * backend information 
+ * \brief Stores information in the persistent storage 
+ * \param dbc A link to the backend information 
  * \param k The key under which the information should be stored. 
  * \param o0, o1, s Pieces of the information to be stored 
- * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error code 
+ * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate 
+ *  error code 
  */
 spocp_result_t
-dback_save(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
+dback_save(dbackdef_t * dbc, char *k, octet_t *o0, octet_t *o1, char *s)
 {
 	octet_t		   *datum;
-	spocp_result_t	r;
+	spocp_result_t	r = SPOCP_SUCCESS;
 
 	if (dbc == 0 || dbc->dback == 0) {
 		DEBUG(SPOCP_DSRV)
-			traceLog( LOG_WARNING, "No persistent store available %p:%p", dbc, dbc->dback);
+			traceLog( LOG_WARNING, "No persistent store available %p:%p", 
+                     dbc, dbc->dback);
 		return SPOCP_SUCCESS;
 	}
 
 	datum = datum_make(o0, o1, s);
 
-	traceLog( LOG_DEBUG, "Writing to persistent store" );
+    DEBUG(SPOCP_DSRV)
+        traceLog( LOG_DEBUG, "Writing to persistent store" );
 
 	dbc->dback->put(dbc, (void *) k, (void *) datum, &r);
 	if (r != SPOCP_SUCCESS ) {
-		traceLog( LOG_WARNING, "Problem writing to persistent store errno=%d", r);
+		traceLog( LOG_WARNING, 
+                 "Problem writing to persistent store errno=%d", r);
 	}
 
 	oct_free(datum);
@@ -234,13 +234,15 @@ dback_save(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
  */
 /*!
  * \brief Replaces information stored under a specific key in the persistent
- * storage \param dbc A link to the backend information \param k The key under 
- * which the information should be stored. \param o0, o1, s Pieces of the
- * information to be stored \return SPOCP_SUCCESS on success otherwise an
- * hopefully appropriate error code 
+ *  storage 
+ * \param dbc A link to the backend information 
+ * \param k The key under which the information should be stored. 
+ * \param o0, o1, s Pieces of the information to be stored 
+ * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error
+ *  code 
  */
 spocp_result_t
-dback_replace(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
+dback_replace(dbackdef_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
 {
 	octet_t		   *datum;
 	spocp_result_t	r;
@@ -262,14 +264,16 @@ dback_replace(dbcmd_t * dbc, char *k, octet_t * o0, octet_t * o1, char *s)
  */
 
 /*!
- * \brief Reads stored information from the persistent storage \param dbc
- * Information on the persistent store \param key The key under which the
- * information should be stored. \param o0, o1, s The information from the
- * persistent storage split into its original pieces. \return SPOCP_SUCCESS
- * on success otherwise an hopefully appropriate error code 
+ * \brief Reads stored information from the persistent storage 
+ * \param dbc Information on the persistent store 
+ * \param key The key under which the information should be stored. 
+ * \param o0, o1, s The information from the persistent storage split into 
+ *  its original pieces. 
+ * \return SPOCP_SUCCESS on success otherwise an hopefully appropriate error
+ *  code 
  */
 spocp_result_t
-dback_read(dbcmd_t * dbc, char *key, octet_t * o0, octet_t * o1, char **s)
+dback_read(dbackdef_t * dbc, char *key, octet_t * o0, octet_t * o1, char **s)
 {
 	octet_t		   *datum = 0;
 	spocp_result_t	r;
@@ -288,13 +292,14 @@ dback_read(dbcmd_t * dbc, char *key, octet_t * o0, octet_t * o1, char **s)
  */
 /*!
  * \brief Deletes a information pieces connected to a specific key from the
- * persistent storage. \param dbc A link to the backend information \param
- * key The key under which the information was stored. \return An appropriate
- * result code 
+ * persistent storage. 
+ * \param dbc A link to the backend information 
+ * \param key The key under which the information was stored. 
+ * \return An appropriate result code 
  */
 
 spocp_result_t
-dback_delete(dbcmd_t * dbc, char *key)
+dback_delete(dbackdef_t * dbc, char *key)
 {
 	spocp_result_t	r;
 
@@ -312,13 +317,13 @@ dback_delete(dbcmd_t * dbc, char *key)
 /*!
  * \brief Gets all keys from the persistent storage This is dback_open(),
  * dback_first_key(), dback_next_key(), dback_close rolled into one function.
- * \param dbc A link to the persistent store information \param r A pointer to 
- * an int where the result code can be placed. \return A octetarr struct
- * containing all the keys as octet_t structs 
+ * \param dbc A link to the persistent store information 
+ * \param r A pointer to an int where the result code can be placed. 
+ * \return A octetarr struct containing all the keys as octet_t structs 
  */
 
 octarr_t	   *
-dback_all_keys(dbcmd_t * dbc, spocp_result_t * r)
+dback_all_keys(dbackdef_t * dbc, spocp_result_t * r)
 {
 	if (dbc && dbc->dback == 0)
 		return 0;
@@ -330,12 +335,13 @@ dback_all_keys(dbcmd_t * dbc, spocp_result_t * r)
  * ---------------------------------------------------------------------- 
  */
 /*!
- * \brief Begins a transaction against the persistent store \param dbc A link to
- * the persistent store information \return A Spocp result code 
+ * \brief Begins a transaction against the persistent store 
+ * \param dbc A link to the persistent store information 
+ * \return A Spocp result code 
  */
 
 spocp_result_t
-dback_begin(dbcmd_t * dbc)
+dback_begin(dbackdef_t * dbc)
 {
 	void		   *handle;
 	spocp_result_t	r = SPOCP_SUCCESS;
@@ -352,12 +358,13 @@ dback_begin(dbcmd_t * dbc)
  * ---------------------------------------------------------------------- 
  */
 /*!
- * \brief Ends a transaction \param dbc A link to the persistent store information
+ * \brief Ends a transaction 
+ * \param dbc A link to the persistent store information
  * \return The result code 
  */
 
 spocp_result_t
-dback_end(dbcmd_t * dbc)
+dback_end(dbackdef_t * dbc)
 {
 	spocp_result_t	r = SPOCP_NOT_SUPPORTED;
 
@@ -377,7 +384,7 @@ dback_end(dbcmd_t * dbc)
  */
 
 spocp_result_t
-dback_commit(dbcmd_t * dbc)
+dback_commit(dbackdef_t * dbc)
 {
 	spocp_result_t	r = SPOCP_NOT_SUPPORTED;
 
@@ -391,12 +398,14 @@ dback_commit(dbcmd_t * dbc)
  * ---------------------------------------------------------------------- 
  */
 /*!
- * \brief Discards all the changes that has been done so far in this transaction.
- * \param dbc A link to the backend information \return The result code 
+ * \brief Discards all the changes that has been done so far in this 
+ *  transaction.
+ * \param dbc A link to the backend information 
+ * \return The result code 
  */
 
 spocp_result_t
-dback_rollback(dbcmd_t * dbc)
+dback_rollback(dbackdef_t * dbc)
 {
 	spocp_result_t	r = SPOCP_NOT_SUPPORTED;
 

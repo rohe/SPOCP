@@ -6,43 +6,26 @@
 #include <errno.h>
 
 #include <spocp.h>
-#include <struct.h>
+#include <element.h>
+#include <octet.h>
 #include <varr.h>
+#include <verify.h>
 #include <wrappers.h>
-
-/*
- * verify 
- */
-
-spocp_result_t  is_numeric(octet_t * op, long *l);
-spocp_result_t  numstr(char *s, long *l);
-spocp_result_t  is_ipv4(octet_t * op, struct in_addr *ia);
-spocp_result_t  is_date(octet_t * op);
-spocp_result_t  is_time(octet_t * op);
-spocp_result_t  is_extref(octet_t * op);
-spocp_result_t  is_ipv4_s(char *ip, struct in_addr *ia);
-#ifdef USE_IPV6
-spocp_result_t  is_ipv6_s(char *ip, struct in6_addr *ia);
-spocp_result_t  is_ipv6(octet_t * op, struct in6_addr *ia);
-#endif
+#include <range.h>
+#include <log.h>
 
 /*
  *
  */
 
 #ifdef USE_IPV6
-int             ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2);
+int     ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2);
 #endif
-int             ipv4cmp(struct in_addr *ia1, struct in_addr *ia2);
-spocp_result_t  element_get(octet_t * oct, element_t ** epp);
+int     ipv4cmp(struct in_addr *ia1, struct in_addr *ia2);
+
+int     elementcmp( element_t *a, element_t *b, octet_t *str );
 
 extern int debug;
-
-/*
- *
- */
-
-int elementcmp( element_t *a, element_t *b, octet_t *str );
 
 /*
  * ----------------------------------------------------------------------
@@ -58,7 +41,7 @@ atomcmp( atom_t *a, atom_t *b, octet_t *str )
 		c = oct2strdup( &a->val, '%' );
 		s = oct2strdup( &b->val, '%' );
 	
-		printf("atomcmp: [%s][%s] => %d\n", c,s,r);
+		printf("atomcmp: [%s][%s] => %d\n", c,s,r); 
 
 		Free(c);
 		Free(s);
@@ -72,7 +55,7 @@ atomcmp( atom_t *a, atom_t *b, octet_t *str )
 }
 
 static int
-atom2boundarycmp( atom_t *a, boundary_t *b, int *dir, octet_t *str)
+atom2boundarycmp( atom_t *a, boundary_t *b, int *dir)
 {
 	int		res = 0, v = 0;
 	struct in_addr	ia4;
@@ -137,44 +120,12 @@ atom2boundarycmp( atom_t *a, boundary_t *b, int *dir, octet_t *str)
 }
 
 static int
-boundarycmp( boundary_t *a, boundary_t *b)
-{
-	int		v = 0;
-	
-	if (( a->type & RTYPE) != (b->type & RTYPE)) return -2;
-
-	switch (b->type & RTYPE) {
-	case SPOC_ALPHA:
-	case SPOC_DATE:
-		v = octcmp(&a->v.val, &b->v.val);
-		break;
-
-	case SPOC_TIME:
-	case SPOC_NUMERIC:
-		v = a->v.num - b->v.num;
-		break;
-
-	case SPOC_IPV4:
-		v = ipv4cmp(&a->v.v4, &b->v.v4);
-		break;
-
-#ifdef USE_IPV6
-	case SPOC_IPV6:	/* Can be viewed as a array of unsigned ints */
-		v = ipv6cmp(&a->v.v6, &b->v.v6);
-		break;
-#endif
-	}
-
-	return v;
-}
-
-static int
-atom2rangecmp( atom_t *a, range_t *r, octet_t *str )
+atom2rangecmp( atom_t *a, range_t *r )
 {
 	int d;
 
 	if ( r->lower.type & BTYPE ) {
-		if ( atom2boundarycmp( a, &r->lower, &d, str ) == 1 ) 
+		if ( atom2boundarycmp( a, &r->lower, &d ) == 1 ) 
 			return 1;
 		else if ((r->lower.type & BTYPE) == (EQ|GT) && d >= 0 ) ;
 		else if ((r->lower.type & BTYPE) == GT && d > 0 ) ;
@@ -183,7 +134,7 @@ atom2rangecmp( atom_t *a, range_t *r, octet_t *str )
 	}
 
 	if( r->upper.type & BTYPE ) {
-		if ( atom2boundarycmp( a, &r->upper, &d, str ) == 1 ) 
+		if ( atom2boundarycmp( a, &r->upper, &d ) == 1 ) 
 			return 1;
 		else if ((r->upper.type & BTYPE) == (EQ|LT) && d <= 0);
 		else if ((r->upper.type & BTYPE) == LT && d < 0 );
@@ -196,7 +147,7 @@ atom2rangecmp( atom_t *a, range_t *r, octet_t *str )
 
 /* anything but 0 is failure */
 static int
-atom2prefixcmp( atom_t *a, atom_t *s, octet_t *str)
+atom2prefixcmp( atom_t *a, atom_t *s)
 {
 	if( a->val.len >= s->val.len )
 		return octncmp( &a->val, &s->val, s->val.len);
@@ -205,7 +156,7 @@ atom2prefixcmp( atom_t *a, atom_t *s, octet_t *str)
 }
 
 static int
-atom2suffixcmp( atom_t *a, atom_t *s, octet_t *str)
+atom2suffixcmp( atom_t *a, atom_t *s)
 {
 	octet_t tmp;
 	size_t n;
@@ -221,41 +172,25 @@ atom2suffixcmp( atom_t *a, atom_t *s, octet_t *str)
 }
 
 static int
-suffixcmp( atom_t *a, atom_t *b, octet_t *str )
+suffixcmp( atom_t *a, atom_t *b)
 {
 	return octcmp( &a->val, &b->val );
 }
 
 static int
-prefixcmp( atom_t *a, atom_t *b, octet_t *str )
+prefixcmp( atom_t *a, atom_t *b)
 {
 	return octcmp( &a->val, &b->val );
 }
 
 static int
-rangecmp( range_t *a, range_t *b, octet_t *str )
+rangecmp( range_t *a, range_t *b )
 {
-	int r;
+	int             r;
+    spocp_result_t  rc;
 
-	 r = boundarycmp( &a->lower, &b->lower );
-
-/* 
-	if ((r->lower.type & BTYPE) == (EQ|GT) && d >= 0 ) ;
-	else if ((r->lower.type & BTYPE) == GT && d > 0 ) ;
-	else 
-		return 1;	
-*/
-
-	r = boundarycmp( &a->lower, &b->upper ) ;
-
-/*
-	else if ((r->lower.type & BTYPE) == (EQ|LT) && d <= 0 ) 
-		return 0;
-	else if ((r->lower.type & BTYPE) == GT && d > 0 ) 
-		return 0;
-	else 
-		return 1;	
-*/
+    r = boundarycmp( &a->lower, &b->lower, &rc );
+	r = boundarycmp( &a->lower, &b->upper, &rc ) ;
 
 	return 0;
 }
@@ -301,13 +236,13 @@ elementcmp( element_t *a, element_t *b, octet_t *str )
 			return atomcmp( a->e.atom, b->e.atom, str);	
 
 		case SPOC_PREFIX:
-			return atom2prefixcmp( a->e.atom, b->e.atom, str);
+			return atom2prefixcmp( a->e.atom, b->e.atom);
 			
 		case SPOC_SUFFIX:
-			return atom2suffixcmp( a->e.atom, b->e.atom, str);
+			return atom2suffixcmp( a->e.atom, b->e.atom);
 
 		case SPOC_RANGE:
-			return atom2rangecmp( a->e.atom, b->e.range, str);
+			return atom2rangecmp( a->e.atom, b->e.range);
 
 		case SPOC_SET:
 			return element2setcmp( a, b->e.set, str );
@@ -320,17 +255,17 @@ elementcmp( element_t *a, element_t *b, octet_t *str )
 
 	case SPOC_PREFIX:
 		if (b->type == SPOC_PREFIX)
-			return prefixcmp( a->e.atom, b->e.atom, str);
+			return prefixcmp( a->e.atom, b->e.atom);
 		break;
 
 	case SPOC_SUFFIX:
 		if (b->type == SPOC_SUFFIX)
-			return suffixcmp( a->e.atom, b->e.atom, str);
+			return suffixcmp( a->e.atom, b->e.atom);
 		break;
 
 	case SPOC_RANGE:
 		if (b->type == SPOC_RANGE)
-			return rangecmp( a->e.range, b->e.range, str);
+			return rangecmp( a->e.range, b->e.range);
 		else if( b->type == SPOC_SET )
 			return element2setcmp( a, b->e.set, str );
 		break;

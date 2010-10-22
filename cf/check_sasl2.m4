@@ -1,5 +1,5 @@
 dnl sasl.m4 -- Find the path to the Cyrus SASL libraries.
-dnl $Id$
+dnl $Id: check_sasl2.m4 249 2004-04-05 12:28:50Z leifj $
 dnl
 dnl This file provides INN_LIB_SASL, which defines the --with-sasl
 dnl command-line option and probes for the location of Cyrus SASL v2 if that

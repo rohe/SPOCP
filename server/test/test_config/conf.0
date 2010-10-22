@@ -1,0 +1,3 @@
+[server]
+rulefile=rules
+port=5678

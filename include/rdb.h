@@ -3,10 +3,8 @@
 
 /* layer of indirection */
 
-#include <struct.h>
 #include <basefn.h>
 #include <varr.h>
-#include <db0.h>
 
 /*
 cmpfn   *cf;		* compare function *
@@ -25,6 +23,7 @@ int		rdb_insert( void *r, item_t val);
 int		rdb_remove( void *r, Key k);
 void	*rdb_search( void *r, Key k);
 void	*rdb_dup( void *r, int dyn );
-struct _varr *rdb_all( void *r );
+varr_t  *rdb_all( void *r );
+int     rdb_len(void *v);
 
 #endif

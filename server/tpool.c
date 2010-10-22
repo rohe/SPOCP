@@ -20,30 +20,46 @@ do { if (w) write( wake_sds[1], "0", 1 ); } while(0)
 #endif
 */
 
-void           *tpool_thread(void *);
+void    *tpool_thread(void *);
 
 #define DEF_QUEUE_SIZE  16
 
 typedef struct _ptharg {
-    tpool_t        *tpool;
-    int             id;
+    tpool_t *tpool;
+    int     id;
 } ptharg_t;
 
-/* #define DEBUG_TPO 0 */
+#define DEBUG_TPO 0
+
+work_info_t *
+work_info_dup( work_info_t *wip, work_info_t *target)
+{
+
+    if (target == NULL)
+        target = (work_info_t *) Calloc (1, sizeof(work_info_t));
+    
+    target->routine = wip->routine;
+	target->conn = wip->conn;    
+	target->oparg = wip->oparg;
+	target->oppath = wip->oppath;
+    target->oper = wip->oper;
+    if (wip->buf == 0)
+        target->buf = iobuf_new(1024);
+    else
+        target->buf = wip->buf;
+    
+    return target;
+}
 
 static int
 add_work_structs(pool_t * pool, int n)
 {
-    int             i;
-    void           *tw;
-    pool_item_t    *pi;
+    int     i;
+    void    *tw;
 
     for (i = 0; i < n; i++) {
         tw = Calloc(1, sizeof(work_info_t));
-        pi = (pool_item_t *) Calloc(1, sizeof(pool_item_t));
-        pi->info = tw;
-
-        pool_add(pool, pi);
+        pool_add(pool, pool_item_new((void *) tw));
     }
 
     return i;
@@ -73,59 +89,65 @@ free_wpool(afpool_t * afp)
 
 /*
  * ! Create the initial set of threads, initialize them and add them to the
- * free pool. \param wthread Number of work threads to start with \param
- * max_queue_size This is as far as the workpool size is allowed to grow
+ * free pool. 
+ * \param wthread Number of work threads to start with 
+ * \param max_queue_size This is as far as the workpool size is allowed to 
+ *  grow
  * \param do_not_block_when_full If no work thread is free one can either wait 
- * or so something like signal that server is too busy. \return A pointer to
- * the thread pool 
+ *  or so something like signal that server is too busy. 
+ * \return A pointer to the thread pool 
  */
 tpool_t        *
 tpool_init(int wthreads, int max_queue_size, int do_not_block_when_full)
 {
-    int             i;
-    tpool_t        *tpool = 0;
-    ptharg_t       *ptharg;
+    int         i;
+    tpool_t     *tpool = 0;
+    ptharg_t    *ptharg;
 
     /*
-     * allocate a pool data structure 
+     * allocate a pool structure 
      */
-    tpool = (tpool_t *) Malloc(sizeof(tpool_t));
+    tpool = (tpool_t *) Calloc(1, sizeof(tpool_t));
 
     /*
-     * initialize th fields 
+     * initialize the fields 
      */
     tpool->num_threads = wthreads;
-    tpool->max_queue_size = max_queue_size;
     tpool->do_not_block_when_full = do_not_block_when_full;
+    tpool->max_queue_size = max_queue_size;
+    tpool->queue_closed = 0;
+    tpool->shutdown = 0;
 
-    /*
-     * there is a lower limit to who small the pool can be 
-     */
-    if (max_queue_size < DEF_QUEUE_SIZE)
+    /* there is a lower limit to how small the pool can be */
+    
+    if (max_queue_size > DEF_QUEUE_SIZE)
         tpool->cur_queue_size = max_queue_size;
     else
         tpool->cur_queue_size = DEF_QUEUE_SIZE;
 
-    tpool->queue = afpool_new();
+    /* ------- Initialize the Pthread conditions ------- */
+    
+    if (pthread_cond_init(&(tpool->queue_not_empty), NULL) != 0) {
+        return NULL;
+    }
+    if (pthread_cond_init(&(tpool->queue_not_full), NULL) != 0) {
+        return NULL;
+    }
+    if (pthread_cond_init(&(tpool->queue_empty), NULL) != 0) {
+        return NULL;
+    }
 
+    /* ------- work queue ------- */
+    
+    if ((tpool->queue = afpool_new()) == NULL)
+        return NULL;
+    
     add_work_structs(tpool->queue->free, tpool->cur_queue_size);
 
-    tpool->queue_closed = 0;
-    tpool->shutdown = 0;
+    /* ------ create threads -------- */
+    
+    tpool->threads = (pthread_t *) Calloc (wthreads, sizeof(pthread_t));
 
-    /*
-     * traceLog(LOG_DEBUG,"Creating %d threads", wthreads ) ; 
-     */
-
-    tpool->threads = (pthread_t *) Calloc(wthreads, sizeof(pthread_t));
-
-    pthread_cond_init(&(tpool->queue_not_empty), NULL);
-    pthread_cond_init(&(tpool->queue_not_full), NULL);
-    pthread_cond_init(&(tpool->queue_empty), NULL);
-
-    /*
-     * create threads 
-     */
     for (i = 0; i < wthreads; i++) {
         ptharg = (ptharg_t *) Calloc (1, sizeof( ptharg_t ));
 
@@ -133,7 +155,7 @@ tpool_init(int wthreads, int max_queue_size, int do_not_block_when_full)
         ptharg->id = i;
 
         pthread_create(&(tpool->threads[i]), NULL, tpool_thread,
-                   (void *) ptharg);
+                       (void *) ptharg);
     }
 
     return tpool;
@@ -146,35 +168,25 @@ tpool_init(int wthreads, int max_queue_size, int do_not_block_when_full)
 int
 tpool_add_work(tpool_t * tpool, work_info_t *wi)
 {
-    work_info_t    *workp;
-    pool_item_t    *pi;
-    int             fi;
+    work_info_t     *workp;
+    pool_item_t     *pi;
     afpool_t        *afp = tpool->queue;
+    int             d;
 
 #ifdef DEBUG_TPO
+    traceLog(LOG_DEBUG,"------------------------");
     timestamp("tpool_add_work");
     traceLog(LOG_DEBUG,"cur_queue_size:%d", tpool->cur_queue_size);
     traceLog(LOG_DEBUG,"max_queue_size:%d", tpool->max_queue_size);
     traceLog(LOG_DEBUG,"shutdown:%d", tpool->shutdown);
     traceLog(LOG_DEBUG,"queue_closed:%d", tpool->queue_closed);
+    traceLog(LOG_DEBUG,"------------------------");
 #endif
 
-    /*
-     * traceLog(LOG_DEBUG, "queued items: %d", number_of_active( afp )) ; 
-     */
-
-    /*
-     * traceLog(LOG_DEBUG, "queue size: %d, max_size: %d", tpool->cur_queue_size,
-     * tpool->max_queue_size) ; 
-     */
-
-    /*
-     * queue full and at maxsize but not locked 
-     */
     afpool_lock( afp );
-    fi = afpool_free_item(afp);
+    /* are there free work items ? */
 
-    while ((fi == 0) &&
+    while ((afpool_free_item(afp) == 0) &&
            (tpool->cur_queue_size == tpool->max_queue_size) &&
            (!(tpool->shutdown || tpool->queue_closed))) {
 
@@ -184,15 +196,13 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
          * and this caller doesn't want to wait 
          */
         if (tpool->do_not_block_when_full) {
-	    afpool_unlock( afp );
             return 0;
         }
 
         /*
          * wait for a struct to be free 
          */
-        pthread_cond_wait(&(tpool->queue_not_full),
-                  &(afp->aflock));
+        pthread_cond_wait(&(tpool->queue_not_full), &(afp->aflock));
     }
     afpool_unlock( afp );
 
@@ -204,7 +214,7 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
     }
 
     /*
-     * Any free workp structs around ? 
+     * Any free work items around ? 
      */
 
     afpool_lock( afp );
@@ -213,12 +223,10 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
         if (tpool->cur_queue_size < tpool->max_queue_size) {
             if (tpool->cur_queue_size + DEF_QUEUE_SIZE <
                 tpool->max_queue_size)
-                add_work_structs(afp->free,
-                         DEF_QUEUE_SIZE);
+                add_work_structs(afp->free, DEF_QUEUE_SIZE);
             else
-                add_work_structs(afp->free,
-                         tpool->max_queue_size -
-                         tpool->cur_queue_size);
+                add_work_structs(afp->free, 
+                            tpool->max_queue_size - tpool->cur_queue_size);
         } else {    /* shouldn't happen */
             traceLog(LOG_NOTICE,"Reached the max_queue_size");
             afpool_unlock(afp);
@@ -228,31 +236,21 @@ tpool_add_work(tpool_t * tpool, work_info_t *wi)
     afpool_unlock( afp );
 
 #ifdef DEBUG_TPO
-    traceLog(LOG_NOTICE,"get_empty");
+    traceLog(LOG_NOTICE,"get_free");
 #endif
-    pi = afpool_get_empty(afp);
+    pi = afpool_get_free(afp);
 
-    workp = (work_info_t *) pi->info;
-
-    workp->routine = wi->routine;
-    workp->conn = wi->conn;
-    workp->oparg = wi->oparg;
-    workp->oper = wi->oper;
-#ifdef DEBUG_TPO
-    traceLog(LOG_NOTICE,"New workp->buf");
-#endif
-    workp->buf = iobuf_new( 1024 );
+    workp = work_info_dup(wi, (work_info_t *) pi->info);
     workp->conn->ops_pending++;
 
-    add_reply_queuer( wi->conn, workp );
+    init_reply_list( workp );
 
-    afpool_push_item(afp, pi);
+    afpool_make_item_active(afp, pi);
 
-#ifdef DEBUG_TPO
-    timestamp("Signal the workitem");
-#endif
-    pthread_cond_signal(&(tpool->queue_not_empty));
-
+    d = pthread_cond_signal(&(tpool->queue_not_empty));
+    traceLog(LOG_NOTICE, "--- Signal queue_not_empty: %p [%d]",
+             &(tpool->queue_not_empty), d);
+    
     return 1;
 }
 
@@ -278,8 +276,7 @@ tpool_destroy(tpool_t * tpool, int finish)
     if (finish == 1) {
         afpool_lock(afp);
         while (tpool->cur_queue_size != 0) {
-            pthread_cond_wait(&(tpool->queue_empty),
-                      &(afp->aflock));
+            pthread_cond_wait(&(tpool->queue_empty), &(afp->aflock));
         }
         afpool_unlock(afp);
     }
@@ -304,9 +301,7 @@ tpool_destroy(tpool_t * tpool, int finish)
      * Now free pool structures 
      */
     Free(tpool->threads);
-
     free_wpool(afp);
-
     Free(tpool);
 
     return 1;
@@ -322,7 +317,7 @@ tpool_thread(void *arg)
     ptharg_t    *ptharg = (ptharg_t *) arg;
     tpool_t     *tpool;
     work_info_t *my_workp;
-    int     res, id;
+    int         res, id, i;
     pool_item_t *pi;
     afpool_t    *workqueue;
     conn_t      *conn;
@@ -331,6 +326,10 @@ tpool_thread(void *arg)
     id = ptharg->id;
     workqueue = tpool->queue;
 
+#ifdef DEBUG_TPO
+    traceLog(LOG_DEBUG, "queue_not_empty:%p", &(tpool->queue_not_empty));
+#endif
+    
     for (;;) {
 
 #ifdef DEBUG_TPO
@@ -352,18 +351,19 @@ tpool_thread(void *arg)
              * return 
              */
 #ifdef DEBUG_TPO
-        traceLog(LOG_DEBUG, "Thread %d waiting for something to appear", id ) ; 
+            traceLog(LOG_DEBUG, "Thread %d waiting for something to appear", 
+                     id ) ; 
 #endif
 
-            pthread_cond_wait(&(tpool->queue_not_empty),
-                      &(workqueue->aflock));
+            i = pthread_cond_wait(&(tpool->queue_not_empty),
+                                  &(workqueue->aflock));
 
 #ifdef DEBUG_TPO
-        traceLog(LOG_DEBUG, "Thread %d awaken", id ) ; 
+            traceLog(LOG_DEBUG, "Thread %d awaken", id ) ; 
 #endif
-
         }
         afpool_unlock(workqueue);
+        
 
 #ifdef DEBUG_TPO
         traceLog(LOG_DEBUG, "Thread %d working", id ) ; 
@@ -380,7 +380,7 @@ tpool_thread(void *arg)
          * Get to work, dequeue the next item 
          */
 
-        pi = afpool_get_item(workqueue);
+        pi = afpool_get_active_item(workqueue);
 
 
         if (!pi)
@@ -421,8 +421,7 @@ tpool_thread(void *arg)
         */
 
         DEBUG( SPOCP_DSRV )
-            print_elapsed("Elapsed time", conn->op_start,
-                conn->op_end) ; 
+            print_elapsed("Elapsed time", conn->op_start, conn->op_end) ; 
 
         wake_listener(1);
 
@@ -438,7 +437,7 @@ tpool_thread(void *arg)
         /*
          * returned to free list 
          */
-        afpool_push_empty(workqueue, pi);
+        afpool_make_item_free(workqueue, pi);
 
         /*
          * tell the world there are room for more work 

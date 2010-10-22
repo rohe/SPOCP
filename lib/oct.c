@@ -22,13 +22,44 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <spocp.h>
+#include <octet.h>
+#include <log.h>
 #include <proto.h>
 #include <wrappers.h>
 
 /*
  * ====================================================================== 
  */
+
+void print_oct_info(char *label, octet_t *op)
+{
+     printf("%s: len=%d, size=%d, val=%p, base=%p\n", label,
+            (int) op->len, (int) op->size, op->val, op->base);
+}
+
+void position_val_pointer( octet_t *active, octet_t *base)
+{
+    int     offset;
+    
+    offset = base->val - base->base;
+    active->val = active->base + offset;
+    active->len = base->len;
+}
+
+char *optimized_allocation(octet_t *base, int *size)
+{
+    int     offset;
+    
+	if (base->size || base->len) {
+        offset = base->val - base->base;
+        *size = base->len + offset;
+		return (char *) Calloc(*size, sizeof(char));
+    }
+    else {
+        *size = 0;
+        return 0;
+    }
+}        
 
 /*! \brief Looking for a specific bytevalue, under the assumption that it
  * appears in pairs and that if a 'left' byte has been found a balancing
@@ -75,8 +106,9 @@ oct_find_balancing(octet_t * o, char left, char right)
 spocp_result_t
 oct_resize(octet_t * o, size_t new)
 {
-	char           *tmp;
-
+	char    *tmp;
+    int     offset;
+        
 	if (o->size == 0)
 		return SPOCP_DENIED;	/* not dynamically allocated */
 
@@ -86,9 +118,11 @@ oct_resize(octet_t * o, size_t new)
 	while (o->size < new)
 		o->size *= 2;
 
-	tmp = Realloc(o->val, o->size * sizeof(char));
+	tmp = Realloc(o->base, o->size * sizeof(char));
 
-	o->val = tmp;
+    offset = o->val - o->base;    
+	o->base = tmp;
+    o->val = o->base + offset;
 
 	return SPOCP_SUCCESS;
 }
@@ -104,7 +138,7 @@ oct_resize(octet_t * o, size_t new)
 void
 oct_assign(octet_t * oct, char *str)
 {
-	oct->val = str;
+	oct->base = oct->val = str;
 	oct->len = strlen(str);
 	/* That size is set to zero will prevent oct_free from freeing the string */
 	oct->size = 0;
@@ -127,6 +161,7 @@ octln(octet_t * a, octet_t * b)
 
 	a->len = b->len;
 	a->val = b->val;
+    a->base = b->base;
 	a->size = 0;
 	return 1;
 }
@@ -152,9 +187,7 @@ octcln(octet_t *src)
 
 	res = ( octet_t *) Malloc( sizeof( octet_t ));
 
-	res->len = src->len;
-	res->val = src->val;
-	res->size = 0;
+    octln(res, src);
 
 	return res;
 }
@@ -163,28 +196,29 @@ octcln(octet_t *src)
  * ---------------------------------------------------------------------- 
  */
 /*! \brief Duplicates a octet string struct
- * \param oct The octet string that
- * should be copied \return The copy 
+ * \param oct The octet string that should be copied 
+ * \return The copy 
  */
 
 octet_t        *
 octdup(octet_t * oct)
 {
-	octet_t        *dup;
+	octet_t     *dup;
+    int         size;
 
 	if( oct == NULL ) 
 		return NULL;
 
 	dup = (octet_t *) Malloc(sizeof(octet_t));
 
-	dup->size = dup->len = oct->len;
-	if (oct->len != 0) {
-		dup->val = (char *) Malloc(oct->len + 1);
-		dup->val = memcpy(dup->val, oct->val, oct->len);
-		dup->val[dup->len] = 0;
+	if (oct->len != 0 || oct->size != 0) {
+		dup->base = optimized_allocation(oct, &size);
+        dup->size = size;
+		memcpy(dup->base, oct->base, size);
+        position_val_pointer(dup, oct);
 	} else {
-		dup->len = 0;
-		dup->val = 0;
+		dup->size = dup->len = 0;
+		dup->base = dup->val = 0;
 	}
 
 	return dup;
@@ -202,17 +236,27 @@ octdup(octet_t * oct)
 spocp_result_t
 octcpy(octet_t * cpy, octet_t * oct)
 {
+    int size;
+    
+    if (cpy == NULL || oct == NULL) 
+        return SPOCP_DENIED;
+    
 	if (cpy->size == 0) {
-		cpy->val = (char *) Calloc(oct->len + 1, sizeof(char));
-	} else if (cpy->size < oct->len) {
-		if (oct_resize(cpy, oct->len) != SPOCP_SUCCESS)
-			return SPOCP_DENIED;
-	}
+		cpy->base = optimized_allocation(oct, &size);
+        cpy->size = size;
+		memcpy(cpy->base, oct->base, size);
+        position_val_pointer(cpy, oct);
+	} else {
+        if (cpy->size < oct->size) {
+            if (oct_resize(cpy, oct->size) != SPOCP_SUCCESS)
+                return SPOCP_DENIED;
+        }
 
-	memcpy(cpy->val, oct->val, oct->len);
-	cpy->size = cpy->len = oct->len;
+		memcpy(cpy->base, oct->base, oct->size);
+        position_val_pointer(cpy, oct);        
+    }
 
-	return 1;
+	return SPOCP_SUCCESS;
 }
 
 /*
@@ -226,12 +270,15 @@ octcpy(octet_t * cpy, octet_t * oct)
 void
 octclr(octet_t * oct)
 {
+    if (oct == NULL)
+        return ;
+        
 	if (oct->size) {
-		Free(oct->val);
+		Free(oct->base);
 	}
 
 	oct->size = oct->len = 0;
-	oct->val = 0;
+	oct->base = oct->val = 0;
 }
 
 /*
@@ -248,18 +295,27 @@ octclr(octet_t * oct)
 spocp_result_t
 octcat(octet_t * oct, char *s, size_t l)
 {
-	size_t          n;
+	size_t  n;
+    int     offset;
 
-	n = oct->len + l;	/* new length */
+    /* empty instance */
+    if (oct->len == 0 && oct->size == 0) {
+        n = l;
+		oct->base = oct->val = (char *) Calloc(n, sizeof(char));
+        oct->size = n;
+    } else {
+        offset = oct->val - oct->base;
+        n = oct->len + l + offset;	/* new length */
 
-	if (n > oct->size) {
-		if (oct_resize(oct, n) != SPOCP_SUCCESS)
-			return SPOCP_DENIED;
-		oct->size = n;
-	}
-
-	memcpy(oct->val + oct->len, s, l);
-	oct->len = n;
+        if (n > oct->size) {
+            if (oct_resize(oct, n) != SPOCP_SUCCESS)
+                return SPOCP_DENIED;
+            oct->size = n;
+        }
+    }
+    /* Add to end of string */
+    memcpy(oct->val + oct->len, s, l);
+    oct->len = oct->len + l;
 
 	return SPOCP_SUCCESS;
 }
@@ -281,19 +337,20 @@ oct2strcmp(octet_t * o, char *s)
 	int             r;
 
 	if( o == 0 && (s == 0 || *s == '\0')) return 0;
-	else if( o == 0 || s == 0 || *s == '\0' ) return -1;
-
+    if( o->len == 0 && (s == 0 || *s == '\0')) return 0;
+	if( o == 0 || s == 0 || *s == '\0' ) return -1;
+    
 	l = strlen(s);
 
 	if (l == o->len) {
-		return memcmp(s, o->val, o->len);
+		return memcmp(o->val, s, o->len);
 	} else {
 		if (l < o->len)
 			n = l;
 		else
 			n = o->len;
 
-		r = memcmp(s, o->val, n);
+		r = memcmp(o->val, s, n);
 
 		if (r == 0) {
 			if (n == l)
@@ -308,11 +365,12 @@ oct2strcmp(octet_t * o, char *s)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*! \brief Compares bitwise a specific number of bytes bwteen a string and
- * the string held by a octet string struct
+/*! \brief Compares bitwise a specific number of bytes bewteen a string and
+ * the string held by a octet string struct. oct2strncmp as strncmp does not
+ * compare more than l characters, possibly less.
  * \param o The octet string struct
  * \param s The char string which has to be nullterminated
- * \param l The number of bytes that should be comapred
+ * \param l The number of bytes that should be compared
  * \return 0 is they are equal, otherwise not 
  * 0 
  */
@@ -320,8 +378,18 @@ oct2strcmp(octet_t * o, char *s)
 int
 oct2strncmp(octet_t * o, char *s, size_t l)
 {
-	size_t          n, ls;
+	size_t  n, ls;
 
+    if (s == 0 || *s == '\0') {
+        if (o == 0 || o->len == 0) 
+            return 0;
+        else 
+            return 1;
+    }
+    if (o == 0 || o->len == 0) {
+        return -1;
+    }
+    
 	ls = strlen(s);
 
 	n = MIN(ls, o->len);
@@ -344,8 +412,12 @@ octcmp(octet_t * a, octet_t * b)
 	size_t          n;
 	int             r;
 
-	if (a == 0 || b == 0 ) 
+	if (a == 0 && b == 0 ) 
+		return 0;
+	if (a == 0) 
 		return -1;
+	if (b == 0 ) 
+		return 1;
 
 	n = MIN(a->len, b->len);
 
@@ -372,17 +444,25 @@ octrcmp(octet_t *a, octet_t *b)
 	size_t	n;
 	char	*s, *c;
 
+	if (a == 0 && b == 0 ) 
+		return 0;
+	if (a == 0) 
+		return -1;
+	if (b == 0 ) 
+		return 1;
+    
 	n = MIN(a->len, b->len);
-
-	for ( s = a->val, c = b->val ; n ; n--, s--, c-- ) {
+	for (s = a->val, c = b->val ; n ; n--, s++, c++) {
 		if (*s != *c)
 			break;
 	}
 
-	if (n)
+    
+	if (n) {
 		return (*s - *c);
-	else 
+	} else {
 		return (a->len - b->len);
+    }
 }
 
 /*
@@ -400,6 +480,13 @@ octncmp(octet_t * a, octet_t * b, size_t cn)
 {
 	size_t          n;
 
+    if (a == 0 && b == 0 ) 
+		return 0;
+	if (a == 0) 
+		return -1;
+	if (b == 0 ) 
+		return 1;
+    
 	n = MIN(a->len, b->len);
 	n = MIN(n, cn);
 
@@ -416,10 +503,14 @@ octncmp(octet_t * a, octet_t * b, size_t cn)
 void
 octmove(octet_t * a, octet_t * b)
 {
+    if (a == 0 || b == 0)
+        return ;
+
 	if (a->size)
-		Free(a->val);
+		Free(a->base);
 
 	a->size = b->size;
+    a->base = b->base;
 	a->val = b->val;
 	a->len = b->len;
 
@@ -520,37 +611,43 @@ octpbrk(octet_t * op, octet_t * acc)
  */
 /*! \brief Create a new octet string struct and initialize it with the given
  * values
- * \param size The size of the memory are that are set aside for
+ * \param size The size of the memory that are set aside for
  * storing the string
- * \param val A bytestring to bestored.
+ * \param val A bytestring to be stored.
  * \return The created and initialized octet string struct 
  */
 octet_t        *
 oct_new(size_t size, char *val)
 {
 	octet_t	*new;
+    size_t  l;
 
 	new = (octet_t *) Malloc(sizeof(octet_t));
 
 	new->len = 0;
 
 	if (size) {
-		new->val = (char *) Calloc(size, sizeof(char));
+		new->base = new->val = (char *) Calloc(size, sizeof(char));
 		new->size = size;
 	} else {
 		new->size = 0;
-		new->val = 0;
+		new->base = new->val = 0;
 	}
 
 	if (val) {
+        l = strlen(val);
 		if (size == 0) {
-			new->len = strlen(val);
-			new->val = (char *) Calloc(new->len, sizeof(char));
-			new->size = new->len;
+			new->val = new->base = (char *) Calloc(l, sizeof(char));
+			new->size = new->len = l;
 		}
-		else new->len = size;
-
-		memcpy(new->val, val, new->len);
+        else if (l > new->size) {
+            new->len = new->size;
+        }
+        else {
+            new->len = l;
+        }
+        
+		memcpy(new->base, val, new->len);
 	} 
 
 	return new;
@@ -571,8 +668,8 @@ oct_free(octet_t * o)
 		oct_print(LOG_INFO,"oct_free", o);
 		traceLog(LOG_INFO,"oct_free size:%d len:%d",o->size, o->len);
 #endif
-		if (o->val && o->size && o->len)
-			Free(o->val);
+		if (o->base && o->size)
+			Free(o->base);
 		Free(o);
 	}
 }
@@ -669,8 +766,8 @@ oct2strdup(octet_t * op, char ec)
  * escaping will be done on the fly.
  * \param op The source octet string
  * \param str The start of the memory area to which the string is copied
- * \param len The size of the memory are to which the string is to be copied 
- * \param ec The escape character, is this is not 0 then escaping is done
+ * \param len The size of the memory to which the string is to be copied 
+ * \param ec The escape character, if this is not 0 then escaping is done
  * \return The
  * number of characters written to str or -1 if the memory area was to small
  * to hold the possibly escaped copy. 
@@ -678,7 +775,8 @@ oct2strdup(octet_t * op, char ec)
 int
 oct2strcpy(octet_t * op, char *str, size_t len, char ec)
 {
-	char           *end = str + len;
+	char    *end = str + len;
+    int     l;
 
 	if (op->len == (size_t) 0 || (op->len + 1 > len))
 		return -1;
@@ -688,6 +786,7 @@ oct2strcpy(octet_t * op, char *str, size_t len, char ec)
 			return -1;
 		memcpy(str, op->val, op->len);
 		str[op->len] = 0;
+        l = op->len;
 	} else {
 		char           *sp, *cp;
 		unsigned char   uc, c;
@@ -721,8 +820,9 @@ oct2strcpy(octet_t * op, char *str, size_t len, char ec)
 		if (sp >= end)
 			return -1;
 		*sp = '\0';
+        l = sp - str;
 	}
-	return op->len;
+	return l;
 }
 
 /*
@@ -791,8 +891,8 @@ oct_de_escape(octet_t * op, char ec)
 /*
  * ---------------------------------------------------------------------- 
  */
-/*! \brief Convert a octetstring representation of a number to a integer.
- * INT_MAX 2147483647
+/*! \brief Convert a octetstring representation of a number into an 
+ * unsigned integer. INT_MAX = 2147483647
  * \param o The original octet string
  * \return A integer
  * bigger or equal to 0 if the conversion was OK, otherwise -1 
@@ -834,8 +934,11 @@ octet_t *str2oct( char *str, int dynamic )
 
 	op = (octet_t *) Calloc ( 1, sizeof( octet_t ));
 
+    if (str == 0)
+        return op;
+        
 	op->len = strlen( str );
-	op->val = str;
+	op->base = op->val = str;
 	if( dynamic ) op->size = op->len;
 
 	return op;
@@ -851,10 +954,10 @@ octet_t *str2oct( char *str, int dynamic )
 void 
 octset( octet_t *oct, char *s, int len)
 {
-	oct->val = s;
 	/* Since size is set to the length of the string if this struct 
-	is freed the string is also freed.
-	If this is not what you wanted use oct_assign() instead */
+     is freed the string is also freed.
+     If this is not what you wanted use oct_assign() instead */
+	oct->base = oct->val = s;
 	oct->len = oct->size = len;
 }
 
@@ -862,8 +965,11 @@ char *str_esc( char *str, int len)
 {
 	octet_t oct;
 
-	oct.val = str;
-	oct.len = len;
+	oct.base = oct.val = str;
+    if (len == 0)
+        oct.len = strlen(str);
+    else
+        oct.len = len;
 	return oct2strdup( &oct, '\\');
 }
 
@@ -872,6 +978,20 @@ void oct_print( int pri, char *tag, octet_t *o )
 	char *tmp;
 
 	tmp = oct2strdup( o, '\\');
-	traceLog(pri,"%s: %s", tag, tmp);
+	traceLog(pri,"%s: '%s'", tag, tmp);
 	Free(tmp);
+}
+
+/*
+ * ---------------------------------------------------------------------- 
+ */
+
+int oct_step(octet_t *oct, int len)
+{
+    if (oct->len < len) 
+        return 0;
+    
+    oct->len -= len;
+    oct->val += len;
+    return 1;
 }

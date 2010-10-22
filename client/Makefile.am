@@ -1,1 +1,2 @@
-SUBDIRS = src tools # include tests
+AUTOMAKE_OPTIONS = foreign
+SUBDIRS = src tools

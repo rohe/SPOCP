@@ -1,0 +1,6 @@
+(test (application foo))
+
+# this allows anyone to put a query
+//*/server/(server (ip 127.0.0.1))
+//*/operation/(operation QUERY(server(ip)(host)))
+//*/operation/(operation LOGOUT(server(ip)(host)))

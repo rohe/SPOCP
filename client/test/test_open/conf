@@ -1,0 +1,4 @@
+[server]
+rulefile=rule
+port=5678
+log = file:spocp.log

@@ -2,7 +2,7 @@ bin_PROGRAMS = spocpput spocpget spocptest spocppatch spocpperf
 
 #
 
-spocpput_SOURCES = spocpput.c 
+spocpput_SOURCES = spocpput.c ../../server/readcnf.c
 spocpput_LDADD = ../src/libspocpclient.la
 
 #
@@ -26,4 +26,4 @@ spocpperf_LDADD = ../src/libspocpclient.la
 
 #
 
-INCLUDES =  -I. -I${top_srcdir}/include @SASL_CPPFLAGS@
+INCLUDES =  -I. -I${top_srcdir}/include -I${top_srcdir}/server @SASL_CPPFLAGS@

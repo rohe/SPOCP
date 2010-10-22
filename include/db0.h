@@ -16,266 +16,71 @@
 
 #include <config.h>
 
-#include <struct.h>
+#include <element.h>
 #include <plugin.h>
 #include <basefn.h>
 #include <rdb.h>
+#include <ll.h>
+#include <varr.h>
 /*#include <rbtree.h> */
 #include <dback.h>
-
-#define SHA1HASHLEN 40
-
-struct _branch;
-struct _ruleinstance;
-struct _varr;
+#include <ruleinst.h>
+#include <branch.h>
+#include <result.h>
+#include <check.h>
 
 /*
  * ------------------------------------------ 
  */
 
-#define FORWARD	1
+#define FORWARD     1
 #define BACKWARD	2
 
 /*
  * ------------------------------------------ 
  */
 
-typedef struct _subelem {
-	int		direction;
-	int		list;	/* yes = 1, no = 0 */
-	element_t	*ep;
-	struct _subelem *next;
-} subelem_t;
-
-typedef struct _parr {
-	int		n;
-	int		size;
-	int		*refc;
-	void		**vect;
-	cmpfn		*cf;	/* compare function */
-	ffunc		*ff;	/* free function */
-	dfunc		*df;	/* duplicate function */
-	pfunc		*pf;	/* print function */
-} parr_t;
-
-typedef struct _node {
-	void		*payload;
-	struct _node	*next;
-	struct _node	*prev;
-} node_t;
-
-typedef struct _ll {
-	node_t	 *head;
-	node_t	 *tail;
-	cmpfn		*cf;
-	ffunc		*ff;
-	dfunc		*df;
-	pfunc		*pf;
-	int		n;
-} ll_t;
-
 typedef struct _strarr {
-	char		**argv;
+	char	**argv;
 	int		argc;
 	int		size;
 } strarr_t;
 
-/*********** where all the branches starts *************/
-
-typedef struct _junc {
-	int	dynamic;
-	int	refc;
-	struct _branch *item[NTYPES];
-} junc_t;
-
-#define ARRFIND(a,c) ( (a) ? (a)->item[(c)] : NULL )
-
-/***********************************************/
-
-typedef struct _index {
-	int		size;
-	int		n;
-	struct _ruleinstance **arr;
-} spocp_index_t;
-
-/*********** for prefixes ****************/
-
-typedef struct _ssn {
-	unsigned char	ch;
-	struct _ssn	*left;
-	struct _ssn	*down;
-	struct _ssn	*right;
-	junc_t	 *next;
-	unsigned int	refc;	/* reference counter */
-} ssn_t;
-
-/****** for ranges *********************/
-
-typedef struct _slnode {
-	boundary_t	*item;
-	unsigned int	refc;
-	struct _slnode **next;
-	int		sz;
-	struct _varr	*junc;
-} slnode_t;
-
-typedef struct _slist {
-	slnode_t	*head;
-	slnode_t	*tail;
-	int		n;
-	int		lgn;
-	int		lgnmax;
-	int		type;
-} slist_t;
-
-/****** for atoms **********************/
-
-typedef struct _bucket {
-	octet_t	 val;
-	unsigned long int hash;
-	unsigned int	refc;
-	junc_t	 *next;
-} buck_t;
-
-typedef struct _phash {
-	unsigned int	refc;
-	unsigned char	pnr;
-	unsigned char	density;
-	unsigned int	size;
-	unsigned int	n;
-	unsigned int	limit;
-	buck_t	**arr;
-} phash_t;
-
-/******************************************/
-
-typedef struct _dset {
-	char		*uid;
-	struct _varr	*va;
-	struct _dset	*next;
-} dset_t;
-
-/****** branches **********************/
-
-typedef struct _branch {
-	int	type;
-	int	count;
-	junc_t	*parent;
-
-	union {
-		dset_t		*set;
-		phash_t		*atom;
-		junc_t		*list;
-		junc_t		*next;
-		ssn_t		*prefix;
-		ssn_t		*suffix;
-		slist_t		*range[DATATYPES];
-		spocp_index_t	*id;
-	} val;
-
-} branch_t;
-
 /*
  * -------------------------------------------------- 
  */
 
-typedef struct _checked {
-	spocp_result_t		rc;
-	struct _ruleinstance	*ri;
-	octet_t			*blob;
-	struct _checked		*next;
-} checked_t;
 
 typedef struct _com_param {
-	element_t	*head;
-	octarr_t	**blob;
+	element_t       *head;
+	octarr_t        **blob;
 	spocp_result_t	rc;
-	int		all;
-	int		nobe;
-	checked_t 	**cr;
+	int             all;
+	int             nobe;
+	checked_t       **cr;
 } comparam_t;
 
-typedef struct _res_set {
-	octarr_t	*blob;
-	spocp_index_t	*si;
-	struct _res_set	*next;
-} resset_t;
-
-typedef struct _qresult {
-	spocp_result_t	rc;
-	resset_t	*part;
-	struct _qresult	*next;
-} qresult_t ;
-
-/*
- * -------------------------------------------------- 
- */
-
-#define AND	1
-#define OR	2
-#define NOT	3
-#define REF	4
-#define SPEC 5
-
-struct _bconddef;
-
-typedef struct _bcondspec {
-	char		*name;
-	plugin_t	*plugin;
-	octarr_t	*args;
-	octet_t		*spec;
-} bcspec_t;
-
-struct _bconddef;
-
-typedef struct _bcondexpr {
-	int			type;
-	struct _bconddef	*parent;
-
-	union {
-		/* AND or OR array of bcondexp_t structs */
-		struct _varr		*arr;	
-		struct _bcondexpr	*single;	/* NOT */
-		bcspec_t			*spec;		/* SPEC */
-		struct _bconddef	*ref;		/* REF */
-	} val;
-
-} bcexp_t;
-
-typedef struct _bconddef {
-	char			*name;
-	bcexp_t			*exp;
-	struct _varr		*users;
-	struct _varr		*rules;
-	struct _bconddef	*next;
-	struct _bconddef	*prev;
-} bcdef_t;
-
-/*********** rule info ****************/
-
-typedef struct _ruleinstance {
-	char		uid[SHA1HASHLEN + 1];	/* place for sha1 hash */
-	octet_t		*rule;
-	octet_t		*blob;
-	octet_t		*bcexp;
-	element_t	*ep;					/* only used for bcond checks */
-	ll_t		*alias;
-	bcdef_t		*bcond;
-} ruleinst_t;
-
-typedef struct _ruleinfo {
-	void	*rules;						/* rule database */
-} ruleinfo_t;
 
 /*********** The database *************/
 
 typedef struct _db {
 	junc_t		*jp;
 	ruleinfo_t	*ri;
-	/* junc_t		*acit; */
+/*  junc_t		*acit; */
 	plugin_t	*plugins;
 /*	bcdef_t		*bcdef; */
 	dback_t		*dback;
 } db_t;
+
+db_t            *db_new(void);
+ruleinst_t      *save_rule(db_t * db, dbackdef_t * dbc, octet_t * rule, 
+                           octet_t * blob, char *bcondname);
+int             rules(db_t * db);
+spocp_result_t  get_all_rules(db_t * db, octarr_t ** oa, char *rs);
+void            db_clr( db_t *db);
+void            db_free( db_t *db);
+spocp_result_t  store_right(db_t * db, element_t * ep, ruleinst_t * rt);
+spocp_result_t  add_right(db_t ** db, dbackdef_t * dbc, octarr_t * oa, 
+                          ruleinst_t ** ri, bcdef_t * bcd);
 
 #endif

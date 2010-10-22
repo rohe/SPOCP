@@ -2,9 +2,9 @@
 /***************************************************************************
                   config.c  - function to read the config file 
                              -------------------
-    begin                : Sat Oct 12 2002
-    copyright            : (C) 2002 by Umeå University, Sweden
-    email                : roland@catalogix.se
+    begin                : Sat Oct 12 2010
+    copyright            : (C) 2010 by UmeŒ University, Sweden
+    email                : roland.hedberg@adm.umu.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
    of this package for details.
@@ -12,7 +12,6 @@
  ***************************************************************************/
 
 #include "locl.h"
-RCSID("$Id$");
 
 #define RULEFILE		1
 #define PORT			2
@@ -32,7 +31,7 @@ RCSID("$Id$");
 #define CLIENTCERT		16
 #define NAME			17
 
-char           *keyword[] = {
+char    *keyword[] = {
 	"__querty__", "rulefile", "port", "unixdomainsocket", "certificate",
 	"privatekey", "calist", "dhfile", "entropyfile",
 	"passwd", "threads", "timeout", "log", "sslverifydepth",
@@ -41,25 +40,31 @@ char           *keyword[] = {
 
 #ifdef HAVE_SASL
 struct overflow_conf {
-	const char * key;
-	const char * value;
-	struct overflow_conf *next;
+	const char              *key;
+	const char              *value;
+	struct overflow_conf    *next;
 };
 
 struct overflow_conf *overflow_first = NULL;
 struct overflow_conf *overflow_last = NULL;
 #endif
 
-#define DEFAULT_PORT    4751	/* Registered with IANA */
-#define DEFAULT_TIMEOUT   30
-#define DEFAULT_NTHREADS   5
-#define DEFAULT_SSL_DEPTH  1
+#define DEFAULT_PORT        4751	/* Registered with IANA */
+#define DEFAULT_TIMEOUT     30
+#define DEFAULT_NTHREADS    5
+#define DEFAULT_SSL_DEPTH   1
 
-#define LINEBUF         1024
+#define LINEBUF             1024
 
 #define SYSTEM 20
 #define PLUGIN 21
 #define DBACK  22
+
+#define SKIP_WHITESPACE(x)	while(WHITESPACE(*x)) x++
+
+#ifndef HAVE_STRNDUP
+char *strndup(const char *s, size_t n);
+#endif
 
 /*
  * roughly 
@@ -86,21 +91,23 @@ static char **strchop( char *s, int *argc)
 	for( cp = s, i = 0, n = 0; *cp ; ){
 		if (*cp == '"' && n == 0) {
 			cp++;
-			while( *cp && *cp != '"') cp++, n++;
+			while( *cp && *cp != '"') 
+                cp++, n++;
 			if ( *cp == '\0' )
 				return NULL;	
 			cp++;
 			if ( *cp && !(WHITESPACE(*cp)))
 				return NULL;	
 			n = 0;
-			while (WHITESPACE(*cp)) cp++;	
+			SKIP_WHITESPACE(cp); 
 		}
 		else if (WHITESPACE(*cp)) {
 			i++;
 			n = 0;
-			while (WHITESPACE(*cp)) cp++;	
+			SKIP_WHITESPACE(cp); 
 		}
-		else cp++, n++;
+		else 
+            cp++, n++;
 	}
 
 	arr = (char **) Calloc( i+1, sizeof( char *));
@@ -109,7 +116,8 @@ static char **strchop( char *s, int *argc)
 		if (*cp == '"' && n == 0) {
 			cp++;
 			fp=cp;
-			while( *cp && *cp != '"') cp++, n++;
+			while( *cp && *cp != '"') 
+                cp++, n++;
 			if ( *cp == 0 ) {
 				charmatrix_free(arr);
 				return NULL;
@@ -124,13 +132,13 @@ static char **strchop( char *s, int *argc)
 
 			arr[i++] = strndup( fp, n );
 			n = 0;
-			while (WHITESPACE(*cp)) cp++;	
+			SKIP_WHITESPACE(cp);
 			fp = cp;
 		}
 		else if (WHITESPACE(*cp)) {
 			arr[i++] = strndup( fp, n );
 			n = 0;
-			while (WHITESPACE(*cp)) cp++;	
+			SKIP_WHITESPACE(cp);
 			fp = cp;
 		}
 		else cp++, n++;
@@ -178,113 +186,36 @@ static const char
 #endif
 
 /*------------------------------------------------------------------ */
-
-spocp_result_t
-conf_get(void *vp, int arg, void **res)
-{
-	srv_t          *srv = (srv_t *) vp;
-
-	switch (arg) {
-	case RULEFILE:
-		*res = (void *) srv->rulefile;
-		break;
-
-	case PORT:
-		*res = (void *) &srv->port;
-		break;
-
-	case UNIXDOMAINSOCKET:
-		*res = (void *) srv->uds;
-		break;
-
-	case CERTIFICATE:
-		*res = (void *) srv->certificateFile;
-		break;
-
-	case PRIVATEKEY:
-		*res = (void *) srv->privateKey;
-		break;
-
-	case CALIST:
-		*res = (void *) srv->caList;
-		break;
-
-	case DHFILE:
-		*res = (void *) srv->dhFile;
-		break;
-
-	case ENTROPYFILE:
-		*res = (void *) srv->SslEntropyFile;
-		break;
-
-	case PASSWD:
-		*res = (void *) srv->passwd;
-		break;
-
-	case NTHREADS:
-		*res = (void *) &srv->threads;
-		break;
-
-	case TIMEOUT:
-		*res = &srv->timeout;
-		break;
-
-	case LOGGING:
-		*res = (void *) srv->logfile;
-		break;
-
-	case SSLVERIFYDEPTH:
-		*res = (void *) srv->sslverifydepth;
-		break;
-
-	case PIDFILE:
-		*res = (void *) srv->pidfile;
-		break;
-
-	case MAXCONN:
-		*res = (void *) &srv->nconn;
-		break;
-
-	case NAME:
-		*res = &srv->name;
-		break;
-	}
-
-	return SPOCP_SUCCESS;
-}
-
-/*------------------------------------------------------------------ */
-
 /*
  * In some cases will gladly overwrite what has been previously specified, if
  * the same keyword appears twice 
  */
 
 int
-read_config(char *file, srv_t * srv)
+read_config(char *file, srv_t *srvp)
 {
-	FILE           *fp;
-	char            s[LINEBUF], *cp, *sp, pluginname[256];
-	char            section = 0, *dbname = 0, *dbload = 0;
-	unsigned int    n = 0;
-	long            lval;
-	int             i;
-	plugin_t       *plugins, *pl = 0;
-	dback_t        *dbp = 0;
-	const conf_com_t *ccp;
-	spocp_result_t  r;
+	FILE                *fp;
+	char                s[LINEBUF], *cp, *sp, pluginname[256];
+	char                section = 0, *dbname = 0, *dbload = 0;
+	unsigned int        n = 0;
+	long                lval;
+	int                 i;
+	plugin_t            *plugins, *pl = 0;
+	dback_t             *dbp = 0;
+	const conf_com_t    *ccp;
+	spocp_result_t      r;
 
 	/*
 	 * should never be necessary 
 
-	if (!srv->root)
-		srv->root = ruleset_new(0);
+	if (!srvp->root)
+		srvp->root = ruleset_new(0);
 	 */
 
-	if (!srv->root->db)
-		srv->root->db = db_new();
+	if (!srvp->root->db)
+		srvp->root->db = db_new();
 
-	plugins = srv->plugin;
+	plugins = srvp->plugin;
 
 	if ((fp = fopen(file, "r")) == NULL) {
 		traceLog(LOG_ERR,
@@ -332,7 +263,7 @@ read_config(char *file, srv_t * srv)
 		 * val = 1*nonspacechar / '"' char '"' 
 		 */
 
-		rm_lt_sp(s, 1);	/* remove leading and trailing blanks */
+		rmlt(s, 1);	/* remove leading and trailing blanks */
 
 		/*
 		 * empty line or comment 
@@ -373,89 +304,94 @@ read_config(char *file, srv_t * srv)
 				traceLog(LOG_ERR, err_msg, n, "Unknown keyword");
 				continue;
 			}
-
+            /*
+            else {
+                traceLog(LOG_ERR, "valid configuration keyword: %s (%d)",s,i);
+            }
+            */
+                
 			switch (i) {
 			case RULEFILE:
-				if (srv->rulefile)
-					free(srv->rulefile);
-				srv->rulefile = Strdup(cp);
+				if (srvp->rulefile)
+					free(srvp->rulefile);
+				srvp->rulefile = Strdup(cp);
 				break;
 
 			case CERTIFICATE:
-				if (srv->certificateFile)
-					free(srv->certificateFile);
-				srv->certificateFile = Strdup(cp);
+				if (srvp->certificateFile)
+					free(srvp->certificateFile);
+				srvp->certificateFile = Strdup(cp);
 				break;
 
 			case PRIVATEKEY:
-				if (srv->privateKey)
-					free(srv->privateKey);
-				srv->privateKey = Strdup(cp);
+				if (srvp->privateKey)
+					free(srvp->privateKey);
+				srvp->privateKey = Strdup(cp);
 				break;
 
 			case CALIST:
-				if (srv->caList)
-					free(srv->caList);
-				srv->caList = Strdup(cp);
+				if (srvp->caList)
+					free(srvp->caList);
+				srvp->caList = Strdup(cp);
 				break;
 
 			case DHFILE:
-				if (srv->dhFile)
-					free(srv->dhFile);
-				srv->dhFile = Strdup(cp);
+				if (srvp->dhFile)
+					free(srvp->dhFile);
+				srvp->dhFile = Strdup(cp);
 				break;
 
 			case ENTROPYFILE:
-				if (srv->SslEntropyFile)
-					free(srv->SslEntropyFile);
-				srv->SslEntropyFile = Strdup(cp);
+				if (srvp->SslEntropyFile)
+					free(srvp->SslEntropyFile);
+				srvp->SslEntropyFile = Strdup(cp);
 				break;
 
 			case PASSWD:
-				if (srv->passwd)
-					free(srv->passwd);
-				srv->passwd = Strdup(cp);
+				if (srvp->passwd)
+					free(srvp->passwd);
+				srvp->passwd = Strdup(cp);
 				break;
 
 			case LOGGING:
-				if (srv->logfile)
-					free(srv->logfile);
-				srv->logfile = Strdup(cp);
+				if (srvp->logfile)
+					free(srvp->logfile);
+				srvp->logfile = Strdup(cp);
 				break;
 
 			case TIMEOUT:
 				if (numstr(cp, &lval) == SPOCP_SUCCESS) {
 					if (lval >= 0 && lval <= YEAR)
-						srv->timeout =
+						srvp->timeout =
 						    (unsigned int) lval;
 					else {
 						traceLog(LOG_ERR, err_msg, n,
 							 "Value out of range");
-						srv->timeout = DEFAULT_TIMEOUT;
+						srvp->timeout = DEFAULT_TIMEOUT;
 					}
 				} else {
 					traceLog(LOG_ERR, err_msg, n,
 						 "Non numeric value");
-					srv->timeout = DEFAULT_TIMEOUT;
+					srvp->timeout = DEFAULT_TIMEOUT;
 				}
 
 				break;
 
 			case UNIXDOMAINSOCKET:
-				if (srv->uds)
-					free(srv->uds);
-				srv->uds = Strdup(cp);
+				if (srvp->uds)
+					free(srvp->uds);
+				srvp->uds = Strdup(cp);
 				break;
 
 			case PORT:
 				if (numstr(cp, &lval) == SPOCP_SUCCESS) {
 					if (lval > 0L && lval < 65536) {
-						srv->port =
+						srvp->port =
 						    (unsigned int) lval;
 					} else {
 						traceLog(LOG_ERR, err_msg, n,
 							 "Number out of range");
-						srv->port = DEFAULT_PORT;
+						srvp->port = DEFAULT_PORT;
 					}
 				} else {
 					traceLog(LOG_ERR, err_msg, n,
@@ -473,7 +409,7 @@ read_config(char *file, srv_t * srv)
 						int             level =
 						    (int) lval;
 
-						srv->threads = level;
+						srvp->threads = level;
 					}
 				} else {
 					traceLog(LOG_ERR, err_msg, n,
@@ -485,12 +421,12 @@ read_config(char *file, srv_t * srv)
 			case SSLVERIFYDEPTH:
 				if (numstr(cp, &lval) == SPOCP_SUCCESS) {
 					if (lval > 0L) {
-						srv->sslverifydepth =
+						srvp->sslverifydepth =
 						    (unsigned int) lval;
 					} else {
 						traceLog(LOG_ERR, err_msg, n,
 							 "number out of range");
-						srv->sslverifydepth = 0;
+						srvp->sslverifydepth = 0;
 					}
 				} else {
 					traceLog(LOG_ERR, err_msg, n,
@@ -499,20 +435,20 @@ read_config(char *file, srv_t * srv)
 				break;
 
 			case PIDFILE:
-				if (srv->pidfile)
-					Free(srv->pidfile);
-				srv->pidfile = Strdup(cp);
+				if (srvp->pidfile)
+					Free(srvp->pidfile);
+				srvp->pidfile = Strdup(cp);
 				break;
 
 			case MAXCONN:
 				if (numstr(cp, &lval) == SPOCP_SUCCESS) {
 					if (lval > 0L) {
-						srv->nconn =
+						srvp->nconn =
 						    (unsigned int) lval;
 					} else {
 						traceLog(LOG_ERR, err_msg, n,
 							 "Number out of range");
-						srv->sslverifydepth = 0;
+						srvp->sslverifydepth = 0;
 					}
 				} else {
 					traceLog(LOG_ERR, err_msg, n,
@@ -523,18 +459,18 @@ read_config(char *file, srv_t * srv)
 #ifdef HAVE_SSL
 			case CLIENTCERT:
 				if (strcasecmp(cp, "none") == 0)
-					srv->clientcert = NONE;
+					srvp->clientcert = NONE;
 				else if (strcasecmp(cp, "demand") == 0)
-					srv->clientcert = DEMAND;
+					srvp->clientcert = DEMAND;
 				else if (strcasecmp(cp, "hard") == 0)
-					srv->clientcert = HARD;
+					srvp->clientcert = HARD;
 
 				break;
 #endif
 			case NAME:
-				if (srv->name)
-					Free(srv->name);
-				srv->name = Strdup(cp);
+				if (srvp->name)
+					Free(srvp->name);
+				srvp->name = Strdup(cp);
 				break;
 			}
 			break;
@@ -547,9 +483,7 @@ read_config(char *file, srv_t * srv)
 					section = 0;
 				}
 
-				if ((pl =
-				     plugin_load(plugins, pluginname,
-						 cp)) == 0)
+				if ((pl = plugin_load(plugins, pluginname, cp, 0)) == 0)
 					section = 0;
 				else {
 					/*
@@ -564,19 +498,15 @@ read_config(char *file, srv_t * srv)
 				if (strcmp(s, "poolsize") == 0) {
 					if (numstr(cp, &lval) == SPOCP_SUCCESS) {
 						if (lval <= 0) {
-							traceLog(LOG_ERR, err_msg, n,
-								 "Value out of range");
+							traceLog(LOG_ERR, err_msg, n, 
+                                    "Value out of range");
 						} else {
-							int             level =
-							    (int) lval;
+							int level = (int) lval;
 
 							if (pl->dyn == 0)
-								pl->dyn =
-								    pdyn_new
-								    (level);
+								pl->dyn = pdyn_new(level);
 							if (pl->dyn->size == 0)
-								pl->dyn->size =
-								    level;
+								pl->dyn->size = level;
 						}
 					} else {
 						traceLog(LOG_ERR, err_msg, n,
@@ -586,42 +516,30 @@ read_config(char *file, srv_t * srv)
 					if (plugin_add_cachedef(pl, cp) == FALSE )
 						traceLog(LOG_ERR, err_msg, n,
 							 "Cachetime def");
-				} else if (pl->ccmds == 0) {	/* No
-								 * directives
-								 * allowed */
+				} else if (pl->ccmds == 0) {	/* No directives allowed */
 					traceLog(LOG_ERR, err_msg, n,
 						 "Directive where there should not be one");
 				} else {
 					for (ccp = pl->ccmds; ccp; ccp++) {
-						int np=0, j;
-						char **arr;
+						int     np=0, j;
+						char    **arr;
 
 						arr = strchop(cp,&np);
 
 						for (j=0; j<np; j++)
-							traceLog(LOG_ERR, "%s:%s",
-							    cp, arr[j]);
+							traceLog(LOG_ERR, "%s:%s", cp, arr[j]);
 
 						if (strcmp(ccp->name, s) == 0) {
-							r = ccp->func(&pl->
-								      conf,
-								      ccp->
-								      cmd_data,
-								      np, arr);
+							r = ccp->func(&pl->conf, ccp->cmd_data, np, arr);
 							if (r != SPOCP_SUCCESS) {
-								traceLog
-								    (LOG_ERR, err_msg,
-								     n,
-								     ccp->
-								     errmsg);
+								traceLog(LOG_ERR, err_msg, n, ccp->errmsg);
 							}
 							charmatrix_free( arr );
 							break;
 						}
 					}
 					if (ccp == 0) {
-						traceLog(LOG_ERR,err_msg, n,
-							 "Unknown directive");
+						traceLog(LOG_ERR,err_msg, n, "Unknown directive");
 					}
 				}
 			}
@@ -632,16 +550,14 @@ read_config(char *file, srv_t * srv)
 				if (strcmp(s, "name") == 0) {
 					dbname = Strdup(cp);
 					if (dbname && dbload) {
-						dbp =
-						    dback_load(dbname, dbload);
+						dbp = dback_load(dbname, dbload);
 						free(dbname);
 						free(dbload);
 					}
 				} else if (strcmp(s, "load") == 0) {
 					dbload = Strdup(cp);
 					if (dbname && dbload) {
-						dbp =
-						    dback_load(dbname, dbload);
+						dbp = dback_load(dbname, dbload);
 						free(dbname);
 						free(dbload);
 					}
@@ -673,17 +589,17 @@ read_config(char *file, srv_t * srv)
 
 	fclose(fp);
 
-	if (srv->pidfile == 0)
-		srv->pidfile = Strdup("spocd.pid");
-	if (srv->timeout == 0)
-		srv->timeout = DEFAULT_TIMEOUT;
-	if (srv->threads == 0)
-		srv->threads = DEFAULT_NTHREADS;
-	if (srv->sslverifydepth == 0)
-		srv->sslverifydepth = DEFAULT_SSL_DEPTH;
+	if (srvp->pidfile == 0)
+		srvp->pidfile = Strdup("spocd.pid");
+	if (srvp->timeout == 0)
+		srvp->timeout = DEFAULT_TIMEOUT;
+	if (srvp->threads == 0)
+		srvp->threads = DEFAULT_NTHREADS;
+	if (srvp->sslverifydepth == 0)
+		srvp->sslverifydepth = DEFAULT_SSL_DEPTH;
 
-	srv->plugin = plugins;
-	srv->dback = dbp;
+	srvp->plugin = plugins;
+	srvp->dback = dbp;
 
 	return 1;
 }

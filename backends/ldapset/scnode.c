@@ -4,9 +4,9 @@
 
 #include <spocp.h>
 #include <wrappers.h>
-#include <func.h>
 #include <proto.h>
 #include "ldapset.h"
+#include <log.h>
 
 /* #define AVLUS 1 */
 

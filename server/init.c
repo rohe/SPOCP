@@ -1,5 +1,4 @@
 #include "locl.h"
-RCSID("$Id$");
 
 int
 run_plugin_init(srv_t * srv)

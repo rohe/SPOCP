@@ -10,11 +10,12 @@
 #include <plugin.h>
 #include <dback.h>
 #include "../../server/srvconf.h"
+#include <log.h>
 
 extern gdbm_error gdbm_errno;
 extern char    *gdbm_version;
 
-#define AVLUS 1
+/* #define AVLUS 1 */
 
 /*
  * function prototypes 
@@ -97,7 +98,7 @@ db_gdbm_set_file(void **conf, void *cd, int argc, char **argv)
  */
 
 void           *
-db_gdbm_put(dbcmd_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
+db_gdbm_put(dbackdef_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
 {
 	datum           dkey, dcontent;
 	char           *file = (char *) dbc->dback->conf;
@@ -145,7 +146,7 @@ db_gdbm_put(dbcmd_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
  */
 
 void           *
-db_gdbm_replace(dbcmd_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
+db_gdbm_replace(dbackdef_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
 {
 	datum           dkey, dcontent;
 	char           *file = (char *) dbc->dback->conf;
@@ -178,7 +179,7 @@ db_gdbm_replace(dbcmd_t * dbc, void *vkey, void *vdat, spocp_result_t * rc)
  */
 
 void           *
-db_gdbm_get(dbcmd_t * dbc, void *vkey, void *null, spocp_result_t * rc)
+db_gdbm_get(dbackdef_t * dbc, void *vkey, void *null, spocp_result_t * rc)
 {
 	datum           dkey, dcontent;
 	char           *file = (char *) dbc->dback->conf;
@@ -210,7 +211,7 @@ db_gdbm_get(dbcmd_t * dbc, void *vkey, void *null, spocp_result_t * rc)
  */
 
 void           *
-db_gdbm_delete(dbcmd_t * dbc, void *v0, void *v1, spocp_result_t * rc)
+db_gdbm_delete(dbackdef_t * dbc, void *v0, void *v1, spocp_result_t * rc)
 {
 	datum           dkey;
 	int             res;
@@ -244,7 +245,7 @@ db_gdbm_delete(dbcmd_t * dbc, void *v0, void *v1, spocp_result_t * rc)
 /*
  * ---------------------------------------------------------------------- *
  * 
- * void *db_gdbm_open( dbcmd_t *dbc, void *v1, void *v2, spocp_result_t *rc )
+ * void *db_gdbm_open( dbackdef_t *dbc, void *v1, void *v2, spocp_result_t *rc )
  * { char *gdbmfile = (char *) dbc->conf ; GDBM_FILE dbf ;
  * 
  * *rc = SPOCP_SUCCESS ;
@@ -261,7 +262,7 @@ db_gdbm_delete(dbcmd_t * dbc, void *v0, void *v1, spocp_result_t * rc)
  * 
  * * ---------------------------------------------------------------------- *
  * 
- * void *db_gdbm_close( dbcmd_t *dbc, void *v1, void *v2, spocp_result_t *rc )
+ * void *db_gdbm_close( dbackdef_t *dbc, void *v1, void *v2, spocp_result_t *rc )
  * { GDBM_FILE dbf ;
  * 
  * *rc = SPOCP_SUCCESS ;
@@ -274,7 +275,7 @@ db_gdbm_delete(dbcmd_t * dbc, void *v0, void *v1, spocp_result_t * rc)
  * 
  * * ---------------------------------------------------------------------- *
  * 
- * void *db_gdbm_firstkey( dbcmd_t *dbc, void *v1, void *v2, spocp_result_t *rc 
+ * void *db_gdbm_firstkey( dbackdef_t *dbc, void *v1, void *v2, spocp_result_t *rc 
  * ) { GDBM_FILE dbf = ( GDBM_FILE ) dbc->handle ; datum key ; octet_t *res = 0 
  * ;
  * 
@@ -286,7 +287,7 @@ db_gdbm_delete(dbcmd_t * dbc, void *v0, void *v1, spocp_result_t * rc)
  * 
  * * ---------------------------------------------------------------------- *
  * 
- * void *db_gdbm_nextkey( dbcmd_t *dbc, void *v1, void *v2, spocp_result_t *rc
+ * void *db_gdbm_nextkey( dbackdef_t *dbc, void *v1, void *v2, spocp_result_t *rc
  * ) { GDBM_FILE dbf = ( GDBM_FILE ) dbc->handle ; datum key, nextkey ; octet_t 
  * *res = 0 ;
  * 
@@ -300,7 +301,7 @@ db_gdbm_delete(dbcmd_t * dbc, void *v0, void *v1, spocp_result_t * rc)
  */
 
 void           *
-db_gdbm_allkeys(dbcmd_t * dbc, void *v1, void *v2, spocp_result_t * rc)
+db_gdbm_allkeys(dbackdef_t * dbc, void *v1, void *v2, spocp_result_t * rc)
 {
 	GDBM_FILE       dbf;
 	datum           key, nextkey;
@@ -342,7 +343,7 @@ db_gdbm_allkeys(dbcmd_t * dbc, void *v1, void *v2, spocp_result_t * rc)
  */
 
 void           *
-db_gdbm_begin(dbcmd_t * dbc, void *v1, void *v2, spocp_result_t * rc)
+db_gdbm_begin(dbackdef_t * dbc, void *v1, void *v2, spocp_result_t * rc)
 {
 	*rc = SPOCP_NOT_SUPPORTED;
 

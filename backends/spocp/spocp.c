@@ -13,6 +13,7 @@
 #include <plugin.h>
 #include <rvapi.h>
 #include <spocpcli.h>
+#include <log.h>
 
 /*
  * arg is composed of the following parts spocphost;operation;arg

@@ -11,26 +11,26 @@
 #include <proto.h>
 #include <wrappers.h>
 #include <macros.h>
+#include <log.h>
 
 static char     base64[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------- */
 
-static spocp_chunk_t        *
+spocp_chunk_t        *
 chunk_new(octet_t * o)
 {
 	spocp_chunk_t        *cp;
 
-	cp = (spocp_chunk_t *) Malloc(sizeof(spocp_chunk_t));
+	cp = (spocp_chunk_t *) Calloc(1, sizeof(spocp_chunk_t));
 	cp->val = o;
-	cp->prev = cp->next = 0;
 
 	return cp;
 }
 
 /*!
- * \brief Frees a chunk struct 
+ * \brief Frees a list of chunk structs 
  * \param c The chunk struct
  */
 void
@@ -45,7 +45,7 @@ chunk_free(spocp_chunk_t * c)
 	}
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------- */
 
 static int
 pos(char c)
@@ -98,7 +98,7 @@ base64_decode(char *str)
 	return q - str;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------- */
 /*!
  * \brief Creates a new spocp_charbuf_t struct
  * \param fp A file descriptor
@@ -110,7 +110,7 @@ charbuf_new( FILE *fp, size_t size )
 {
 	spocp_charbuf_t *buf;
 
-	buf = ( spocp_charbuf_t * ) Malloc( sizeof( spocp_charbuf_t ));
+	buf = ( spocp_charbuf_t * ) Calloc(1, sizeof(spocp_charbuf_t ));
 
 	buf->fp = fp;
 	buf->str = (char *) Calloc ( size, sizeof( char ));
@@ -120,7 +120,7 @@ charbuf_new( FILE *fp, size_t size )
 	return buf;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------- */
 
 /*!
  * \brief Deletes a spocp_charbuf_t struct
@@ -134,7 +134,7 @@ void charbuf_free( spocp_charbuf_t *sc )
 	}
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------ */
 
 /*!
  * \brief Grabs a line from some input
@@ -194,7 +194,7 @@ rm_sp(char *str, int len)
 	return cp - str;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------- */
 /*
 static int
 de_escape( char *str, int len )
@@ -209,7 +209,7 @@ de_escape( char *str, int len )
   return tmp.len ;
 }
 */
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------ */
 
 static octet_t *
 get_token(spocp_charbuf_t * io)
@@ -251,7 +251,7 @@ get_token(spocp_charbuf_t * io)
 	}
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------ */
 
 static octet_t *
 get_path(spocp_charbuf_t * io)
@@ -293,8 +293,11 @@ get_path(spocp_charbuf_t * io)
 	}
 }
 
-/*--------------------------------------------------------------------------------*/
-
+/*------------------------------------------------------------------------ */
+/*
+ * A base64 string is expected to have '|' chars on either side 
+ * like this: |YXN1cmUu|
+ */
 static octet_t *
 get_base64( spocp_charbuf_t * io)
 {
@@ -320,7 +323,7 @@ get_base64( spocp_charbuf_t * io)
 			break;
 	} while (1);
 
-	if (cp != io->start) {	/* never got off the ground */
+	if (cp != io->start) {	
 		len = cp - io->start;
 		res = mycpy(res, io->start, len, sofar);
 		sofar += len;
@@ -352,6 +355,10 @@ get_base64( spocp_charbuf_t * io)
 	}
 }
 
+/*
+ * A hex string is supposed to have '%'-chars on either side
+ * Like this: %0a0d%
+ */
 static octet_t *
 get_hex( spocp_charbuf_t * io)
 {
@@ -428,8 +435,7 @@ get_hex( spocp_charbuf_t * io)
 			*cp = c;
 			i += 2;
 		}
-
-		sofar = cp - res;
+        *cp = '\0'; 
 	}
 
 	if (res == 0)
@@ -555,7 +561,7 @@ skip_whites(spocp_charbuf_t * io)
 	return 1;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------ */
 
 /*! 
  * \brief Check which significant character that is next in the buffer
@@ -571,7 +577,7 @@ charbuf_peek( spocp_charbuf_t *cb )
 	return( *cb->start ) ;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------ */
 
 /*!
  * \brief Get a chunk of the buffer, chunks are sets of characters that are 
@@ -641,7 +647,7 @@ get_chunk(spocp_charbuf_t * io)
 	return cp;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------ */
 
 /*!
  * \brief Adds a chunk to the end of a double linked list
@@ -661,10 +667,11 @@ chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np )
 	return pp->next ;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*------------------------------------------------------------------------ */
 
 /*!
- * \brief Gets all the chunks that belongs to one S-expression
+ * \brief Gets all the chunks that belongs to one S-expression. Assumes 
+ *  that the first '(' has been stripped off.
  * \param ib The character buffer from which the information should be picked
  * \param pp The list of chunks to which this list should be added
  * \return The last chunk of the combined list
@@ -672,25 +679,32 @@ chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np )
 spocp_chunk_t		*
 get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp )
 {
-	int	par = 1;
-	spocp_chunk_t *np ;
+	int             par = 1;
+	spocp_chunk_t   *np = NULL, *head=NULL, *cp = NULL ;
 
 	while (par) {
 		if ((np = get_chunk(ib)) == 0)
 			break;
-
-		pp = chunk_add(pp, np);
-
+        
+		cp = chunk_add(cp, np);
+        if (head == NULL)
+            head = cp;
+        
 		if (oct2strcmp(np->val, "(") == 0)
 			par++;
 		else if (oct2strcmp(np->val, ")") == 0)
 			par--;
 	}
 
+    if (pp && head) {
+        pp->next = head;
+        head->prev = pp;
+    }
+    
 	return np ;
 }
 
-/*--------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------- */
 
 /*!
  * \brief Converts a list of chunks to a canonical S-expression
@@ -766,38 +780,38 @@ chunk2sexp( spocp_chunk_t *c )
 spocp_chunk_t *
 get_sexp_from_str( char *s )
 {
-        spocp_charbuf_t scb;
-        spocp_chunk_t root;
+    spocp_charbuf_t scb;
+    spocp_chunk_t root;
 
-        scb.fp = 0;
-        scb.str = s;
-        scb.size = strlen(s);
-        scb.start = s;
+    scb.fp = 0;
+    scb.str = s;
+    scb.size = strlen(s);
+    scb.start = s;
 
-        memset( &root, 0, sizeof( spocp_chunk_t ));
-        get_sexp( &scb, &root);
+    memset( &root, 0, sizeof( spocp_chunk_t ));
+    get_sexp( &scb, &root);
 
-        return root.next;
+    return root.next;
 }
 
 spocp_chunk_t *
 get_sexp_from_oct( octet_t *o)
 {
-        spocp_charbuf_t scb;
-        spocp_chunk_t root;
+    spocp_charbuf_t scb;
+    spocp_chunk_t root;
 
 	if (o == 0 || o->len == 0 ) 
 		return 0;
 
-        scb.fp = 0;
-        scb.str = o->val;
-        scb.size = o->len;
-        scb.start = o->val;
+    scb.fp = 0;
+    scb.str = o->val;
+    scb.size = o->len;
+    scb.start = o->val;
 
-        memset( &root, 0, sizeof( spocp_chunk_t ));
-        get_sexp( &scb, &root);
+    memset( &root, 0, sizeof( spocp_chunk_t ));
+    get_sexp( &scb, &root);
 
-        return root.next;
+    return root.next;
 }
 
 octet_t *
@@ -819,8 +833,13 @@ sexp_normalize( char *s )
 	spocp_chunk_t   *c;
 
 	c = get_sexp_from_str( s );
-	o = chunk2sexp( c );
-	chunk_free( c );
-	return o;
+    if (c) {
+        o = chunk2sexp( c );
+        chunk_free( c );
+        return o;
+    }
+    else {
+        return NULL;
+    }
 }
 

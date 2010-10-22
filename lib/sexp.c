@@ -7,7 +7,7 @@
                           sexp.c  -  description
                              -------------------
     begin                : Sat Oct 12 2002
-    copyright            : (C) 2002 by Umeå University, Sweden
+    copyright            : (C) 2002 by UmeŒ University, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in tdup level directory
@@ -21,9 +21,11 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <func.h>
-
+#include <octet.h>
+#include <result.h>
 #include <spocp.h>
+
+#include <log.h>
 #include <proto.h>
 #include <macros.h>
 #include <wrappers.h>
@@ -37,48 +39,50 @@
 int
 get_len(octet_t * op, spocp_result_t *rc)
 {
-	char	*sp;
-	int	n = 0;
-	size_t  l;
+    char    *sp;
+    int n = 0;
+    size_t  l;
 
-	if( op->len == 0) {
-		*rc = SPOCP_MISSING_CHAR;
-		return -1;
-	}
+    if( op->len == 0) {
+        *rc = SPOCP_MISSING_CHAR;
+        return -1;
+    }
 
-	for ( n = 0, l = 0, sp = op->val ; l < op->len && DIGIT(*sp) ; l++,sp++) {
-		if (n)
-			n *= 10;
+    for ( n = 0, l = 0, sp = op->val ; l < op->len && DIGIT(*sp) ; l++,sp++) {
+        if (n)
+            n *= 10;
 
-		n += *sp -'0' ;
-	}
+        n += *sp -'0' ;
+    }
 
-	if (n == 0) {
-		sp = op->val;
-		traceLog(LOG_ERR,"No digit found at \"%c%c%c%c\"", *sp, *(sp+1),
-		    *(sp+2), *(sp+3) ) ;
-		*rc = SPOCP_SYNTAXERROR;
-		return -1;
+    if (n == 0) {
+        sp = op->val;
+        LOG(SPOCP_ERR) {
+            traceLog(LOG_ERR,"No digit found at \"%c%c%c%c\"", *sp, *(sp+1),
+            *(sp+2), *(sp+3) ) ;
+        }
+        *rc = SPOCP_SYNTAXERROR;
+        return -1;
         }
 
-	if (l == op->len) {
-		*rc = SPOCP_MISSING_CHAR;
-		return -1;
-	}
+    if (l == op->len) {
+        *rc = SPOCP_MISSING_CHAR;
+        return -1;
+    }
 
-	/*
-	 * ep points to the first non digit character 
-	 * which has to be ':'
-	 */
-	if (*sp != ':') {
-		*rc = SPOCP_SYNTAXERROR;
-		return -1;
-	}
+    /*
+     * ep points to the first non digit character 
+     * which has to be ':'
+     */
+    if (*sp != ':') {
+        *rc = SPOCP_SYNTAXERROR;
+        return -1;
+    }
 
-	op->len -= l;
-	op->val = sp;
+    op->len -= l;
+    op->val = sp;
 
-	return n;
+    return n;
 }
 
 /*!
@@ -90,49 +94,49 @@ get_len(octet_t * op, spocp_result_t *rc)
  * \return A spocp result code.
  */
 spocp_result_t
-get_str(octet_t * so, octet_t * ro)
+get_str(octet_t * from, octet_t * to)
 {
-	spocp_result_t rc;
+    spocp_result_t rc;
 
-	if (ro == 0)
-		return SPOCP_OPERATIONSERROR;
+    if (to == 0)
+        return SPOCP_OPERATIONSERROR;
 
-	ro->size = 0;
+    to->size = 0;
 
-	if (( ro->len = get_len(so, &rc)) < 0 ) 
-		return rc;
+    if (( to->len = get_len(from, &rc)) < 0 ) 
+        return rc;
 
-	if ((so->len - 1) < ro->len) {
-		LOG(SPOCP_ERR) {
-			traceLog(LOG_ERR,
-			     "expected length of string (%d) exceeds input length (%d)",
-			     ro->len, so->len);
-			traceLog(LOG_ERR,
-			     "Offending part \"%c%c%c\"", so->val[0],
-			     so->val[1], so->val[2]);
-		}
-		return SPOCP_MISSING_CHAR;
-	}
+    if ((from->len - 1) < to->len) {
+        LOG(SPOCP_ERR) {
+            traceLog(LOG_ERR,
+                 "expected length of string (%d) exceeds input length (%d)",
+                 to->len, from->len);
+            traceLog(LOG_ERR,
+                 "Offending part \"%c%c%c\"", from->val[0],
+                 from->val[1], from->val[2]);
+        }
+        return SPOCP_MISSING_CHAR;
+    }
 
-	if (ro->len == 0) {
-		LOG(SPOCP_ERR) traceLog(LOG_ERR,"Zero length strings not allowed");
-		return SPOCP_SYNTAXERROR;
-	}
+    if (to->len == 0) {
+        LOG(SPOCP_ERR) traceLog(LOG_ERR,"Zero length strings not allowed");
+        return SPOCP_SYNTAXERROR;
+    }
 
-	so->val++;
-	so->len--;
+    from->val++;
+    from->len--;
 
-	ro->val = so->val;
-	ro->size = 0;		/* signifying that it's not dynamically
-				 * allocated */
+    to->base = to->val = from->val;
+    to->size = 0;       /* signifying that it's not dynamically allocated */
 
-	so->val += ro->len;
-	so->len -= ro->len;
+    from->val += to->len;
+    from->len -= to->len;
 
-	DEBUG(SPOCP_DPARSE)
-	    traceLog(LOG_DEBUG,"Got 'string' \"%*.*s\"", ro->len, ro->len, ro->val);
+    DEBUG(SPOCP_DPARSE)
+        traceLog(LOG_DEBUG,"Got 'string' \"%*.*s\"", to->len, to->len, 
+                 to->val);
 
-	return SPOCP_SUCCESS;
+    return SPOCP_SUCCESS;
 }
 
 
@@ -146,51 +150,51 @@ get_str(octet_t * so, octet_t * ro)
 int
 sexp_len(octet_t * sexp)
 {
-	spocp_result_t  r;
-	int             depth = 0;
-	octet_t         oct, str;
+    spocp_result_t  r;
+    int             depth = 0;
+    octet_t         oct, str;
 
-	oct.val = sexp->val;
-	oct.len = sexp->len;
+    oct.val = sexp->val;
+    oct.len = sexp->len;
 
-	/*
-	 * first one should be a '(' 
-	 */
-	if (*oct.val != '(')
-		return -1;
+    /*
+     * first one should be a '(' 
+     */
+    if (*oct.val != '(')
+        return -1;
 
-	oct.val++;
-	oct.len--;
+    oct.val++;
+    oct.len--;
 
-	while (oct.len) {
-		if (*oct.val == '(') {	/* start of list */
-			depth++;
+    while (oct.len) {
+        if (*oct.val == '(') {  /* start of list */
+            depth++;
 
-			oct.len--;
-			oct.val++;
-		} else if (*oct.val == ')') {	/* end of list */
-			depth--;
+            oct.len--;
+            oct.val++;
+        } else if (*oct.val == ')') {   /* end of list */
+            depth--;
 
-			if (depth < 0) {
-				oct.len--;
-				break;	/* done */
-			}
+            if (depth < 0) {
+                oct.len--;
+                break;  /* done */
+            }
 
-			oct.len--;
-			oct.val++;
-		} else {
-			r = get_str(&oct, &str);
-			if (r == SPOCP_SYNTAXERROR)
-				return -1;
-			else if (r == SPOCP_MISSING_CHAR)
-				return 0;
-		}
-	}
+            oct.len--;
+            oct.val++;
+        } else {
+            r = get_str(&oct, &str);
+            if (r == SPOCP_SYNTAXERROR)
+                return -1;
+            else if (r == SPOCP_MISSING_CHAR)
+                return 0;
+        }
+    }
 
-	if (depth >= 0)
-		return 0;
+    if (depth >= 0)
+        return 0;
 
-	return (sexp->len - oct.len);
+    return (sexp->len - oct.len);
 }
 
 
@@ -200,7 +204,7 @@ sexp_len(octet_t * sexp)
  * \brief Constructs a octet string given a format specification and a
  *    array of void pointers to arguments.
  * \param sexp A memory area where the result will be placed
- * \param size A poiinter to a integer containing the size of the memory area.
+ * \param size A pointer to a integer containing the size of the memory area.
  *   this integer will be updated to reflect the size of the memory area that
  *   was not used.
  * \param format The format specification, the allowed characters are '(',
@@ -222,178 +226,178 @@ sexp_len(octet_t * sexp)
 char           *
 sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 {
-	char           *s, *sp, **arr;
-	octet_t        *o, **oa;
-	int             i, n, argc = 0;
-	unsigned int    bsize = *size;
-	octarr_t       *oarr;
+    char           *s, *sp, **arr;
+    octet_t        *o, **oa;
+    int             i, n, argc = 0;
+    unsigned int    bsize = *size;
+    octarr_t       *oarr;
 
-	if (format == 0 || *format == '\0')
-		return 0;
+    if (format == 0 || *format == '\0')
+        return 0;
 
-	memset(sexp, 0, bsize);
-	sp = sexp;
-	bsize -= 2;
+    memset(sexp, 0, bsize);
+    sp = sexp;
+    bsize -= 2;
 
-	while (*format && bsize) {
-		/*
-		 * traceLog(LOG_INFO, "Sexp [%s][%c]", sexp, *format ) ; 
-		 */
-		switch (*format++) {
-		case '(':	/* start of a list */
-			*sp++ = '(';
-			bsize--;
-			break;
+    while (*format && bsize) {
+        /*
+         * traceLog(LOG_INFO, "Sexp [%s][%c]", sexp, *format ) ; 
+         */
+        switch (*format++) {
+        case '(':   /* start of a list */
+            *sp++ = '(';
+            bsize--;
+            break;
 
-		case ')':	/* end of a list */
-			*sp++ = ')';
-			bsize--;
-			break;
+        case ')':   /* end of a list */
+            *sp++ = ')';
+            bsize--;
+            break;
 
-		case 'o':	/* octet */
-			if ((o = (octet_t *) argv[argc++]) == 0);
-			if (o && o->len) {
-				n = snprintf(sp, bsize, "%d:", (int) o->len);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
+        case 'o':   /* octet */
+            if ((o = (octet_t *) argv[argc++]) == 0);
+            if (o && o->len) {
+                n = snprintf(sp, bsize, "%d:", (int) o->len);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
 
-				if (o->len > bsize)
-					return 0;
-				memcpy(sp, o->val, o->len);
-				bsize -= o->len;
-				sp += o->len;
-			}
-			break;
+                if (o->len > bsize)
+                    return 0;
+                memcpy(sp, o->val, o->len);
+                bsize -= o->len;
+                sp += o->len;
+            }
+            break;
 
-		case 'O':	/* octet array */
-			if ((oa = (octet_t **) argv[argc++]) == 0)
-				return 0;
+        case 'O':   /* octet array */
+            if ((oa = (octet_t **) argv[argc++]) == 0)
+                return 0;
 
-			for (i = 0; oa[i]; i++) {
-				o = oa[i];
-				if (o->len == 0)
-					continue;
-				n = snprintf(sp, bsize, "%dz:", (int) o->len);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
+            for (i = 0; oa[i]; i++) {
+                o = oa[i];
+                if (o->len == 0)
+                    continue;
+                n = snprintf(sp, bsize, "%d:", (int) o->len);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
 
-				if (o->len > bsize)
-					return 0;
-				memcpy(sp, o->val, o->len);
-				bsize -= o->len;
-				sp += o->len;
-			}
-			break;
+                if (o->len > bsize)
+                    return 0;
+                memcpy(sp, o->val, o->len);
+                bsize -= o->len;
+                sp += o->len;
+            }
+            break;
 
-		case 'X':	/* ocarr */
-			if ((oarr = (octarr_t *) argv[argc++]) == 0)
-				return 0;
+        case 'X':   /* ocarr */
+            if ((oarr = (octarr_t *) argv[argc++]) == 0)
+                return 0;
 
-			for (i = 0; i < oarr->n; i++) {
-				o = oarr->arr[i];
-				if (o->len == 0)
-					continue;
-				n = snprintf(sp, bsize, "%d:", (int) o->len);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
+            for (i = 0; i < oarr->n; i++) {
+                o = oarr->arr[i];
+                if (o->len == 0)
+                    continue;
+                n = snprintf(sp, bsize, "%d:", (int) o->len);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
 
-				if (o->len > bsize)
-					return 0;
-				memcpy(sp, o->val, o->len);
-				bsize -= o->len;
-				sp += o->len;
-			}
-			break;
+                if (o->len > bsize)
+                    return 0;
+                memcpy(sp, o->val, o->len);
+                bsize -= o->len;
+                sp += o->len;
+            }
+            break;
 
-		case 'a':	/* atom */
-			if ((s = (char *) argv[argc++]) == 0);
-			if (s && *s) {
-				n = snprintf(sp, bsize, "%d:%s", (int) strlen(s), s);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
-			}
-			break;
+        case 'a':   /* atom */
+            if ((s = (char *) argv[argc++]) == 0);
+            if (s && *s) {
+                n = snprintf(sp, bsize, "%d:%s", (int) strlen(s), s);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
+            }
+            break;
 
-		case 'A':	/* sequence of atoms */
-			if ((arr = (char **) argc[argv++]) == 0)
-				return 0;
-			for (i = 0; arr[i]; i++) {
-				n = snprintf(sp, bsize, "%d:%s",
-					     (int) strlen(arr[i]), arr[i]);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
-			}
-			break;
+        case 'A':   /* sequence of atoms */
+            if ((arr = (char **) argc[argv++]) == 0)
+                return 0;
+            for (i = 0; arr[i]; i++) {
+                n = snprintf(sp, bsize, "%d:%s",
+                         (int) strlen(arr[i]), arr[i]);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
+            }
+            break;
 
-		case 'l':	/* list */
-			if ((s = (char *) argv[argc++]) == 0);
-			if (s && *s) {
-				n = snprintf(sp, bsize, "%s", s);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
-			}
-			break;
+        case 'l':   /* list */
+            if ((s = (char *) argv[argc++]) == 0);
+            if (s && *s) {
+                n = snprintf(sp, bsize, "%s", s);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
+            }
+            break;
 
-		case 'L':	/* array of lists */
-			if ((arr = (char **) argv[argc++]) == 0)
-				return 0;
+        case 'L':   /* array of lists */
+            if ((arr = (char **) argv[argc++]) == 0)
+                return 0;
 
-			for (i = 0; arr[i]; i++) {
-				n = snprintf(sp, bsize, "%s", arr[i]);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
-			}
-			break;
+            for (i = 0; arr[i]; i++) {
+                n = snprintf(sp, bsize, "%s", arr[i]);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
+            }
+            break;
 
-		case 'u':	/* octet list */
-			if ((o = (octet_t *) argv[argc++]) == 0)
-				return 0;
+        case 'u':   /* octet list */
+            if ((o = (octet_t *) argv[argc++]) == 0)
+                return 0;
 
-			if (o->len > bsize)
-				return 0;
-			memcpy(sp, o->val, o->len);
-			bsize -= o->len;
-			sp += o->len;
+            if (o->len > bsize)
+                return 0;
+            memcpy(sp, o->val, o->len);
+            bsize -= o->len;
+            sp += o->len;
 
-			break;
+            break;
 
-		case 'U':	/* array of octet lists */
-			if ((oa = (octet_t **) argv[argc++]) == 0)
-				return 0;
+        case 'U':   /* array of octet lists */
+            if ((oa = (octet_t **) argv[argc++]) == 0)
+                return 0;
 
-			for (i = 0; oa[i]; i++) {
-				o = oa[i];
-				if (o == NULL || o->len == 0)
-					continue;
-				if (o->len > bsize)
-					return 0;
-				memcpy(sp, o->val, o->len);
-				bsize -= o->len;
-				sp += o->len;
-			}
-			break;
+            for (i = 0; oa[i]; i++) {
+                o = oa[i];
+                if (o == NULL || o->len == 0)
+                    continue;
+                if (o->len > bsize)
+                    return 0;
+                memcpy(sp, o->val, o->len);
+                bsize -= o->len;
+                sp += o->len;
+            }
+            break;
 
-		}
+        }
 
-	}
+    }
 
-	*size = bsize;
+    *size = bsize;
 
-	return sexp;
+    return sexp;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -423,175 +427,194 @@ sexp_printa(char *sexp, unsigned int *size, char *format, void **argv)
 char           *
 sexp_printv(char *sexp, unsigned int *size, char *fmt, ...)
 {
-	va_list         ap;
-	char           *s, *sp, **arr;
-	octet_t        *o, **oa;
-	int             n, i;
-	unsigned int    bsize = *size;
-	octarr_t       *oarr;
+    va_list         ap;
+    char           *s, *sp, **arr;
+    octet_t        *o, **oa;
+    int             n, i;
+    unsigned int    bsize = *size;
+    octarr_t       *oarr;
 
-	if (fmt == 0)
-		return 0;
+    if (fmt == 0)
+        return 0;
 
-	va_start(ap, fmt);
+    va_start(ap, fmt);
 
-	memset(sexp, 0, bsize);
-	sp = sexp;
+    memset(sexp, 0, bsize);
+    sp = sexp;
 
-	while (*fmt && bsize)
-		switch (*fmt++) {
-		case '(':	/* start of a list */
-			*sp++ = '(';
-			bsize--;
-			break;
+    while (*fmt && bsize)
+        switch (*fmt++) {
+        case '(':   /* start of a list */
+            *sp++ = '(';
+            bsize--;
+            break;
 
-		case ')':	/* end of a list */
-			*sp++ = ')';
-			bsize--;
-			break;
+        case ')':   /* end of a list */
+            *sp++ = ')';
+            bsize--;
+            break;
 
-		case 'o':	/* octet */
-			o = va_arg(ap, octet_t *);
-			if (o && o->len) {
-				n = snprintf(sp, bsize, "%d:", (int) o->len);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
+        case 'o':   /* octet */
+            o = va_arg(ap, octet_t *);
+            if (o && o->len) {
+                n = snprintf(sp, bsize, "%d:", (int) o->len);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
 
-				if (o->len > bsize)
-					return 0;
-				memcpy(sp, o->val, o->len);
-				bsize -= o->len;
-				sp += o->len;
-			}
-			break;
+                if (o->len > bsize)
+                    return 0;
+                memcpy(sp, o->val, o->len);
+                bsize -= o->len;
+                sp += o->len;
+            }
+            break;
 
-		case 'O':	/* octet array */
-			oa = va_arg(ap, octet_t **);
-			if (oa) {
-				for (i = 0; oa[i]; i++) {
-					o = oa[i];
-					if (o->len == 0)
-						continue;
-					n = snprintf(sp, bsize, "%d:", (int) o->len);
-					if (n < 0 || (unsigned int) n > bsize)
-						return 0;
-					bsize -= n;
-					sp += n;
+        case 'O':   /* octet array */
+            oa = va_arg(ap, octet_t **);
+            if (oa) {
+                for (i = 0; oa[i]; i++) {
+                    o = oa[i];
+                    if (o->len == 0)
+                        continue;
+                    n = snprintf(sp, bsize, "%d:", (int) o->len);
+                    if (n < 0 || (unsigned int) n > bsize)
+                        return 0;
+                    bsize -= n;
+                    sp += n;
 
-					if (o->len > bsize)
-						return 0;
-					memcpy(sp, o->val, o->len);
-					bsize -= o->len;
-					sp += o->len;
-				}
-			}
-			break;
+                    if (o->len > bsize)
+                        return 0;
+                    memcpy(sp, o->val, o->len);
+                    bsize -= o->len;
+                    sp += o->len;
+                }
+            }
+            break;
 
-		case 'a':	/* atom */
-			s = va_arg(ap, char *);
-			if (s && *s) {
-				n = snprintf(sp, bsize, "%d:%s", (int) strlen(s), s);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
-			}
-			break;
+        case 'a':   /* atom */
+            s = va_arg(ap, char *);
+            if (s && *s) {
+                n = snprintf(sp, bsize, "%d:%s", (int) strlen(s), s);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
+            }
+            break;
 
-		case 'A':	/* sequence of atoms */
-			arr = va_arg(ap, char **);
-			if (arr) {
-				for (i = 0; arr[i]; i++) {
-					n = snprintf(sp, bsize, "%d:%s",
-						     (int) strlen(arr[i]), arr[i]);
-					if (n < 0 || (unsigned int) n > bsize)
-						return 0;
-					bsize -= n;
-					sp += n;
-				}
-			}
-			break;
+        case 'A':   /* sequence of atoms */
+            arr = va_arg(ap, char **);
+            if (arr) {
+                for (i = 0; arr[i]; i++) {
+                    n = snprintf(sp, bsize, "%d:%s",
+                             (int) strlen(arr[i]), arr[i]);
+                    if (n < 0 || (unsigned int) n > bsize)
+                        return 0;
+                    bsize -= n;
+                    sp += n;
+                }
+            }
+            break;
 
-		case 'l':	/* list */
-			s = va_arg(ap, char *);
-			if (s && *s) {
-				n = snprintf(sp, bsize, "%s", s);
-				if (n < 0 || (unsigned int) n > bsize)
-					return 0;
-				bsize -= n;
-				sp += n;
-			}
-			break;
+        case 'l':   /* list */
+            s = va_arg(ap, char *);
+            if (s && *s) {
+                n = snprintf(sp, bsize, "%s", s);
+                if (n < 0 || (unsigned int) n > bsize)
+                    return 0;
+                bsize -= n;
+                sp += n;
+            }
+            break;
 
-		case 'L':	/* array of lists */
-			arr = va_arg(ap, char **);
-			if (arr) {
-				for (i = 0; arr[i]; i++) {
-					n = snprintf(sp, bsize, "%s", arr[i]);
-					if (n < 0 || (unsigned int) n > bsize)
-						return 0;
-					bsize -= n;
-					sp += n;
-				}
-			}
-			break;
+        case 'L':   /* array of lists */
+            arr = va_arg(ap, char **);
+            if (arr) {
+                for (i = 0; arr[i]; i++) {
+                    n = snprintf(sp, bsize, "%s", arr[i]);
+                    if (n < 0 || (unsigned int) n > bsize)
+                        return 0;
+                    bsize -= n;
+                    sp += n;
+                }
+            }
+            break;
 
-		case 'u':	/* octet list */
-			o = va_arg(ap, octet_t *);
-			if (o) {
-				if (o->len > bsize)
-					return 0;
-				memcpy(sp, o->val, o->len);
-				bsize -= o->len;
-				sp += o->len;
-			}
-			break;
+        case 'u':   /* octet list */
+            o = va_arg(ap, octet_t *);
+            if (o) {
+                if (o->len > bsize)
+                    return 0;
+                memcpy(sp, o->val, o->len);
+                bsize -= o->len;
+                sp += o->len;
+            }
+            break;
 
-		case 'U':	/* array of octet lists */
-			oa = va_arg(ap, octet_t **);
-			if (oa) {
-				for (i = 0; oa[i]; i++) {
-					o = oa[i];
-					if (o->len == 0)
-						continue;
-					if (o->len > bsize)
-						return 0;
-					memcpy(sp, o->val, o->len);
-					bsize -= o->len;
-					sp += o->len;
-				}
-			}
-			break;
+        case 'U':   /* array of octet lists */
+            oa = va_arg(ap, octet_t **);
+            if (oa) {
+                for (i = 0; oa[i]; i++) {
+                    o = oa[i];
+                    if (o->len == 0)
+                        continue;
+                    if (o->len > bsize)
+                        return 0;
+                    memcpy(sp, o->val, o->len);
+                    bsize -= o->len;
+                    sp += o->len;
+                }
+            }
+            break;
 
-		case 'X':	/* octarr */
-			oarr = va_arg(ap, octarr_t *);
-			if (oarr) {
-				for (i = 0; i < oarr->n; i++) {
-					o = oarr->arr[i];
-					if ( o == NULL || o->len == 0)
-						continue;
-					n = snprintf(sp, bsize, "%d:", (int) o->len);
-					if (n < 0 || (unsigned int) n > bsize)
-						return 0;
-					bsize -= n;
-					sp += n;
+        case 'X':   /* octarr */
+            oarr = va_arg(ap, octarr_t *);
+            if (oarr) {
+                for (i = 0; i < oarr->n; i++) {
+                    o = oarr->arr[i];
+                    if ( o == NULL || o->len == 0)
+                        continue;
+                    n = snprintf(sp, bsize, "%d:", (int) o->len);
+                    if (n < 0 || (unsigned int) n > bsize)
+                        return 0;
+                    bsize -= n;
+                    sp += n;
 
-					if (o->len > bsize)
-						return 0;
-					memcpy(sp, o->val, o->len);
-					bsize -= o->len;
-					sp += o->len;
-				}
-			}
-			break;
+                    if (o->len > bsize)
+                        return 0;
+                    memcpy(sp, o->val, o->len);
+                    bsize -= o->len;
+                    sp += o->len;
+                }
+            }
+            break;
 
-		}
+        }
 
-	va_end(ap);
+    va_end(ap);
 
-	*size = bsize;
+    *size = bsize;
 
-	return sexp;
+    return sexp;
 }
+
+spocp_result_t octseq2octarr(octet_t *arg, octarr_t **oa)
+{
+    spocp_result_t  r = SPOCP_SUCCESS;
+    int             i;
+    octet_t         op;
+    octarr_t       *oarr = *oa;
+    
+    for (i = 0; arg->len; i++) {
+        if ((r = get_str(arg, &op)) != SPOCP_SUCCESS)
+            break;
+        oarr = octarr_add(oarr, octdup(&op));
+    }
+    
+    *oa = oarr;
+    
+    return r;
+}
+

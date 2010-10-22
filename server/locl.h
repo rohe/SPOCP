@@ -11,13 +11,8 @@
 
  ***************************************************************************/
 
-/*
- * $Id$ 
- */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
 
 #include <sys/types.h>
 #include <sys/param.h>
@@ -35,7 +30,9 @@
 #include <arpa/inet.h>
 
 #ifdef HAVE_STRNDUP
+#ifndef _GNU_SOURCE 
 #define _GNU_SOURCE 
+#endif
 #endif
 
 #include <errno.h>
@@ -65,21 +62,20 @@
 #include <tcpd.h>
 #endif
 
-/*
- * #include "srvconf.h" 
- */
-
 #include <spocp.h>
-#include <func.h>
 #include <macros.h>
 #include <wrappers.h>
 #include <proto.h>
-
+#include <log.h>
 #include <db0.h>
 #include <dback.h>
 #include <plugin.h>
 #include <dbapi.h>
-
+#include <verify.h>
+#include <match.h>
+#include <result.h>
+#include <bcondfunc.h>
+#include <rm.h>
 #include <srv.h>
 
 #include <readcnf.h>

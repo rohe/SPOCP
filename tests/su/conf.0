@@ -1,0 +1,14 @@
+[server]
+rulefile=/Users/rolandh/code/spocp/tests/su/rl.0
+port=5678
+log=spocd.log
+
+[strmatch]
+load=/usr/local/spocp/lib/libstrmatchplugin.so
+
+[localgroup]
+load=/usr/local/spocp/lib/liblocalgroupplugin.so
+
+[ldapset]
+load=/usr/local/spocp/lib/libldapsetplugin.so
+

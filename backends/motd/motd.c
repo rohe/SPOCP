@@ -21,6 +21,7 @@
 #include <plugin.h>
 #include <rvapi.h>
 #include <macros.h>
+#include <log.h>
 
 befunc	motd_test;
 conf_args set_name;

@@ -12,7 +12,7 @@
 #include <spocp.h>
 #include <plugin.h>
 #include <wrappers.h>
-#include <func.h>
+#include <log.h>
 
 /*
  * -------------------------------------------------------------------------- 
@@ -60,7 +60,7 @@ pdyn_free(pdyn_t * pdp)
 }
 
 /*
- * ------------------------------------------------------------------------------------ 
+ * --------------------------------------------------------------------------
  */
 
 /*!
@@ -146,7 +146,7 @@ plugin_add_cachedef(plugin_t * pl, char *s)
 }
 
 /*
- * ------------------------------------------------------------------------------------ 
+ * -------------------------------------------------------------------------
  */
 /*!
  * \brief Load a backend
@@ -157,13 +157,14 @@ plugin_add_cachedef(plugin_t * pl, char *s)
  * \return The new top of the plugin list
  */
 plugin_t       *
-plugin_load(plugin_t * top, char *name, char *load)
+plugin_load(plugin_t * top, char *name, char *load, plugin_t *stat)
 {
 	plugin_t       *pl, *new;
 	char           *modulename;
 	void           *handle;
 
-	traceLog(LOG_INFO, "Loading plugin: \"%s\"", name ) ;
+    LOG(SPOCP_INFO)
+        traceLog(LOG_INFO, "Loading plugin: \"%s\"", name ) ;
 
 	for (pl = top; pl; pl = pl->next) {
 		if (strcmp(pl->name, name) == 0) {
@@ -172,20 +173,30 @@ plugin_load(plugin_t * top, char *name, char *load)
 		}
 	}
 
-	handle = dlopen(load, RTLD_LAZY);
-	if (!handle) {
-		traceLog(LOG_ERR,"%s: Unable to open %s library: [%s]", name, load,
-			 dlerror());
-		return top;
-	}
+    if (load != NULL) {
+        handle = dlopen(load, RTLD_LAZY);
+        if (!handle) {
+            traceLog(LOG_ERR,"%s: Unable to open %s library: [%s]", 
+                     name, load, dlerror());
+            return top;
+        }
+    }
+    else {
+        handle = NULL;
+    }
 
+    
 	modulename = (char *) Malloc(strlen(name) + strlen("_module") + 1);
 	/* Flawfinder: ignore */
 	sprintf(modulename, "%s_module", name);
 
-	new = (plugin_t *) dlsym(handle, modulename);
-
-	Free(modulename);
+    /* Get the struct describing the module */
+    if (handle != NULL)
+        new = (plugin_t *) dlsym(handle, modulename);
+    else
+        new = stat; /* Used for testing */
+    
+    Free(modulename);
 
 	if (new == 0 || new->magic != MODULE_MAGIC_COOKIE) {
 		unsigned long	ul=MODULE_MAGIC_COOKIE;
@@ -194,9 +205,10 @@ plugin_load(plugin_t * top, char *name, char *load)
 			traceLog(LOG_ERR,"%s: Not a proper plugin_struct %ul/%ul",
 				name, new->magic, ul);
 		else
-			traceLog(LOG_ERR,"%s: Failed to load plugin");
+			traceLog(LOG_ERR,"Failed to load plugin '%s'", name);
 
-		dlclose(handle);
+		if (handle != NULL)
+            dlclose(handle);
 		return top;
 	}
 

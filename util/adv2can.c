@@ -24,9 +24,9 @@ static char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123
 /*--------------------------------------------------------------------------------*/
 
 typedef struct _octet {
-  char *val ;
-  int   size ;
-  int   len ;
+  char *val ;   /* pointer to where the char array starts */
+  int   size ;  /* The size of the array, 0 if static array */
+  int   len ;   /* length of the used array */
 } octet_t ;
 
 typedef struct _ptree {

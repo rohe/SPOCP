@@ -261,7 +261,7 @@ sha1_finish(struct sha1_context *ctx, uint8 digest[16])
 }
 #endif
 
-#ifdef TEST_SHA1
+#ifdef _SHA1_DEBUG
 
 #include <stdlib.h>
 #include <stdio.h>

@@ -14,18 +14,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <db0.h>
-#include <struct.h>
-#include <func.h>
-#include <proto.h>
-#include <spocp.h>
+#include <subelem.h>
 #include <wrappers.h>
-#include <macros.h>
 
 /********************************************************************/
 
 subelem_t      *
-subelem_new()
+subelem_new(void)
 {
 	subelem_t      *s;
 
@@ -49,121 +44,57 @@ subelem_free(subelem_t * sep)
 }
 
 /********************************************************************/
+/*!
+ * Syntax of the LIST command 
+ * list = "4:LIST" [l-path] *( pattern_length ":" "+"/"-" s-expr ) 
+ * \brief Takes a array of list patterns and makes it into a subelem_t
+ *  struct
+ * \param pattern The octet array of patterns
+ * \return The subelem_t struct
+ */
 
-int
-to_subelements(octet_t * arg, octarr_t * oa)
+subelem_t *
+pattern_parse(octarr_t * pattern)
 {
-	int             depth = 0;
-	octet_t         oct, *op, str;
-
-	/*
-	 * first one should be a '(' 
-	 */
-	if (*arg->val == '(') {
-		arg->val++;
-		arg->len--;
-	} else
-		return -1;
-
-	oct.val = arg->val;
-	oct.len = 0;
-
-	while (arg->len) {
-		if (*arg->val == '(') {	/* start of list */
-			depth++;
-			if (depth == 1) {
-				oct.val = arg->val;
-			}
-
-			arg->len--;
-			arg->val++;
-		} else if (*arg->val == ')') {	/* end of list */
-			depth--;
-			if (depth == 0) {
-				oct.len = arg->val - oct.val + 1;
-				op = octdup(&oct);
-				octarr_add(oa, op);
-				oct.val = arg->val + 1;
-			} else if (depth < 0) {
-				arg->len--;
-				arg->val++;
-				break;	/* done */
-			}
-
-			arg->len--;
-			arg->val++;
-		} else {
-			if (get_str(arg, &str) != SPOCP_SUCCESS)
-				return -1;
-
-			if (depth == 0) {
-				oct.len = arg->val - oct.val;
-				op = octdup(&oct);
-				octarr_add(oa, op);
-				oct.val = arg->val;
-				oct.len = 0;
-			}
-		}
-	}
-
-	return 1;
-}
-
-/********************************************************************/
-
-subelem_t      *
-octarr2subelem(octarr_t * oa, int dir)
-{
-	subelem_t      *head = 0, *pres = 0, *tmp;
+	subelem_t      *res = 0, *sub, *pres = 0;
 	element_t      *ep;
+	octet_t         oct, **arr;
 	int             i;
-
-	for (i = 0; i < oa->n; i++) {
-		tmp = subelem_new();
-		tmp->direction = dir;
-
-		if (*(oa->arr[i]->val) == '(')
-			tmp->list = 1;
+    
+	for (i = 0, arr = pattern->arr; i < pattern->n; i++, arr++) {
+		sub = subelem_new();
+        
+		if (*((*arr)->val) == '+')
+			sub->direction = GT;
+		else if (*((*arr)->val) == '-')
+			sub->direction = LT;
 		else
-			tmp->list = 0;
-
-		if (element_get(oa->arr[i], &ep) != SPOCP_SUCCESS) {
-			subelem_free(tmp);
-			subelem_free(head);
+			return 0;
+        
+		if (*((*arr)->val + 1) == '(')
+			sub->list = 1;
+        
+		octln(&oct, *arr);
+		/*
+		 * skip the +/- sign 
+		 */
+		oct.val++;
+		oct.len--;
+        
+		if (get_element(&oct, &ep) != SPOCP_SUCCESS) {
+			subelem_free(sub);
+			subelem_free(res);
 			return 0;
 		}
-
-		tmp->ep = ep;
-
-		if (head == 0)
-			head = pres = tmp;
+        
+		sub->ep = ep;
+		if (res == 0)
+			res = pres = sub;
 		else {
-			pres->next = tmp;
-			pres = pres->next;
+			pres->next = sub;
+			pres = sub;
 		}
 	}
-
-	return head;
-}
-
-/********************************************************************/
-
-subelem_t      *
-subelement_dup(subelem_t * se)
-{
-	subelem_t      *new = 0;
-
-	if (se == 0)
-		return 0;
-
-	new = subelem_new();
-
-	new->direction = se->direction;
-	new->list = se->list;
-	new->ep = element_dup(se->ep, 0);
-
-	if (se->next)
-		new->next = subelement_dup(se->next);
-
-	return new;
+    
+	return res;
 }

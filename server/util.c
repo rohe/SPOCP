@@ -1,5 +1,4 @@
 #include "locl.h"
-RCSID("$Id$");
 
 char           *
 rm_lt_sp(char *s, int shift)

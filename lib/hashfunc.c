@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
-#include <func.h>
+#include <hashfunc.h>
 
 #define hashsize(n) ((unsigned int)1<<(n))
 #define hashmask(n) (hashsize(n)-1)
@@ -147,11 +147,6 @@ bj_hash(unsigned char *k, unsigned int length, unsigned int initval)
 }
 
 /*
- * basically the same as is used by reiserfs * static unsigned int r5_hash
- * (const char *s, int len, unsigned int a ) { while( len-- ) { a += *s << 4;
- * a += *s >> 4; a *= 11; s++; }
- * 
- * return a; } 
  */
 
 unsigned int

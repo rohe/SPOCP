@@ -7,12 +7,11 @@ Right now a layer in front of a BSD RedBlack Tree
 #include <sys/time.h>
 #include <string.h>
 
-#include <struct.h>
+#include <rdb.h>
+#include <bsdrb.h>
+#include <ruleinst.h>
 #include <wrappers.h>
-#include <db0.h>
-#include <func.h>
-#include "rdb.h"
-#include "bsdrb.h"
+#include <log.h>
 
 void *rdb_new(cmpfn * cf, ffunc * ff, kfunc * kf, dfunc * df, pfunc * pf)
 {
@@ -37,6 +36,17 @@ int rdb_rules( void *r )
 		return 0;
 }
 
+int rdb_len( void *r) 
+{
+    if (r) {
+        return bsdrb_len(r);
+    }
+    else {
+        return 0;
+    }
+
+}
+
 int rdb_insert( void *r, item_t val)
 {
 	return bsdrb_insert( r, (ruleinst_t *) val );
@@ -54,7 +64,16 @@ void *rdb_search( void *r, Key k)
 
 void *rdb_dup( void *r, int dyn )
 { 
-	return 0;
+    void    *v, *db;
+    varr_t  *va;
+    
+    db = bsdrb_init();
+    va = rdb_all(r);
+    for (v=varr_first(va); v; v = varr_next(va, v)) {
+        bsdrb_insert(db, v);
+    }
+    
+	return db;
 }
 
 /* returns a array of pointers to ruleinst_t structs */

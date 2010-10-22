@@ -19,15 +19,14 @@
 #include <string.h>
 
 #include <macros.h>
-#include <struct.h>
-#include <func.h>
 #include <spocp.h>
 #include <wrappers.h>
 #include <proto.h>
+#include <octet.h>
 #include <dbapi.h>
 
 /*
- * returns 
+ * A layer of indirection on top of dbapi_* oeprations 
  */
 
 spocp_result_t
@@ -55,11 +54,11 @@ spocp_del_rule(void *vp, octet_t * op)
 }
 
 spocp_result_t
-spocp_list_rules(void *vp, octarr_t * pattern, octarr_t * oa, char *rs)
+spocp_list_rules(void *vp, octarr_t * pattern, octarr_t **oapp, char *rs)
 {
 	db_t           *db = (db_t *) vp;
 
-	return dbapi_rules_list(db, NULL, pattern, oa, rs);
+	return dbapi_rules_list(db, NULL, pattern, oapp, rs);
 }
 
 spocp_result_t

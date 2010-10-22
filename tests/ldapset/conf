@@ -1,0 +1,5 @@
+[server]
+rulefile=/Users/rolandh/code/spocp/tests/ldapset/rule
+port=5678
+log=log
+

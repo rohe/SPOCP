@@ -18,7 +18,9 @@
 #include <config.h>
 
 #ifdef GLIBC2
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
 #endif
 
 #include <stdio.h>
@@ -44,6 +46,7 @@
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <log.h>
 
 #include <spocp.h>
 #include <wrappers.h>
@@ -65,11 +68,11 @@
 /*! If nothing else is specified this is how long I will wait on a Spocp server to answer
  * my call
  */
-#define SPOCP_DEFAULT_CONN_WAIT		5
+#define SPOCP_DEFAULT_CONN_WAIT     5
 
 /*! Should not have to define this here */
 /*
-char	*strndup(const char *old, size_t sz);
+char    *strndup(const char *old, size_t sz);
 */
 
 /*! Local shothand alias */
@@ -106,6 +109,8 @@ int spocpc_str_send_delete(SPOCP *, char *, char *, queres_t *);
 int spocpc_str_send_subject(SPOCP *, char *, queres_t *);
 int spocpc_str_send_add(SPOCP *, char *, char *, char *, char *, queres_t *);
 
+#define TESTING 1
+
 /*------------------------------------------------------------------------*/
 
 /*!
@@ -113,41 +118,41 @@ int spocpc_str_send_add(SPOCP *, char *, char *, char *, char *, queres_t *);
  *   resultcodes used in the program
  */
 spocp_rescode_t spocp_rescode[] = {
-	{SPOCP_WORKING, "100"},
+    {SPOCP_WORKING, "100"},
 
-	{SPOCP_SUCCESS, "200"},
-	{SPOCP_MULTI, "201"},
-	{SPOCP_DENIED, "202"},
-	{SPOCP_CLOSE, "203"},
-	{SPOCP_SSL_START, "205"},
+    {SPOCP_SUCCESS, "200"},
+    {SPOCP_MULTI, "201"},
+    {SPOCP_DENIED, "202"},
+    {SPOCP_CLOSE, "203"},
+    {SPOCP_SSL_START, "205"},
 
-	{SPOCP_SASLBINDINPROGRESS, "301"},
+    {SPOCP_SASLBINDINPROGRESS, "301"},
 
-	{SPOCP_BUSY, "400"},
-	{SPOCP_TIMEOUT, "401"},
-	{SPOCP_TIMELIMITEXCEEDED, "402"},
-	{SPOCP_REDIRECT, "403"},
+    {SPOCP_BUSY, "400"},
+    {SPOCP_TIMEOUT, "401"},
+    {SPOCP_TIMELIMITEXCEEDED, "402"},
+    {SPOCP_REDIRECT, "403"},
 
-	{SPOCP_SYNTAXERROR, "500"},
-	{SPOCP_MISSING_ARG, "501"},
-	{SPOCP_MISSING_CHAR, "502"},
-	{SPOCP_PROTOCOLERROR, "503"},
-	{SPOCP_UNKNOWNCOMMAND, "504"},
-	{SPOCP_PARAM_ERROR, "505"},
-	{SPOCP_SSL_ERR, "506"},
-	{SPOCP_UNKNOWN_TYPE, "507"},
+    {SPOCP_SYNTAXERROR, "500"},
+    {SPOCP_MISSING_ARG, "501"},
+    {SPOCP_MISSING_CHAR, "502"},
+    {SPOCP_PROTOCOLERROR, "503"},
+    {SPOCP_UNKNOWNCOMMAND, "504"},
+    {SPOCP_PARAM_ERROR, "505"},
+    {SPOCP_SSL_ERR, "506"},
+    {SPOCP_UNKNOWN_TYPE, "507"},
 
-	{SPOCP_SIZELIMITEXCEEDED, "511"},
-	{SPOCP_OPERATIONSERROR, "512"},
-	{SPOCP_UNAVAILABLE, "513"},
-	{SPOCP_INFO_UNAVAIL, "514"},
-	{SPOCP_NOT_SUPPORTED, "515"},
-	{SPOCP_SSLCON_EXIST, "516"},
-	{SPOCP_OTHER, "517"},
-	{SPOCP_CERT_ERR, "518"},
-	{SPOCP_UNWILLING, "519"},
-	{SPOCP_EXISTS, "520"},
-	{0, 0}
+    {SPOCP_SIZELIMITEXCEEDED, "511"},
+    {SPOCP_OPERATIONSERROR, "512"},
+    {SPOCP_UNAVAILABLE, "513"},
+    {SPOCP_INFO_UNAVAIL, "514"},
+    {SPOCP_NOT_SUPPORTED, "515"},
+    {SPOCP_SSLCON_EXIST, "516"},
+    {SPOCP_OTHER, "517"},
+    {SPOCP_CERT_ERR, "518"},
+    {SPOCP_UNWILLING, "519"},
+    {SPOCP_EXISTS, "520"},
+    {0, 0}
 };
 
 /*=================================================================================*/
@@ -164,8 +169,8 @@ spocp_rescode_t spocp_rescode[] = {
 
 typedef struct randstuff
 {
-	time_t t;
-	pid_t p;
+    time_t t;
+    pid_t p;
 } randstuff_t;
 
 /*---------------------------------------------------------------------------*/
@@ -173,14 +178,14 @@ typedef struct randstuff
 static void
 print_tls_errors(void)
 {
-	char errorstr[1024];
-	unsigned long e;
+    char errorstr[1024];
+    unsigned long e;
 
-	if ((e = ERR_get_error()) != 0) {
-		ERR_error_string_n(e, errorstr, 1024);
+    if ((e = ERR_get_error()) != 0) {
+        ERR_error_string_n(e, errorstr, 1024);
 
-		fprintf(stderr, "%s\n", errorstr);
-	}
+        fprintf(stderr, "%s\n", errorstr);
+    }
 }
 
 /*---------------------------------------------------------------------------*/
@@ -188,18 +193,18 @@ print_tls_errors(void)
 static int
 password_cb(char *buf, int num, int rwflag, void *userdata)
 {
-	size_t len;
+    size_t len;
 
-	len = strlen( (char *) userdata);
-	if (num < (int) len + 1) {
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"Not big enough place for the password (%d)",
-			    num);
-		return (0);
-	}
+    len = strlen( (char *) userdata);
+    if (num < (int) len + 1) {
+        if (spocpc_debug)
+            fprintf(stderr, "Not big enough place for the password (%d)",
+                num);
+        return (0);
+    }
 
-	strncpy(buf, userdata, num-1);
-	return ((int) len);
+    strncpy(buf, userdata, num-1);
+    return ((int) len);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -208,12 +213,12 @@ password_cb(char *buf, int num, int rwflag, void *userdata)
 static void
 add_entropy(char *file)
 {
-	randstuff_t r;
-	r.t = time(NULL);
-	r.p = getpid();
+    randstuff_t r;
+    r.t = time(NULL);
+    r.p = getpid();
 
-	RAND_seed((unsigned char *) (&r), sizeof(r));
-	RAND_load_file(file, 1024 * 1024);
+    RAND_seed((unsigned char *) (&r), sizeof(r));
+    RAND_load_file(file, 1024 * 1024);
 }
 
 /*---------------------------------------------------------------------------*/
@@ -221,25 +226,25 @@ add_entropy(char *file)
 static int
 verify_cb(int verify_ok, X509_STORE_CTX * x509ctx)
 {
-	X509_NAME *xn;
-	static char txt[256];
+    X509_NAME *xn;
+    static char txt[256];
 
-	xn = X509_get_subject_name(x509ctx->current_cert);
-	X509_NAME_oneline(xn, txt, sizeof(txt));
+    xn = X509_get_subject_name(x509ctx->current_cert);
+    X509_NAME_oneline(xn, txt, sizeof(txt));
 
-	if (verify_ok == 0) {
-		traceLog(LOG_ERR,"SSL verify error: depth=%d error=%s cert=%s",
-		    x509ctx->error_depth,
-		    X509_verify_cert_error_string(x509ctx->error), txt);
-		return 0;
-	}
+    if (verify_ok == 0) {
+        fprintf(stderr, "SSL verify error: depth=%d error=%s cert=%s",
+            x509ctx->error_depth,
+            X509_verify_cert_error_string(x509ctx->error), txt);
+        return 0;
+    }
 
-	/* the check against allowed clients are done elsewhere */
+    /* the check against allowed clients are done elsewhere */
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"SSL authenticated peer: %s\n", txt);
+    if (spocpc_debug)
+        fprintf(stderr, "SSL authenticated peer: %s\n", txt);
 
-	return 1;		/* accept */
+    return 1;       /* accept */
 }
 
 /*---------------------------------------------------------------------------*/
@@ -254,76 +259,76 @@ verify_cb(int verify_ok, X509_STORE_CTX * x509ctx)
 static int
 tls_init(SPOCP * spocp)
 {
-	/* uses strdup for consistency */
-	spocp->sslEntropyFile = strdup( "/var/log/messages" );
+    /* uses strdup for consistency */
+    spocp->sslEntropyFile = strdup( "/var/log/messages" );
 
-	SSL_library_init();
-	SSL_load_error_strings();	/* basic set up */
+    SSL_library_init();
+    SSL_load_error_strings();   /* basic set up */
 
-	if (!RAND_status()) {
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"Have to find more entropy\n");
+    if (!RAND_status()) {
+        if (spocpc_debug)
+            fprintf(stderr, "Have to find more entropy\n");
 
-		/* get some entropy */
+        /* get some entropy */
 
-		add_entropy(spocp->sslEntropyFile);
+        add_entropy(spocp->sslEntropyFile);
 
-		if (!RAND_status()) {
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,
-				    "Failed to find enough entropy on your system");
-			return 0;
-		}
-	}
+        if (!RAND_status()) {
+            if (spocpc_debug)
+                fprintf(stderr, 
+                    "Failed to find enough entropy on your system");
+            return 0;
+        }
+    }
 
-	/* Create a TLS context */
+    /* Create a TLS context */
 
-	if (!(spocp->ctx = SSL_CTX_new(SSLv23_client_method()))) {
-		return 0;
-	}
+    if (!(spocp->ctx = SSL_CTX_new(SSLv23_client_method()))) {
+        return 0;
+    }
 
-	/* Set up certificates and keys */
+    /* Set up certificates and keys */
 
-	if (spocp->certificate &&
-	    !SSL_CTX_use_certificate_chain_file(spocp->ctx,
-		spocp->certificate)) {
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"Failed to load certificate chain file");
-		SSL_CTX_free(spocp->ctx);
-		spocp->ctx = 0;
-		return 0;
-	}
+    if (spocp->certificate &&
+        !SSL_CTX_use_certificate_chain_file(spocp->ctx,
+        spocp->certificate)) {
+        if (spocpc_debug)
+            fprintf(stderr, "Failed to load certificate chain file");
+        SSL_CTX_free(spocp->ctx);
+        spocp->ctx = 0;
+        return 0;
+    }
 
-	if (spocp->passwd) {
-		SSL_CTX_set_default_passwd_cb(spocp->ctx, password_cb);
-		SSL_CTX_set_default_passwd_cb_userdata(spocp->ctx,
-		    (void *) spocp->passwd);
-	}
+    if (spocp->passwd) {
+        SSL_CTX_set_default_passwd_cb(spocp->ctx, password_cb);
+        SSL_CTX_set_default_passwd_cb_userdata(spocp->ctx,
+            (void *) spocp->passwd);
+    }
 
-	if (spocp->privatekey && !SSL_CTX_use_PrivateKey_file(
-				spocp->ctx, spocp->privatekey,
-				SSL_FILETYPE_PEM)) {
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"Failed to load private key file, passwd=%s",
-			    spocp->passwd);
-		SSL_CTX_free(spocp->ctx);
-		spocp->ctx = 0;
-		return 0;
-	}
+    if (spocp->privatekey && !SSL_CTX_use_PrivateKey_file(
+                spocp->ctx, spocp->privatekey,
+                SSL_FILETYPE_PEM)) {
+        if (spocpc_debug)
+            fprintf(stderr, "Failed to load private key file, passwd=%s",
+                spocp->passwd);
+        SSL_CTX_free(spocp->ctx);
+        spocp->ctx = 0;
+        return 0;
+    }
 
-	if (spocp->calist
-	    && !SSL_CTX_load_verify_locations(spocp->ctx, spocp->calist, 0)) {
-		traceLog(LOG_ERR,"Failed to load ca file");
-		SSL_CTX_free(spocp->ctx);
-		spocp->ctx = 0;
-		return 0;
-	}
+    if (spocp->calist
+        && !SSL_CTX_load_verify_locations(spocp->ctx, spocp->calist, 0)) {
+        fprintf(stderr, "Failed to load ca file");
+        SSL_CTX_free(spocp->ctx);
+        spocp->ctx = 0;
+        return 0;
+    }
 
-	SSL_CTX_set_verify(spocp->ctx, SSL_VERIFY_PEER, verify_cb);
+    SSL_CTX_set_verify(spocp->ctx, SSL_VERIFY_PEER, verify_cb);
 
-	SSL_CTX_set_verify_depth(spocp->ctx, 5);
+    SSL_CTX_set_verify_depth(spocp->ctx, 5);
 
-	return 1;
+    return 1;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -332,52 +337,66 @@ tls_init(SPOCP * spocp)
 static int
 check_cert_chain(SSL * ssl, char *host)
 {
-	X509 *peer;
-	X509_NAME *xn;
-	char hostname[256], buf[256], *name = 0, *pp = 0;
-	int r;
+    X509 *peer;
+    X509_NAME *xn;
+    char hostname[256], buf[256], *name = 0, *pp = 0;
+    int r;
 
-	if (SSL_get_verify_result(ssl) != X509_V_OK) {
-		traceLog(LOG_ERR,"Certificate doesn't verify");
-		return 0;
-	}
+    if (SSL_get_verify_result(ssl) != X509_V_OK) {
+        fprintf(stderr, "Certificate doesn't verify");
+        return 0;
+    }
 
-	/*Check the cert chain. The chain length
-	 * is automatically checked by OpenSSL when we
-	 * set the verify depth in the ctx */
+    /*Check the cert chain. The chain length
+     * is automatically checked by OpenSSL when we
+     * set the verify depth in the ctx */
 
-	/*Check the common name */
-	peer = SSL_get_peer_certificate(ssl);
-	xn = X509_get_subject_name(peer);
+    /*Check the common name */
+    peer = SSL_get_peer_certificate(ssl);
+    xn = X509_get_subject_name(peer);
 
-	name = X509_NAME_oneline(xn, buf, sizeof(buf));
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Peers subject name: %s", name);
+    name = X509_NAME_oneline(xn, buf, sizeof(buf));
+    if (spocpc_debug)
+        fprintf(stderr, "Peers subject name: %s", name);
 
-	pp = index(host, ':');
-	/* do I need to reset this, no */
-	if (pp)
-		*pp = 0;
+    pp = index(host, ':');
+    /* do I need to reset this, no */
+    if (pp)
+        *pp = 0;
 
-	r = X509_NAME_get_text_by_NID(xn, NID_commonName, hostname, 256);
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,
-		    "Peers hostname: %s, connections hostname: %s",
-		    hostname, host);
+    r = X509_NAME_get_text_by_NID(xn, NID_commonName, hostname, 256);
+    if (spocpc_debug)
+        fprintf(stderr, 
+            "Peers hostname: %s, connections hostname: %s",
+            hostname, host);
 
 /*
   if (strcasecmp(peer_CN,host)) {
-    traceLog(LOG_ERR,"Common name doesn't match host name");
+    fprintf(stderr, "Common name doesn't match host name");
     return 0 ;
   }
 */
 
-	X509_free(peer);
+    X509_free(peer);
 
-	return 1;
+    return 1;
 }
 
 /*---------------------------------------------------------------------------*/
+
+void
+fprintf(stderr, const char *fmt, ...)
+{
+	va_list         ap;
+
+	va_start(ap, fmt);
+
+    fprintf(stderr, fmt, ap);
+
+	va_end(ap);
+
+	return;
+}
 
 /*!
  * Loads the Spocp session with information pertaining to the use of a SSL/TLS
@@ -394,55 +413,55 @@ check_cert_chain(SSL * ssl, char *host)
 void
 spocpc_tls_use_cert(SPOCP * spocp, char *str)
 {
-	if (str)
-		spocp->certificate = strdup(str);
-	else
-		spocp->certificate = 0;
+    if (str)
+        spocp->certificate = strdup(str);
+    else
+        spocp->certificate = 0;
 }
 
 void
 spocpc_tls_use_calist(SPOCP * spocp, char *str)
 {
-	if (str)
-		spocp->calist = strdup(str);
-	else
-		spocp->calist = 0;
+    if (str)
+        spocp->calist = strdup(str);
+    else
+        spocp->calist = 0;
 }
 
 void
 spocpc_tls_use_key(SPOCP * spocp, char *str)
 {
-	if (str)
-		spocp->privatekey = strdup(str);
-	else
-		spocp->privatekey = 0;
+    if (str)
+        spocp->privatekey = strdup(str);
+    else
+        spocp->privatekey = 0;
 }
 
 void
 spocpc_tls_use_passwd(SPOCP * spocp, char *str)
 {
-	if (str)
-		spocp->passwd = strdup(str);
-	else
-		spocp->passwd = 0;
+    if (str)
+        spocp->passwd = strdup(str);
+    else
+        spocp->passwd = 0;
 }
 
 void
 spocpc_tls_set_demand_server_cert(SPOCP * spocp)
 {
-	spocp->servercert = TRUE;
+    spocp->servercert = TRUE;
 }
 
 void
 spocpc_tls_set_verify_server_cert(SPOCP * spocp)
 {
-	spocp->verify_ok = TRUE;
+    spocp->verify_ok = TRUE;
 }
 
 void
 spocpc_use_tls(SPOCP * spocp)
 {
-	spocp->tls = TRUE;
+    spocp->tls = TRUE;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -450,85 +469,85 @@ spocpc_use_tls(SPOCP * spocp)
 int
 spocpc_start_tls(SPOCP * spocp)
 {
-	char	sslhost[MAXHOSTNAMELEN];
-	int		r;
-	char	*target;
-	int		cc;
+    char    sslhost[MAXHOSTNAMELEN];
+    int     r;
+    char    *target;
+    int     cc;
 
-	if (tls_init(spocp) == 0)
-		return 0;
+    if (tls_init(spocp) == 0)
+        return 0;
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"TLS init done");
+    if (spocpc_debug)
+        fprintf(stderr, "TLS init done");
 
-	/* Connect the SSL/TLS socket */
-	if ((spocp->ssl = SSL_new(spocp->ctx)) == 0)
-		return 0;
+    /* Connect the SSL/TLS socket */
+    if ((spocp->ssl = SSL_new(spocp->ctx)) == 0)
+        return 0;
 
-	if (SSL_set_fd(spocp->ssl, spocp->fd) != 1) {
-		traceLog(LOG_ERR,"starttls: Error setting fd\n");
-		SSL_free(spocp->ssl);
-		return 0;
-	}
+    if (SSL_set_fd(spocp->ssl, spocp->fd) != 1) {
+        fprintf(stderr, "starttls: Error setting fd\n");
+        SSL_free(spocp->ssl);
+        return 0;
+    }
 
-	SSL_set_mode(spocp->ssl, SSL_MODE_AUTO_RETRY);
+    SSL_set_mode(spocp->ssl, SSL_MODE_AUTO_RETRY);
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"SSL_connect");
+    if (spocpc_debug)
+        fprintf(stderr, "SSL_connect");
 
-	/* Initiates the TLS handshake with a server */
-	while((r= SSL_connect(spocp->ssl)) <= 0)
-	{
-		int err = SSL_get_error(spocp->ssl, r);
-		struct timeval tv = {0, 100};
-		fd_set rfds;
-		fd_set wfds;
-		FD_ZERO(&rfds);
-		FD_ZERO(&wfds);
-		if(err == SSL_ERROR_WANT_READ)
-			FD_SET(spocp->fd, &rfds);
-		else if(err == SSL_ERROR_WANT_WRITE)
-			FD_SET(spocp->fd, &wfds);
-		else
-		{
-			traceLog(LOG_ERR,"SSL connect failed %d", r);
-			print_tls_errors();
-			SSL_free(spocp->ssl);
-			return 0;
-		}
-		err = select(spocp->fd + 1, &rfds, &wfds, NULL, &tv);
-		if(err == -1)
-			return(0);
-	}
+    /* Initiates the TLS handshake with a server */
+    while((r= SSL_connect(spocp->ssl)) <= 0)
+    {
+        int err = SSL_get_error(spocp->ssl, r);
+        struct timeval tv = {0, 100};
+        fd_set rfds;
+        fd_set wfds;
+        FD_ZERO(&rfds);
+        FD_ZERO(&wfds);
+        if(err == SSL_ERROR_WANT_READ)
+            FD_SET(spocp->fd, &rfds);
+        else if(err == SSL_ERROR_WANT_WRITE)
+            FD_SET(spocp->fd, &wfds);
+        else
+        {
+            fprintf(stderr, "SSL connect failed %d", r);
+            print_tls_errors();
+            SSL_free(spocp->ssl);
+            return 0;
+        }
+        err = select(spocp->fd + 1, &rfds, &wfds, NULL, &tv);
+        if(err == -1)
+            return(0);
+    }
 
-	target = oct2strdup(spocp->srv->arr[spocp->cursrv], '%');
+    target = oct2strdup(spocp->srv->arr[spocp->cursrv], '%');
 
-	if (*target == '/' || (strcmp(target, "localhost") == 0)) {
-		gethostname(sslhost, MAXHOSTNAMELEN);
+    if (*target == '/' || (strcmp(target, "localhost") == 0)) {
+        gethostname(sslhost, MAXHOSTNAMELEN);
 
-		Free( target );	
+        Free( target ); 
 
-		if (check_cert_chain(spocp->ssl, (char *) sslhost) == 0) {
-			SSL_free(spocp->ssl);
-			return 0;
-		}
-	} else {
-		cc = check_cert_chain(spocp->ssl, target);
+        if (check_cert_chain(spocp->ssl, (char *) sslhost) == 0) {
+            SSL_free(spocp->ssl);
+            return 0;
+        }
+    } else {
+        cc = check_cert_chain(spocp->ssl, target);
 
-		Free( target );	
+        Free( target ); 
 
-		if (cc== 0) {
-			SSL_free(spocp->ssl);
-			return 0;
-		}
-	}
+        if (cc== 0) {
+            SSL_free(spocp->ssl);
+            return 0;
+        }
+    }
 
-	spocp->contype = SSL_TLS;
+    spocp->contype = SSL_TLS;
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"STARTTLS done");
+    if (spocpc_debug)
+        fprintf(stderr, "STARTTLS done");
 
-	return 1;
+    return 1;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -536,7 +555,7 @@ spocpc_start_tls(SPOCP * spocp)
 static int
 ssl_socket_readn(SSL * ssl, char *buf, size_t len)
 {
-	return SSL_read(ssl, buf, len);
+    return SSL_read(ssl, buf, len);
 }
 */
 /*--------------------------------------------------------------------------------*/
@@ -544,7 +563,7 @@ ssl_socket_readn(SSL * ssl, char *buf, size_t len)
 static int
 ssl_socket_writen(SSL * ssl, char *buf, size_t len)
 {
-	return SSL_write(ssl, buf, len);
+    return SSL_write(ssl, buf, len);
 }
 */
 #endif
@@ -553,42 +572,42 @@ ssl_socket_writen(SSL * ssl, char *buf, size_t len)
 
 SPOCP *spocpc_cpy( SPOCP *copy, SPOCP *old )
 {
-	if( old == 0 || copy == 0)
-		return 0;
+    if( old == 0 || copy == 0)
+        return 0;
 
-	copy->contype = 0;
-	copy->srv = old->srv;
-	copy->cursrv = 0;
-	copy->com_timeout.tv_sec = old->com_timeout.tv_sec;
-	copy->com_timeout.tv_usec = old->com_timeout.tv_usec;
-	copy->rc = 0;
+    copy->contype = 0;
+    copy->srv = old->srv;
+    copy->cursrv = 0;
+    copy->com_timeout.tv_sec = old->com_timeout.tv_sec;
+    copy->com_timeout.tv_usec = old->com_timeout.tv_usec;
+    copy->rc = 0;
 
 #ifdef HAVE_SSL
-	copy->servercert = old->servercert;
-	copy->verify_ok = old->verify_ok;
-	copy->tls = old->tls;
-	copy->ctx = old->ctx;
-	copy->ssl = 0;
+    copy->servercert = old->servercert;
+    copy->verify_ok = old->verify_ok;
+    copy->tls = old->tls;
+    copy->ctx = old->ctx;
+    copy->ssl = 0;
 #endif
 
-	copy->sslEntropyFile = old->sslEntropyFile;
-	copy->certificate = old->certificate;
-	copy->privatekey = old->privatekey;
-	copy->calist = old->calist;
-	copy->passwd = old->passwd;
+    copy->sslEntropyFile = old->sslEntropyFile;
+    copy->certificate = old->certificate;
+    copy->privatekey = old->privatekey;
+    copy->calist = old->calist;
+    copy->passwd = old->passwd;
 
-	copy->copy = 1;
+    copy->copy = 1;
 
-	return copy;
+    return copy;
 }
 
 SPOCP *spocpc_dup( SPOCP *old )
 {
-	SPOCP *copy;
+    SPOCP *copy;
 
-	copy = (SPOCP *) Calloc(1, sizeof( SPOCP));
+    copy = (SPOCP *) Calloc(1, sizeof( SPOCP));
 
-	return spocpc_cpy( copy, old );
+    return spocpc_cpy( copy, old );
 }
 
 /*=================================================================================*/
@@ -607,24 +626,24 @@ spocpc_close(SPOCP * spocp)
 
 #ifdef HAVE_SSL
 
-	if (spocp->contype == SSL_TLS) {
-		SSL_shutdown(spocp->ssl);
-		SSL_free(spocp->ssl);
-		spocp->ssl = 0;
-	}
+    if (spocp->contype == SSL_TLS) {
+        SSL_shutdown(spocp->ssl);
+        SSL_free(spocp->ssl);
+        spocp->ssl = 0;
+    }
 #endif
 #ifdef HAVE_SASL
-	if (spocp->sasl) {
-		sasl_dispose(&spocp->sasl);
-		spocp->sasl_ssf = NULL;
-		sasl_done();
-	}
+    if (spocp->sasl) {
+        sasl_dispose(&spocp->sasl);
+        spocp->sasl_ssf = NULL;
+        sasl_done();
+    }
 #endif
 
-	close(spocp->fd);
-	spocp->fd = 0;
+    close(spocp->fd);
+    spocp->fd = 0;
 
-	spocp->contype = UNCONNECTED;
+    spocp->contype = UNCONNECTED;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -632,28 +651,28 @@ spocpc_close(SPOCP * spocp)
 static void
 spocpc_clr(SPOCP * s)
 {
-	if (s) {
-		if (s->srv) {
-			octarr_free(s->srv);
-		}
+    if (s) {
+        if (s->srv) {
+            octarr_free(s->srv);
+        }
 
 #ifdef HAVE_SSL
-		if (s->copy == 0) {
-			SSL_CTX_free(s->ctx);
-			s->ctx = 0;
-		}
-		if (s->sslEntropyFile)
-			free(s->sslEntropyFile);
-		if (s->certificate)
-			free(s->certificate);
-		if (s->privatekey)
-			free(s->privatekey);
-		if (s->calist)
-			free(s->calist);
-		if (s->passwd)
-			free(s->passwd);
+        if (s->copy == 0) {
+            SSL_CTX_free(s->ctx);
+            s->ctx = 0;
+        }
+        if (s->sslEntropyFile)
+            free(s->sslEntropyFile);
+        if (s->certificate)
+            free(s->certificate);
+        if (s->privatekey)
+            free(s->privatekey);
+        if (s->calist)
+            free(s->calist);
+        if (s->passwd)
+            free(s->passwd);
 #endif
-	}
+    }
 }
 
 /*!
@@ -664,11 +683,11 @@ spocpc_clr(SPOCP * s)
 void
 free_spocp(SPOCP * s)
 {
-	if (s) {
-		if (s->copy == 0) 
-			spocpc_clr(s);
-		free(s);
-	}
+    if (s) {
+        if (s->copy == 0) 
+            spocpc_clr(s);
+        free(s);
+    }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -676,18 +695,18 @@ free_spocp(SPOCP * s)
 octarr_t *
 spocpc_sexp_elements( octet_t *oct, int *rc)
 {
-	octet_t		ro, *op;
-	octarr_t	*oa=NULL;
+    octet_t     ro, *op;
+    octarr_t    *oa=NULL;
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"spocpc_sexp_elements");
+    if (spocpc_debug)
+        fprintf(stderr, "spocpc_sexp_elements");
 
-	while( oct->len && (*rc = get_str( oct, &ro )) == SPOCP_SUCCESS ) {
-		op = oct_new( ro.len, ro.val);
-		oa = octarr_add( oa, op);
-	}
+    while( oct->len && (*rc = get_str( oct, &ro )) == SPOCP_SUCCESS ) {
+        op = oct_new( ro.len, ro.val);
+        oa = octarr_add( oa, op);
+    }
 
-	return oa;
+    return oa;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -695,188 +714,205 @@ spocpc_sexp_elements( octet_t *oct, int *rc)
 static int
 sexp_get_response(octet_t * buf, octet_t * code, octet_t * info)
 {
-	int rc;
+    int rc;
 
-	/* First part of the response value */
-	rc = get_str( buf, code );
-	if (rc != SPOCP_SUCCESS)
-		return SPOCPC_SYNTAXERROR;
+    /* First part of the response value */
+    rc = get_str( buf, code );
+    if (rc != SPOCP_SUCCESS)
+        return SPOCPC_SYNTAXERROR;
 
-	if ( buf->len ) {
-		rc = get_str( buf, info );
-	}
-	else 
-		memset( &info, 0, sizeof( octet_t ));
+    if ( buf->len ) {
+        rc = get_str( buf, info );
+    }
+    else 
+        memset(info, 0, sizeof( octet_t ));
 
-	return SPOCPC_OK;
+    return SPOCPC_OK;
 }
 
+static int _retry_connect(int soc, long sec)
+{
+    int             res, valopt;
+    socklen_t       lon;
+    struct timeval  tv;
+    fd_set          myset;
+    
+/*
+    if (TESTING) {
+        fprintf(stderr, "EINPROGRESS in connect() - selecting\n"); 
+    }
+*/        
+    do { 
+        tv.tv_sec = sec; 
+        tv.tv_usec = 0; 
+        FD_ZERO(&myset); 
+        FD_SET(soc, &myset); 
+        res = select(soc+1, NULL, &myset, NULL, &tv); 
+        if (res < 0 && errno != EINTR) { 
+            fprintf(stderr, "Error connecting %d - %s\n", errno, strerror(errno));
+            return -1; 
+        } 
+        else if (res > 0) { 
+            /* Socket selected for write */
+            lon = sizeof(int); 
+            if (getsockopt(soc, SOL_SOCKET, SO_ERROR, (void*)(&valopt), 
+                            &lon) < 0) { 
+                fprintf(stderr, "Error in getsockopt() %d - %s\n", 
+                            errno, strerror(errno)); 
+                return -1; 
+            } 
+            /* Check the value returned... */
+            if (valopt) { 
+                fprintf(stderr, "Error in delayed connection() %d - %s\n", 
+                            valopt, strerror(valopt)); 
+                return -1; 
+            } 
+            break; 
+        }
+        else { 
+            fprintf(stderr, "Timeout in select() - Cancelling!\n"); 
+            return -1; 
+        } 
+    } while (1);
+    
+    return 1;
+}
+
+/* 
+ Returns a descriptor (fd >= 0) or an int < 0 if something went wrong.
+ */
 static int
 spocpc_connect(char *srv, int nsec)
 {
-	int port, res = 0, sockfd = 0, val;
-	struct sockaddr_un serv_addr;
-	struct sockaddr_in sin;
-	struct in_addr **pptr;
-	struct hostent *hp;
-	char *cp, *host, buf[256];
+    int port, res = 0, sockfd = 0, val;
+    struct sockaddr_un serv_addr;
+    struct sockaddr_in sin;
+    struct in_addr **pptr;
+    struct hostent *hp;
+    char *cp, *host;
+/*    char buf[256]; */
 
 
-	if (srv == 0) return -1;
+    if (srv == 0) return -2;
 
-	if (*srv == '/') {	/* unix domain socket */
+    if (*srv == '/') {  /* unix domain socket */
 
-		if(( sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) {
-			traceLog(LOG_ERR,"Couldn't open socket\n");
-			return 0;
-		}
+        if(( sockfd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0 ) {
+            fprintf(stderr, "Couldn't open socket\n");
+            return -1;
+        }
 
-		memset(&serv_addr, 0, sizeof(serv_addr));
-		serv_addr.sun_family = AF_UNIX;
-		strlcpy(serv_addr.sun_path, srv, sizeof(serv_addr.sun_path));
+        if (spocpc_debug)
+            traceLog(LOG_DEBUG, "spocpc_connect: socket () returned fd %d", 
+                        sockfd);
+            
+        memset(&serv_addr, 0, sizeof(serv_addr));
+        serv_addr.sun_family = AF_UNIX;
+        strlcpy(serv_addr.sun_path, srv, sizeof(serv_addr.sun_path));
 
-		res = connect(sockfd, (SA *) &serv_addr, sizeof(serv_addr));
+        res = connect(sockfd, (SA *) &serv_addr, sizeof(serv_addr));
 
-		if (res < 0) {
-			traceLog(LOG_ERR,"connect error [%s] \"%s\"\n", srv,
-#ifdef sun
-			    strerror(errno));
-#else
-			    strerror_r(errno, buf, 256));
-#endif
-			return 0;
-		}
-	} else {		/* IP socket */
-		int one = 1;
+        if (res < 0) {
+            fprintf(stderr, "connect error [%s] \"%s\"\n", srv,
+/* #ifdef sun */
+                strerror(errno));
+/* #else
+                strerror_r(errno, buf, 256));
+#endif */
+            return -1;
+        }
+    } else {        /* IP socket */
+        int one = 1;
 
-		host = strdup(srv);
-		if ((cp = index(host, ':')) == 0)
-			return 0;	/* no default port */
-		*cp++ = '\0';
-		port = atoi(cp);
+        host = strdup(srv);
+        if ((cp = index(host, ':')) == 0)
+            return 0;   /* no default port */
+        *cp++ = '\0';
+        port = atoi(cp);
 
-		sockfd = socket(AF_INET, SOCK_STREAM, 0);
-		if (sockfd == 0)
-		{
-			int t_fd;
+        sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-			/* Uh oh, we use 'return 0' to signal failure. Must get another file descriptor. */
-			t_fd = socket(AF_INET, SOCK_STREAM, 0);
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,"spocpc_connect: Uh oh, we got socket() fd 0 so I got another one");
-			close(sockfd);
-			sockfd = t_fd;
-		}
+        if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *) &one,
+            sizeof(int)) < 0) {
+            fprintf(stderr, "Unable to disable nagle: %.100s",
+                strerror(errno));
+            return -1;
+        }
 
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"spocpc_connect: socket () returned fd %d", sockfd);
+        val = fcntl(sockfd, F_GETFL, 0);
+        if (val == -1) {
+            fprintf(stderr, 
+                "Unable to get file descriptor flags on fd=%d: %s",
+                sockfd, strerror(errno));
+            close(sockfd);
+            return -1;
+        }
 
-		if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char *) &one,
-			sizeof(int)) < 0) {
-			traceLog(LOG_ERR,"Unable to disable nagle: %.100s",
-			    strerror(errno));
-			return 0;
-		}
+        if (fcntl(sockfd, F_SETFL, val | O_NONBLOCK) == -1) {
+            fprintf(stderr, "Unable to set socket nonblock on fd=%d: %s",
+                sockfd, strerror(errno));
+            close(sockfd);
+            return -1;
+        }
 
-		val = fcntl(sockfd, F_GETFL, 0);
-		if (val == -1) {
-			traceLog(LOG_ERR,
-			    "Unable to get file descriptor flags on fd=%d: %s",
-			    sockfd, strerror(errno));
-			close(sockfd);
-			return 0;
-		}
+        if (strcmp(host, "localhost") == 0) {
 
-		if (fcntl(sockfd, F_SETFL, val | O_NONBLOCK) == -1) {
-			traceLog(LOG_ERR,"Unable to set socket nonblock on fd=%d: %s",
-			    sockfd, strerror(errno));
-			close(sockfd);
-			return 0;
-		}
+            memset(&sin, 0, sizeof(sin));
+            sin.sin_family = AF_INET;
+            sin.sin_port = htons(port);
+            sin.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-		if (strcmp(host, "localhost") == 0) {
+            res = connect(sockfd, (SA *) & sin, sizeof(sin));
+        } else {
+            /* Use getaddrinfo and freeaddrinfo instead ?? */
+            if ((hp = gethostbyname(host)) == NULL) {
+                fprintf(stderr, "DNS problem with %s\n", host);
+                return -1;
+            }
 
-			memset(&sin, 0, sizeof(sin));
-			sin.sin_family = AF_INET;
-			sin.sin_port = htons(port);
-			sin.sin_addr.s_addr = inet_addr("127.0.0.1");
+            pptr = (struct in_addr **) hp->h_addr_list;
 
-			res = connect(sockfd, (SA *) & sin, sizeof(sin));
-		} else {
-			/* Use getaddrinfo and freeaddrinfo instead ?? */
-			if ((hp = gethostbyname(host)) == NULL) {
-				traceLog(LOG_ERR,"DNS problem with %s\n", host);
-				return 0;
-			}
+            for (; *pptr; pptr++) {
+                bzero(&sin, sizeof(sin));
+                sin.sin_family = AF_INET;
+                sin.sin_port = htons(port);
+                memcpy(&sin.sin_addr, *pptr,
+                    sizeof(struct in_addr));
 
-			pptr = (struct in_addr **) hp->h_addr_list;
+                if ((res =
+                    connect(sockfd, (SA *) & sin,
+                        sizeof(sin))) == -1) {
+                    if (errno == EINPROGRESS)
+                        break;
+                }
+            }
 
-			for (; *pptr; pptr++) {
-				bzero(&sin, sizeof(sin));
-				sin.sin_family = AF_INET;
-				sin.sin_port = htons(port);
-				memcpy(&sin.sin_addr, *pptr,
-				    sizeof(struct in_addr));
+            if (!(res == 0 || errno == EINPROGRESS)) {
+                fprintf(stderr, 
+                    "Was not able to connect to %s at %d\n",
+                    host, port);
+                perror("connect");
+                return -1;
+            }
+        }
 
-				if ((res =
-					connect(sockfd, (SA *) & sin,
-					    sizeof(sin))) == -1) {
-					if (errno == EINPROGRESS)
-						break;
-				}
-			}
+        if (res < 0) {
+            if (errno == EINPROGRESS && nsec > 0 ) { 
+                res = _retry_connect(sockfd, nsec);
+                if (res == -1)
+                    return -1;
+            }
+            else { 
+                fprintf(stderr, "Error connecting %d - %s\n", errno, strerror(errno)); 
+                return -1; 
+            } 
+        }
+    }
 
-			if (!(res == 0 || errno == EINPROGRESS)) {
-				traceLog(LOG_ERR,
-				    "Was not able to connect to %s at %d\n",
-				    host, port);
-				perror("connect");
-				return 0;
-			}
-		}
-
-		if (res != 0) {
-			fd_set rset, wset;
-			struct timeval tv;
-			int error, len;
-
-			FD_ZERO(&rset);
-			FD_SET(sockfd, &rset);
-			wset = rset;
-
-			/* Never wait forever */
-			if (!nsec)
-				tv.tv_sec= SPOCP_DEFAULT_CONN_WAIT;
-			else
-				tv.tv_sec = nsec;
-
-			tv.tv_usec = 0;
-
-			if ((res =
-				select(sockfd + 1, &rset, &wset, NULL,
-				    nsec ? &tv : NULL)) == 0) {
-				close(sockfd);
-				traceLog(LOG_NOTICE,"Connection attempt timedout");
-				errno = ETIMEDOUT;
-				return -1;
-			}
-
-			if (FD_ISSET(sockfd, &rset) || FD_ISSET(sockfd, &wset)) {
-				len = sizeof(error);
-				if (getsockopt(sockfd, SOL_SOCKET, SO_ERROR,
-					&error, (socklen_t *) &len) < 0)
-					return -1;
-			} else {
-				traceLog(LOG_ERR,"select error, sockfd not set");
-				return -1;
-			}
-		}
-	}
-
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"spocpc_connect: Returning fd %d", sockfd);
-
-	return sockfd;
+    if (spocpc_debug)
+        traceLog(LOG_DEBUG,"spocpc_connect: Returning fd %d", sockfd);
+        
+    return sockfd;
 }
 
 /* ============================================================================== */
@@ -892,16 +928,16 @@ spocpc_connect(char *srv, int nsec)
 SPOCP *
 spocpc_set_timeout( SPOCP *spocp, long sec, long usec)
 {
-	if (spocp == 0 && ( sec != 0L || usec != 0L ))
-		spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
-		
-	if (sec == 0L && usec == 0L)
-		return spocp;
+    if (spocp == 0 && ( sec != 0L || usec != 0L ))
+        spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
+        
+    if (sec == 0L && usec == 0L)
+        return spocp;
 
-	spocp->com_timeout.tv_sec = sec;
-	spocp->com_timeout.tv_usec = usec;
+    spocp->com_timeout.tv_sec = sec;
+    spocp->com_timeout.tv_usec = usec;
 
-	return spocp;
+    return spocp;
 }
 
 /*!
@@ -915,29 +951,29 @@ spocpc_set_timeout( SPOCP *spocp, long sec, long usec)
 SPOCP *
 spocpc_init(char *hosts, long sec, long usec)
 {
-	char	**arr, **tmp;
-	SPOCP	*spocp;
-	int	n;
-	octet_t	*op;
+    char    **arr, **tmp;
+    SPOCP   *spocp;
+    int n;
+    octet_t *op;
 
-	if( hosts == 0 || *hosts == '\0' ) 
-		return 0;
+    if( hosts == 0 || *hosts == '\0' ) 
+        return 0;
 
-	spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
-	arr = line_split( hosts, ' ', '\\', 0, 0, &n) ;
+    spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
+    arr = line_split( hosts, ' ', '\\', 0, 0, &n) ;
 
-	for( tmp = arr; *tmp; tmp++) { 
-		op = str2oct( *tmp, 1 );
-		spocp->srv = octarr_add( spocp->srv, op);
-	}
-	free(arr);
+    for( tmp = arr; *tmp; tmp++) { 
+        op = str2oct( *tmp, 1 );
+        spocp->srv = octarr_add( spocp->srv, op);
+    }
+    free(arr);
 
-	spocp->cursrv = 0;
+    spocp->cursrv = 0;
 
-	if ( sec != 0L || usec != 0L) 
-		spocpc_set_timeout( spocp, sec, usec);
+    if ( sec != 0L || usec != 0L) 
+        spocpc_set_timeout( spocp, sec, usec);
 
-	return spocp;
+    return spocp;
 }
 
 /*!
@@ -951,15 +987,15 @@ spocpc_init(char *hosts, long sec, long usec)
 SPOCP *
 spocpc_add_server( SPOCP *spocp, char *host)
 {
-	if( host == 0 || *host == '\0' )
-		return spocp;
+    if( host == 0 || *host == '\0' )
+        return spocp;
 
-	if (spocp == 0)
-		spocp = (SPOCP *) calloc(1, sizeof( SPOCP));
+    if (spocp == 0)
+        spocp = (SPOCP *) calloc(1, sizeof( SPOCP));
 
-	spocp->srv = octarr_add( spocp->srv, str2oct( Strdup(host), 1));	
+    spocp->srv = octarr_add( spocp->srv, str2oct( Strdup(host), 1));    
 
-	return spocp;
+    return spocp;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -967,29 +1003,29 @@ spocpc_add_server( SPOCP *spocp, char *host)
 static int 
 spocpc_round_robin_check( SPOCP *spocp, int cur, int nsec)
 {
-	int		fd = 0, j;
-	octarr_t	*oa;
-	char		*srv;
+    int     fd = -1, j;
+    octarr_t    *oa;
+    char        *srv;
 
-	if ( spocp && spocp->srv && spocp->srv->n > 1) {
-		oa = spocp->srv;
-		for( j = cur+1; j != cur ; j++) {
-			if (j == oa->n) {
-				j = 0;
-				if( j == cur ) break;
-			}
+    if ( spocp && spocp->srv && spocp->srv->n > 1) {
+        oa = spocp->srv;
+        for( j = cur+1; j != cur ; j++) {
+            if (j == oa->n) {
+                j = 0;
+                if( j == cur ) break;
+            }
 
-			srv = oa->arr[j]->val;
-			if(( fd = spocpc_connect(srv, nsec)) > 0 ) {
-				spocp->cursrv = j;
-				break;
-			}
-		}
+            srv = oa->arr[j]->val;
+            if(( fd = spocpc_connect(srv, nsec)) >= 0 ) {
+                spocp->cursrv = j;
+                break;
+            }
+        }
 
-		if (j == cur) spocp->cursrv = 0;
-	}
+        if (j == cur) spocp->cursrv = 0;
+    }
 
-	return fd;
+    return fd;
 }
 
 /*!
@@ -1005,41 +1041,41 @@ spocpc_round_robin_check( SPOCP *spocp, int cur, int nsec)
 SPOCP *
 spocpc_open(SPOCP * spocp, char *srv, int nsec)
 {
-	int		fd = 0, i = 0;
-	octarr_t	*oa;
-	char		*cur;
+    int         i = 0;
+    octarr_t    *oa;
+    char        *cur;
 
-	if (spocp == 0 && srv == 0) 
-		return 0;
+    if (spocp == 0 && srv == 0) 
+        return 0;
 
-	if (srv) {
-	 	spocp =	spocpc_add_server( spocp, srv);
-		oa = spocp->srv;
-		i = oa->n - 1; /* The latest addition */
-		fd = spocpc_connect(srv, nsec);
-	}
-	else {
-		spocp->cursrv = 0;
-		cur = spocp->srv->arr[0]->val;
-		fd = spocpc_connect(cur, nsec);
-	}
+    if (srv) {
+        spocp = spocpc_add_server( spocp, srv);
+        oa = spocp->srv;
+        i = oa->n - 1; /* The latest addition */
+        spocp->fd = spocpc_connect(srv, nsec);
+    }
+    else {
+        spocp->cursrv = 0;
+        cur = spocp->srv->arr[0]->val;
+        spocp->fd = spocpc_connect(cur, nsec);
+    }
 
-	if (fd <= 0 )
-		fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
+    if (spocp->fd < 0 )
+        spocp->fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
 
-	if (fd == 0)
-		return NULL;
+    if (spocp->fd < 0)
+        return NULL;
+        
+    spocp->contype = SOCKET;
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Connected on %d", fd);
+    if (spocpc_debug)
+        fprintf(stderr, "Connected on %d", spocp->fd);
 
-	if (!spocp)
-		spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
+    if (!spocp)
+        spocp = (SPOCP *) calloc(1, sizeof(SPOCP));
 
-	spocp->fd = fd;
-	spocp->contype = SOCKET;
 
-	return spocp;
+    return spocp;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1055,36 +1091,24 @@ spocpc_open(SPOCP * spocp, char *srv, int nsec)
 int
 spocpc_reopen(SPOCP * spocp, int nsec)
 {
-	int		fd;
-	char		*cur;
-	octarr_t	*oa = spocp->srv;
+    int     fd;
+    char        *cur;
+    octarr_t    *oa = spocp->srv;
 
-	close(spocp->fd);	/* necessary if other side has already closed ? */
+    close(spocp->fd);   /* necessary if other side has already closed ? */
 
-	cur = oa->arr[spocp->cursrv]->val;	/* Retry the same first */
+    cur = oa->arr[spocp->cursrv]->val;  /* Retry the same first */
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"spocpc_reopen: Retrying same server first : %s", cur);
+    fd = spocpc_connect( cur, nsec );
+    spocp->contype = SOCKET;
 
-	spocp->fd = spocpc_connect( cur, nsec );
+    if (spocp->fd < 0 )
+        spocp->fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"spocpc_reopen: First connection result : %d", spocp->fd);
-
-	spocp->contype = SOCKET;
-
-	if (spocp->fd <= 0 )
-	{
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"spocpc_reopen: Trying other servers in round-robin");
-
-		spocp->fd = spocpc_round_robin_check( spocp, spocp->cursrv, nsec);
-	}
-
-	if (spocp->fd <= 0)
-		return FALSE;
-	else
-		return TRUE;
+    if (spocp->fd < 0)
+        return FALSE;
+    else
+        return TRUE;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1099,69 +1123,70 @@ spocpc_reopen(SPOCP * spocp, int nsec)
 ssize_t
 spocpc_writen(SPOCP * spocp, char *str, size_t n )
 {
-	ssize_t nleft, nwritten = 0 ;
-	char *sp;
-	fd_set wset;
-	int retval;
+    ssize_t nleft, nwritten = 0 ;
+    char *sp;
+    fd_set wset;
+    int retval;
 
-	sp = str;
-	nleft = n;
-	FD_ZERO(&wset);
+    sp = str;
+    nleft = n;
+    FD_ZERO(&wset);
 
-	spocp->rc = 0;
+    spocp->rc = 0;
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Writen fd:%d", spocp->fd);
+    if (spocpc_debug)
+        fprintf(stderr, "Writen fd:%d", spocp->fd);
 
-	while (nleft > 0) {
-		FD_SET(spocp->fd, &wset);
-		retval = select(spocp->fd + 1, NULL, &wset, NULL, &spocp->com_timeout);
+    while (nleft > 0) {
+        FD_SET(spocp->fd, &wset);
+        retval = select(spocp->fd + 1, NULL, &wset, NULL, &spocp->com_timeout);
 
-		if (retval) {
+        if (retval) {
 #ifdef HAVE_SSL
-			if (spocp->contype == SSL_TLS)
-				nwritten = SSL_write(spocp->ssl, (void *) sp,
-				    (int) nleft);
-			else
+            if (spocp->contype == SSL_TLS)
+                nwritten = SSL_write(spocp->ssl, (void *) sp,
+                    (int) nleft);
+            else
 #endif
-			{
+            {
 #ifdef HAVE_SASL
-				if(spocp->sasl_ssf && *spocp->sasl_ssf > 0)
-				{
-					const char *enc_data;
-					size_t enc_len;
-					sasl_encode(spocp->sasl, sp, nleft, &enc_data, &enc_len);
-					sp = (char*)enc_data;
-					nleft = enc_len;
-				}
+                if(spocp->sasl_ssf && *spocp->sasl_ssf > 0)
+                {
+                    const char *enc_data;
+                    size_t enc_len;
+                    sasl_encode(spocp->sasl, sp, nleft, &enc_data, &enc_len);
+                    sp = (char*)enc_data;
+                    nleft = enc_len;
+                }
 #endif
-				nwritten = write(spocp->fd, sp, nleft);
-			}
+                nwritten = write(spocp->fd, sp, nleft);
+            }
 
-			if (nwritten <= 0) {;
-				if (errno == EINTR)
-					nwritten = 0;
-				else
-					return -1;
-			}
+            if (nwritten <= 0) {;
+                if (errno == EINTR)
+                    nwritten = 0;
+                else
+                    return -1;
+            }
 
-			nleft -= nwritten;
-			sp += nwritten;
-		} else {	/* timed out */
-			spocp->rc = SPOCPC_TIMEOUT;
-			break;
-		}
-	}
+            nleft -= nwritten;
+            sp += nwritten;
+        } else {    /* timed out */
+            spocp->rc = SPOCPC_TIMEOUT;
+            break;
+        }
+    }
 
+/*
 #ifdef HAVE_FDATASYNC
-	fdatasync(spocp->fd);
+    fdatasync(spocp->fd);
 #else
-#ifdef HAVE_FSYNC
-	fsync(spocp->fd);
-#endif
-#endif
+#ifdef HAVE_FSYNC */
+    fsync(spocp->fd);
+/*#endif
+#endif */
 
-	return (n - nleft);
+    return (n - nleft);
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1176,63 +1201,63 @@ spocpc_writen(SPOCP * spocp, char *str, size_t n )
 ssize_t
 spocpc_readn(SPOCP * spocp, char *buf, size_t size)
 {
-	fd_set rset;
-	int retval;
-	ssize_t n = 0;
-	struct timeval *tv = &spocp->com_timeout;
+    fd_set rset;
+    int retval;
+    ssize_t n = 0;
+    struct timeval *tv = &spocp->com_timeout;
 
-	FD_ZERO(&rset);
+    FD_ZERO(&rset);
 
-	spocp->rc = 0;
+    spocp->rc = 0;
 
-	FD_SET(spocp->fd, &rset);
+    FD_SET(spocp->fd, &rset);
 
 #ifdef AVLUS
-	traceLog(LOG_DEBUG,"Waiting %ld seconds and %ld milliseconds",
-				tv->tv_sec, tv->tv_usec) ;
+    fprintf(stderr, "Waiting %ld seconds and %ld milliseconds",
+                tv->tv_sec, tv->tv_usec) ;
 #endif
 
-	if (tv->tv_sec == 0L && tv->tv_usec == 0L) 
-		retval = select(spocp->fd + 1, &rset, NULL, NULL, NULL);
-	else
-		retval = select(spocp->fd + 1, &rset, NULL, NULL, &spocp->com_timeout);
+    if (tv->tv_sec == 0L && tv->tv_usec == 0L) 
+        retval = select(spocp->fd + 1, &rset, NULL, NULL, NULL);
+    else
+        retval = select(spocp->fd + 1, &rset, NULL, NULL, &spocp->com_timeout);
 
-	if (retval) {
+    if (retval) {
 #ifdef HAVE_SSL
-		if (spocp->contype == SSL_TLS)
-			n = SSL_read(spocp->ssl, (void *) buf, (int) size);
-		else
+        if (spocp->contype == SSL_TLS)
+            n = SSL_read(spocp->ssl, (void *) buf, (int) size);
+        else
 #endif
-		{
-			n = read(spocp->fd, buf, size);
+        {
+            n = read(spocp->fd, buf, size);
 #ifdef HAVE_SASL
-			if(spocp->sasl_ssf && *spocp->sasl_ssf > 0)
-			{
-				const char *plain_data;
-				size_t plain_len;
-				sasl_decode(spocp->sasl, buf, n, &plain_data, &plain_len);
-				if(plain_len <= size)
-				{
-					memcpy(buf, plain_data, plain_len);
-					n = plain_len;
-				}
-			}
+            if(spocp->sasl_ssf && *spocp->sasl_ssf > 0)
+            {
+                const char *plain_data;
+                size_t plain_len;
+                sasl_decode(spocp->sasl, buf, n, &plain_data, &plain_len);
+                if(plain_len <= size)
+                {
+                    memcpy(buf, plain_data, plain_len);
+                    n = plain_len;
+                }
+            }
 #endif
-		}
+        }
 
-		if (n <= 0) {
-			if (errno == EINTR) {
-				spocp->rc = SPOCPC_INTERUPT;
-				n = 0;
-			}
-			else
-				return -1;
-		}
-	} else {		/* timed out */
-		spocp->rc = SPOCPC_TIMEOUT;
-	}
+        if (n <= 0) {
+            if (errno == EINTR) {
+                spocp->rc = SPOCPC_INTERUPT;
+                n = 0;
+            }
+            else
+                return -1;
+        }
+    } else {        /* timed out */
+        spocp->rc = SPOCPC_TIMEOUT;
+    }
 
-	return (n);
+    return (n);
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1240,14 +1265,14 @@ spocpc_readn(SPOCP * spocp, char *buf, size_t size)
 static int
 spocpc_get_result_code(octet_t * rc)
 {
-	int i;
+    int i;
 
-	for (i = 0; spocp_rescode[i].num; i++) {
-		if (strncmp(rc->val, spocp_rescode[i].num, 3) == 0)
-			return spocp_rescode[i].code;
-	}
+    for (i = 0; spocp_rescode[i].num; i++) {
+        if (strncmp(rc->val, spocp_rescode[i].num, 3) == 0)
+            return spocp_rescode[i].code;
+    }
 
-	return SPOCPC_UNKNOWN_RESCODE;
+    return SPOCPC_UNKNOWN_RESCODE;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1255,51 +1280,51 @@ spocpc_get_result_code(octet_t * rc)
 int
 spocpc_answer_ok(octet_t *oct, queres_t * qr)
 {
-	octet_t		code, info, *op;
-	octarr_t	*oa ;
-	int			res = SPOCPC_TIMEOUT;
-	char		ml = 0, *cv;
+    octet_t     code, info, *op;
+    octarr_t    *oa ;
+    int         res = SPOCPC_TIMEOUT;
+    char        ml = 0, *cv;
 
-	if ((oa = spocpc_sexp_elements(oct, &res)) == NULL)
-		return res;
+    if ((oa = spocpc_sexp_elements(oct, &res)) == NULL)
+        return res;
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Got %d elements", oa->n);
+    if (spocpc_debug)
+        fprintf(stderr, "Got %d elements", oa->n);
 
-	while (oa->n) {
-		op = octarr_rpop( oa );
-		res = sexp_get_response(op, &code, &info);
-		if (res != SPOCPC_OK) {
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,"sexp_response returned %d",
-				    (int) res);
-			return res;
-		}
+    while (oa->n) {
+        op = octarr_rpop( oa );
+        res = sexp_get_response(op, &code, &info);
+        if (res != SPOCPC_OK) {
+            if (spocpc_debug)
+                fprintf(stderr, "sexp_response returned %d",
+                    (int) res);
+            return res;
+        }
 
-		cv = code.val ;
-		if (spocpc_debug) {
-			oct_print( LOG_DEBUG, "code", &code );
-			oct_print( LOG_DEBUG, "info", &info );
-		}
+        cv = code.val ;
+        if (spocpc_debug) {
+            oct_print( LOG_DEBUG, "code", &code );
+            oct_print( LOG_DEBUG, "info", &info );
+        }
 
-		if ((*cv == '2' || *cv == '3') && *(cv+1) == '0' && *(cv+2) == '1') {
-			if( ml == 0) 
-				ml = *cv;
-			else if (ml != *cv) {
-				res = SPOCPC_PROTOCOL_ERROR;
-				break;
-			}
+        if ((*cv == '2' || *cv == '3') && *(cv+1) == '0' && *(cv+2) == '1') {
+            if( ml == 0) 
+                ml = *cv;
+            else if (ml != *cv) {
+                res = SPOCPC_PROTOCOL_ERROR;
+                break;
+            }
 
-			qr->blob = octarr_add( qr->blob, octdup(&info));
-		}
-		else {
-			qr->rescode = spocpc_get_result_code(&code);
-			qr->str = strndup(info.val, info.len);
-		}
-	} 
-	octarr_free(oa);
+            qr->blob = octarr_add( qr->blob, octdup(&info));
+        }
+        else {
+            qr->rescode = spocpc_get_result_code(&code);
+            qr->str = strndup(info.val, info.len);
+        }
+    } 
+    octarr_free(oa);
 
-	return res;
+    return res;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1307,32 +1332,32 @@ spocpc_answer_ok(octet_t *oct, queres_t * qr)
 static int
 spocpc_protocol_op(octarr_t *oa, octet_t *prot)
 {
-	char		*op, *sp;
-	int		i, l, la, tot;
-	unsigned int	n;
+    char            *op, *sp;
+    int             i, l, la, tot;
+    unsigned int    n;
 
-	for (i = 0, l = 0; i < oa->n ; i++) {
-		if (oa->arr[i]->len == 0)
-			continue;
-		la = oa->arr[i]->len ;
-		l += la + DIGITS(la) + 1;
-	}
+    for (i = 0, l = 0; i < oa->n ; i++) {
+        if (oa->arr[i]->len == 0)
+            continue;
+        la = oa->arr[i]->len ;
+        l += la + DIGITS(la) + 1;
+    }
 
-	tot = (l + DIGITS(l) + 1);
-	op = prot->val = (char *) malloc((tot + 1) * sizeof(char));
+    tot = (l + DIGITS(l) + 1);
+    op = prot->val = (char *) malloc((tot + 1) * sizeof(char));
 
-	sprintf(op, "%d:", l);
-	l = strlen(op);
-	op += l;
-	n = (size_t) tot - l;
+    sprintf(op, "%d:", l);
+    l = strlen(op);
+    op += l;
+    n = (size_t) tot - l;
 
-	sp = sexp_printv( op, &n, "X", oa);
+    sp = sexp_printv( op, &n, "X", oa);
 
-	if (sp == 0) return -1;
+    if (sp == 0) return -1;
 
-	prot->len = tot - (int) n;
+    prot->len = tot - (int) n;
 
-	return prot->len;
+    return prot->len;
 }
 
 /* ============================================================================== */
@@ -1340,36 +1365,40 @@ spocpc_protocol_op(octarr_t *oa, octet_t *prot)
 static int
 spocpc_just_send_X(SPOCP * spocp, octarr_t *argv)
 {
-	octet_t o;
-	int	l, n;
+    octet_t o;
+    int     l, n;
 
-	l = spocpc_protocol_op(argv, &o);
+    /* fprintf(stderr, "spocpc_just_send_X()\n"); */
 
-	if (spocpc_debug) {
-		char *tmp;
-		tmp = oct2strdup( &o, '%');
+    memset( &o, 0, sizeof(octet_t));
 
-		traceLog(LOG_DEBUG,"[%s](%d) ->(%d/%d)", tmp, l, spocp->fd,
-		    spocp->contype);
+    l = spocpc_protocol_op(argv, &o);
 
-		free( tmp );
-	}
+    if (spocpc_debug) {
+        char *tmp;
+        tmp = oct2strdup( &o, '%');
 
-	/* what if I haven't been able to write everything ? */
-	n = spocpc_writen(spocp, o.val, o.len);
-	octclr(&o);
+        fprintf(stderr, "[%s](%d) ->(%d/%d)\n", tmp, l, spocp->fd,
+            spocp->contype);
 
-	if (n < 0) {
-		return SPOCPC_CON_ERR;
-	}
-	else if ( n == 0 && spocp->rc ) {
-		return spocp->rc;
-	}
+        free( tmp );
+    }
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Wrote %d chars", n);
+    /* what if I haven't been able to write everything ? */
+    n = spocpc_writen(spocp, o.val, o.len);
+    octclr(&o);
 
-	return SPOCPC_OK;
+    if (n < 0) {
+        return SPOCPC_CON_ERR;
+    }
+    else if ( n == 0 && spocp->rc ) {
+        return spocp->rc;
+    }
+
+    if (spocpc_debug)
+        fprintf(stderr, "Wrote %d chars\n", n);
+
+    return SPOCPC_OK;
 }
 
 /* ========================================================================== */
@@ -1378,38 +1407,38 @@ spocpc_just_send_X(SPOCP * spocp, octarr_t *argv)
 static int
 spocpc_get_result(SPOCP * spocp, queres_t * qr)
 {
-	char	resp[BUFSIZ];
-	ssize_t	n;
-	int		ret=SPOCPC_OK;
-	octet_t	oct;
+    char    resp[BUFSIZ];
+    ssize_t n;
+    int     ret=SPOCPC_OK;
+    octet_t oct;
 
-	while( !qr->rescode ) {
-		if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0) {
-			traceLog(LOG_DEBUG,"Couldn't read anything");
+    while( !qr->rescode ) {
+        if ((n = spocpc_readn(spocp, resp, BUFSIZ)) < 0) {
+            fprintf(stderr, "Couldn't read anything");
 
-			if (!spocp->rc)
-				return SPOCPC_OTHER;
-			else
-				return spocp->rc;
-		}
-		else if (n == 0 && spocp->rc)
-			return spocp->rc;
+            if (!spocp->rc)
+                return SPOCPC_OTHER;
+            else
+                return spocp->rc;
+        }
+        else if (n == 0 && spocp->rc)
+            return spocp->rc;
 
-		if (spocpc_debug)
-			traceLog(LOG_DEBUG,"Read %d chars", n);
+        if (spocpc_debug)
+            fprintf(stderr, "Read %d chars", (int) n);
 
-		resp[n] = '\0';
+        resp[n] = '\0';
 
-		oct.val = resp ;
-		oct.len = n;
+        oct.val = resp ;
+        oct.len = n;
 
-		ret = spocpc_answer_ok( &oct, qr );
-	}
+        ret = spocpc_answer_ok( &oct, qr );
+    }
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"response: [%s] (%d)", resp, ret);
+    if (spocpc_debug)
+        fprintf(stderr, "response: [%s] (%d)", resp, ret);
 
-	return ret;
+    return ret;
 }
 
 /* ============================================================================== */
@@ -1417,12 +1446,14 @@ spocpc_get_result(SPOCP * spocp, queres_t * qr)
 static int
 spocpc_send_X(SPOCP * spocp, octarr_t *argv, queres_t * qr)
 {
-	int	ret;
+    int ret;
 
-	if ((ret = spocpc_just_send_X(spocp, argv)) == SPOCPC_OK)
-		ret = spocpc_get_result(spocp, qr);
+    /* fprintf(stderr, "spocpc_send_x()\n"); */
 
-	return ret;
+    if ((ret = spocpc_just_send_X(spocp, argv)) == SPOCPC_OK)
+        ret = spocpc_get_result(spocp, qr);
+
+    return ret;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1431,70 +1462,72 @@ spocpc_send_X(SPOCP * spocp, octarr_t *argv, queres_t * qr)
 static octarr_t *
 argv_make( char *arg1, char *arg2, char *arg3, char *arg4, char *arg5 )
 {
-	octarr_t	*oa;
-	octet_t		*op;
-	
-	oa = octarr_new(6);
+    octarr_t    *oa;
+    octet_t     *op;
+    
+    oa = octarr_new(6);
 
-	op = str2oct(arg1, 0);
+    op = str2oct(arg1, 0);
 
-	octarr_add(oa, op);
+    octarr_add(oa, op);
 
-	if (arg2 && *arg2)
-		op = str2oct(arg2, 0);
-	else
-		op = oct_new(0, 0);
+    if (arg2 && *arg2)
+        op = str2oct(arg2, 0);
+    else
+        op = oct_new(0, 0);
 
-	octarr_add(oa, op);
+    octarr_add(oa, op);
 
-	if (arg3 && *arg3)
-		op = str2oct(arg3, 0);
-	else
-		op = oct_new(0, 0);
+    if (arg3 && *arg3)
+        op = str2oct(arg3, 0);
+    else
+        op = oct_new(0, 0);
 
-	octarr_add(oa, op);
+    octarr_add(oa, op);
 
-	if (arg4 && *arg4)
-		op = str2oct(arg4, 0);
-	else
-		op = oct_new(0, 0);
+    if (arg4 && *arg4)
+        op = str2oct(arg4, 0);
+    else
+        op = oct_new(0, 0);
 
-	octarr_add(oa, op);
+    octarr_add(oa, op);
 
-	if (arg5 && *arg5)
-		op = str2oct(arg5, 0);
-	else
-		op = oct_new(0, 0);
+    if (arg5 && *arg5)
+        op = str2oct(arg5, 0);
+    else
+        op = oct_new(0, 0);
 
-	octarr_add(oa, op);
+    octarr_add(oa, op);
 
-	return oa;
+    return oa;
 }
  
 static int
 spocpc_oct_send( SPOCP *spocp, char *type, octet_t **oa, int n, queres_t *qr)
 {
-	octarr_t	*argv;
-	octet_t		*op;
-	int		ret, i;
+    octarr_t    *argv;
+    octet_t     *op;
+    int     ret, i;
 
-	argv = octarr_new(n+1);
+    /* fprintf(stderr, "spocpc_oct_send()\n"); */
 
-	op = str2oct(type,0);
-	octarr_add( argv, op);
+    argv = octarr_new(n+1);
 
-	for (i = 0; i < n ; i++) {
-		if (oa[i])
-			op = octdup(oa[i]);
-		else
-			op = oct_new(0,0);
+    op = str2oct(type,0);
+    octarr_add( argv, op);
 
-		octarr_add( argv, op);
-	}
+    for (i = 0; i < n ; i++) {
+        if (oa[i])
+            op = octdup(oa[i]);
+        else
+            op = oct_new(0,0);
 
-	ret = spocpc_send_X(spocp, argv, qr);
-	octarr_free( argv );
-	return ret;
+        octarr_add( argv, op);
+    }
+
+    ret = spocpc_send_X(spocp, argv, qr);
+    octarr_free( argv );
+    return ret;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1511,19 +1544,19 @@ spocpc_oct_send( SPOCP *spocp, char *type, octet_t **oa, int n, queres_t *qr)
 int
 spocpc_str_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
 {
-	octarr_t	*argv;
-	int		ret;
+    octarr_t    *argv;
+    int     ret;
 
-	if( query == 0 || *query == 0 )
-		return SPOCPC_MISSING_ARG;
+    if( query == 0 || *query == 0 )
+        return SPOCPC_MISSING_ARG;
 
-	argv = argv_make( "QUERY", path, query, 0, 0 );
+    argv = argv_make( "QUERY", path, query, 0, 0 );
 
-	ret = spocpc_send_X(spocp, argv, qr);
+    ret = spocpc_send_X(spocp, argv, qr);
 
-	octarr_free( argv );
-	
-	return ret;
+    octarr_free( argv );
+    
+    return ret;
 }
 
 /*!
@@ -1538,12 +1571,12 @@ spocpc_str_send_query(SPOCP * spocp, char *path, char *query, queres_t * qr)
 int
 spocpc_send_query(SPOCP * spocp, octet_t *path, octet_t *query, queres_t * qr)
 {
-	octet_t	*oa[3];
+    octet_t *oa[3];
 
-	oa[0] = path;
-	oa[1] = query;
+    oa[0] = path;
+    oa[1] = query;
 
-	return spocpc_oct_send( spocp, "QUERY", oa, 2, qr); 
+    return spocpc_oct_send( spocp, "QUERY", oa, 2, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1560,19 +1593,19 @@ spocpc_send_query(SPOCP * spocp, octet_t *path, octet_t *query, queres_t * qr)
 int
 spocpc_str_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 {
-	octarr_t	*argv;
-	int		ret;
+    octarr_t    *argv;
+    int     ret;
 
-	if( rule == 0 || *rule == 0 )
-		return SPOCPC_MISSING_ARG;
+    if( rule == 0 || *rule == 0 )
+        return SPOCPC_MISSING_ARG;
 
-	argv = argv_make( "DELETE", path, rule, 0, 0 );
+    argv = argv_make( "DELETE", path, rule, 0, 0 );
 
-	ret = spocpc_send_X(spocp, argv, qr);
+    ret = spocpc_send_X(spocp, argv, qr);
 
-	octarr_free( argv );
-	
-	return ret;
+    octarr_free( argv );
+    
+    return ret;
 }
 
 /*!
@@ -1587,12 +1620,12 @@ spocpc_str_send_delete(SPOCP * spocp, char *path, char *rule, queres_t * qr)
 int
 spocpc_send_delete(SPOCP * spocp, octet_t *path, octet_t *rule, queres_t * qr)
 {
-	octet_t	*oa[3];
+    octet_t *oa[3];
 
-	oa[0] = path;
-	oa[1] = rule;
+    oa[0] = path;
+    oa[1] = rule;
 
-	return spocpc_oct_send( spocp, "DELETE", oa, 2, qr); 
+    return spocpc_oct_send( spocp, "DELETE", oa, 2, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1609,16 +1642,16 @@ spocpc_send_delete(SPOCP * spocp, octet_t *path, octet_t *rule, queres_t * qr)
 int
 spocpc_str_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
 {
-	octarr_t	*argv;
-	int		ret;
+    octarr_t    *argv;
+    int     ret;
 
-	argv = argv_make( "SUBJECT", subject, 0, 0, 0 );
+    argv = argv_make( "SUBJECT", subject, 0, 0, 0 );
 
-	ret = spocpc_send_X(spocp, argv, qr);
+    ret = spocpc_send_X(spocp, argv, qr);
 
-	octarr_free( argv );
-	
-	return ret;
+    octarr_free( argv );
+    
+    return ret;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1635,11 +1668,11 @@ spocpc_str_send_subject(SPOCP * spocp, char *subject, queres_t * qr)
 int
 spocpc_send_subject(SPOCP * spocp, octet_t *subject, queres_t * qr)
 {
-	octet_t	*oa[3];
+    octet_t *oa[3];
 
-	oa[0] = subject;
+    oa[0] = subject;
 
-	return spocpc_oct_send( spocp, "SUBJECT", oa, 1, qr); 
+    return spocpc_oct_send( spocp, "SUBJECT", oa, 1, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1657,21 +1690,21 @@ spocpc_send_subject(SPOCP * spocp, octet_t *subject, queres_t * qr)
  */
 int
 spocpc_str_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
-	char *info, queres_t * qr)
+    char *info, queres_t * qr)
 {
-	octarr_t	*argv;
-	int		ret;
+    octarr_t    *argv;
+    int     ret;
 
-	if( rule == 0 || *rule == 0 )
-		return SPOCPC_MISSING_ARG;
+    if( rule == 0 || *rule == 0 )
+        return SPOCPC_MISSING_ARG;
 
-	argv = argv_make( "ADD", path, rule, bcond, info );
+    argv = argv_make( "ADD", path, rule, bcond, info );
 
-	ret = spocpc_send_X(spocp, argv, qr);
+    ret = spocpc_send_X(spocp, argv, qr);
 
-	octarr_free( argv );
-	
-	return ret;
+    octarr_free( argv );
+    
+    return ret;
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1688,19 +1721,19 @@ spocpc_str_send_add(SPOCP * spocp, char *path, char *rule, char *bcond,
  */
 int
 spocpc_send_add(SPOCP * spocp, octet_t *path, octet_t *rule, octet_t *bcond,
-	octet_t *info, queres_t * qr)
+    octet_t *info, queres_t * qr)
 {
-	octet_t	*oa[3];
+    octet_t *oa[4];
 
-	if (rule == 0 )
-		return SPOCPC_PARAM_ERROR;
+    if (rule == 0 )
+        return SPOCPC_PARAM_ERROR;
 
-	oa[0] = path;
-	oa[1] = rule;
-	oa[2] = bcond;
-	oa[3] = info;
+    oa[0] = path;
+    oa[1] = rule;
+    oa[2] = bcond;
+    oa[3] = info;
 
-	return spocpc_oct_send( spocp, "DELETE", oa, 4, qr); 
+    return spocpc_oct_send( spocp, "DELETE", oa, 4, qr); 
 }
 
 
@@ -1709,16 +1742,16 @@ spocpc_send_add(SPOCP * spocp, octet_t *path, octet_t *rule, octet_t *bcond,
 int
 spocpc_str_send_list(SPOCP * spocp, char *path, queres_t * qr)
 {
-	octarr_t	*argv;
-	int			ret;
+    octarr_t    *argv;
+    int         ret;
 
-	argv = argv_make( "LIST", path, 0, 0, 0 );
+    argv = argv_make( "LIST", path, 0, 0, 0 );
 
-	ret = spocpc_send_X(spocp, argv, qr);
+    ret = spocpc_send_X(spocp, argv, qr);
 
-	octarr_free( argv );
-	
-	return ret;
+    octarr_free( argv );
+    
+    return ret;
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1726,16 +1759,16 @@ spocpc_str_send_list(SPOCP * spocp, char *path, queres_t * qr)
 int
 spocpc_send_list(SPOCP * spocp, octet_t *path, queres_t * qr)
 {
-	if (path) {
-		octet_t	*oa[1];
+    if (path) {
+        octet_t *oa[1];
 
-		oa[0] = path;
+        oa[0] = path;
 
-		return spocpc_oct_send( spocp, "LIST", oa, 1, qr); 
-	}
-	else {
-		return spocpc_oct_send( spocp, "LIST", NULL, 0, qr); 
-	}
+        return spocpc_oct_send( spocp, "LIST", oa, 1, qr); 
+    }
+    else {
+        return spocpc_oct_send( spocp, "LIST", NULL, 0, qr); 
+    }
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1748,11 +1781,13 @@ spocpc_send_list(SPOCP * spocp, octet_t *path, queres_t * qr)
 int
 spocpc_send_logout(SPOCP * spocp)
 {
-	queres_t	qres;
+    queres_t    qres;
 
-	memset( &qres, 0, sizeof( queres_t));
+    /* fprintf(stderr, "spocpc_send_logout()\n"); */
 
-	return spocpc_oct_send( spocp, "LOGOUT", NULL, 0, &qres); 
+    memset( &qres, 0, sizeof( queres_t));
+
+    return spocpc_oct_send( spocp, "LOGOUT", NULL, 0, &qres); 
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1766,11 +1801,11 @@ spocpc_send_logout(SPOCP * spocp)
 int
 spocpc_send_noop(SPOCP * spocp)
 {
-	queres_t	qres;
+    queres_t    qres;
 
-	memset( &qres, 0, sizeof( queres_t));
+    memset( &qres, 0, sizeof( queres_t));
 
-	return spocpc_oct_send( spocp, "NOOP", NULL, 0, &qres); 
+    return spocpc_oct_send( spocp, "NOOP", NULL, 0, &qres); 
 }
 
 /*----------------------------------------------------------------------------*/
@@ -1785,7 +1820,7 @@ spocpc_send_noop(SPOCP * spocp)
 int
 spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 {
-	return spocpc_oct_send( spocp, "BEGIN", NULL, 0, qr); 
+    return spocpc_oct_send( spocp, "BEGIN", NULL, 0, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1800,7 +1835,7 @@ spocpc_open_transaction(SPOCP * spocp, queres_t * qr)
 int
 spocpc_commit(SPOCP * spocp, queres_t * qr)
 {
-	return spocpc_oct_send( spocp, "COMMIT", NULL, 0, qr); 
+    return spocpc_oct_send( spocp, "COMMIT", NULL, 0, qr); 
 }
 
 /*--------------------------------------------------------------------------------*/
@@ -1815,17 +1850,17 @@ spocpc_commit(SPOCP * spocp, queres_t * qr)
 int
 spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
 {
-	int res = SPOCPC_OK;
+    int res = SPOCPC_OK;
 #ifdef HAVE_SSL
-	if (spocp->contype == SSL_TLS)
-		return SPOCPC_STATE_VIOLATION;
+    if (spocp->contype == SSL_TLS)
+        return SPOCPC_STATE_VIOLATION;
 
-	res = spocpc_oct_send( spocp, "STARTTLS", NULL, 0, qr); 
+    res = spocpc_oct_send( spocp, "STARTTLS", NULL, 0, qr); 
 #else
-	res = SPOCPC_NOSUPPORT;
+    res = SPOCPC_NOSUPPORT;
 #endif
 
-	return res;
+    return res;
 }
 
 /*!
@@ -1838,13 +1873,13 @@ spocpc_attempt_tls(SPOCP * spocp, queres_t * qr)
 int
 spocpc_send_capa(SPOCP * spocp, queres_t * qr)
 {
-	int res = SPOCPC_OK;
+    int res = SPOCPC_OK;
 #ifdef HAVE_SASL
-	res = spocpc_oct_send ( spocp, "CAPA", NULL, 0, qr);
+    res = spocpc_oct_send ( spocp, "CAPA", NULL, 0, qr);
 #else
-	res = SPOCPC_NOSUPPORT;
+    res = SPOCPC_NOSUPPORT;
 #endif
-	return res;
+    return res;
 }
 
 /*!
@@ -1859,100 +1894,102 @@ spocpc_send_capa(SPOCP * spocp, queres_t * qr)
 int
 spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr, void *callbacks, void *secprops)
 {
-	int res = SPOCPC_OK;
+    int res = SPOCPC_OK;
 #ifdef HAVE_SASL
-	char *server_name = strdup(spocp->srv->arr[spocp->cursrv]->val);
-	char *port = strstr(server_name, ":");
-	int res_sa;
-	memset(qr, 0, sizeof(queres_t));
+    char *server_name = strdup(spocp->srv->arr[spocp->cursrv]->val);
+    char *port = strstr(server_name, ":");
+    int res_sa;
+    memset(qr, 0, sizeof(queres_t));
 
-	if(spocp->sasl_ssf)
-		return(SPOCPC_STATE_VIOLATION);
+    if(spocp->sasl_ssf)
+        return(SPOCPC_STATE_VIOLATION);
 
-	if(port)
-		*port = '\0';
+    if(port)
+        *port = '\0';
 
-	sasl_client_init((sasl_callback_t *)callbacks);
-	res_sa = sasl_client_new("spocp", server_name, NULL, NULL, NULL, 0, &spocp->sasl);
+    sasl_client_init((sasl_callback_t *)callbacks);
+    res_sa = sasl_client_new("spocp", server_name, NULL, NULL, NULL, 0, &spocp->sasl);
 
-	if(res_sa == SASL_OK)
-	{
-		const char *out = NULL;
-		char *outcode = NULL;
-		sasl_interact_t *interact = NULL;
-		unsigned int outlen;
-		const char *mechused = NULL;
-		octarr_t *argv;
-		char *mechsend;
-		sasl_security_properties_t tmp_secprops;
+    if(res_sa == SASL_OK)
+    {
+        const char *out = NULL;
+        char *outcode = NULL;
+        sasl_interact_t *interact = NULL;
+        unsigned int outlen;
+        const char *mechused = NULL;
+        octarr_t *argv;
+        char *mechsend;
+        sasl_security_properties_t tmp_secprops;
 
-		if(!secprops)
-		{
-			tmp_secprops.min_ssf = 0;
-			tmp_secprops.max_ssf = 8192;
-			tmp_secprops.maxbufsize = 1024;
-			tmp_secprops.property_names = NULL;
-			tmp_secprops.property_values = NULL;
-			tmp_secprops.security_flags = SASL_SEC_NOANONYMOUS;
-			secprops = &tmp_secprops;
-		}
-		sasl_setprop(spocp->sasl, SASL_SEC_PROPS, (sasl_security_properties_t *)secprops);
-		res_sa = sasl_client_start(spocp->sasl, mechs, &interact, &out, &outlen, &mechused);
-		mechsend = Malloc(sizeof(char) * strlen(mechused) + 5);
-		sprintf(mechsend, "SASL:");
-		strcat(mechsend, mechused);
-		if(out)
-		{
-			unsigned outlen2 = 0;
-			outcode = Malloc(outlen * 4);
-			sasl_encode64(out, outlen, outcode, outlen * 4, &outlen2);
-		}
+        if(!secprops)
+        {
+            tmp_secprops.min_ssf = 0;
+            tmp_secprops.max_ssf = 8192;
+            tmp_secprops.maxbufsize = 1024;
+            tmp_secprops.property_names = NULL;
+            tmp_secprops.property_values = NULL;
+            tmp_secprops.security_flags = SASL_SEC_NOANONYMOUS;
+            secprops = &tmp_secprops;
+        }
+        sasl_setprop(spocp->sasl, SASL_SEC_PROPS, (sasl_security_properties_t *)secprops);
+        res_sa = sasl_client_start(spocp->sasl, mechs, &interact, &out, &outlen, &mechused);
+        mechsend = Malloc(sizeof(char) * strlen(mechused) + 5);
+        sprintf(mechsend, "SASL:");
+        strcat(mechsend, mechused);
+        if(out)
+        {
+            unsigned outlen2 = 0;
+            outcode = Malloc(outlen * 4);
+            sasl_encode64(out, outlen, outcode, outlen * 4, &outlen2);
+        }
 
-		argv = argv_make("AUTH", mechsend, outcode, 0, 0);
-		res = spocpc_send_X(spocp, argv, qr);
-		octarr_free(argv);
-		if(outcode)
-			Free(outcode);
-		Free(mechsend);
-	}
-	while(res_sa == SASL_CONTINUE)
-	{
-		octarr_t *argv;
-		unsigned decodelen = 0;
-		char *serverdecode = NULL;
-		sasl_interact_t *interact = NULL;
-		const char *data_out = NULL;
-		char *step_dataout = NULL;
-		unsigned data_len = 0;
-		if(qr->blob)
-		{
-			serverdecode = Malloc(qr->blob->arr[0]->len);
-			sasl_decode64(qr->blob->arr[0]->val, qr->blob->arr[0]->len, serverdecode, qr->blob->arr[0]->len, &decodelen);
-		}
-		res_sa = sasl_client_step(spocp->sasl, serverdecode, decodelen, &interact, &data_out, &data_len);
-		Free(serverdecode);
-		if(data_out)
-		{
-			unsigned outlen2 = 0;
-			step_dataout = Malloc(data_len * 4);
-			sasl_encode64(data_out, data_len, step_dataout, data_len * 4, &outlen2);
-		}
-		argv = argv_make("AUTH", step_dataout, 0, 0, 0);
-		memset(qr, 0, sizeof(queres_t));
-		res = spocpc_send_X(spocp, argv, qr);
-		if(step_dataout)
-			Free(step_dataout);
-	}
+        argv = argv_make("AUTH", mechsend, outcode, 0, 0);
+        res = spocpc_send_X(spocp, argv, qr);
+        octarr_free(argv);
+        if(outcode)
+            Free(outcode);
+        Free(mechsend);
+    }
+    while(res_sa == SASL_CONTINUE)
+    {
+        octarr_t *argv;
+        unsigned decodelen = 0;
+        char *serverdecode = NULL;
+        sasl_interact_t *interact = NULL;
+        const char *data_out = NULL;
+        char *step_dataout = NULL;
+        unsigned data_len = 0;
+        if(qr->blob)
+        {
+            serverdecode = Malloc(qr->blob->arr[0]->len);
+            sasl_decode64(qr->blob->arr[0]->val, qr->blob->arr[0]->len, 
+                            serverdecode, qr->blob->arr[0]->len, &decodelen);
+        }
+        res_sa = sasl_client_step(spocp->sasl, serverdecode, decodelen, 
+                                    &interact, &data_out, &data_len);
+        Free(serverdecode);
+        if(data_out)
+        {
+            unsigned outlen2 = 0;
+            step_dataout = Malloc(data_len * 4);
+            sasl_encode64(data_out, data_len, step_dataout, data_len * 4, &outlen2);
+        }
+        argv = argv_make("AUTH", step_dataout, 0, 0, 0);
+        memset(qr, 0, sizeof(queres_t));
+        res = spocpc_send_X(spocp, argv, qr);
+        if(step_dataout)
+            Free(step_dataout);
+    }
 
-	if(res_sa == SASL_OK)
-		sasl_getprop(spocp->sasl, SASL_SSF,
-				(const void **) &spocp->sasl_ssf);
-	if(res_sa != SASL_OK && res == SPOCPC_OK)
-		res = SPOCPC_OTHER;
+    if(res_sa == SASL_OK)
+        sasl_getprop(spocp->sasl, SASL_SSF,
+                (const void **) &spocp->sasl_ssf);
+    if(res_sa != SASL_OK && res == SPOCPC_OK)
+        res = SPOCPC_OTHER;
 #else
-	res = SPOCPC_NOSUPPORT;
+    res = SPOCPC_NOSUPPORT;
 #endif
-	return res;
+    return res;
 }
 
 /* ============================================================================== */
@@ -1970,100 +2007,100 @@ spocpc_auth(SPOCP * spocp, char * mechs, queres_t *qr, void *callbacks, void *se
 int
 spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 {
-	octet_t code, content;
-	int l, re, j, sn, ln;
-	octet_t elem[64], part[6];
-	int rc = SPOCPC_TIMEOUT, res;
+    octet_t code, content;
+    int l, re, j, sn, ln;
+    octet_t elem[64], part[6];
+    int rc = SPOCPC_TIMEOUT, res;
 
-	if ((oa = spocpc_sexp_elements(resp, &n, &rc)) == -1)
-		return rc;
+    if ((oa = spocpc_sexp_elements(resp, &n, &rc)) == -1)
+        return rc;
 
-	if (spocpc_debug)
-		traceLog(LOG_DEBUG,"Got %d elements", re);
+    if (spocpc_debug)
+        fprintf(stderr, "Got %d elements", re);
 
-	if (re == 0)
-		return rc;
+    if (re == 0)
+        return rc;
 
-	for (j = 0; j < oa->n; j++) {
+    for (j = 0; j < oa->n; j++) {
 
-		l = oa->arr[j].len;
+        l = oa->arr[j].len;
 
-		if (spocpc_debug) {
-			strncpy(prbuf, elem[j].val, elem[j].len);
-			prbuf[elem[j].len] = '\0';
-			traceLog(LOG_DEBUG,"Element[%d]: [%s](%d)", j, prbuf,
-			    elem[j].len);
-		}
+        if (spocpc_debug) {
+            strncpy(prbuf, elem[j].val, elem[j].len);
+            prbuf[elem[j].len] = '\0';
+            fprintf(stderr, "Element[%d]: [%s](%d)", j, prbuf,
+                elem[j].len);
+        }
 
-		if ((res =
-			sexp_get_response(&elem[j], &code,
-			    &content)) != SPOCPC_OK) {
-			rc = res;
-			break;
-		}
+        if ((res =
+            sexp_get_response(&elem[j], &code,
+                &content)) != SPOCPC_OK) {
+            rc = res;
+            break;
+        }
 
-		if (spocpc_debug) {
-			strncpy(prbuf, code.val, code.len);
-			prbuf[code.len] = '\0';
-			traceLog(LOG_DEBUG,"code: [%s](%d)", prbuf, code.len);
+        if (spocpc_debug) {
+            strncpy(prbuf, code.val, code.len);
+            prbuf[code.len] = '\0';
+            fprintf(stderr, "code: [%s](%d)", prbuf, code.len);
 
-			strncpy(prbuf, content.val, content.len);
-			prbuf[content.len] = '\0';
-			traceLog(LOG_DEBUG,"content: [%s](%d)", prbuf, content.len);
-		}
+            strncpy(prbuf, content.val, content.len);
+            prbuf[content.len] = '\0';
+            fprintf(stderr, "content: [%s](%d)", prbuf, content.len);
+        }
 
-		if (strncmp(code.val, "200", 3) == 0) {	
-			rc = SPOCPC_OK;
-			break;
-		} else if (strncmp(code.val, "201", 3) == 0) {	
-			if ((sn =
-				spocpc_sexp_elements(content.val, content.len,
-				    part, 8, &rc)) == -1)
-				return rc;
+        if (strncmp(code.val, "200", 3) == 0) { 
+            rc = SPOCPC_OK;
+            break;
+        } else if (strncmp(code.val, "201", 3) == 0) {  
+            if ((sn =
+                spocpc_sexp_elements(content.val, content.len,
+                    part, 8, &rc)) == -1)
+                return rc;
 
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,"%d parts", sn);
+            if (spocpc_debug)
+                fprintf(stderr, "%d parts", sn);
 
-			ln = skip_length(&(part[0].val), part[0].len, &rc);
+            ln = skip_length(&(part[0].val), part[0].len, &rc);
 
-			strncpy(prbuf, part[0].val, ln);
-			prbuf[ln] = '\0';
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,"path: [%s]", prbuf);
-			fwrite(prbuf, 1, ln, fp);
-			fwrite(" ", 1, 1, fp);
+            strncpy(prbuf, part[0].val, ln);
+            prbuf[ln] = '\0';
+            if (spocpc_debug)
+                fprintf(stderr, "path: [%s]", prbuf);
+            fwrite(prbuf, 1, ln, fp);
+            fwrite(" ", 1, 1, fp);
 
-			if (wid) {
+            if (wid) {
 
-				ln = skip_length(&(part[1].val), part[1].len,
-				    &rc);
+                ln = skip_length(&(part[1].val), part[1].len,
+                    &rc);
 
-				if (spocpc_debug)
-					traceLog(LOG_DEBUG,"ruleid length %d", ln);
+                if (spocpc_debug)
+                    fprintf(stderr, "ruleid length %d", ln);
 
-				strncpy(prbuf, part[1].val, ln);
-				prbuf[ln] = '\0';
-				if (spocpc_debug)
-					traceLog(LOG_DEBUG,"ruleid: [%s]", prbuf);
-				fwrite(prbuf, 1, ln, fp);
-				fwrite(" ", 1, 1, fp);
-			}
+                strncpy(prbuf, part[1].val, ln);
+                prbuf[ln] = '\0';
+                if (spocpc_debug)
+                    fprintf(stderr, "ruleid: [%s]", prbuf);
+                fwrite(prbuf, 1, ln, fp);
+                fwrite(" ", 1, 1, fp);
+            }
 
-			ln = skip_length(&(part[2].val), part[2].len, &rc);
+            ln = skip_length(&(part[2].val), part[2].len, &rc);
 
-			strncpy(prbuf, part[2].val, ln);
-			prbuf[ln] = '\0';
-			if (spocpc_debug)
-				traceLog(LOG_DEBUG,"rule: [%s]", prbuf);
-			fwrite(prbuf, 1, ln, fp);
-			fwrite("\n", 1, 1, fp);
-		} else {
-			rc = SPOCPC_PROTOCOL_ERROR;
-			break;
-		}
-	}
+            strncpy(prbuf, part[2].val, ln);
+            prbuf[ln] = '\0';
+            if (spocpc_debug)
+                fprintf(stderr, "rule: [%s]", prbuf);
+            fwrite(prbuf, 1, ln, fp);
+            fwrite("\n", 1, 1, fp);
+        } else {
+            rc = SPOCPC_PROTOCOL_ERROR;
+            break;
+        }
+    }
 
-	return rc;
+    return rc;
 }
 */
 
@@ -2071,21 +2108,21 @@ spocpc_parse_and_print_list(char *resp, int n, FILE * fp, int wid)
 
 char *spocpc_err2string( int r )
 {
-	int i ;
+    int i ;
 
-	for ( i = 0; spocpc_err2str_map[i].str != NULL; i++ ) {
-		if ( i == r )
-			return spocpc_err2str_map[i].str;
-	}
+    for ( i = 0; spocpc_err2str_map[i].str != NULL; i++ ) {
+        if ( i == r )
+            return spocpc_err2str_map[i].str;
+    }
 
-	return "";
+    return "";
 }
 
 void queres_free( queres_t *q)
 {
-	if( q ){
-		free( q->str );
-		if (q->blob)
-			octarr_free( q->blob );
-	}
+    if( q ){
+        free( q->str );
+        if (q->blob)
+            octarr_free( q->blob );
+    }
 }

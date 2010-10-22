@@ -9,9 +9,9 @@
 spocp_chunkwrap_t        *
 get_object(spocp_charbuf_t * ib, spocp_chunk_t * head)
 {
-	spocp_chunk_t        *np = 0, *pp;
-	char		c;
-	spocp_chunkwrap_t *result;
+	spocp_chunk_t       *np = 0, *pp;
+	char                c;
+	spocp_chunkwrap_t   *result;
 
     result = (spocp_chunkwrap_t *) Calloc(1, sizeof(spocp_chunkwrap_t));
     

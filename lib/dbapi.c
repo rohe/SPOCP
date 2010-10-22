@@ -14,21 +14,28 @@
  ***************************************************************************/
 
 #include <stdlib.h>
-#include <config.h>
 #include <string.h>
 
 #include <macros.h>
-#include <struct.h>
-#include <func.h>
 #include <spocp.h>
 #include <wrappers.h>
+#include <bcondfunc.h>
 #include <proto.h>
 #include <db0.h>
 #include <dbapi.h>
 #include <plugin.h>
+#include <match.h>
+#include <log.h>
+#include <rm.h>
+#include <list.h>
 
-/*
- * returns 
+/*! 
+ * \brief Parses a canonical S-expression
+ * \param sexp The S-expression
+ * \param target A pointer to a pointer to a element_struct
+ * \return A spocp_result_t value. If the parsing was successfull this
+ *  function will return SPOCP_SUCCESS, if something goes wrong an error
+ *  code will be returned.
  */
 
 spocp_result_t 
@@ -47,9 +54,11 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 	}
 
 
-	if ((res = element_get(sexp, target)) != SPOCP_SUCCESS) {
+	if ((res = get_element(sexp, target)) != SPOCP_SUCCESS) {
 		str = oct2strdup(sexp, '%');
-		traceLog(LOG_INFO,"The S-expression \"%s\" didn't parse OK", str);
+        LOG(SPOCP_INFO) {            
+            traceLog(LOG_INFO,"The S-expression \"%s\" didn't parse OK", str);
+        }
 		Free(str);
 	}
 	else {
@@ -68,10 +77,11 @@ parse_canonsexp( octet_t *sexp, element_t **target)
 spocp_result_t
 dbapi_allowed(db_t * db, octet_t * sexp, resset_t **rpp)
 {
-	element_t	*ep = 0;
+	element_t       *ep = 0;
 	spocp_result_t	res = SPOCP_SUCCESS;
-	comparam_t	comp;
-	octarr_t	*on = 0;
+	comparam_t      comp;
+	octarr_t        *on = 0;
+	checked_t       *cr=0;
 
 	if (db == 0 || sexp == 0 || sexp->len == 0) {
 		if (db == 0) {
@@ -92,17 +102,20 @@ dbapi_allowed(db_t * db, octet_t * sexp, resset_t **rpp)
 		comp.rc = SPOCP_SUCCESS;
 		comp.head = ep;
 		comp.blob = &on;
-
+        comp.cr = &cr;
+        
 		res = allowed(db->jp, &comp, rpp);
 
 		element_free(ep);
+        if ( *(comp.cr))
+            checked_free( *(comp.cr) );
 	}
 
 	return res;
 }
 
 void
-dbapi_db_del(db_t * db, dbcmd_t * dbc)
+dbapi_db_del(db_t * db, dbackdef_t * dbc)
 {
 	free_all_rules(db->ri);
 	junc_free(db->jp);
@@ -115,6 +128,9 @@ check_uid( octet_t *uid)
 	char	*sp;
 	int	n;
 
+    if (uid == NULL)
+        return SPOCP_SYNTAXERROR;
+    
 	if (uid->len != SHA1HASHLEN)
 		return SPOCP_SYNTAXERROR;
 
@@ -126,10 +142,20 @@ check_uid( octet_t *uid)
 	return SPOCP_SUCCESS;
 }
 
+/*!
+ * \brief Removes a rule from the database, either by the unique identifier
+ *  or the rule instance.
+ * \param db Pointer the rule database
+ * \param dbc Backend definition
+ * \param op An octet struct containing the unique rule identifier
+ * \param rule Pointer to a rule instance structure or NULL. If rule instance
+ *  is defined the unique rule identifier, if present, is ignored.
+ * \return Operation status, SPOCP_SUCCESS if successfull.
+ */
 spocp_result_t
-dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
+dbapi_rule_rm(db_t * db, dbackdef_t * dbc, octet_t * op, void *rule)
 {
-	ruleinst_t     *rt;
+	ruleinst_t      *rt;
 	spocp_result_t  rc;
 
 #ifdef AVLUS
@@ -138,11 +164,10 @@ dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
 	if (rule) rt = (ruleinst_t *) rule;
 	else if ((rc = check_uid( op )) == SPOCP_SUCCESS ){
 		
-		traceLog( LOG_DEBUG, "get_rule()");
 		if ((rt = get_rule(db->ri, op)) == 0) {
 			char uid[SHA1HASHLEN +1];
 
-			if ( oct2strcpy( op, uid, SHA1HASHLEN +1, 0 ) < 0)
+			if ( oct2strcpy( op, uid, SHA1HASHLEN+1, 0 ) < 0)
 				return SPOCP_SYNTAXERROR;
 			
 			traceLog( LOG_NOTICE,
@@ -166,9 +191,11 @@ dbapi_rule_rm(db_t * db, dbcmd_t * dbc, octet_t * op, void *rule)
 
 	free_rule(db->ri, rt->uid);
 
+#ifdef AVLUS
 	if (rc == SPOCP_SUCCESS)
 		traceLog( LOG_INFO,"Rule successfully deleted");
-
+#endif
+    
 	return rc;
 }
 
@@ -195,8 +222,8 @@ rollback_info( db_t *db, octet_t *op)
 }
 
 spocp_result_t
-dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
-		 char *rs)
+dbapi_rules_list(db_t * db, dbackdef_t * dbc, octarr_t * pattern, 
+                 octarr_t **oapp, char *rs)
 {
 	if (db->ri->rules == 0)
 		return SPOCP_SUCCESS;
@@ -205,19 +232,27 @@ dbapi_rules_list(db_t * db, dbcmd_t * dbc, octarr_t * pattern, octarr_t * oa,
 		if(0)
 			traceLog(LOG_INFO,"Get ALL rules");
 
-		return get_all_rules(db, oa, rs);
+		return get_all_rules(db, oapp, rs);
 	} else
-		return get_matching_rules(db, pattern, oa, rs);
+		return get_matching_rules(db, pattern, oapp, rs);
 }
 
+/*!
+ * \brief Adds a rule to a rule database
+ * \param dpp A pointer to a pointer to a db_t struct, this is the in-memory
+ *  database.
+ * \param p A pointer to a list of plugins.
+ * \param bcdef_t A pointer to a pointer to a boundary condition structure.
+ * \param dbc Pointer to backends.
+ * \param oa A octet array
+ * \param rule A pointer to the rule instances struct where the rule info
+ *  is stored.
+ * \return A spocp result code
+ */
+
 spocp_result_t
-dbapi_rule_add(
-	db_t ** dpp, 
-	plugin_t * p, 
-	bcdef_t **rbc,
-	dbcmd_t * dbc, 
-	octarr_t * oa, 
-	void **rule)
+dbapi_rule_add(db_t **dpp, plugin_t *p, bcdef_t **rbc, dbackdef_t *dbc, 
+	octarr_t *oa, void **rule)
 {
 	spocp_result_t	r;
 	ruleinst_t		*ri = 0;
@@ -253,16 +288,15 @@ dbapi_rule_add(
 			if (bcd == NULL && r != SPOCP_SUCCESS) {
 				LOG(SPOCP_INFO) {
 					tmp = oct2strdup(bcexp, '%');
-					traceLog(LOG_INFO,
-					    "Unknown boundary condition:\"%s\"",
-					    tmp);
+					traceLog(LOG_INFO, "Unknown boundary condition:\"%s\"",
+                             tmp);
 					Free(tmp);
 				}
 				return r;
 			}
 		}
 		else if (rbc == 0) {
-			traceLog(LOG_WARNING,"No where to put the boundary condition");
+			traceLog(LOG_WARNING,"Nowhere to put the boundary condition");
 		}
 	}
 

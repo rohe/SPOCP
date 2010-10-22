@@ -37,8 +37,9 @@
 #include <pthread.h>
 #endif
 
-#include <spocp.h>
-#include <dbapi.h>
+#include <log.h>
+#include <result.h>
+#include <element.h>
 
 #ifdef DMALLOC
 #include <dmalloc.h>
@@ -193,7 +194,7 @@ spocp_open_log(char *file, int level)
 static void
 tracelog_doit(int priority, const char *fmt, va_list ap)
 {
-	char            buf[SPOCP_MAXLINE], date[24], *sp = 0;
+	char            buf[SPOCP_MAXLINE], date[32], *sp = 0;
 	int             r, len;
 	time_t          t;
 	struct tm       tm;
@@ -202,7 +203,7 @@ tracelog_doit(int priority, const char *fmt, va_list ap)
 
 	time(&t);
 	localtime_r(&t, &tm);
-	strftime(date, 24, "%Y-%m-%d %H:%M:%S", &tm);
+	strftime(date, 31, "%Y-%m-%d %H:%M:%S", &tm);
 
 	/*
 	 * place the timestamp up front 

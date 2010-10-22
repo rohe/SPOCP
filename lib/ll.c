@@ -4,7 +4,7 @@
                              -------------------
 
     begin                : Fri Feb 6 2003
-    copyright            : (C) 2003 by Umeå University, Sweden
+    copyright            : (C) 2009,2010 by UmeŒ University, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
@@ -13,10 +13,13 @@
  ***************************************************************************/
 
 #include <stdlib.h>
+#include <syslog.h>
 
-#include <struct.h>
+#include <varr.h>
+#include <ll.h>
+#include <result.h>
+#include <log.h>
 #include <wrappers.h>
-#include <func.h>
 
 ll_t           *
 ll_new(cmpfn * cf, ffunc * ff, dfunc * df, pfunc * pf)
@@ -65,6 +68,7 @@ node_new(void *vp)
 	return np;
 }
 
+/* The linked list push/pop works according to the FIFO-principal */
 ll_t           *
 ll_push(ll_t * lp, void *vp, int nodup)
 {
@@ -105,12 +109,20 @@ ll_pop(ll_t * lp)
 
 	if (lp == 0 || lp->n == 0)
 		return NULL;	/* empty list */
+    else if (lp->n == 1) { /* The last one */
+		np = lp->head;
+        lp->head = lp->tail = 0;
+        lp->n = 0;
+		vp = np->payload;
+        Free(np);
+        return vp;
+    }
 	else {
 		np = lp->head;
 		lp->head = np->next;
 		lp->head->prev = 0;
 		vp = np->payload;
-		Free(np);
+        Free(np);
 		lp->n--;
 
 		return vp;
@@ -121,13 +133,13 @@ ll_pop(ll_t * lp)
  * ------------------------------------------------------------- 
  */
 
-node_t         *
+node_t  *
 ll_first(ll_t * lp)
 {
 	return lp->head;
 }
 
-node_t         *
+node_t  *
 ll_next(ll_t * lp, node_t * np)
 {
 	if (np == lp->tail)
@@ -136,34 +148,16 @@ ll_next(ll_t * lp, node_t * np)
 		return np->next;
 }
 
-void           *
-ll_first_p(ll_t * lp)
-{
-	return lp->head;
-}
-
-void           *
-ll_next_p(ll_t * lp, void *prev)
-{
-	node_t         *np;
-
-	for (np = lp->head; np; np = np->next) {
-		if (np->payload == prev)
-			return np->next;
-	}
-
-	return 0;
-}
-
 /*
  * ------------------------------------------------------------- 
  */
 
-void           *
+node_t  *
 ll_find(ll_t * lp, void *pattern)
 {
-	node_t         *np;
-
+	node_t          *np;
+    spocp_result_t  rc;
+    
 	/*
 	 * no compare function, then nothing match 
 	 */
@@ -172,8 +166,9 @@ ll_find(ll_t * lp, void *pattern)
 		return 0;
 
 	for (np = lp->head; np; np = np->next) {
-		if (lp->cf(np->payload, pattern) == 0)
-			return np->payload;
+		if (lp->cf(np->payload, pattern, &rc) == 0)
+            if (rc == SPOCP_SUCCESS)
+                return np;
 	}
 
 	return 0;
@@ -182,8 +177,15 @@ ll_find(ll_t * lp, void *pattern)
 void
 ll_rm_link(ll_t * lp, node_t * np)
 {
-	node_t         *tmp;
+	node_t  *tmp;
 
+    for (tmp = lp->head; tmp; tmp = tmp->next)
+        if (tmp == np)
+            break;
+
+    if (tmp == 0) /* not part of this list */
+        return;
+        
 	if (np == lp->head && np == lp->tail) {
 		lp->head = lp->tail = 0;
 	} else if (np == lp->head) {
@@ -197,59 +199,8 @@ ll_rm_link(ll_t * lp, node_t * np)
 		np->prev->next = np->next;
 		np->next->prev = np->prev;
 	}
-}
-
-/*
- * if all != 0, remove all instances that match otherwise just the first one 
- */
-
-int
-ll_rm_item(ll_t * lp, void *pattern, int all)
-{
-	int             n = 0;
-	node_t         *np, *next;
-
-	/*
-	 * no compare function == no matches 
-	 */
-	if (lp->cf == 0)
-		return 0;
-
-	for (np = lp->head; np;) {
-		if (lp->cf(np->payload, pattern) == 0) {
-
-			next = np->next;
-
-			ll_rm_link(lp, np);
-
-			lp->ff(np->payload);
-			Free(np);
-
-			lp->n--;
-			n++;
-
-			if (!all)
-				break;
-
-			np = next;
-		} else
-			np = np->next;
-	}
-
-	return n;
-}
-
-void
-ll_rm_payload(ll_t * lp, void *pl)
-{
-	node_t         *np;
-
-	for (np = lp->head; np;) {
-		if (np->payload == pl) {
-			ll_rm_link(lp, np);
-			break;
-		}
-	}
+    
+    lp->n -= 1;
 }
 
 ll_t           *
@@ -265,7 +216,7 @@ ll_dup(ll_t * old)
 	new = ll_new(old->cf, old->ff, old->df, old->pf);
 
 	if (old->df)
-		pl = old->df(old->head->payload, 0);
+		pl = old->df(old->head->payload);
 	else
 		pl = old->head->payload;
 
@@ -275,7 +226,7 @@ ll_dup(ll_t * old)
 
 	for (on = old->head->next; on != 0; on = on->next) {
 		if (old->df)
-			pl = old->df(on->payload, 0);
+			pl = old->df(on->payload);
 		else
 			pl = on->payload;
 
@@ -288,22 +239,6 @@ ll_dup(ll_t * old)
 	new->tail = pn;
 
 	return new;
-}
-
-/*
- * ---------------------------------------------------------- 
- */
-
-ll_t           *
-parr2ll(parr_t * pp)
-{
-	ll_t           *ll = 0;
-	int             i;
-
-	for (i = 0; i < pp->n; i++)
-		ll = ll_push(ll, pp->vect[i], 0);
-
-	return ll;
 }
 
 /*

@@ -76,14 +76,16 @@ typedef struct {
 becpool_t      *becpool_dup(becpool_t * bcp);
 */
 
-becpool_t      *becpool_new(size_t max);
-becon_t        *becon_push(octet_t * a, closefn * cf, void *con,
+becon_t     *becon_new(int copy);
+
+becpool_t   *becpool_new(size_t max);
+becon_t     *becon_push(octet_t * a, closefn * cf, void *con,
 			   becpool_t * b);
-becon_t        *becon_get(octet_t * arg, becpool_t * bcp);
-void            becpool_rm(becpool_t * bcp, int close);
-void            becon_return(becon_t * bc);
-void            becon_rm(becpool_t * bcp, becon_t * bc);
-void            becon_update(becon_t * bc, void *con);
+becon_t     *becon_get(octet_t * arg, becpool_t * bcp);
+void        becpool_rm(becpool_t * bcp, int close);
+void        becon_return(becon_t * bc);
+void        becon_rm(becpool_t * bcp, becon_t * bc);
+void        becon_update(becon_t * bc, void *con);
 
 /*
  * ------------------------------------- 

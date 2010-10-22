@@ -1,0 +1,16 @@
+(test (host 
+       (* suffix .catalogix.se)) 
+      (uid))
+
+(test3  (host (* suffix .catalogix.se))
+        (uid))
+
+(test2 (host (* suffix .catalogix.se))
+       (uid))
+
+(isstudent (uid))
+
+//hypatia/server/(server(ip)(host))
+//hypatia/operation/(operation QUERY(server(ip)(host)))
+//hypatia/operation/(operation SUMMARY(server(ip)(host)))
+//hypatia/operation/(operation LOGOUT(server(ip)(host)))

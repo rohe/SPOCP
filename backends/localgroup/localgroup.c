@@ -26,6 +26,7 @@
 #include <plugin.h>
 #include <rvapi.h>
 #include "../../server/srvconf.h"
+#include <log.h>
 
 #define ETC_GROUP "/etc/group"
 
@@ -43,7 +44,7 @@ _ismember(octet_t * member, char *grp)
 
 	p = line_split(grp, ',', 0, 0, 0, &n);
 
-	for (i = 0; r == FALSE && i <= n; i++) {
+	for (i = 0; r == FALSE && i < n; i++) {
 		if (oct2strcmp(member, p[i]) == 0)
 			r = TRUE;
 	}
@@ -71,14 +72,14 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 {
 	spocp_result_t  rc = SPOCP_DENIED;
 
-	FILE           *fp;
-	octarr_t       *argv;
-	octet_t        *oct, cb, *group, *user, loc;
-	char           *fn = ETC_GROUP, *cp;
-	int             done, cv = 0;
-	char            buf[BUFSIZ];
-	becon_t        *bc = 0;
-	pdyn_t         *dyn = cpp->pd;
+	FILE        *fp;
+	octarr_t    *argv;
+	octet_t     *oct, cb, *group, *user, loc;
+	char        *fn = ETC_GROUP, *cp, *dynfn=NULL;
+	int         done, cv = 0;
+	char        buf[BUFSIZ];
+	becon_t     *bc = 0;
+	pdyn_t      *dyn = cpp->pd;
 
 	if (cpp->arg == 0)
 		return SPOCP_MISSING_ARG;
@@ -108,7 +109,7 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 		 */
 
 		if (argv->n == 3)
-			fn = oct2strdup(argv->arr[2], 0);
+			dynfn = fn = oct2strdup(argv->arr[2], 0);
 
 		/*
 		 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG,"groupfile: %s",fn); 
@@ -192,8 +193,9 @@ localgroup_test(cmd_param_t * cpp, octet_t * blob)
 		else if (fp)
 			fclose(fp);
 
-		if (fn != ETC_GROUP)
-			free(fn);
+        /* Actually checking if the pointer has changed */
+		if (dynfn)
+			free(dynfn);
 
 		octarr_free(argv);
 	}

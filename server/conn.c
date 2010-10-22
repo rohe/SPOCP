@@ -1,8 +1,7 @@
 /***************************************************************************
                            conn.c  -  description
                              -------------------
-    begin                : Wed Mar 3 2004
-    copyright            : (C) 2004 by Stockholm university, Sweden
+    copyright            : (C) 2010 by Umeå university, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
@@ -11,7 +10,6 @@
  **************************************************************************/
 
 #include "locl.h"
-RCSID("$Id$");
 
 int             conn_readn(conn_t * ct, char *str, size_t max);
 int             conn_writen(conn_t * ct, char *str, size_t n);
@@ -19,7 +17,7 @@ int             conn_close(conn_t * conn);
 
 void            conn_iobuf_clear(conn_t * con);
 
-int x_f = 1;
+#define _CONN_FLAG 1
 
 /*
  * ---------------------------------------------------------------------- 
@@ -188,8 +186,8 @@ conn_setup(conn_t * conn, srv_t * srv, int fd, char *hostname, char *ipaddr)
 	else
 		conn->sri.hostname = 0;
 
-	if (conn->srv->dback)
-		conn->dbc.dback = conn->srv->dback;
+	if (srv->dback)
+		conn->dbc.dback = srv->dback;
 
 	conn->rs = srv->root;
 	conn->layer = SPOCP_LAYER_NONE;
@@ -224,8 +222,7 @@ next_line(conn_t * conn)
 	char           *s, *b;
 	spocp_iobuf_t  *io = conn->in;
 
-	if ((s = strpbrk(io->r, "\r\n")) == 0) {	/* try to read some
-							 * more */
+	if ((s = strpbrk(io->r, "\r\n")) == 0) {	/* try to read some more */
 		spocp_conn_read(conn);
 		if ((s = strpbrk(io->r, "\r\n")) == 0) {	/* fail !! */
 			return 0;
@@ -276,11 +273,6 @@ conn_writen(conn_t * ct, char *str, size_t n)
 
 		oct.val = str;
 		oct.len = n;
-
-		/*
-		 * tmp = oct2strdup( &oct, '\\' ) ; traceLog(LOG_INFO, "REPLY: [%s]",
-		 * tmp ) ; free( tmp ) ; 
-		 */
 
 		return (n);
 	}
@@ -355,15 +347,14 @@ conn_readn(conn_t * ct, char *str, size_t max)
 				n = -1;
 		}
 #ifdef HAVE_SASL
-		else
+    else if(ct->srv->use_sasl)
 		{
 			if((ct->sasl_ssf && *ct->sasl_ssf > 0) && n > 0)
 			{
-				const char *plaindata;
-				unsigned plainlen;
-				int wr = sasl_decode(ct->sasl,
-						str, n,
-						&plaindata, &plainlen);
+				const char  *plaindata;
+				unsigned    plainlen;
+                
+				int wr = sasl_decode(ct->sasl, str, n, &plaindata, &plainlen);
 				if(wr == SASL_OK)
 				{
 					if(plainlen <= max)
@@ -398,7 +389,7 @@ conn_readn(conn_t * ct, char *str, size_t max)
  * ---------------------------------------------------------------------- 
  */
 
-	int
+int
 spocp_conn_read(conn_t * conn)
 {
 	int             n;
@@ -406,13 +397,13 @@ spocp_conn_read(conn_t * conn)
 
 	pthread_mutex_lock(&io->lock);
 
-	/*
-	   traceLog(LOG_DEBUG,"is00 [buf]%p [p]%p [r]%p [w]%p [left]%d",
-	   io->buf, io->p, io->r, io->w, io->left);
-	   traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
-	   io->w - io->buf, io->left );
-	 */
-
+#ifdef _CONN_FLAG
+    traceLog(LOG_DEBUG,"is00 [buf]%p [r]%p [w]%p [left]%d",
+            io->buf, io->r, io->w, io->left);
+    traceLog(LOG_DEBUG, ".... r-buf:%d w-r:%d w-buf:%d", 
+             io->r - io->buf, io->w - io->r, io->w - io->buf );
+#endif 
+    
 	n = conn->readn(conn, io->w, io->left);
 	if (n > 0) {
 #ifdef SASL
@@ -441,18 +432,12 @@ spocp_conn_read(conn_t * conn)
 		 */
 	}
 
-	/*
-	   traceLog(LOG_DEBUG,"is01 [buf]%p [p]%p [r]%p [w]%p [left]%d",
-	   io->buf, io->p, io->r, io->w, io->left);
-	   traceLog(LOG_DEBUG, "\t[%d][%d][%d]", io->r - io->buf, io->w - io->r,
-	   io->w - io->buf, io->left );
-	 */
 	pthread_mutex_unlock(&io->lock);
 
 	return n;
 }
 
-	int
+int
 spocp_conn_write(conn_t * conn)
 {
 	int             n, l;
@@ -460,12 +445,12 @@ spocp_conn_write(conn_t * conn)
 
 	pthread_mutex_lock(&out->lock);
 #ifdef HAVE_SASL
-	if(conn->sasl_ssf && *conn->sasl_ssf > 0)
+	if(conn->srv->use_sasl && conn->sasl_ssf && *conn->sasl_ssf > 0)
 	{
 		const int *maxout;
-		char *plain_data = Malloc(out->w - out->r);
+		char *plain_data = (char *) Calloc(out->w - out->r,sizeof(char));
 		char *plain_point = plain_data;
-		char *crypt_data = Malloc(1);
+		char *crypt_data = Malloc(1);        
 		size_t plain_len = out->w - out->r;
 		size_t tot_len = 0;
 		int bufdiff;
@@ -558,3 +543,64 @@ send_results(conn_t * conn)
 	return 1;
 }
 
+/*
+ * ======================================================================
+ */
+
+int init_reply_list( work_info_t *wi)
+{
+	reply_t *rp;
+	conn_t  *conn = wi->conn; 
+    
+	rp = reply_new( wi );
+	
+	pthread_mutex_lock( &conn->rlock );
+	
+	conn->head = reply_push( conn->head, rp );
+    
+	pthread_mutex_unlock( &conn->rlock );
+    
+	return 1;
+}
+
+/*
+ * ---------------------------------------------------------------------- 
+ */
+
+int
+gather_replies( spocp_iobuf_t *out, conn_t *conn )
+{
+	reply_t		*rp ;
+	spocp_iobuf_t	*buf;
+	spocp_result_t	sr;
+	int		r = 0;
+    
+	pthread_mutex_lock( &conn->rlock );
+	
+	if (conn->head == 0) {
+		pthread_mutex_unlock( &conn->rlock );
+		return r;
+	}
+    
+	while ( conn->head && conn->head->buf ) {
+		r++;
+		rp = reply_pop( &conn->head );
+		buf = rp->buf;
+		sr = iobuf_addn(out, buf->r, buf->w - buf->r);
+		reply_free( rp );
+	}
+    
+	LOG(SPOCP_INFO){
+		if (r) {
+			char *tmp;
+            
+			tmp = str_esc( out->r, out->w - out->r );
+			traceLog(LOG_INFO, "Replies(%d): [%s]", r, tmp );
+			Free( tmp );
+		}
+	}
+    
+	pthread_mutex_unlock( &conn->rlock );
+    
+	return r;
+}

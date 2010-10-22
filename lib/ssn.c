@@ -3,7 +3,7 @@
                           ssn.c  -  description
                              -------------------
     begin                : Sat Oct 12 2002
-    copyright            : (C) 2002 by Umeå University, Sweden
+    copyright            : (C) 2002, 2009 by UmeŒ University, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
@@ -15,24 +15,31 @@
 
 #include <string.h>
 
-#include <db0.h>
-#include <struct.h>
-#include <func.h>
-#include <wrappers.h>
+#include <branch.h>
+#include <element.h>
 #include <varr.h>
+#include <ssn.h>
+
+#include <wrappers.h>
+
+/*
+ * This module builds and maintains a parse tree of characters, where
+ * junc's are placed at end of words.
+ * 
+ */
 
 varr_t         *get_rec_all_ssn_followers(ssn_t * ssn, varr_t * ja);
 
-static ssn_t   *
+/* ------------------------------------------------------------------ */
+
+ssn_t   *
 ssn_new(char ch)
 {
 	ssn_t          *ssn;
 
-	ssn = (ssn_t *) Malloc(sizeof(ssn_t));
+	ssn = (ssn_t *) Calloc(1, sizeof(ssn_t));
 
 	ssn->ch = ch;
-	ssn->left = ssn->right = ssn->down = 0;
-	ssn->next = 0;
 	ssn->refc = 1;
 
 	return ssn;
@@ -41,7 +48,7 @@ ssn_new(char ch)
 static junc_t  *
 ssn_insert_forward(ssn_t ** top, char *str)
 {
-	ssn_t          *pssn = 0;
+	ssn_t          *pssn = 0, *previous=0;
 	unsigned char  *s;
 
 	s = (unsigned char *) str;
@@ -70,26 +77,34 @@ ssn_insert_forward(ssn_t ** top, char *str)
 				pssn->refc++;
 
 				if (pssn->down) {
+                    previous = pssn;
 					pssn = pssn->down;
 					s++;
 				} else if (*++s) {
+                    previous = 0;
 					pssn->down = ssn_new(*s);
 					pssn = pssn->down;
 					break;
 				} else
 					break;
 			} else if (*s < pssn->ch) {
-				if (pssn->left)
+				if (pssn->left) {
+                    previous = pssn;
 					pssn = pssn->left;
+                }
 				else {
+                    previous = 0;
 					pssn->left = ssn_new(*s);
 					pssn = pssn->left;
 					break;
 				}
 			} else if (*s > pssn->ch) {
-				if (pssn->right)
+				if (pssn->right) {
+                    previous = pssn;
 					pssn = pssn->right;
+                }
 				else {
+                    previous = 0;
 					pssn->right = ssn_new(*s);
 					pssn = pssn->right;
 					break;
@@ -98,7 +113,10 @@ ssn_insert_forward(ssn_t ** top, char *str)
 		}
 
 		if (*s == 0) {
-			if (pssn->next == 0)
+            if (previous) {
+                previous->next = junc_new();
+            }
+			else if (pssn->next == 0)
 				pssn->next = junc_new();
 		} else {
 			for (s++; *s; s++) {
@@ -116,7 +134,7 @@ ssn_insert_forward(ssn_t ** top, char *str)
 static junc_t  *
 ssn_insert_backward(ssn_t ** top, char *str)
 {
-	ssn_t          *pssn;
+	ssn_t          *pssn, *previous=0;
 	unsigned char  *s;
 
 	s = (unsigned char *) &str[strlen(str) - 1];
@@ -141,26 +159,34 @@ ssn_insert_backward(ssn_t ** top, char *str)
 				pssn->refc++;
 
 				if (pssn->down) {
+                    previous = pssn;
 					pssn = pssn->down;
 					s--;
 				} else if (*--s) {
+                    previous = pssn;
 					pssn->down = ssn_new(*s);
 					pssn = pssn->down;
 					break;
 				} else
 					break;
 			} else if (*s < pssn->ch) {
-				if (pssn->left)
+				if (pssn->left) {
+                    previous = pssn;
 					pssn = pssn->left;
+                }
 				else {
+                    previous = 0;
 					pssn->left = ssn_new(*s);
 					pssn = pssn->left;
 					break;
 				}
 			} else if (*s > pssn->ch) {
-				if (pssn->right)
+				if (pssn->right) {
+                    previous = pssn;
 					pssn = pssn->right;
+                }
 				else {
+                    previous = 0;
 					pssn->right = ssn_new(*s);
 					pssn = pssn->right;
 					break;
@@ -169,8 +195,13 @@ ssn_insert_backward(ssn_t ** top, char *str)
 		}
 
 		if (*s == 0) {
-			if (pssn->next == 0)
-				pssn->next = junc_new();
+            /* I may want the previous one */
+            if (previous) 
+                previous->next = junc_new();
+			else {
+                if (pssn->next == 0)
+                    pssn->next = junc_new();
+            }
 		} else {
 			for (s--; s >= (unsigned char *) str; s--) {
 				pssn->down = ssn_new(*s);
@@ -184,6 +215,10 @@ ssn_insert_backward(ssn_t ** top, char *str)
 	return pssn->next;
 }
 
+/*
+ * Will create a branch in necessary and returns the junc at the
+ * end of the branch
+ */
 junc_t         *
 ssn_insert(ssn_t ** top, char *str, int direction)
 {
@@ -210,11 +245,10 @@ ssn_match(ssn_t * pssn, char *sp, int direction)
 	while ((direction == FORWARD && *ucp) ||
 	       (direction == BACKWARD && ucp >= (unsigned char *) sp)) {
 		if (*ucp == pssn->ch) {
-
+            if (pssn->refc == 0)
+                return 0;
 			/*
 			 * have to collect the 'next hops' along the way 
-			 */
-			/*
 			 * Could do this while storing the rule 
 			 */
 			if (pssn->next)
@@ -303,110 +337,6 @@ ssn_lte_match(ssn_t * pssn, char *sp, int direction, varr_t * res)
 	return res;
 }
 
-void
-ssn_free(ssn_t * pssn)
-{
-	ssn_t          *down;
-
-	while (pssn) {
-		if (pssn->down) {
-			/*
-			 * there should not be anything to the left or right.
-			 * No next either 
-			 */
-			down = pssn->down;
-			Free(pssn);
-			pssn = down;
-		} else {
-			if (pssn->next)
-				junc_free(pssn->next);
-			Free(pssn);
-			pssn = 0;
-		}
-	}
-}
-
-junc_t         *
-ssn_delete(ssn_t ** top, char *sp, int direction)
-{
-	unsigned char  *up;
-	ssn_t          *pssn = *top, *ssn, *prev = 0;
-	junc_t         *jp;
-
-	if (direction == FORWARD)
-		up = (unsigned char *) sp;
-	else
-		up = (unsigned char *) &sp[strlen(sp) - 1];
-
-	while ((direction == FORWARD && *up) ||
-	       (direction == BACKWARD && up >= (unsigned char *) sp)) {
-		if (*up == pssn->ch) {
-
-			pssn->refc--;
-
-			/*
-			 * Only one linked list onward from here 
-			 */
-			if (pssn->refc == 0) {
-				if (*top == pssn) {
-					*top = 0;
-					jp = 0;
-					ssn_free(pssn);
-				} else {
-					/*
-					 * First make sure noone will follow
-					 * this track anymore 
-					 */
-					if (prev->down == pssn)
-						prev->down = 0;
-					else if (prev->left == pssn)
-						prev->left = 0;
-					else
-						prev->right = 0;
-
-					/*
-					 * follow down until the 'next' link
-					 * is found 
-					 */
-					for (ssn = pssn; ssn->down;
-					     ssn = ssn->down);
-					jp = ssn->next;
-
-					ssn_free(pssn);
-					junc_free(jp);
-				}
-
-				return 0;
-			}
-
-			if (pssn->down) {
-				prev = pssn;	/* keep track on where we
-						 * where */
-				pssn = pssn->down;
-				if (direction == FORWARD)
-					up++;
-				else
-					up--;
-			} else
-				break;
-		} else if (*up < pssn->ch) {
-			if (pssn->left) {
-				prev = pssn;
-				pssn = pssn->left;
-			} else
-				break;	/* this should never happen */
-		} else if (*up > pssn->ch) {
-			if (pssn->right) {
-				prev = pssn;
-				pssn = pssn->right;
-			} else
-				break /* this should never happen */ ;
-		}
-	}
-
-	return pssn->next;
-}
-
 varr_t         *
 get_rec_all_ssn_followers(ssn_t * ssn, varr_t * ja)
 {
@@ -438,22 +368,3 @@ get_all_ssn_followers(branch_t * bp, int type, varr_t * ja)
 	return get_rec_all_ssn_followers(ssn, ja);
 }
 
-ssn_t          *
-ssn_dup(ssn_t * old, ruleinfo_t * ri)
-{
-	ssn_t          *new;
-
-	if (old == 0)
-		return 0;
-
-	new = ssn_new(old->ch);
-
-	new->refc = old->refc;
-
-	new->left = ssn_dup(old->left, ri);
-	new->right = ssn_dup(old->right, ri);
-	new->down = ssn_dup(old->down, ri);
-	new->next = junc_dup(old->next, ri);
-
-	return new;
-}

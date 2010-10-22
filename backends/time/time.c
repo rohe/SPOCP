@@ -28,10 +28,12 @@
 #include <time.h>
 
 #include <spocp.h>
-#include <func.h>
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include <verify.h>
+#include <basic.h>
+#include <log.h>
 
 #define MAXPARTS 4
 

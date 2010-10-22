@@ -14,12 +14,14 @@
 
 #include <string.h>
 
-#include <config.h>
+#include <octet.h>
+#include <hash.h>
+#include <atom.h>
+#include <verify.h>
 
-#include <func.h>
-#include <db0.h>
 #include <wrappers.h>
 #include <macros.h>
+#include <log.h>
 
 /* #define AVLUS 1 */
 
@@ -63,7 +65,7 @@ phash_new(unsigned int pnr, unsigned int density)
 	return newht;
 }
 
-static buck_t  *
+buck_t  *
 buck_new(unsigned int key, octet_t * op)
 {
 	buck_t         *bp;
@@ -76,7 +78,7 @@ buck_new(unsigned int key, octet_t * op)
 	return bp;
 }
 
-static void 
+void 
 buck_free( buck_t *b )
 {
 	if (b){
@@ -85,30 +87,40 @@ buck_free( buck_t *b )
 	}
 }
 
+static unsigned int _primary(phash_t * ht, unsigned int key)
+{
+    return key % ht->size;
+}
+
+static unsigned int _secondary(phash_t * ht, unsigned int key)
+{
+    /* must not be 0 */
+    return (key % (prime[ht->pnr / 2] - 1)) + 1;
+}
+
 /*
  * If I can't place an item where it 'should' be, use an offset to find a
  * empty place 'closeby' in a deterministic way 
  */
 buck_t         *
-phash_insert(phash_t * ht, atom_t * ap, unsigned int key)
+phash_insert(phash_t * ht, atom_t * ap)
 {
-	unsigned int    hv1 = key % ht->size;
-	unsigned int    hv2 = (key % (prime[ht->pnr / 2] - 1)) + 1;	/* must 
-									 * not 
-									 * be
-									 * 0 */
-	unsigned int    shv = hv1;
-	buck_t        **arr = ht->arr, *bp;
+	buck_t          **arr = ht->arr, *bp;
+	unsigned int    hv1, hv2, shv, key;
 
+    key = ap->hash;
+    hv1 = _primary(ht, key);
+    shv = hv2 = _secondary(ht, key);
+
+    /* Is the place free or is the same value already stored there */
 	while (arr[hv1] && octcmp(&arr[hv1]->val, &ap->val)) {
 
 		hv1 = (hv1 + hv2) % ht->size;
 
 		if (hv1 == shv) {
 			phash_resize(ht);
-			shv = hv1 = key % ht->size;
-			/* must not be 0 */
-			hv2 = (key % (prime[ht->pnr / 2] - 1)) + 1;
+			shv = hv1 = _primary(ht, key);
+			hv2 = _secondary(ht, key);
 			arr = ht->arr;
 		}
 	}
@@ -132,26 +144,21 @@ phash_insert(phash_t * ht, atom_t * ap, unsigned int key)
 static buck_t  *
 phash_insert_bucket(phash_t * ht, buck_t * bp)
 {
-	unsigned int    key = bp->hash;
-	unsigned int    hv1 = key % ht->size;
-	unsigned int    hv2 = (key % (prime[ht->pnr / 2] - 1)) + 1;	/* must 
-									 * not 
-									 * be
-									 * 0 */
-	unsigned int    shv = hv1;
 	buck_t        **arr = ht->arr;
-
+	unsigned int    hv1, hv2, shv, key;
+    
+    key = bp->hash;
+    hv1 = _primary(ht, key);
+    shv = hv2 = _secondary(ht, key);
+    
 	while (arr[hv1]) {
 
 		hv1 = (hv1 + hv2) % ht->size;
 
 		if (hv1 == shv) {
 			phash_resize(ht);
-			shv = hv1 = key % ht->size;
-			hv2 = (key % (prime[ht->pnr / 2] - 1)) + 1;	/* must 
-									 * not 
-									 * be
-									 * 0 */
+			shv = hv1 = _primary(ht, key);
+			hv2 = _secondary(ht, key);
 			arr = ht->arr;
 		}
 	}
@@ -168,9 +175,9 @@ phash_insert_bucket(phash_t * ht, buck_t * bp)
 void
 phash_print(phash_t * ht)
 {
-	int             i;
-	buck_t        **ba;
-	char           *tmp;
+	int     i;
+	buck_t  **ba;
+	char    *tmp;
 
 	ba = ht->arr;
 	for (i = 0; i < (int) ht->size; i++)
@@ -181,6 +188,24 @@ phash_print(phash_t * ht)
 		}
 }
 
+char *
+phash_package(phash_t * ht) {
+    char    str[1024];
+    int     i;
+	buck_t  **ba;
+    
+    memset(str, 0, 1024*sizeof(char));
+	ba = ht->arr;
+    for( i = 0; i < (int) ht->size; i++) {
+        if(ba[i])
+            str[i] = '^';
+        else
+            str[i] = '_';
+    }
+    
+    return Strdup(str);
+}
+        
 phash_t        *
 phash_dup(phash_t * php, ruleinfo_t * ri)
 {
@@ -248,18 +273,19 @@ phash_resize(phash_t * ht)
 	 * print_phash( ht ) ; 
 	 */
 }
-
+/*
+ * Returns the place in the hash array a specific bucket occupies ?
+ */
 static int
 phash_bucket_index(phash_t * ht, buck_t * bp, size_t * rc)
 {
-	unsigned int    hv1 = bp->hash % ht->size;
-	unsigned int    hv2 = (bp->hash % (prime[ht->pnr / 2] - 1)) + 1;	/* must 
-										 * not 
-										 * be 
-										 * 0 
-										 */
 	buck_t        **arr = ht->arr, *ap;
-
+	unsigned int    hv1, hv2, shv, key;
+    
+    key = bp->hash;
+    hv1 = _primary(ht, key);
+    shv = hv2 = _secondary(ht, key);
+    
 	if (ht->n == 0)
 		return 0;
 
@@ -277,14 +303,14 @@ phash_bucket_index(phash_t * ht, buck_t * bp, size_t * rc)
 }
 
 buck_t         *
-phash_search(phash_t * ht, atom_t * ap, unsigned int key)
+phash_search(phash_t * ht, atom_t * ap)
 {
-	unsigned int    hv1 = key % ht->size;
-	unsigned int    hv2 = (key % (prime[ht->pnr / 2] - 1)) + 1;	/* must 
-									 * not 
-									 * be
-									 * 0 */
 	buck_t        **arr = ht->arr, *bp;
+	unsigned int    hv1, hv2, shv, key;
+    
+    key = ap->hash;
+    hv1 = _primary(ht, key);
+    shv = hv2 = _secondary(ht, key);
 
 	if (ht->n == 0)
 		return 0;
@@ -306,7 +332,7 @@ bucket_free(buck_t * bp)
 {
 	if (bp) {
 		DEBUG(SPOCP_DSTORE) {
-			oct_print(LOG_DEBUG,"removing bucket with value",&bp->val);
+			oct_print(LOG_DEBUG, "removing bucket with value", &bp->val);
 		}
 		/*
 	 	* bp->val.val shouldn't be touched since it's pointing to
@@ -354,15 +380,17 @@ phash_free(phash_t * ht)
 void
 bucket_rm(phash_t * ht, buck_t * bp)
 {
-	buck_t        **arr = ht->arr;
-	buck_t        **newarr;
-	size_t          n, size = ht->size;
-	size_t          rc = 0;
-	int             i;
+	buck_t  **arr = ht->arr;
+	buck_t  **newarr;
+	size_t  n, size = ht->size;
+	size_t  rc = 0;
+	int     i;
 
+    /* printf("[bucket_rm]\n"); */
 	i = phash_bucket_index(ht, bp, &rc);
-
-	traceLog(LOG_DEBUG, "bucket index = %d", i);
+    /* printf("[bucket_rm] bucket index = %d\n", i); */
+	DEBUG(SPOCP_DSTORE) 
+        traceLog(LOG_DEBUG, "bucket index = %d", i);
 
 	if (i == 0)
 		return;
@@ -370,6 +398,7 @@ bucket_rm(phash_t * ht, buck_t * bp)
 	Free(bp);
 	ht->arr[rc] = 0;
 
+    /* printf("[bucket_rm] Rearrange\n"); */
 	/*
 	 * have to rearrange the buckets, since otherwise I might get 'holes' 
 	 */
@@ -389,212 +418,12 @@ bucket_rm(phash_t * ht, buck_t * bp)
 	Free(arr);
 }
 
+/* 
+ * returns 0 if not true else non-zero 
+ */
 int
-phash_index(phash_t * ht)
+phash_empty(phash_t * ht)
 {
-	return ht->n;
+	return (ht->n == 0);
 }
 
-varr_t         *
-get_all_atom_followers(branch_t * bp, varr_t * in)
-{
-	phash_t        *ht = bp->val.atom;
-	buck_t        **arr = ht->arr;
-	unsigned int    i;
-
-	for (i = 0; i < ht->size; i++)
-		if (arr[i])
-			in = varr_junc_add(in, arr[i]->next);
-
-	return in;
-}
-
-varr_t         *
-prefix2atoms_match(char *prefix, phash_t * ht, varr_t * pa)
-{
-	buck_t        **arr = ht->arr;
-	unsigned int    i, len = strlen(prefix);
-
-	for (i = 0; i < ht->size; i++)
-		if (arr[i] && strncmp(arr[i]->val.val, prefix, len) == 0)
-			pa = varr_junc_add(pa, arr[i]->next);
-
-	return pa;
-}
-
-varr_t         *
-suffix2atoms_match(char *suffix, phash_t * ht, varr_t * pa)
-{
-	buck_t        **arr = ht->arr;
-	unsigned int    i, len = strlen(suffix), l;
-	char           *s;
-
-	for (i = 0; i < ht->size; i++) {
-		if (arr[i]) {
-			s = arr[i]->val.val;
-
-			l = strlen(s);
-			if (l >= len) {
-				if (strncmp(&s[l - len], suffix, len) == 0)
-					pa = varr_junc_add(pa, arr[i]->next);
-			}
-		}
-	}
-
-	return pa;
-}
-
-varr_t         *
-range2atoms_match(range_t * rp, phash_t * ht, varr_t * pa)
-{
-	buck_t        **arr = ht->arr;
-	int             r, i, dtype = rp->lower.type & 0x07;
-	int             ll = rp->lower.type & 0xF0;
-	int             ul = rp->upper.type & 0xF0;
-	octet_t        *op, *lo = 0, *uo = 0;
-	long            li, lv = 0, uv = 0;
-
-	struct in_addr *v4l, *v4u, ia;
-#ifdef USE_IPV6
-	struct in6_addr *v6l, *v6u, i6a;
-#endif
-
-	switch (dtype) {
-	case SPOC_NUMERIC:
-	case SPOC_TIME:
-		lv = rp->lower.v.num;
-		uv = rp->upper.v.num;
-		break;
-
-	case SPOC_ALPHA:
-	case SPOC_DATE:
-		lo = &rp->lower.v.val;
-		uo = &rp->upper.v.val;
-		break;
-
-	case SPOC_IPV4:
-		v4l = &rp->lower.v.v4;
-		v4u = &rp->upper.v.v4;
-		break;
-
-#ifdef USE_IPV6
-	case SPOC_IPV6:
-		v6l = &rp->lower.v.v6;
-		v6u = &rp->upper.v.v6;
-		break;
-#endif
-	}
-
-	for (i = 0; i < (int) ht->size; i++) {
-		if (arr[i]) {
-			op = &arr[i]->val;
-			r = 0;
-
-			switch (dtype) {
-			case SPOC_NUMERIC:
-			case SPOC_TIME:
-				if (is_numeric(op, &li) == SPOCP_SUCCESS) {
-					/*
-					 * no upper or lower limits 
-					 */
-					if (ll == 0 && ul == 0)
-						r = 1;
-					/*
-					 * no upper limits 
-					 */
-					else if (ul == 0) {
-						if ((ll == EQ && li >= lv)
-						    || (ll = GT && li > lv))
-							r = 1;
-					}
-					/*
-					 * no upper limits 
-					 */
-					else if (ll == 0) {
-						if ((ul == EQ && li <= uv)
-						    || (ul = LT && li < uv))
-							r = 1;
-					}
-					/*
-					 * upper and lower limits 
-					 */
-					else {
-						if (((ll == EQ && li >= lv)
-						     || (ll = GT && li > lv))
-						    && ((ul == EQ && li <= uv)
-							|| (ul = LT
-							    && li < uv)))
-							r = 1;
-					}
-				}
-				break;
-
-			case SPOC_DATE:
-				if (is_date(op) != SPOCP_SUCCESS)
-					break;
-				/*
-				 * otherwise fall through 
-				 */
-			case SPOC_ALPHA:
-				/*
-				 * no upper or lower limits 
-				 */
-				if (lo == 0 && uo == 0)
-					r = 1;
-				/*
-				 * no upper limits 
-				 */
-				else if (uo == 0) {
-					if ((ll == EQ && octcmp(op, lo) >= 0)
-					    || (ll = GT && octcmp(op, lo) > 0))
-						r = 1;
-				}
-				/*
-				 * no lower limits 
-				 */
-				else if (lo == 0) {
-					if ((ul == EQ && octcmp(op, uo) <= 0)
-					    || (ul = LT && octcmp(op, uo) < 0))
-						r = 1;
-				}
-				/*
-				 * upper and lower limits 
-				 */
-				else {
-					if (((ll == EQ && octcmp(op, lo) >= 0)
-					     || (ll = GT
-						 && octcmp(op, lo) > 0))
-					    &&
-					    ((ul == EQ && octcmp(op, uo) <= 0)
-					     || (ul = LT
-						 && octcmp(op, uo) < 0)))
-						r = 1;
-				}
-				break;
-
-			case SPOC_IPV4:
-				if (is_ipv4(op, &ia) != SPOCP_SUCCESS)
-					break;
-				/*
-				 * MISSING CODE 
-				 */
-				break;
-
-#ifdef USE_IPV6
-			case SPOC_IPV6:
-				if (is_ipv6(op, &i6a) != SPOCP_SUCCESS)
-					break;
-				/*
-				 * MISSING CODE 
-				 */
-				break;
-#endif
-			}
-
-			if (r)
-				pa = varr_junc_add(pa, arr[i]->next);
-		}
-	}
-
-	return pa;
-}

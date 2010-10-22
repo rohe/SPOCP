@@ -1,6 +1,8 @@
 #ifndef __SPOCPCLI__
 #define __SPOCPCLI__
 
+#include <config.h>
+
 #include <unistd.h>
 #include <stdio.h>
 

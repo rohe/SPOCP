@@ -24,6 +24,7 @@
 #include <plugin.h>
 #include <rvapi.h>
 #include <wrappers.h>
+#include <log.h>
 
 /*
  * ============================================================== 
@@ -197,21 +198,16 @@ ipnum_test(cmd_param_t * cpp, octet_t * blob)
 						r = SPOCP_SUCCESS;
 						break;
 					}
-					else if (argv->n == 2 || 
-					    (argv->n == 3 &&
-					    *(argv->arr[2]->val) == '\0' )) {
+					else if (argv->n == 2 || (argv->n == 3 &&
+                            *(argv->arr[2]->val) == '\0' )) {
 						r = SPOCP_SUCCESS;
 						break;
 					} else {
-						arr =
-						    line_split(cp, ',', '\\',
-							       0, 0, &ne);
+						arr = line_split(cp, ',', '\\', 0, 0, &ne);
 
 						for (j = 0; j <= ne; j++) {
-							sp = rmlt(arr[j]);
-							if (ipnumcmp
-							    (argv->arr[2],
-							     sp) == 0)
+							sp = rmlt(arr[j], 0);
+							if (ipnumcmp(argv->arr[2], sp) == 0)
 								break;
 						}
 

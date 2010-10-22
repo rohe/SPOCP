@@ -1,0 +1,375 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf290
+{\fonttbl\f0\froman\fcharset0 Times-Roman;\f1\fnil\fcharset0 LucidaGrande;\f2\fmodern\fcharset0 Courier;
+}
+{\colortbl;\red255\green255\blue255;\red17\green30\blue228;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid1\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}
+{\list\listtemplateid2\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}.}{\leveltext\leveltemplateid101\'02\'00.;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid2}
+{\list\listtemplateid3\listhybrid{\listlevel\levelnfc0\levelnfcn0\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{decimal\}.}{\leveltext\leveltemplateid201\'02\'00.;}{\levelnumbers\'01;}\fi-360\li720\lin720 }{\listname ;}\listid3}
+{\list\listtemplateid4\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat1\levelspace360\levelindent0{\*\levelmarker \{disc\}}{\leveltext\leveltemplateid301\'01\uc0\u8226 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid4}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}{\listoverride\listid2\listoverridecount0\ls2}{\listoverride\listid3\listoverridecount0\ls3}{\listoverride\listid4\listoverridecount0\ls4}}
+{\info
+{\title Boundary conditions}}\vieww15120\viewh13780\viewkind0
+\deftab720
+{\*\background {\shp{\*\shpinst\shpleft0\shptop0\shpright0\shpbottom0\shpfhdr0\shpbxmargin\shpbymargin\shpwr0\shpwrk0\shpfblwtxt1\shpz0\shplid1025{\sp{\sn shapeType}{\sv 1}}{\sp{\sn fFlipH}{\sv 0}}{\sp{\sn fFlipV}{\sv 0}}{\sp{\sn fillColor}{\sv 0}}{\sp{\sn fFilled}{\sv 1}}{\sp{\sn lineWidth}{\sv 0}}{\sp{\sn fLine}{\sv 0}}{\sp{\sn bWMode}{\sv 9}}{\sp{\sn fBackground}{\sv 1}}}}}
+\pard\pardeftab720\sa320\ql\qnatural
+
+\f0\b\fs48 \cf0 Boundary conditions\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 Document Status: Project document, last updated 2004-11-19
+\f1 \uc0\u8232 
+\f0 Authors: Roland Hedberg and Torbj\'f6rn Wiberg\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 Content\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\ql\qnatural
+\ls1\ilvl0
+\b0\fs24 \cf2 {\listtext	\'95	}\ul 2. The flatfile boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 3. The time boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 4. The gdbm boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 5. The ldapset boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 6. The ipnum boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 7. The lastlogin boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 8. The mail address boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 9. The RBL boundary condition\cf0 \ulnone  \
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 10. The strmatch boundary condition\cf0 \ulnone  \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\ql\qnatural
+\ls1\ilvl0\cf2 {\listtext	\'95	}\ul 11. The difftime boundary condition\cf0 \ulnone  \
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 1. The general boundary condition format\
+\pard\pardeftab720\sa240
+
+\b0\fs24 \cf0 boundary-condition = type \'93;\'94 *unitsel \'93;\'94 typespecific\
+Complete specification in the {\field{\*\fldinst{HYPERLINK "file:///Users/rolandh/code/spocp/doc/adminguide.html#rulefile"}}{\fldrslt \cf2 \ul \ulc2 rulefile format definition}}.\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 2. The flat file boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 Building on the definition in 2.5, this boundary condition is described by:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   type         = "flatfile"\
+  typespecific = file [":" keyword [":" value *( "," value )]]\
+  file         = utf8string\
+  keyword      = utf8string      ; keywords are not allowed to start with a '#' se below\
+  value        = utf8string\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Further the format of the flat file has to adher to the following format\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   line     = (data / comment) CR\
+  comment  = '#' whatever\
+  whatever = utf8string\
+  data     = keyword ":" *SP value *( *SP "," *SP value ) *SP\
+  SP       = %x20 / %x09         ; SPACE or HTAB\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Three cases can appear:\
+\pard\pardeftab720\ql\qnatural
+\cf0 Only file is specified\
+If the file exists and can be opened for reading, the reference will evaluate to 
+\i true
+\i0 . If the file does not exist or if it can not be opened for reading, the reference will evaluate to 
+\i false
+\i0 .\
+File and keyword are specified\
+If the file contains the specified keyword, the reference will evaluate to 
+\i true
+\i0 , if not it will evaluate to 
+\i false
+\i0 \
+File, keyword and one or more values are specified\
+If the file contains the keyword and if every value specified in the reference also appears as values for that keyword in the file then the reference will evaluate to 
+\i true
+\i0  otherwise it will evaluate to 
+\i false
+\i0 .\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 3 The time boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 This boundary condition can be used when a rule only shall be valid for a limited time, or at recurring intervals.\
+The ABNF of the reference:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   type         = "time"\
+  typespecific = [start] [";" [end] [";" days [";" starttime [";" endtime]]]]\
+  start        = full-date                   ; as specified in {\field{\*\fldinst{HYPERLINK "file:///Users/rolandh/code/spocp/doc/into.html#2_2"}}{\fldrslt \cf2 \ul \ulc2 Intro to S-expressions}}\
+  end          = date\
+  days         = ["0"]["1"]["2"]["3"]["4"]["5"]["6"]   ; Sun = 0, Mon = 1, ...\
+  starttime    = partial-time                ; as specified in {\field{\*\fldinst{HYPERLINK "file:///Users/rolandh/code/spocp/doc/into.html#2_2"}}{\fldrslt \cf2 \ul \ulc2 Intro to S-expressions}}\
+  endtime      = partial-time\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Example:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   time:2002-08-01_00:00:00;;12345;08:00:00;17:00:00\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Which means; starting at 00:00:00 on the 1th of August 2002, every monday, Tuesday, Wednesday, Thursday and Friday between 08:00:00 and 17:00:00 inclusive this expression will evaluate to 
+\i true
+\i0 .\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 4 The GDBM boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 The workings of the GDBM boundary condition is very similar to flat file, the ABNF is exactly the same except for 'type'.\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   type         = "gdbm"\
+  typespecific = file [":" keyword [":" value *( "," value )]]\
+  file         = utf8string\
+  keyword      = utf8string      ; keywords are not allowed to start with a '#' see below\
+  value        = utf8string\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 The format of the datum in the GDBM file is supposed to be 'value *("," value)'.\
+And the semantics are also very similar to flat file, three cases can appear:\
+\pard\pardeftab720\ql\qnatural
+\cf0 Only the file is specified\
+If the gdbm file exists and is can be opened for reading, the reference will evaluate to 
+\i true
+\i0 . If the file does not exist or if it can not be opened for reading, the reference will evaluate to 
+\i false
+\i0 .\
+File and keyword are specified\
+If the gdbm file contains the specified keyword, the reference will evaluate to 
+\i true
+\i0 . If not, it will evaluate to 
+\i false
+\i0 \
+File, keyword and one or more values are specified\
+If the gdbm file contains the keyword and if every value specified in the reference also appear as a value for that keyword in the gdbm file, the reference will evaluate to 
+\i true
+\i0 . Otherwise it will evaluate to 
+\i false
+\i0 .\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 5 The LDAPset boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 If you have lots of information about objects in an LDAP directory this should be a very useful tool for you.\
+ABNF for the LDAPset boundary condition:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   type         = "ldapset"\
+  typespecific =  ldapserver *10[";" DN ] ";" vset\
+  ldapserver   =  < login from Section 5 of RFC1738 [RFC1738] >\
+  thisDN       =  dn\
+  userDN       =  dn\
+  dn           =  < distinguishedName from Section 3 of RFC2253 [RFC2253] >\
+  vset         =  dnvset / valvset\
+  dnvset       =  base\
+                  / "(" dnvset ")"\
+                  / "\{" dnvset ext attribute "\}"\
+                  / dnvset SP conj SP dnvset\
+                  / dnvset ext dnattribute-list\
+                  / "<" dn ">"\
+                  / "\\" d                           ; the number refers back to the DNs in\
+                                                    ; the DN list, 0 is the first\
+   valvset      =  '"' string '"'\
+                  / "(" valvset ")"\
+                  / dnvset ext attribute-list\
+                  / valvset SP conj SP valvset\
+   conj        =  "&" / "|"\
+   ext         =  "/" / "%" / "$"                    ; base, onelevel resp. subtree search\
+   a           =  %x41-5A / %x61-7A                  ; lower and upper case ASCII\
+   d           =  %x30-39\
+   k           =  a / d / "-" / ";"\
+   anhstring   =  1*k\
+   attribute-list = attribute *[ "," attribute ]\
+   dnattribute-list = dnattribute *[ "," dnattribute ]\
+   attribute   =  a [ anhstring]                     ; as defined by [RFC2252]\
+   dnattribute =  < any attribute name which have attributetype\
+                  distinguishedName (1.3.6.1.4.1.1466.115.121.1.12)\
+                  like member, owner, roleOccupant, seeAlso, modifiersName, creatorsName,...>\
+   SP          =  %x20\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Example:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0 <cn=Group,dc=minorg,dc=se>/member\
+\pard\pardeftab720\ql\qnatural
+
+\f0 \cf0 The set of DNs that appear as attribute values of the member attribute in the entry with the DN "cn=Group,dc=minorg,dc=se". This is then really a check whether the attribute member in "cn=Group, dc=minorg,dc=se" has any values\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0 \{\\0$mail & "sven.svensson@minorg.se"\}/title & "mib"\
+\pard\pardeftab720\ql\qnatural
+
+\f0 \cf0 Can be thought of as being evaluated in two steps:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\ql\qnatural
+\ls2\ilvl0\cf0 {\listtext	1.	}Find all the objects in the subtree starting at whatever is given as the first search base DN in the LDAP boundary condition and that has "sven.svensson@minorg.se" as an attribute value for the attribute "mail". \
+{\listtext	2.	}Among that set of objects, find the object that has "mib" as an attribute value for the attribute "title". \
+\pard\pardeftab720\ql\qnatural
+\cf0 If this was put into a LDAP filter it would probably be "(&(mail=sven.svensson@minorg.se)(title=mib))"\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0 \{\\0$mail & "sven.svensson@minorg.se"\}/title,personalTitle & "mib"\
+\pard\pardeftab720\ql\qnatural
+
+\f0 \cf0 Can be thought of as being evaluated in two steps:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\ql\qnatural
+\ls3\ilvl0\cf0 {\listtext	1.	}Find all the objects in the subtree starting at whatever is given as the first searchbase DN in the LDAP boundary condition and that has "sven.svensson@minorg.se" as an attribute value for the attribute "mail". \
+{\listtext	2.	}Among that set of objects, find the object that has "mib" as an attribute value for either the attributes "title" or "personalTitle". \
+\pard\pardeftab720\ql\qnatural
+\cf0 If this was put into a LDAP filter it would probably be "(&(mail=sven.svensson@minorg.se)(|(title=mib)(personalTitle=mib)))"\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0 <cn=Group,dc=minorg,dc=se>/member & \{\\0%mail & "tvw@minorg.se"\}\
+\pard\pardeftab720\ql\qnatural
+
+\f0 \cf0 Find any object which has the attribute value "tvw@minorg.se" for the "mail" attribute, using a onelevel search below the DN provided as the first searchbase DN in the LDAP boundary condition. And then check whether any of the DNs of these objects appear as attribute values for the attribute member in the object "cn=Group,dc=minorg,dc=se".\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 6. The ipnum boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 A special case of the flatfile boundary condition. In this case the values connected to a key in the flatfile is supposed to be single ipaddresses or groups of ipaddresses. Presently only ipv4\
+The fileformat must be:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0    line    = comment / spec\
+   comment = '#' whatever\
+   spec    = keyword ':' value *( ',' value )\
+   value   = ipnum "/" netpart\
+   keyword = utf8string\
+   netpart = 1*2dig ; min 1 max 32\
+   ipnum   = oct "." oct "." oct "." oct\
+   oct     = 1*3dig ; min 0 max 255\
+   dig     = %x30-39\
+\
+   for instance\
+\
+   umu:130.239.0.0/16,193.193.7.0/24\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Format of ipnum boundary condition is:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   type         = "ipnum"\
+  typespecific = file ":" keyword ":" ipnum\
+  file         = utf8string\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 This boundary condition will return TRUE if and only if the file exists, the keyword is present in the file and the ip address in the query matches at least one of the net specifications given as values to the keyword.\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 7. The lastlogin boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 In order to allow users to user mailrelays when travelling or from there homes, some organizations have used the method that if a user first authenticates using POP or IMAP then within a certain timelimit ( 20-30 minutes ) that user can use the mailrelay. This is a simple backend that knows what the logfile for one popular POP server looks like. It can linearly search this file for the last entry for a specicic user and match that timestamp agains the present to see if it's within the stipulated time window.\
+The fileformat is:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0 Jul 25 21:53:25 bassett pop3d: Connection, ip=[::ffff:213.67.231.206]\
+Jul 25 21:53:25 bassett pop3d: LOGIN, user=sour, ip=[::ffff:213.67.231.206]\
+Jul 25 21:53:27 bassett pop3d: LOGOUT, user=sour, ip=[::ffff:213.67.231.206], top=0, retr=6188\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 And the boundary condition format is:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0 Will return TRUE if it can find a login in the logs that appeared less\
+than 'since' ago for the\
+specified user.\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\f0\b\fs36 \cf0 8. The mail address boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 Used when you want to match a email address against a number of mail address or mail domain specifications. 
+\f1 \uc0\u8232 
+\f0 File format is :\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0    comment = '#' whatever CR\
+   line    = addr-spec / xdomain CR\
+   xdomain = ( "." / "@" ) domain\
+..\
+   addr-spec and domain as defined by RFC 822\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Boundary condition format:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0  \
+  type     = "addrmatch"\
+  typespec = file ":" addr-spec\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Will do a trailing substring match of the specifications found in the file against the address specified in the boundary condition. Will return TRUE if anyone matched.\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 9. The RBL boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 The Realtime Blackhole List system works by having the ipaddress of the blocked machines stored as A records in DNS using a specific syntax. The names stored in DNS is constructed by reverting the order of the parts in ip address ( 130.239.16.3 becomes 3.16.239.130 ) and then adding a top domain part ( blackholes.mail-abuse.org ). So if 130.239.16.3 where to be RBL blacklisted there would be a A record in the DNS with the name 3.16.239.130.blackholes.mail-abuse.org .\
+If you want to blacklist machines from using services and you are able to add A records to a DNS server you can use the same mechanism but with your defined top domain part.\
+The format of the boundary condition:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   type     = "rbl"\
+  typespec = domain ":" ipnum\
+  ipnum   = oct "." oct "." oct "." oct\
+  oct     = 1*3dig ; min 0 max 255\
+  dig     = %x30-39\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 Will return TRUE if there is a A record in DNS with a name constructed from 'domain' and 'ipnum' as described above.\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\b\fs36 \cf0 10. The strmatch boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 Compares two strings The format of the boundary conditions:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0   type     = "strmatch"\
+  typespec = string:string[:offset[:num]]\
+  string   = UTF-8 string\
+  offset   = number\
+  num      = number\
+  number   = 1*dig\
+  dig      = %x30-39\
+\pard\pardeftab720\sa280\ql\qnatural
+
+\f0\b\fs36 \cf0 10. The difftime boundary condition\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\b0\fs24 \cf0 Checks the present time agains some given time. There are four different conditions that can be checked:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\ql\qnatural
+\ls4\ilvl0\cf0 {\listtext	\'95	}If the present time is after a specifed time and if the different exceeds a certain value. \
+{\listtext	\'95	}If the present time is after a specifed time and if the different is less than a certain value. \
+{\listtext	\'95	}If the present time is before a specifed time and if the different exceeds a certain value. \
+\pard\tx220\tx720\pardeftab720\li720\fi-720\sa240\ql\qnatural
+\ls4\ilvl0\cf0 {\listtext	\'95	}If the present time is before a specifed time and if the different is less than a certain value. \
+\pard\pardeftab720\sa240\ql\qnatural
+\cf0 The format of the boundary condition is:\
+\pard\pardeftab720\ql\qnatural
+
+\f2 \cf0 diffspec = diff ";" date ";" when how_much \
+date     = YYMMDDTHH:MM:SS\
+diff     = YYMMDD_HH:MM:SS\
+when     = before / after\
+before   = "-"\
+after    = "+"\
+how_much = less / more\
+less     = "-"\
+more     = "+"\
+\pard\pardeftab720\sa240\ql\qnatural
+
+\f0 \cf0 For instance,
+\f1 \uc0\u8232 
+\f0 000007_00:00:00;2003-10-09T08:00:00;-+
+\f1 \uc0\u8232 
+\f0 is TRUE if now is before 08:00:00 the 2003-09-09 and if now is more then 7 days before 08:00:00 the 2003-09-09.\
+}

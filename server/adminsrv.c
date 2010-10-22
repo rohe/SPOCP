@@ -18,7 +18,7 @@ typedef struct _rule {
 } rule_t ;
 
 srv_t	srv;
-dbcmd_t	*dbc = 0;
+dbackdef_t	*dbc = 0;
 
 int 	debug = 0;
 int	extended = 0;
@@ -55,18 +55,18 @@ rule_free( rule_t *r )
 static int
 as_read_rules( char *file, rule_t **rule)
 {
-	FILE           *fp;
-	char           *sp, *tmp;
-	int             n = 0, f = 0;
-	octet_t         oct, *op;
-	spocp_result_t  rc = SPOCP_SUCCESS;
-	spocp_charbuf_t	buf;
-	spocp_chunk_t	*chunk = 0, *ck;
+	FILE                *fp;
+	char                *sp, *tmp;
+	int                 n = 0, f = 0;
+	octet_t             oct, *op;
+	spocp_result_t      rc = SPOCP_SUCCESS;
+	spocp_charbuf_t     buf;
+	spocp_chunk_t       *chunk = 0, *ck;
 	spocp_chunkwrap_t	*chunkwrap;
-	spocp_ruledef_t	rdef;
-	rule_t		*top = 0, *nr;
-	element_t	*ep;
-	bcdef_t		*bcd;
+	spocp_ruledef_t     rdef;
+	rule_t              *top = 0, *nr;
+	element_t           *ep;
+	bcdef_t             *bcd;
 				
 
 	if ((fp = fopen(file, "r")) == 0) {
@@ -142,7 +142,7 @@ as_read_rules( char *file, rule_t **rule)
 
 				op = chunk2sexp( rdef.rule ) ;
 				octln( &loc, op);
-				rc = element_get(&loc, &ep);
+				rc = get_element(&loc, &ep);
 
 				if (rc != SPOCP_SUCCESS) {
 					chunk_free( chunk );
@@ -157,7 +157,8 @@ as_read_rules( char *file, rule_t **rule)
 			
 			if( rdef.bcond) {
 				op = chunk2sexp( rdef.bcond ) ;
-				bcd = bcdef_get(srv.root->db, srv.plugin, dbc, op, &rc);
+                /* This is wrong !!! */
+				bcd = bcdef_get(&(srv.root->bcd), srv.plugin, dbc, op, &rc);
 				if (bcd == NULL && rc != SPOCP_SUCCESS) {
 					chunk_free( chunk );
 					rule_free( nr );
@@ -195,7 +196,7 @@ as_read_rules( char *file, rule_t **rule)
 			else 
 				val = chunk->next->next->val ;
 
-			if (bcdef_add(srv.root->db, srv.plugin, dbc, key, val) == 0 )
+			if (bcdef_add(&(srv.root->bcd), srv.plugin, dbc, key, val) == 0 )
 				rc = SPOCP_LOCAL_ERROR;
 
 			if (to) oct_free( to );
@@ -330,7 +331,7 @@ int main( int argc, char **argv )
 		}
 
 		octln( &loc, op);
-		if(( rc = element_get(&loc, &ep)) == SPOCP_SUCCESS) {
+		if(( rc = get_element(&loc, &ep)) == SPOCP_SUCCESS) {
 			for ( r = top, m = 0, c = 0 ; r ; r = r->next, c++ ) { 
 				if (extended) {
 					*ext->val = '\0';
@@ -339,24 +340,18 @@ int main( int argc, char **argv )
 	
 				if ( elementcmp( ep, r->ep, ext ) == 0 ) {
 					if (runbc && r->bcond ) {
-						sr = bcexp_eval(ep, r->ep,
-						    r->bcond->exp, &info);
+						sr = bcexp_eval(ep, r->ep, r->bcond->exp, &info);
 						if (sr==SPOCP_SUCCESS)
-							sprintf(answ,
-							    ", bcond: OK");
+							sprintf(answ, ", bcond: OK");
 						else 
-							sprintf(answ,
-							    ", bcond: DENIED (%d)",
-							    (int) sr);
+							sprintf(answ, ", bcond: DENIED (%d)", (int) sr);
 					}
-					printf( "(%d) Matched rule: %s%s\n",
-					    c, r->strrule, answ);
+					printf( "(%d) Matched rule: %s%s\n", c, r->strrule, answ);
 					m++;
 				}
 				else if( extended ) {
 					if (oct2strcpy( ext, str, 1024, '%' ) >0)
-						printf("(%d)     [%s] of [%s]\n",
-						   c, str, r->strrule);
+						printf("(%d)     [%s] of [%s]\n", c, str, r->strrule);
 				}
 			}
 

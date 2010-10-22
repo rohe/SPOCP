@@ -20,6 +20,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <log.h>
 #include "spocpcli.h"
 
 /*================================================================================*/

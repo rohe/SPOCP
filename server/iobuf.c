@@ -2,8 +2,7 @@
 /***************************************************************************
                            iobuf.c  -  description
                              -------------------
-    begin                : Sat Oct 12 2002
-    copyright            : (C) 2002 by Umeï¿½ University, Sweden
+    copyright            : (C) 2010 by Umeå University, Sweden
     email                : roland@catalogix.se
 
    COPYING RESTRICTIONS APPLY.  See COPYRIGHT File in top level directory
@@ -12,8 +11,12 @@
  **************************************************************************/
 
 #include "locl.h"
-RCSID("$Id$");
 
+/*!
+ * \brief Creates a iobuf struct
+ * \param size The size of the character buffer of the io struct
+ * \return A newly created spocp_iobuf_t struct.
+ */
 spocp_iobuf_t  *
 iobuf_new(size_t size)
 {
@@ -21,7 +24,7 @@ iobuf_new(size_t size)
 
 	io = (spocp_iobuf_t *) Calloc(1, sizeof(spocp_iobuf_t));
 
-	io->p = io->w = io->r = io->buf = (char *) Calloc(size, sizeof(char));
+	io->w = io->r = io->buf = (char *) Calloc(size, sizeof(char));
 
 	io->left = size - 1;	/* leave place for a terminating '\0' */
 	io->bsize = size;
@@ -45,92 +48,31 @@ iobuf_free( spocp_iobuf_t *io)
 	}
 }
 
-spocp_result_t
-iobuf_insert(spocp_iobuf_t * io, char *where, char *src, int srclen)
-{
-	size_t          dlen;
-	spocp_result_t	rc = SPOCP_SUCCESS ;
-
-	pthread_mutex_lock(&io->lock);
-
-        if (io->left < (unsigned int) srclen )
-		if((rc = iobuf_resize( io, srclen, 0 )) != SPOCP_SUCCESS) 
-		    goto unlock;
-
-	/* the number of bytes to move */
-	dlen = io->w - where;
-
-	memmove(where + srclen, where, dlen);
-	memcpy(where, src, srclen);
-
-	io->w += srclen;
-	io->left -= srclen ;
-
- unlock:
-	pthread_mutex_unlock(&io->lock);
-
-	return rc ;
-}
-
-spocp_result_t
-iobuf_add_len_tag( spocp_iobuf_t *io )
-{
-	unsigned int	len ;
-	char 		ldef[16];
-	int 		nr;
-	spocp_result_t	sr;
-
-	if (io == 0)
-		return SPOCP_SUCCESS;
-
-	len = io->w - io->p ;
-	nr = snprintf(ldef, 16, "%u:", len);
-
-	sr = iobuf_insert(io, io->p, ldef, nr);
-	if( sr == SPOCP_SUCCESS) 
-		io->p = io->w;
-
-	return sr;
-}
+/*!
+ * \brief Shifts what's unread to the beginning of the buffer.
+ * \param io Pointer to the iobuf struct
+ */
 
 void
 iobuf_shift(spocp_iobuf_t * io)
 {
-	int             len, last;
-
-	/*
-	 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Shifting buffer b:%p r:%p w:%p
-	 * left:%d bsize:%d", io->buf, io->r, io->w, io->left, io->bsize ) ; 
-	 */
+	int             len;
 
 	pthread_mutex_lock(&io->lock);
 
+    /* why do I need this ?? */
 	while (io->r <= io->w && WHITESPACE(*io->r))
 		io->r++;
 
-/*
-	traceLog(LOG_DEBUG,"is10 [buf]%p [p]%p [r]%p [w]%p [left]%d",
-	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog(LOG_DEBUG, "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
-	    io->w - io->buf, io->left );
-*/
-
 	if (io->r >= io->w) {	/* nothing in buffer */
-		io->p = io->r = io->w = io->buf;
+		io->r = io->w = io->buf;
 		io->left = io->bsize - 1;
 		*io->w = 0;
-		/*
-		 * traceLog(LOG_DEBUG, "DONE Shifting buffer b:%p r:%p w:%p left:%d",
-		 * io->buf, io->r, io->w, io->left ) ; 
-		 */
-	} else {		/* something in the buffer, shift it to the
-				 * front */
+	} else {		/* something in the buffer, shift it to the front */
 		len = io->w - io->r;
-		last = io->w - io->p;
 		memmove(io->buf, io->r, len);
 		io->r = io->buf;
 		io->w = io->buf + len;
-		io->p = io->buf + last;
 		io->left = io->bsize - len - 1;
 		*io->w = '\0';
 	}
@@ -139,13 +81,6 @@ iobuf_shift(spocp_iobuf_t * io)
 		traceLog(LOG_DEBUG,"DONE Shifting buffer b:%p r:%p w:%p left:%d",
 		    io->buf, io->r, io->w, io->left);
 
-/*
-	traceLog(LOG_DEBUG,"is11 [buf]%p [p]%p [r]%p [w]%p [left]%d",
-	    io->buf, io->p, io->r, io->w, io->left);
-	traceLog(LOG_DEBUG, "\t[%d][%d][%d][%d]", io->r - io->buf, io->w - io->r,
-	    io->w - io->buf, io->left );
-*/
-
 	pthread_mutex_unlock(&io->lock);
 
 }
@@ -153,18 +88,14 @@ iobuf_shift(spocp_iobuf_t * io)
 spocp_result_t
 iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 {
-	int             nr, nw, np, ret;
+	int             nr, nw;
 	char           *tmp;
 
-	if (io == 0) {
-		ret = SPOCP_OPERATIONSERROR;
-		goto dontunlock;
-	}
+	if (io == 0)
+		return SPOCP_OPERATIONSERROR;
 
-	if (io->bsize == SPOCP_MAXBUF) {
-		ret = SPOCP_BUF_OVERFLOW;
-		goto dontunlock;
-	}
+	if (io->bsize == SPOCP_MAXBUF)
+		return SPOCP_BUF_OVERFLOW;
 
 	if (lock)
 		pthread_mutex_lock(&io->lock);
@@ -172,10 +103,8 @@ iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 	nr = io->bsize;
 
 	if (increase) {
-		if (io->bsize + increase > SPOCP_MAXBUF) {
-			ret = SPOCP_BUF_OVERFLOW;
-			goto unlock;
-		}
+		if (io->bsize + increase > SPOCP_MAXBUF)
+			return SPOCP_BUF_OVERFLOW;
 		else if (increase < SPOCP_IOBUFSIZE)
 			io->bsize += SPOCP_IOBUFSIZE;
 		else
@@ -194,7 +123,6 @@ iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 
 	nr = io->r - io->buf;
 	nw = io->w - io->buf;
-	np = io->p - io->buf;
 
 	tmp = Realloc(io->buf, io->bsize);
 
@@ -203,92 +131,66 @@ iobuf_resize(spocp_iobuf_t * io, int increase, int lock)
 	*io->end = '\0';
 	io->r = io->buf + nr;
 	io->w = io->buf + nw;
-	io->p = io->buf + np;
 
-	ret = SPOCP_SUCCESS;
-	
-	unlock:
 	if (lock)
 		pthread_mutex_unlock(&io->lock);
 
-	dontunlock:
-	return ret;
+	return SPOCP_SUCCESS;
+}
+
+static spocp_result_t
+_add(spocp_iobuf_t * io, char *s, int n)
+{
+	spocp_result_t  rc = SPOCP_SUCCESS;
+
+	pthread_mutex_lock(&io->lock);
+    
+    /*
+     * are the place enough ? If not make some 
+     */
+    if ((int) io->left < n) {
+        if ((rc = iobuf_resize(io, n - io->left, 0)) != SPOCP_SUCCESS) {
+            pthread_mutex_unlock(&io->lock);
+            return rc;
+        }
+    }
+
+    memcpy(io->w, s, n);
+
+    io->w += n;
+    *io->w = '\0';
+    io->left -= n;
+
+
+    pthread_mutex_unlock(&io->lock);
+    return rc;
 }
 
 spocp_result_t
 iobuf_add(spocp_iobuf_t * io, char *s)
 {
-	spocp_result_t  rc = SPOCP_SUCCESS;
-	int             n;
-
 	if (s == 0 || *s == 0)
 		return SPOCP_SUCCESS;	/* no error */
 
 	if (io == 0)
-		return SPOCP_SUCCESS; /* Eh ? */
+		return SPOCP_SUCCESS;   /* Eh ? */
 
-	n = strlen(s);
-
-	/*
-	 * LOG( SPOCP_DEBUG ) traceLog(LOG_DEBUG, "Add to IObuf \"%s\" %d/%d", s, n,
-	 * io->left) ; 
-	 */
-
-	pthread_mutex_lock(&io->lock);
-
-	/*
-	 * are the place enough ? If not make some 
-	 */
-	if ((int) io->left < n)
-		if ((rc = iobuf_resize(io, n - io->left, 0)) != SPOCP_SUCCESS)
-		    goto unlock;
-
-	memcpy(io->w, s, n);
-
-	io->w += n;
-	*io->w = '\0';
-	io->left -= n;
-
- unlock:
-
-	pthread_mutex_unlock(&io->lock);
-
-	return rc;
+    return _add(io, s, strlen(s));
 }
 
 spocp_result_t
 iobuf_addn(spocp_iobuf_t * io, char *s, size_t n)
 {
-	spocp_result_t  rc = SPOCP_SUCCESS;
-
 	if (s == 0 || *s == 0)
 		return SPOCP_SUCCESS;	/* no error */
 
-	pthread_mutex_lock(&io->lock);
-
-	/*
-	 * are the place enough ? If not make some 
-	 */
-	if ( io->left < n)
-		if ((rc = iobuf_resize(io, n - io->left, 0)) != SPOCP_SUCCESS)
-		    goto unlock;
-
-	memcpy(io->w, s, n);
-
-	io->w += n;
-	*io->w = '\0';
-	io->left -= n;
-
- unlock:
-	pthread_mutex_unlock(&io->lock);
-	return rc;
+    return _add(io, s, n);
 }
 
 spocp_result_t
 iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 {
-	spocp_result_t  rc = SPOCP_SUCCESS;
-	size_t          l, lf;
+	spocp_result_t  rc;
 	char            lenfield[8];
 
 	if (s == 0 || s->len == 0)
@@ -297,52 +199,39 @@ iobuf_add_octet(spocp_iobuf_t * io, octet_t * s)
 	if (io == 0)
 		return SPOCP_SUCCESS; /* happens with native_server */ 
 
-	/*
-	 * the complete length of the bytestring, with length field 
-	 */
-	lf = DIGITS(s->len) + 1;
-	l = s->len + lf;
-
-	pthread_mutex_lock(&io->lock);
-
-	/*
-	 * are the place enough ? If not make some 
-	 */
-	if (io->left < l)
-		if ((rc = iobuf_resize(io, l - io->left, 0)) != SPOCP_SUCCESS)
-		    goto unlock;
-
 	snprintf(lenfield, 8, "%u:", (unsigned int) s->len);
 
-	/* Flawfinder: ignore */
-	strcpy(io->w, lenfield);
-	io->w += lf;
-
-	memcpy(io->w, s->val, s->len);
-	io->w += s->len;
-
-	*io->w = '\0';
-	io->left -= l;
-
-
- unlock:
-	pthread_mutex_unlock(&io->lock);
-
-	return rc;
+    if ((rc = _add(io, lenfield, strlen(lenfield))) != SPOCP_SUCCESS)
+        return rc;
+    
+    return _add(io, s->val, s->len);
 }
+
+/*!
+ * \brief resets the iobuf buffer
+ * \param Pointer to a iobuf struct
+ */
 
 void
 iobuf_flush(spocp_iobuf_t * io)
 {
 	pthread_mutex_lock(&io->lock);
 
-	io->p = io->r = io->w = io->buf;
+	io->r = io->w = io->buf;
 	*io->w = 0;
 	io->left = io->bsize - 1;
 
 	pthread_mutex_unlock(&io->lock);
 
 }
+
+/*!
+ * \brief returns a value designating whether there is something in the
+ *  iobuf or not.
+ * \param io Pointer to the iobuf struct.
+ * \return -1 if there is not iobuf struct, 0 if the buffer is empty and
+ *  a value bigger than 0 if there is something in the buffer.
+ */
 
 int
 iobuf_content(spocp_iobuf_t * io)
@@ -386,7 +275,6 @@ iobuf_info( spocp_iobuf_t *io )
 		traceLog(LOG_DEBUG,"buf: %p", io->buf);
 		traceLog(LOG_DEBUG,"r: %p", io->r);
 		traceLog(LOG_DEBUG,"w: %p", io->w);
-		traceLog(LOG_DEBUG,"p: %p", io->p);
 		traceLog(LOG_DEBUG,"end: %p", io->end);
 	}
 	else {

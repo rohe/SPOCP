@@ -28,6 +28,7 @@
 #include <plugin.h>
 #include <rvapi.h>
 #include <wrappers.h>
+#include <log.h>
 
 /*
  * ============================================================= 
@@ -195,9 +196,7 @@ lastlogin_test(cmd_param_t * cpp, octet_t * blob)
 
 						strncpy(date + 5, line, 16);
 						date[21] = 0;
-						strptime(date,
-							 "%Y %b %d %H:%M:%S",
-							 &tm);
+						strptime(date, "%Y %b %d %H:%M:%S",&tm);
 						pt = mktime(&tm);
 
 						if (t - pt > since)
@@ -205,16 +204,13 @@ lastlogin_test(cmd_param_t * cpp, octet_t * blob)
 
 						cp = strstr(line, "ip=[");
 						cp += 4;
-						if (strncmp(cp, "::ffff:", 7)
-						    == 0)
+						if (strncmp(cp, "::ffff:", 7) == 0)
 							cp += 7;
 
-						sp = find_balancing(cp, '[',
-								    ']');
+						sp = find_balancing(cp, '[', ']');
 						*sp = 0;
 
-						if (str == 0
-						    || strcmp(cp, str) == 0) {
+						if (str == 0 || strcmp(cp, str) == 0) {
 							r = SPOCP_SUCCESS;
 							break;
 						}

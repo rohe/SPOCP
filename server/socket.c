@@ -12,10 +12,10 @@
  ***************************************************************************/
 
 #include "locl.h"
+#include "srv.h"
 
 int             spocp_stream_socket(int lport);
 int             spocp_unix_domain_socket(char *uds);
-void            daemon_init(char *procname, int facility);
 
 typedef struct sockaddr SA;
 
@@ -157,7 +157,7 @@ spocp_unix_domain_socket(char *uds)
  */
 
 void
-daemon_init(char *procname, int facility)
+daemon_init()
 {
 	/*
 	 * int i ; 

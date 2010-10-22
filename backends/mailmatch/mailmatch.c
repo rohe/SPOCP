@@ -20,6 +20,7 @@
 #include <be.h>
 #include <plugin.h>
 #include <rvapi.h>
+#include <log.h>
 
 befunc          addrmatch_test;
 

@@ -24,12 +24,12 @@ static          spocp_result_t
 rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 {
 	spocp_result_t  res = SPOCP_DENIED, sum = SPOCP_DENIED;
-	ruleset_t      *trs;
+	ruleset_t       *trs;
 	comparam_t      comp;
-	octarr_t	*oa=0;
-	resset_t	*xrs=0;
-	int		all = scope&0xF0 ;
-	checked_t	*cr=0;
+	octarr_t        *oa=0;
+	resset_t        *xrs=0;
+	int             all = scope&0xF0 ;
+	checked_t       *cr=0;
 
 	memset(&comp,0,sizeof(comparam_t));
 
@@ -60,7 +60,7 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 				if(res == SPOCP_SUCCESS)
 					sum = res;
 					if(xrs)
-						*rset = resset_join(*rset, xrs);
+						*rset = resset_extend(*rset, xrs);
 
 				/* If I'm not interested in everything then
 				 * one is good enough */
@@ -82,12 +82,11 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 
 				res = allowed(rs->db->jp, &comp, rset);
 #ifdef AVLUS
-			/*DEBUG(SPOCP_DSRV)*/ if (rset) {
-				traceLog(LOG_DEBUG
-					,"BASE got %d and Result Set", res);
+			/*DEBUG(SPOCP_DSRV)*/ 
+            if (rset) {
+				traceLog(LOG_DEBUG, "BASE got %d and Result Set", res);
 				resset_print(*rset);
-				traceLog(LOG_DEBUG,"---------------------------");
-
+				traceLog(LOG_DEBUG, "-----------------------------");
 			}
 			else
 				traceLog(LOG_DEBUG,"No rset");
@@ -111,10 +110,8 @@ rec_allow(ruleset_t * rs, element_t * ep, int scope, resset_t **rset)
 				if (rs->db)
 					res = allowed(trs->db->jp, &comp, &xrs);
 				if(xrs)
-					*rset = resset_join(*rset, xrs);
+					*rset = resset_extend(*rset, xrs);
 			}
-			if ( *(comp.cr))
-				checked_free( *(comp.cr) );
 		}
 #ifdef AVLUS
 		/*DEBUG(SPOCP_DSRV)*/ if (rset) {
@@ -247,7 +244,7 @@ ss_del_db(ruleset_t * rs, int scope)
 /****************************************************************/
 
 static spocp_result_t
-rec_del(ruleset_t * rs, dbcmd_t * dbc, octet_t *uid, size_t * nr)
+rec_del(ruleset_t * rs, dbackdef_t * dbc, octet_t *uid, size_t * nr)
 {
 	ruleset_t      *trs;
 	db_t           *db;
@@ -291,7 +288,7 @@ rec_del(ruleset_t * rs, dbcmd_t * dbc, octet_t *uid, size_t * nr)
 }
 
 spocp_result_t
-ss_del_rule(ruleset_t * rs, dbcmd_t * dbc, octet_t * op, int scope)
+ss_del_rule(ruleset_t * rs, dbackdef_t * dbc, octet_t * op)
 {
 	size_t		n;
 	spocp_result_t	r;
@@ -319,45 +316,6 @@ ss_del_rule(ruleset_t * rs, dbcmd_t * dbc, octet_t * op, int scope)
 	return SPOCP_SUCCESS;
 }
 
-/*
- * --------------------------------------------------------------------------
- */
-
-/*
- * static octet_t **list_rules( db_t *db, octet_t *pattern, int *rc, int scope 
- * ) { if( pattern == 0 || pattern->len == 0 ) { return get_all_rules( db->jp, 
- * db->ri ); } else return get_matching_rules( db->jp, db->ri, pattern, rc ) ;
- * }
- * 
- * static octet_t ** rec_list_rules( ruleset_t *rs, octet_t *pattern,
- * spocp_req_info *sri, int *rc, int scope ) { octet_t **res = 0, **arr ;
- * ruleset_t *trs ;
- * 
- * switch( scope ) { case SUBTREE : for( trs = rs->down ; trs->left ; trs =
- * trs->left ) ;
- * 
- * for( ; trs && ! res ; trs = trs->right ) { arr = rec_list_rules( trs,
- * pattern, rc, scope ) ; res = join_octarr( res, arr ) ; }
- * 
- * case BASE : arr = list_rules( rs->db, pattern, rc, scope ) ; res =
- * join_octarr( res, arr ) ; break ;
- * 
- * case ONELEVEL : for( trs = rs->down ; trs->left ; trs = trs->left ) ;
- * 
- * for( ; trs && ! res ; trs = trs->right ) { arr = list_rules( trs->db,
- * pattern, rc, scope ) ; res = join_octarr( res, arr ) ; } break ; }
- * 
- * return res ; }
- * 
- * octet_t ** ss_list_rules( ruleset_t *rs, octet_t *pattern, spocp_req_info
- * *sri, int *rc, int scope ) { *rc = 1 ;
- * 
- * LOG( SPOCP_INFO ) traceLog(LOG_INFO, "List rules" ) ;
- * 
- * return rec_list_rules( rs, pattern, sri, rc, scope ) ;
- * 
- * } 
- */
 /*
  * --------------------------------------------------------------------------
  */

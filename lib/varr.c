@@ -1,5 +1,10 @@
+
+#include <syslog.h>
+
 #include <varr.h>
+#include <result.h>
 #include <wrappers.h>
+#include <log.h>
 
 /*
  * ---------------------------------------------------------------------- 
@@ -13,7 +18,7 @@ varr_new(size_t n)
 	j = (varr_t *) Malloc(sizeof(varr_t));
 	j->size = n;
 	j->arr = (void **) Calloc(n, sizeof(void *));
-        j->n = 0;
+    j->n = 0;
 
 	return j;
 }
@@ -66,8 +71,9 @@ varr_find(varr_t * va, void *v)
 void
 varr_rm_dup(varr_t * va, cmpfn *cf, ffunc *ff)
 {
-	void		*vp, *vr;
+	void            *vp, *vr;
 	unsigned int	i,j, restart;
+    spocp_result_t  rc;
 
 	if (va == 0 || va->n <= 1)
 		return;
@@ -78,18 +84,22 @@ varr_rm_dup(varr_t * va, cmpfn *cf, ffunc *ff)
 			vp = va->arr[i];
 
 			for ( j = i+1; j < va->n; j++) {
-				if ( cf(va->arr[j], vp) == 0) {
-					vr = va->arr[j];
-					va->n--;
-					for (; j < va->n ; j++)
-						va->arr[j] = va->arr[j+1];
-/*
-					traceLog(LOG_DEBUG, "Free[%d]: %p",j, vr);
-*/
-					ff( vr );
-					va->arr[j] = 0;
-					restart = 1;
-					break;
+				if ( cf(va->arr[j], vp, &rc) == 0) {
+                    if (rc == SPOCP_SUCCESS) {
+                        vr = va->arr[j];
+                        va->n--;
+                        for (; j < va->n ; j++)
+                            va->arr[j] = va->arr[j+1];
+                        /*
+                         traceLog(LOG_DEBUG, "Free[%d]: %p",j, vr);
+                         */
+                        if (ff) {
+                            ff( vr );
+                        }
+                        va->arr[j] = 0;
+                        restart = 1;
+                        break;
+                    }
 				}
 			}
 			if (restart)
@@ -99,16 +109,17 @@ varr_rm_dup(varr_t * va, cmpfn *cf, ffunc *ff)
 	}
 }
 
+/* only works on lists with no duplicates */
 void           *
 varr_next(varr_t * va, void *v)
 {
-	void          **arr;
-	unsigned int    i, n;
+	void            **arr;
+	unsigned int    n;
 
 	if (va == 0 || va->n == 0 || v == 0)
 		return 0;
 
-	for (arr = va->arr, i = 0, n = va->n - 1; i < n; i++, arr++)
+	for (arr = va->arr, n = va->n; n; n--, arr++)
 		if (*arr == v)
 			return *++arr;
 
@@ -124,6 +135,7 @@ varr_first(varr_t * va)
 	return va->arr[0];
 }
 
+/* Takes items from the end of the list */
 void           *
 varr_pop(varr_t * va)
 {
@@ -135,6 +147,7 @@ varr_pop(varr_t * va)
 	return va->arr[va->n];
 }
 
+/* Takes items from the start of the list */
 void           *
 varr_fifo_pop(varr_t * va)
 {
@@ -169,23 +182,26 @@ varr_dup(varr_t * old, dfunc * df)
 		if (df == 0)
 			new->arr[i] = old->arr[i];
 		else
-			new->arr[i] = df(old->arr[i], 0);
+			new->arr[i] = df(old->arr[i]);
 	}
         new->n = old->n ;
 
 	return new;
 }
 
+/* Returns a varr_t that contains one copy of every item that in the
+ * beginning appears in either a or b.
+ */
 varr_t         *
 varr_or(varr_t * a, varr_t * b, int noninv)
 {
 	unsigned int    i;
-	void           *v;
+	void            *v;
 
 	if (a == 0) {
 		if (noninv)
 			return varr_dup(b, 0);
-		else
+		else 
 			return b;
 	}
 
@@ -208,7 +224,7 @@ varr_or(varr_t * a, varr_t * b, int noninv)
 	return a;
 }
 
-void           *
+void    *
 varr_first_common(varr_t * a, varr_t * b)
 {
 	unsigned int    i;
@@ -223,6 +239,9 @@ varr_first_common(varr_t * a, varr_t * b)
 	return 0;
 }
 
+/* Returns a varr_t that contains one copy of every item that in the
+ * beginning appears in both a or b.
+ */
 varr_t		*
 varr_and(varr_t *a, varr_t *b)
 {
@@ -287,7 +306,7 @@ varr_print( varr_t *va, ffunc *item_print )
 	traceLog(LOG_DEBUG,"VARR:");
 	for( i = 0; i < va->n; i++ )
 		if (item_print == NULL)
-			traceLog(LOG_DEBUG, "%p", va->arr[i] );
+			traceLog(LOG_DEBUG, "%d) %p", i, va->arr[i] );
 		else
 			item_print( va->arr[i] );
 }

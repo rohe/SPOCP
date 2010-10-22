@@ -1,5 +1,5 @@
 #include <spocp.h>
-#include <func.h>
+#include <result.h>
 
 struct code2txt {
 	char			*str;
@@ -17,7 +17,8 @@ struct code2txt c2t[] =
 	{"Unspecified error in the Server when performing an operation",SPOCP_OPERATIONSERROR},
 	{"The client actions did not follow the protocol specifications",SPOCP_PROTOCOLERROR},
 	{"Unknown command",SPOCP_UNKNOWNCOMMAND},
-	{"One or more arguments to an operation does not follow the prescribed syntax",SPOCP_SYNTAXERROR},
+	{"One or more arguments to an operation does not follow the prescribed syntax",
+        SPOCP_SYNTAXERROR},
 	{"Time limit exceeded",SPOCP_TIMELIMITEXCEEDED},
 	{"Size limit exceeded",SPOCP_SIZELIMITEXCEEDED},
 	{"Authentication information",SPOCP_AUTHDATA},

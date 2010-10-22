@@ -1,0 +1,13 @@
+[server]
+rulefile=r.1
+port=5678
+
+[strmatch]
+load=../../tmp/513/trunk/backends/strmatch/.libs/libstrmatchplugin.so
+
+[localgroup]
+load=../../tmp/513/trunk/backends/localgroup/.libs/liblocalgroupplugin.so
+
+[ldapset]
+load=../../tmp/513/trunk/backends/ldapset/.libs/libldapsetplugin.so
+

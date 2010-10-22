@@ -1,5 +1,6 @@
 #include "config.h"
 #include "db0.h"
+#include <log.h>
 
 void junc_print_r(int lev, junc_t * jp);
 
@@ -35,47 +36,44 @@ junc_print_r(int lev, junc_t * jp)
 	char		indent[32];
 	int			i;
 	branch_t	*b;
+    ruleinst_t  *ri;
 
 	for ( i = 0 ; i < lev ; i++)
 		indent[i] = ' ';
 	indent[i] = '\0' ;
 
-	if (jp->item[SPOC_SET]) {
+	if (jp->branch[SPOC_SET]) {
 		traceLog(LOG_DEBUG,"%sSET", indent);
 	}
-	if (jp->item[SPOC_ATOM]) {
+	if (jp->branch[SPOC_ATOM]) {
 		traceLog(LOG_DEBUG,"%sATOM", indent);
-		atom_print_r( lev+1, jp->item[SPOC_ATOM]->val.atom);
+		atom_print_r( lev+1, jp->branch[SPOC_ATOM]->val.atom);
 	}
-	if (jp->item[SPOC_LIST]) {
+	if (jp->branch[SPOC_LIST]) {
 		traceLog(LOG_DEBUG,"%sLIST", indent);
-		junc_print_r( lev+1, jp->item[SPOC_LIST]->val.list );
+		junc_print_r( lev+1, jp->branch[SPOC_LIST]->val.list );
 	}
-	if (jp->item[SPOC_PREFIX]) {
+	if (jp->branch[SPOC_PREFIX]) {
 		traceLog(LOG_DEBUG,"%sPREFIX", indent);
 	}
-	if (jp->item[SPOC_SUFFIX]) {
+	if (jp->branch[SPOC_SUFFIX]) {
 		traceLog(LOG_DEBUG,"%sSUFFIX", indent);
 	}
-	if (jp->item[SPOC_RANGE]) {
+	if (jp->branch[SPOC_RANGE]) {
 		traceLog(LOG_DEBUG,"%sRANGE", indent);
 	}
-	if (jp->item[SPOC_ENDOFLIST]) {
+	if (jp->branch[SPOC_ENDOFLIST]) {
 		traceLog(LOG_DEBUG,"%sENDOFLIST", indent);
-		b = jp->item[SPOC_ENDOFLIST];
+		b = jp->branch[SPOC_ENDOFLIST];
 		if (b->val.next)
 			junc_print_r( lev+1, b->val.next );
 	}
-	if (jp->item[SPOC_ENDOFRULE]) {
-		spocp_index_t *id;
-		int i;
-
+	if (jp->branch[SPOC_ENDOFRULE]) {
 		traceLog(LOG_DEBUG,"%sENDOFRULE", indent);
-		id = jp->item[7]->val.id;
-		for (i = 0; i < id->n; i++) 
-			traceLog(LOG_DEBUG,"%s Rule: %s", indent,id->arr[i]->uid);
+		ri = jp->branch[7]->val.ri;
+        traceLog(LOG_DEBUG,"%s Rule: %d", indent, ri->uid);
 	}
-	if (jp->item[SPOC_ANY])
+	if (jp->branch[SPOC_ANY])
 		traceLog(LOG_DEBUG,"%sANY", indent);
 
 }

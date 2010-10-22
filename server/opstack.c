@@ -1,5 +1,7 @@
 #include <locl.h>
 
+/* keeps operations within the same transaction together */
+
 opstack_t *
 opstack_new( int op, ruleset_t *rs, octarr_t *arg)
 {
