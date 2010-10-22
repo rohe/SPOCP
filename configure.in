@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.60)
-AC_INIT(spocp, 2.1.12, roland@catalogix.se)
+AC_INIT(spocp, 2.3.0, roland@catalogix.se)
 AM_INIT_AUTOMAKE([foreign no-dependencies 1.7])
 AC_CONFIG_SRCDIR([backends/cert/cert.c])
 AC_CONFIG_HEADER([config.h])
