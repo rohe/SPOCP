@@ -70,22 +70,22 @@ typedef struct _stree {
 	struct _stree  *part;
 } bcstree_t;
 
-bcexp_t     *transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, 
+/*@null@*/bcexp_t *transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, 
                           bcdef_t * parent);
+/*@null@*/ bcstree_t *parse_bcexp(octet_t * sexp);
+/*@null@*/ bcspec_t *bcspec_new(plugin_t * plt, octet_t * spec);
+/*@null@*/ bcdef_t *bcdef_find(bcdef_t * bcd, octet_t * pattern);
+/*@null@*/ char *make_hash(char *str, octet_t * input);
+
 void        bcexp_free(bcexp_t * bce);
 bcexp_t     *varr_bcexp_pop(varr_t * va);
 void        bcexp_delink(bcexp_t * bce);
-bcstree_t   *parse_bcexp(octet_t * sexp);
-
-bcspec_t    *bcspec_new(plugin_t * plt, octet_t * spec);
 void        bcspec_free(bcspec_t * bcs);
 
-bcdef_t     *bcdef_find(bcdef_t * bcd, octet_t * pattern);
 bcdef_t *   bcdef_new(void);
 void        bcdef_free(bcdef_t * bcd);
 
-void        bcstree_free(bcstree_t * stp);
-char        *make_hash(char *str, octet_t * input);
+void        bcstree_free(/*@null@*/ bcstree_t * stp);
 
 
 #endif

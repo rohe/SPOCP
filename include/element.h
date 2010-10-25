@@ -183,7 +183,8 @@ void            element_free(element_t * e);
 
 #define element_next( elem )  ((elem) ? (((element_t *)(elem))->next) : NULL ) ;
 
-element_t       *element_list_add(element_t * e, element_t * a);
+element_t       *element_list_add(/*@null@*/ element_t * e, 
+                                    /*@null@*/ element_t * a);
 octet_t         *atoms_join(element_t * e, char *sep);
 octet_t         *element_atom_sub(octet_t * val, element_t * ep);
 
