@@ -348,7 +348,7 @@ element_dup(element_t * ep)
  * \return A pointer to the possibly newly created list 
  */
 element_t   *
-element_list_add(element_t * le, element_t * e)
+element_list_add(/*@null@*/ element_t * le, /*@null@*/ element_t * e)
 {
     element_t   *ep, *end;
 

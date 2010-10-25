@@ -34,14 +34,14 @@
 octarr_t       *
 octarr_new(size_t n)
 {
-	octarr_t       *oa;
+    octarr_t       *oa;
 
-	oa = (octarr_t *) Malloc(sizeof(octarr_t));
-	oa->size = n;
-	oa->n = 0;
-	oa->arr = (octet_t **) Calloc(n, sizeof(octet_t *));
+    oa = (octarr_t *) Malloc(sizeof(octarr_t));
+    oa->size = n;
+    oa->n = 0;
+    oa->arr = (octet_t **) Calloc(n, sizeof(octet_t *));
 
-	return oa;
+    return oa;
 }
 
 /*!
@@ -52,19 +52,19 @@ octarr_new(size_t n)
 octarr_t       *
 octarr_dup(octarr_t * old)
 {
-	int             i;
-	octarr_t       *new;
+    int             i;
+    octarr_t       *new;
 
-	if (old == NULL) return NULL;
+    if (old == NULL) return NULL;
 
-	new = octarr_new(old->size);
+    new = octarr_new(old->size);
 
-	for (i = 0; i < old->n; i++)
-		new->arr[i] = octdup(old->arr[i]);
+    for (i = 0; i < old->n; i++)
+        new->arr[i] = octdup(old->arr[i]);
 
-	new->n = old->n;
+    new->n = old->n;
 
-	return new;
+    return new;
 }
 
 /*!
@@ -77,27 +77,27 @@ octarr_dup(octarr_t * old)
 octarr_t       *
 octarr_add(octarr_t * oa, octet_t * op)
 {
-	octet_t       **arr;
+    octet_t       **arr;
 
-	if (oa == 0) {
-		oa = octarr_new(4);
-	}
+    if (oa == 0) {
+        oa = octarr_new(4);
+    }
 
-	if (oa->size == 0) {
-		oa->size = 2;
-		oa->arr = (octet_t **) Malloc(oa->size * sizeof(octet_t *));
-		oa->n = 0;
-	} else if (oa->n == oa->size) {
-		oa->size *= 2;
-		arr =
-		    (octet_t **) Realloc(oa->arr,
-					 oa->size * sizeof(octet_t *));
-		oa->arr = arr;
-	}
+    if (oa->size == 0) {
+        oa->size = 2;
+        oa->arr = (octet_t **) Malloc(oa->size * sizeof(octet_t *));
+        oa->n = 0;
+    } else if (oa->n == oa->size) {
+        oa->size *= 2;
+        arr =
+            (octet_t **) Realloc(oa->arr,
+                     oa->size * sizeof(octet_t *));
+        oa->arr = arr;
+    }
 
-	oa->arr[oa->n++] = op;
+    oa->arr[oa->n++] = op;
 
-	return oa;
+    return oa;
 }
 
 /*!
@@ -109,22 +109,22 @@ octarr_add(octarr_t * oa, octet_t * op)
 void
 octarr_mr(octarr_t * oa, size_t n)
 {
-	octet_t       **arr;
+    octet_t       **arr;
 
-	if (oa) {
-		if (oa->size == 0){
-			oa->size = n;
-			oa->n = 0;
-			oa->arr = (octet_t **) Calloc(n, sizeof(octet_t *));
-		}
-		else if (n > (size_t) oa->size) {
-			oa->size = n;
+    if (oa) {
+        if (oa->size == 0){
+            oa->size = n;
+            oa->n = 0;
+            oa->arr = (octet_t **) Calloc(n, sizeof(octet_t *));
+        }
+        else if (n > (size_t) oa->size) {
+            oa->size = n;
 
-			arr = (octet_t **)
-				Realloc(oa->arr, oa->size * sizeof(octet_t *));
-			oa->arr = arr;
-		}
-	}
+            arr = (octet_t **)
+                Realloc(oa->arr, oa->size * sizeof(octet_t *));
+            oa->arr = arr;
+        }
+    }
 }
 /*! 
  * \brief Will free a octarr struct, but will not attempt to free the octet 
@@ -134,12 +134,12 @@ octarr_mr(octarr_t * oa, size_t n)
 void
 octarr_half_free(octarr_t * oa)
 {
-	if (oa) {
-		if (oa->size) {
-			Free(oa->arr);
-		}
-		Free(oa);
-	}
+    if (oa) {
+        if (oa->size) {
+            Free(oa->arr);
+        }
+        Free(oa);
+    }
 }
 
 /*!
@@ -150,20 +150,20 @@ octarr_half_free(octarr_t * oa)
 void
 octarr_free(octarr_t * oa)
 {
-	int             i;
+    int             i;
 
-	if (oa) {
+    if (oa) {
 #ifdef AVLUS
-		traceLog(LOG_INFO,"octarr_free size:%d len:%d", oa->size, oa->n);
+        traceLog(LOG_INFO,"octarr_free size:%d len:%d", oa->size, oa->n);
 #endif
-		if (oa->size) {
-			for (i = 0; i < oa->n; i++)
-				oct_free(oa->arr[i]);
+        if (oa->size) {
+            for (i = 0; i < oa->n; i++)
+                oct_free(oa->arr[i]);
 
-			Free(oa->arr);
-		}
-		Free(oa);
-	}
+            Free(oa->arr);
+        }
+        Free(oa);
+    }
 }
 
 /*!
@@ -174,20 +174,20 @@ octarr_free(octarr_t * oa)
 octet_t        *
 octarr_pop(octarr_t * oa)
 {
-	octet_t        *oct;
-	int             i;
+    octet_t        *oct;
+    int             i;
 
-	if (oa == 0 || oa->n == 0)
-		return 0;
+    if (oa == 0 || oa->n == 0)
+        return 0;
 
-	oct = oa->arr[0];
+    oct = oa->arr[0];
 
-	oa->n--;
-	for (i = 0; i < oa->n; i++) {
-		oa->arr[i] = oa->arr[i + 1];
-	}
+    oa->n--;
+    for (i = 0; i < oa->n; i++) {
+        oa->arr[i] = oa->arr[i + 1];
+    }
 
-	return oct;
+    return oct;
 }
 
 /*!
@@ -198,15 +198,15 @@ octarr_pop(octarr_t * oa)
 octet_t        *
 octarr_rpop(octarr_t * oa)
 {
-	octet_t        *oct;
+    octet_t        *oct;
 
-	if (oa == 0 || oa->n == 0)
-		return 0;
+    if (oa == 0 || oa->n == 0)
+        return 0;
 
-	oct = oa->arr[oa->n - 1];
-	oa->n--;
+    oct = oa->arr[oa->n - 1];
+    oa->n--;
 
-	return oct;
+    return oct;
 }
 
 /*
@@ -227,19 +227,19 @@ octarr_rpop(octarr_t * oa)
 octarr_t       *
 octarr_extend(octarr_t * target, octarr_t * source)
 {
-	octet_t        *o;
+    octet_t        *o;
 
-	if (target == 0)
-		return source;
-	if (source == 0)
-		return target;
+    if (target == 0)
+        return source;
+    if (source == 0)
+        return target;
 
-	while ((o = octarr_pop(source)) != 0)
-		octarr_add(target, o);
+    while ((o = octarr_pop(source)) != 0)
+        octarr_add(target, o);
 
-	octarr_free(source);
+    octarr_free(source);
 
-	return target;
+    return target;
 }
 
 /*!
@@ -253,19 +253,19 @@ octarr_extend(octarr_t * target, octarr_t * source)
 octet_t        *
 octarr_rm(octarr_t * oa, int n)
 {
-	octet_t        *o;
-	int             i;
+    octet_t        *o;
+    int             i;
 
-	if (oa == 0 || n > oa->n)
-		return 0;
+    if (oa == 0 || n > oa->n)
+        return 0;
 
-	o = oa->arr[n];
-	oa->n--;
+    o = oa->arr[n];
+    oa->n--;
 
-	for (i = n; i < oa->n; i++)
-		oa->arr[i] = oa->arr[i + 1];
+    for (i = n; i < oa->n; i++)
+        oa->arr[i] = oa->arr[i + 1];
 
-	return o;
+    return o;
 }
 
 /*
@@ -287,74 +287,74 @@ octarr_rm(octarr_t * oa, int n)
 octarr_t       *
 oct_split(octet_t * o, char c, char ec, int flag, int max)
 {
-	char           *cp, *sp;
-	octet_t        *oct = 0;
-	octarr_t       *oa;
-	int             l, i, n = 0;
+    char           *cp, *sp;
+    octet_t        *oct = 0;
+    octarr_t       *oa;
+    int             l, i, n = 0;
 
-	if (o == 0)
-		return 0;
+    if (o == 0)
+        return 0;
 
-	oct = octdup(o);
-	oa = octarr_new(4);
+    oct = octdup(o);
+    oa = octarr_new(4);
 
-	for (sp = oct->val, l = oct->len, i = 1; l && (max == 0 || i < max);
-	     sp = cp) {
-		for (cp = sp, n = 0; l; cp++, n++, l--) {
-			if (*cp == ec)
-				cp++;	/* skip escaped characters */
-			if (*cp == c)
-				break;
-		}
+    for (sp = oct->val, l = oct->len, i = 1; l && (max == 0 || i < max);
+         sp = cp) {
+        for (cp = sp, n = 0; l; cp++, n++, l--) {
+            if (*cp == ec)
+                cp++;   /* skip escaped characters */
+            if (*cp == c)
+                break;
+        }
         
-		oct->len = n;
-		octarr_add(oa, oct);
+        oct->len = n;
+        octarr_add(oa, oct);
 
-		if (flag)
-			for (; *cp == c; cp++, l--);
-		else if (l)
-			cp++, l--;
-		else {
-			oct = 0;
-			break;
-		}
+        if (flag)
+            for (; *cp == c; cp++, l--);
+        else if (l)
+            cp++, l--;
+        else {
+            oct = 0;
+            break;
+        }
 
-		oct = oct_new(0, 0);
-		oct->base = oct->val = cp;
+        oct = oct_new(0, 0);
+        oct->base = oct->val = cp;
         i++ ;
-	}
+    }
 
     if ((max != 0) && (max == i)) {
-		oct = oct_new(0, 0);
+        oct = oct_new(0, 0);
         oct->len = l;
-		oct->base = oct->val = sp;
+        oct->base = oct->val = sp;
     }
     
-	if (oct) {
+    if (oct) {
         if (oct->len)
             octarr_add(oa, oct);
         else 
             oct_free(oct);
     }
     
-	return oa;
+    return oa;
 }
 
 void
 octarr_print( int pri, octarr_t *oa)
 {
-	char	leading[32];
-	int	i;
+    char    leading[32];
+    int i;
 
-	if (oa ) {
+    if (oa ) {
 #ifdef AVLUS
-		traceLog(LOG_INFO,"octarr at %p", oa);
+        traceLog(LOG_INFO,"octarr at %p", oa);
 #endif
-		for (i = 0; i < oa->n ; i++) {
-			sprintf(leading,"octarr[%d](%p)",i, (void *) oa->arr[i]);
-			oct_print(pri, leading ,oa->arr[i]);
-		}
-	}
+        for (i = 0; i < oa->n ; i++) {
+            sprintf(leading,"octarr[%d](%p)",i, (void *) oa->arr[i]);
+            oct_print(pri, leading ,oa->arr[i]);
+        }
+    }
 }
 
 int octarr_len(octarr_t *oa)

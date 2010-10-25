@@ -21,12 +21,12 @@ static char     base64[] =
 spocp_chunk_t        *
 chunk_new(octet_t * o)
 {
-	spocp_chunk_t        *cp;
+    spocp_chunk_t        *cp;
 
-	cp = (spocp_chunk_t *) Calloc(1, sizeof(spocp_chunk_t));
-	cp->val = o;
+    cp = (spocp_chunk_t *) Calloc(1, sizeof(spocp_chunk_t));
+    cp->val = o;
 
-	return cp;
+    return cp;
 }
 
 /*!
@@ -36,13 +36,13 @@ chunk_new(octet_t * o)
 void
 chunk_free(spocp_chunk_t * c)
 {
-	if (c) {
-		if (c->val)
-			oct_free(c->val);
-		if (c->next)
-			chunk_free(c->next);
-		Free(c);
-	}
+    if (c) {
+        if (c->val)
+            oct_free(c->val);
+        if (c->next)
+            chunk_free(c->next);
+        Free(c);
+    }
 }
 
 /*------------------------------------------------------------------------- */
@@ -50,52 +50,52 @@ chunk_free(spocp_chunk_t * c)
 static int
 pos(char c)
 {
-	char           *p;
+    char           *p;
 
-	for (p = base64; *p; p++)
-		if (*p == c)
-			return p - base64;
+    for (p = base64; *p; p++)
+        if (*p == c)
+            return p - base64;
 
-	return -1;
+    return -1;
 }
 
 static int
 base64_decode(char *str)
 {
-	char           *p, *q;
-	int             i, x;
-	unsigned int    c;
-	int             done = 0;
+    char           *p, *q;
+    int             i, x;
+    unsigned int    c;
+    int             done = 0;
 
-	for (p = str, q = str; *p && !done; p += 4) {
+    for (p = str, q = str; *p && !done; p += 4) {
 
-		for (c = 0, done = 0, i = 0; i < 4; i++) {
-			if (i > 1 && p[i] == '=')
-				done++;
-			else {
-				if (done)
-					return -1;
-				x = pos(p[i]);
+        for (c = 0, done = 0, i = 0; i < 4; i++) {
+            if (i > 1 && p[i] == '=')
+                done++;
+            else {
+                if (done)
+                    return -1;
+                x = pos(p[i]);
 
-				if (x >= 0)
-					c += x;
-				else
-					return -1;
+                if (x >= 0)
+                    c += x;
+                else
+                    return -1;
 
-				if (i < 3)
-					c <<= 6;
-			}
-		}
+                if (i < 3)
+                    c <<= 6;
+            }
+        }
 
-		if (done < 3)
-			*q++ = (c & 0x00ff0000) >> 16;
-		if (done < 2)
-			*q++ = (c & 0x0000ff00) >> 8;
-		if (done < 1)
-			*q++ = (c & 0x000000ff) >> 0;
-	}
+        if (done < 3)
+            *q++ = (c & 0x00ff0000) >> 16;
+        if (done < 2)
+            *q++ = (c & 0x0000ff00) >> 8;
+        if (done < 1)
+            *q++ = (c & 0x000000ff) >> 0;
+    }
 
-	return q - str;
+    return q - str;
 }
 
 /*------------------------------------------------------------------------- */
@@ -108,16 +108,16 @@ base64_decode(char *str)
 spocp_charbuf_t *
 charbuf_new( FILE *fp, size_t size )
 {
-	spocp_charbuf_t *buf;
+    spocp_charbuf_t *buf;
 
-	buf = ( spocp_charbuf_t * ) Calloc(1, sizeof(spocp_charbuf_t ));
+    buf = ( spocp_charbuf_t * ) Calloc(1, sizeof(spocp_charbuf_t ));
 
-	buf->fp = fp;
-	buf->str = (char *) Calloc ( size, sizeof( char ));
-	buf->size = size;
-	buf->start = buf->str ; 
+    buf->fp = fp;
+    buf->str = (char *) Calloc ( size, sizeof( char ));
+    buf->size = size;
+    buf->start = buf->str ; 
 
-	return buf;
+    return buf;
 }
 
 /*------------------------------------------------------------------------- */
@@ -128,10 +128,10 @@ charbuf_new( FILE *fp, size_t size )
  */
 void charbuf_free( spocp_charbuf_t *sc )
 {
-	if( sc ) {
-		if( sc->str ) Free(sc->str);
-		Free(sc);
-	}
+    if( sc ) {
+        if( sc->str ) Free(sc->str);
+        Free(sc);
+    }
 }
 
 /*------------------------------------------------------------------------ */
@@ -145,53 +145,53 @@ void charbuf_free( spocp_charbuf_t *sc )
 char    *
 get_more(spocp_charbuf_t * io)
 {
-	char           *r;
+    char           *r;
 
-	if (io->fp == 0) return 0;
+    if (io->fp == 0) return 0;
 
-	do {
-		r = fgets(io->str, io->size, io->fp);
-	} while (r && *r == '#'); /* skip strings that starts with '#' */
+    do {
+        r = fgets(io->str, io->size, io->fp);
+    } while (r && *r == '#'); /* skip strings that starts with '#' */
 
-	if( r ) io->start = io->str;
+    if( r ) io->start = io->str;
 
-	return r;
+    return r;
 }
 
 static char    *
 mycpy(char *res, char *start, int len, int sofar)
 {
-	char           *tmp;
+    char           *tmp;
 
-	if (res == 0) {
-		res = (char *) Malloc((len + 1) * sizeof(char));
-		strncpy(res, start, len);
-		res[len] = 0;
-	} else {
-		tmp = (char *) Realloc(res, (sofar + len + 1) * sizeof(char));
-		res = tmp;
-		strncpy(&res[sofar], start, len);
-		sofar += len;
-		res[sofar] = 0;
-	}
+    if (res == 0) {
+        res = (char *) Malloc((len + 1) * sizeof(char));
+        strncpy(res, start, len);
+        res[len] = 0;
+    } else {
+        tmp = (char *) Realloc(res, (sofar + len + 1) * sizeof(char));
+        res = tmp;
+        strncpy(&res[sofar], start, len);
+        sofar += len;
+        res[sofar] = 0;
+    }
 
-	return res;
+    return res;
 }
 
 static int
 rm_sp(char *str, int len)
 {
-	char           *rp, *cp;
-	int             i;
+    char           *rp, *cp;
+    int             i;
 
-	for (rp = cp = str, i = 0; i < len; i++, rp++) {
-		if (WHITESPACE(*rp))
-			continue;
-		else
-			*cp++ = *rp;
-	}
+    for (rp = cp = str, i = 0; i < len; i++, rp++) {
+        if (WHITESPACE(*rp))
+            continue;
+        else
+            *cp++ = *rp;
+    }
 
-	return cp - str;
+    return cp - str;
 }
 
 /*------------------------------------------------------------------------- */
@@ -214,41 +214,41 @@ de_escape( char *str, int len )
 static octet_t *
 get_token(spocp_charbuf_t * io)
 {
-	char           *cp, *res = 0;
-	int             len = 0, sofar = 0;
-	octet_t		*oct = 0 ;
+    char           *cp, *res = 0;
+    int             len = 0, sofar = 0;
+    octet_t     *oct = 0 ;
 
-	do {
-		for (cp = io->start; *cp && VCHAR(*cp) ; cp++);
+    do {
+        for (cp = io->start; *cp && VCHAR(*cp) ; cp++);
 
-		if (*cp == 0) {
-			len = cp - io->start;
-			res = mycpy(res, io->start, len, sofar);
+        if (*cp == 0) {
+            len = cp - io->start;
+            res = mycpy(res, io->start, len, sofar);
 
-			if (get_more(io) == 0) {
-				traceLog(LOG_ERR,"End of input reached unexpected");
-				return 0;
-			}
-		} else
-			break;
-	} while (1);
+            if (get_more(io) == 0) {
+                traceLog(LOG_ERR,"End of input reached unexpected");
+                return 0;
+            }
+        } else
+            break;
+    } while (1);
 
-	if (cp != io->start) {	/* never got off the ground */
-		len = cp - io->start;
-		res = mycpy(res, io->start, len, sofar);
-		sofar += len;
-		io->start = cp;
-	}
+    if (cp != io->start) {  /* never got off the ground */
+        len = cp - io->start;
+        res = mycpy(res, io->start, len, sofar);
+        sofar += len;
+        io->start = cp;
+    }
 
-	if( res == 0 ) {
-		traceLog(LOG_ERR,"No token specification where one was expected\"%s\"",
-		    io->start);
-		return NULL;
-	}
-	else {
-		oct = str2oct( res, 1 );
-		return oct;
-	}
+    if( res == 0 ) {
+        traceLog(LOG_ERR,"No token specification where one was expected\"%s\"",
+            io->start);
+        return NULL;
+    }
+    else {
+        oct = str2oct( res, 1 );
+        return oct;
+    }
 }
 
 /*------------------------------------------------------------------------ */
@@ -256,41 +256,41 @@ get_token(spocp_charbuf_t * io)
 static octet_t *
 get_path(spocp_charbuf_t * io)
 {
-	char           *cp, *res = 0;
-	int             len = 0, sofar = 0;
-	octet_t		*oct = 0 ;
+    char           *cp, *res = 0;
+    int             len = 0, sofar = 0;
+    octet_t     *oct = 0 ;
 
-	do {
-		for (cp = io->start; *cp && (DIRCHAR(*cp) || *cp == '/'); cp++);
+    do {
+        for (cp = io->start; *cp && (DIRCHAR(*cp) || *cp == '/'); cp++);
 
-		if (*cp == 0) {
-			len = cp - io->start;
-			res = mycpy(res, io->start, len, sofar);
+        if (*cp == 0) {
+            len = cp - io->start;
+            res = mycpy(res, io->start, len, sofar);
 
-			if (get_more(io) == 0) {
-				traceLog(LOG_ERR,"End of input reached unexpected");
-				return 0;
-			}
-		} else
-			break;
-	} while (1);
+            if (get_more(io) == 0) {
+                traceLog(LOG_ERR,"End of input reached unexpected");
+                return 0;
+            }
+        } else
+            break;
+    } while (1);
 
-	if (cp != io->start) {	/* never got off the ground  ? */
-		len = cp - io->start;
-		res = mycpy(res, io->start, len, sofar);
-		sofar += len;
-		io->start = cp;
-	}
+    if (cp != io->start) {  /* never got off the ground  ? */
+        len = cp - io->start;
+        res = mycpy(res, io->start, len, sofar);
+        sofar += len;
+        io->start = cp;
+    }
 
-	if( res == 0 ) {
-		traceLog(LOG_ERR,"No path specification where one was expected\"%s\"",
-		    io->start);
-		return NULL;
-	}
-	else {
-		oct = str2oct( res, 1 ) ;
-		return oct;
-	}
+    if( res == 0 ) {
+        traceLog(LOG_ERR,"No path specification where one was expected\"%s\"",
+            io->start);
+        return NULL;
+    }
+    else {
+        oct = str2oct( res, 1 ) ;
+        return oct;
+    }
 }
 
 /*------------------------------------------------------------------------ */
@@ -301,58 +301,58 @@ get_path(spocp_charbuf_t * io)
 static octet_t *
 get_base64( spocp_charbuf_t * io)
 {
-	char           *cp, *res = 0;
-	int             len, sofar = 0, done = 0;
-	octet_t		*oct = 0 ;
+    char           *cp, *res = 0;
+    int             len, sofar = 0, done = 0;
+    octet_t     *oct = 0 ;
 
-	do {
-		for (cp = io->start; *cp && (BASE64(*cp) || WHITESPACE(*cp));
-		     cp++);
-		if (*cp && *cp == '|')
-			done = 1;
+    do {
+        for (cp = io->start; *cp && (BASE64(*cp) || WHITESPACE(*cp));
+             cp++);
+        if (*cp && *cp == '|')
+            done = 1;
 
-		if (*cp == 0) {
-			len = cp - io->start;
-			res = mycpy(res, io->start, len, sofar);
-			sofar += len;
-			if (get_more(io) == 0) {
-				traceLog(LOG_ERR,"End of input reached unexpected");
-				return 0;
-			}
-		} else
-			break;
-	} while (1);
+        if (*cp == 0) {
+            len = cp - io->start;
+            res = mycpy(res, io->start, len, sofar);
+            sofar += len;
+            if (get_more(io) == 0) {
+                traceLog(LOG_ERR,"End of input reached unexpected");
+                return 0;
+            }
+        } else
+            break;
+    } while (1);
 
-	if (cp != io->start) {	
-		len = cp - io->start;
-		res = mycpy(res, io->start, len, sofar);
-		sofar += len;
-		io->start = ++cp;
-	}
+    if (cp != io->start) {  
+        len = cp - io->start;
+        res = mycpy(res, io->start, len, sofar);
+        sofar += len;
+        io->start = ++cp;
+    }
 
-	len = sofar;
+    len = sofar;
 
-	if (res) {
-		/*
-		 * if there are any whitespace chars remove them 
-		 */
-		sofar = rm_sp(res, sofar);
-		/*
-		 * de base64 
-		 */
+    if (res) {
+        /*
+         * if there are any whitespace chars remove them 
+         */
+        sofar = rm_sp(res, sofar);
+        /*
+         * de base64 
+         */
 
-		sofar = base64_decode(res);
-		res[sofar] = 0;
+        sofar = base64_decode(res);
+        res[sofar] = 0;
 
-		oct = str2oct( res, 1 ) ;
+        oct = str2oct( res, 1 ) ;
 
-		return oct;
-	}
-	else {
-		traceLog(LOG_ERR,
-		    "No base64 string where I expected one \"%s\"", io->start);
-		return NULL;
-	}
+        return oct;
+    }
+    else {
+        traceLog(LOG_ERR,
+            "No base64 string where I expected one \"%s\"", io->start);
+        return NULL;
+    }
 }
 
 /*
@@ -362,88 +362,88 @@ get_base64( spocp_charbuf_t * io)
 static octet_t *
 get_hex( spocp_charbuf_t * io)
 {
-	char           *cp, *res = 0, *rp;
-	unsigned char   c;
-	int             len, sofar = 0, i;
-	octet_t 	* oct;
+    char           *cp, *res = 0, *rp;
+    unsigned char   c;
+    int             len, sofar = 0, i;
+    octet_t     * oct;
 
-	do {
-		for (cp = io->start; *cp && (HEX(*cp) || WHITESPACE(*cp));
-		     cp++);
-		if (*cp && *cp == '%')
-			break;
+    do {
+        for (cp = io->start; *cp && (HEX(*cp) || WHITESPACE(*cp));
+             cp++);
+        if (*cp && *cp == '%')
+            break;
 
-		if (*cp == 0) {
-			len = cp - io->start;
-			res = mycpy(res, io->start, len, sofar);
-			sofar += len;
-			if (get_more(io) == 0) {
-				traceLog(LOG_ERR,"End of input reached unexpected");
-				return 0;
-			}
-		} else
-			break;
-	} while (1);
+        if (*cp == 0) {
+            len = cp - io->start;
+            res = mycpy(res, io->start, len, sofar);
+            sofar += len;
+            if (get_more(io) == 0) {
+                traceLog(LOG_ERR,"End of input reached unexpected");
+                return 0;
+            }
+        } else
+            break;
+    } while (1);
 
-	if (cp != io->start) {
-		len = cp - io->start;
-		res = mycpy(res, io->start, len, sofar);
-		sofar += len;
-		io->start = ++cp;
-	}
+    if (cp != io->start) {
+        len = cp - io->start;
+        res = mycpy(res, io->start, len, sofar);
+        sofar += len;
+        io->start = ++cp;
+    }
 
-	len = sofar;
+    len = sofar;
 
-	if (res) {
-		/*
-		 * if there are any whitespace chars remove them 
-		 */
-		sofar = rm_sp(res, sofar);
+    if (res) {
+        /*
+         * if there are any whitespace chars remove them 
+         */
+        sofar = rm_sp(res, sofar);
 
-		/*
-		 * convert hex hex to byte 
-		 */
-		for (rp = cp = res, i = 0; i < sofar; rp++, cp++) {
-			if (*rp >= 'a' && *rp <= 'f')
-				c = (*rp - 0x57) << 4;
-			else if (*rp >= 'A' && *rp <= 'F')
-				c = (*rp - 0x37) << 4;
-			else if (*rp >= '0' && *rp <= '9')
-				c = (*rp - 0x30) << 4;
-			else {
-				traceLog(LOG_ERR,
-				    "Non hex value where there should have been one",
-				    rp);
-				return 0;
-			}
+        /*
+         * convert hex hex to byte 
+         */
+        for (rp = cp = res, i = 0; i < sofar; rp++, cp++) {
+            if (*rp >= 'a' && *rp <= 'f')
+                c = (*rp - 0x57) << 4;
+            else if (*rp >= 'A' && *rp <= 'F')
+                c = (*rp - 0x37) << 4;
+            else if (*rp >= '0' && *rp <= '9')
+                c = (*rp - 0x30) << 4;
+            else {
+                traceLog(LOG_ERR,
+                    "Non hex value where there should have been one",
+                    rp);
+                return 0;
+            }
 
-			rp++;
+            rp++;
 
-			if (*rp >= 'a' && *rp <= 'f')
-				c += (*rp - 0x57);
-			else if (*rp >= 'A' && *rp <= 'F')
-				c += (*rp - 0x37);
-			else if (*rp >= '0' && *rp <= '9')
-				c += (*rp - 0x30);
-			else {
-				traceLog(LOG_ERR,
-				    "Non hex value where there should have been one",
-				    rp);
-				return 0;
-			}
+            if (*rp >= 'a' && *rp <= 'f')
+                c += (*rp - 0x57);
+            else if (*rp >= 'A' && *rp <= 'F')
+                c += (*rp - 0x37);
+            else if (*rp >= '0' && *rp <= '9')
+                c += (*rp - 0x30);
+            else {
+                traceLog(LOG_ERR,
+                    "Non hex value where there should have been one",
+                    rp);
+                return 0;
+            }
 
-			*cp = c;
-			i += 2;
-		}
+            *cp = c;
+            i += 2;
+        }
         *cp = '\0'; 
-	}
+    }
 
-	if (res == 0)
-		return 0;
+    if (res == 0)
+        return 0;
 
-	oct = str2oct( res, 1 ) ;
+    oct = str2oct( res, 1 ) ;
 
-	return oct;
+    return oct;
 }
 
 /*! \brief I'm waiting for a hexadecimal character */
@@ -456,109 +456,109 @@ get_hex( spocp_charbuf_t * io)
 static octet_t *
 get_quote( spocp_charbuf_t * io)
 {
-	char           *cp, *res = 0;
-	int             len, sofar = 0;
-	int             expect = 0, done = 0;
-	octet_t 	*oct = 0;
+    char           *cp, *res = 0;
+    int             len, sofar = 0;
+    int             expect = 0, done = 0;
+    octet_t     *oct = 0;
 
-	do {
-		for (cp = io->start; *cp; cp++) {
-			if (expect) {
-				if (expect == HEXCHAR || expect == HEXDUO) {
-					if (HEX(*cp)) {
-						if (expect == HEXCHAR)
-							expect = 0;
-						else
-							expect = HEXCHAR;
-					} else {
-						traceLog(LOG_ERR,
-						    "Expected hex value \"%s\"",cp);
-						return 0;
-					}
-				} else {
-					if (*cp == '\\')
-						expect = 0;
-					else if (HEX(*cp))
-						expect = HEXCHAR;
-					else {
-						traceLog(LOG_ERR,
-						    "Expected hex or escape char \"%s\""
-						    ,cp);
-						return 0;
-					}
-				}
-				continue;
-			}
+    do {
+        for (cp = io->start; *cp; cp++) {
+            if (expect) {
+                if (expect == HEXCHAR || expect == HEXDUO) {
+                    if (HEX(*cp)) {
+                        if (expect == HEXCHAR)
+                            expect = 0;
+                        else
+                            expect = HEXCHAR;
+                    } else {
+                        traceLog(LOG_ERR,
+                            "Expected hex value \"%s\"",cp);
+                        return 0;
+                    }
+                } else {
+                    if (*cp == '\\')
+                        expect = 0;
+                    else if (HEX(*cp))
+                        expect = HEXCHAR;
+                    else {
+                        traceLog(LOG_ERR,
+                            "Expected hex or escape char \"%s\""
+                            ,cp);
+                        return 0;
+                    }
+                }
+                continue;
+            }
 
-			if (*cp == '\\')
-				expect = HEXDUO | SLASH;
-			else if (*cp == '"')
-				break;
-		}
+            if (*cp == '\\')
+                expect = HEXDUO | SLASH;
+            else if (*cp == '"')
+                break;
+        }
 
-		if (*cp == 0) {
-			len = cp - io->start;
-			res = mycpy(res, io->start, len, sofar);
-			sofar += len;
-			if (get_more(io) == 0) {
-				traceLog(LOG_ERR,"End of input reached unexpected");
-				return 0;
-			}
-		} else
-			break;
-	} while (!done);
+        if (*cp == 0) {
+            len = cp - io->start;
+            res = mycpy(res, io->start, len, sofar);
+            sofar += len;
+            if (get_more(io) == 0) {
+                traceLog(LOG_ERR,"End of input reached unexpected");
+                return 0;
+            }
+        } else
+            break;
+    } while (!done);
 
-	if (cp != io->start) {
-		len = cp - io->start;
-		res = mycpy(res, io->start, len, sofar);
-		sofar += len;
-		io->start = ++cp;
-	}
+    if (cp != io->start) {
+        len = cp - io->start;
+        res = mycpy(res, io->start, len, sofar);
+        sofar += len;
+        io->start = ++cp;
+    }
 
-	if (res) {
-		DEBUG(SPOCP_DSTORE)
-			traceLog(LOG_DEBUG,"quoted string:", res);
-		oct = str2oct( res, 1 );
-		/*
-		 * de escape 
-		 */
-		oct_de_escape(oct,'\\');
-		DEBUG(SPOCP_DSTORE)
-			traceLog(LOG_DEBUG,"quoted string (de_escaped):", oct->val);
-	}
+    if (res) {
+        DEBUG(SPOCP_DSTORE)
+            traceLog(LOG_DEBUG,"quoted string:", res);
+        oct = str2oct( res, 1 );
+        /*
+         * de escape 
+         */
+        oct_de_escape(oct,'\\');
+        DEBUG(SPOCP_DSTORE)
+            traceLog(LOG_DEBUG,"quoted string (de_escaped):", oct->val);
+    }
 
-	if (res == 0 || oct->len == 0) { /* trusting the lazy evaluation here */
-		traceLog(LOG_ERR,"Empty string encountered");
-		return 0;	/* not allowed */
-	}
+    if (res == 0 || oct->len == 0) { /* trusting the lazy evaluation here */
+        traceLog(LOG_ERR,"Empty string encountered");
+        return 0;   /* not allowed */
+    }
 
-	return oct;
+    return oct;
 }
 
 static int
 skip_whites(spocp_charbuf_t * io)
 {
-	char           *bp;
+    char           *bp;
 
-	bp = io->start;
+    bp = io->start;
 
-	do {
-		while (WHITESPACE(*bp) && *bp)
-			bp++;
+    do {
+        while (WHITESPACE(*bp) && *bp)
+            bp++;
 
-		if (*bp == 0) {
-			if (get_more(io) == 0) {
-				return 0;
-			}
-			bp = io->start;
-		} else
-			break;
+        if (*bp == 0) {
+            if (get_more(io) == 0) {
+                return 0;
+            }
+            bp = io->start;
+        } else
+            break;
 
-	} while (1);
+    } while (1);
 
-	io->start = bp;
+    io->start = bp;
 
-	return 1;
+    return 1;
 }
 
 /*------------------------------------------------------------------------ */
@@ -571,10 +571,10 @@ skip_whites(spocp_charbuf_t * io)
 char
 charbuf_peek( spocp_charbuf_t *cb )
 {
-	if (skip_whites(cb) == 0)
-		return 0;
+    if (skip_whites(cb) == 0)
+        return 0;
 
-	return( *cb->start ) ;
+    return( *cb->start ) ;
 }
 
 /*------------------------------------------------------------------------ */
@@ -588,63 +588,63 @@ charbuf_peek( spocp_charbuf_t *cb )
 spocp_chunk_t        *
 get_chunk(spocp_charbuf_t * io)
 {
-	octet_t        *o = 0;
-	spocp_chunk_t        *cp = 0;
+    octet_t        *o = 0;
+    spocp_chunk_t        *cp = 0;
 
-	if (skip_whites(io) == 0)
-		return 0;
+    if (skip_whites(io) == 0)
+        return 0;
 
-	/*
-	 * what kind of string or list do I have here 
-	 */
+    /*
+     * what kind of string or list do I have here 
+     */
 
-	switch (*io->start) {
+    switch (*io->start) {
 
-	case '(':
-	case ')':
-		o = oct_new(1, io->start);
-		io->start++;
-		break;
+    case '(':
+    case ')':
+        o = oct_new(1, io->start);
+        io->start++;
+        break;
 
-	case '/':
-		o = get_path(io);
-		break;
+    case '/':
+        o = get_path(io);
+        break;
 
-	case '|':
-		io->start++;
-		o = get_base64(io);
-		break;
+    case '|':
+        io->start++;
+        o = get_base64(io);
+        break;
 
-	case '%':
-		io->start++;
-		o = get_hex(io);
-		break;
+    case '%':
+        io->start++;
+        o = get_hex(io);
+        break;
 
-	case '"':
-		io->start++;
-		o = get_quote(io);
-		break;
+    case '"':
+        io->start++;
+        o = get_quote(io);
+        break;
 
-	default:
-		if (VCHAR(*io->start))
-			o = get_token(io);
-		else {
-			traceLog(LOG_ERR,
-			    "Non token char, where token char was expected \"%s\"",
-			    io->start);
-			return NULL;
-		}
-		break;
-	}
+    default:
+        if (VCHAR(*io->start))
+            o = get_token(io);
+        else {
+            traceLog(LOG_ERR,
+                "Non token char, where token char was expected \"%s\"",
+                io->start);
+            return NULL;
+        }
+        break;
+    }
 
-	if (o) {
+    if (o) {
 #ifdef AVLUS
-		oct_print( LOG_INFO, "chunk", o);
+        oct_print( LOG_INFO, "chunk", o);
 #endif
-		cp = chunk_new(o);
-	}
+        cp = chunk_new(o);
+    }
 
-	return cp;
+    return cp;
 }
 
 /*------------------------------------------------------------------------ */
@@ -655,16 +655,16 @@ get_chunk(spocp_charbuf_t * io)
  * \param np The chunk that should be added
  * \return A pointer to the new last chunk
  */ 
-spocp_chunk_t		*
+spocp_chunk_t       *
 chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np )
 {
-	if( pp == NULL ) return np ;
+    if( pp == NULL ) return np ;
 
-	pp->next = np;
-	if (np)
-		np->prev = pp;
+    pp->next = np;
+    if (np)
+        np->prev = pp;
 
-	return pp->next ;
+    return pp->next ;
 }
 
 /*------------------------------------------------------------------------ */
@@ -676,32 +676,32 @@ chunk_add( spocp_chunk_t *pp, spocp_chunk_t *np )
  * \param pp The list of chunks to which this list should be added
  * \return The last chunk of the combined list
  */
-spocp_chunk_t		*
+spocp_chunk_t       *
 get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp )
 {
-	int             par = 1;
-	spocp_chunk_t   *np = NULL, *head=NULL, *cp = NULL ;
+    int             par = 1;
+    spocp_chunk_t   *np = NULL, *head=NULL, *cp = NULL ;
 
-	while (par) {
-		if ((np = get_chunk(ib)) == 0)
-			break;
+    while (par) {
+        if ((np = get_chunk(ib)) == 0)
+            break;
         
-		cp = chunk_add(cp, np);
+        cp = chunk_add(cp, np);
         if (head == NULL)
             head = cp;
         
-		if (oct2strcmp(np->val, "(") == 0)
-			par++;
-		else if (oct2strcmp(np->val, ")") == 0)
-			par--;
-	}
+        if (oct2strcmp(np->val, "(") == 0)
+            par++;
+        else if (oct2strcmp(np->val, ")") == 0)
+            par--;
+    }
 
     if (pp && head) {
         pp->next = head;
         head->prev = pp;
     }
     
-	return np ;
+    return np ;
 }
 
 /*----------------------------------------------------------------------- */
@@ -715,66 +715,66 @@ get_sexp( spocp_charbuf_t *ib, spocp_chunk_t *pp )
 octet_t *
 chunk2sexp( spocp_chunk_t *c )
 {
-	int		p = 0, len = 0 ;
-	spocp_chunk_t	*ck = c ;
-	char		*sp, lf[16] ;
-	octet_t		*res;
+    int     p = 0, len = 0 ;
+    spocp_chunk_t   *ck = c ;
+    char        *sp, lf[16] ;
+    octet_t     *res;
 
-	if (c == 0)  
-		return 0;
+    if (c == 0)  
+        return 0;
 
-	/* The first chunk should be a "(" and the last a ")", but where
-	 * the last one is I don't know at this point
-	 */
-	if( oct2strcmp( ck->val, "(" ) != 0 ) { 
-		return 0;
-	}
+    /* The first chunk should be a "(" and the last a ")", but where
+     * the last one is I don't know at this point
+     */
+    if( oct2strcmp( ck->val, "(" ) != 0 ) { 
+        return 0;
+    }
 
-	/* calculate the length of the resulting S-expression */
-	do {
-		if ( ck == 0 ) {
-			return 0;
-		}
+    /* calculate the length of the resulting S-expression */
+    do {
+        if ( ck == 0 ) {
+            return 0;
+        }
 
-		if( oct2strcmp( ck->val, "(" ) == 0 )
-			len++, p++;
-		else if( oct2strcmp( ck->val, ")" ) == 0 )
-			len++, p--;
-		else {
-			/* since every atom is written <len>':'<atom> */
-			len += ck->val->len + DIGITS(ck->val->len) + 1 ;	
-		}
-		ck = ck->next ;
-	} while( p ) ;
+        if( oct2strcmp( ck->val, "(" ) == 0 )
+            len++, p++;
+        else if( oct2strcmp( ck->val, ")" ) == 0 )
+            len++, p--;
+        else {
+            /* since every atom is written <len>':'<atom> */
+            len += ck->val->len + DIGITS(ck->val->len) + 1 ;    
+        }
+        ck = ck->next ;
+    } while( p ) ;
  
-	res = oct_new( len+1, NULL );
-	sp = res->val;
-	res->len = len;
+    res = oct_new( len+1, NULL );
+    sp = res->val;
+    res->len = len;
 
-	ck = c ;
-	do {
-		if( oct2strcmp( ck->val, "(" ) == 0 )
-			p++, *sp++ = '(' ;
-		else if( oct2strcmp( ck->val, ")" ) == 0 )
-			p--, *sp++ = ')' ;
-		else {
-			/* This is where deescaping should happen */
-			if ( octchr( ck->val, '\\' ) >= 0 ) 
-				oct_de_escape( ck->val, '\\' );
-			
-			snprintf( lf, 16, "%d:", (unsigned int) ck->val->len ) ;
-			memcpy( sp, lf, strlen(lf)) ;
-			sp += strlen( lf ) ;
-			memcpy( sp, ck->val->val, ck->val->len ) ;
-			sp += ck->val->len ;
-		}
-		ck = ck->next ;
-	} while( p ) ;
+    ck = c ;
+    do {
+        if( oct2strcmp( ck->val, "(" ) == 0 )
+            p++, *sp++ = '(' ;
+        else if( oct2strcmp( ck->val, ")" ) == 0 )
+            p--, *sp++ = ')' ;
+        else {
+            /* This is where deescaping should happen */
+            if ( octchr( ck->val, '\\' ) >= 0 ) 
+                oct_de_escape( ck->val, '\\' );
+            
+            snprintf( lf, 16, "%d:", (unsigned int) ck->val->len ) ;
+            memcpy( sp, lf, strlen(lf)) ;
+            sp += strlen( lf ) ;
+            memcpy( sp, ck->val->val, ck->val->len ) ;
+            sp += ck->val->len ;
+        }
+        ck = ck->next ;
+    } while( p ) ;
  
 
-	*sp = '\0';
-	res->len = sp - res->val;
-	return res;
+    *sp = '\0';
+    res->len = sp - res->val;
+    return res;
 }
 
 spocp_chunk_t *
@@ -800,8 +800,8 @@ get_sexp_from_oct( octet_t *o)
     spocp_charbuf_t scb;
     spocp_chunk_t root;
 
-	if (o == 0 || o->len == 0 ) 
-		return 0;
+    if (o == 0 || o->len == 0 ) 
+        return 0;
 
     scb.fp = 0;
     scb.str = o->val;
@@ -817,22 +817,22 @@ get_sexp_from_oct( octet_t *o)
 octet_t *
 sexp_normalize_oct( octet_t *o )
 {
-	octet_t         *oc;
-	spocp_chunk_t   *c;
-	
-	c = get_sexp_from_oct( o );
-	oc = chunk2sexp( c );
-	chunk_free( c );
-	return oc;
+    octet_t         *oc;
+    spocp_chunk_t   *c;
+    
+    c = get_sexp_from_oct( o );
+    oc = chunk2sexp( c );
+    chunk_free( c );
+    return oc;
 }
 
 octet_t *
 sexp_normalize( char *s )
 {
-	octet_t         *o;
-	spocp_chunk_t   *c;
+    octet_t         *o;
+    spocp_chunk_t   *c;
 
-	c = get_sexp_from_str( s );
+    c = get_sexp_from_str( s );
     if (c) {
         o = chunk2sexp( c );
         chunk_free( c );

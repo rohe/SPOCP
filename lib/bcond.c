@@ -31,6 +31,12 @@
  * ====================================================================== 
  */
 
+/* root points to the start of a linked list of which rm is supposed to be
+    a member.
+    The calling function is responsible for freeing rm. This function just
+    uncouples rm from the linked list.
+*/
+/*@null@*/
 static bcdef_t *
 bcdef_rm(bcdef_t * root, bcdef_t * rm)
 {
@@ -58,6 +64,7 @@ bcdef_rm(bcdef_t * root, bcdef_t * rm)
 #define uint8  unsigned char
 #endif
 
+/*@null@*/
 char    *
 make_hash(char *str, octet_t * input)
 {
@@ -68,10 +75,11 @@ make_hash(char *str, octet_t * input)
     int             j;
 
     if (input == 0 || input->len == 0)
-        return 0;
+        return NULL;
 
+    memset(sha1sum, 0, 21);
 #ifdef HAVE_LIBCRYPTO
-    SHA1((uint8 *) input->val, input->len, sha1sum);
+    (void) SHA1((uint8 *) input->val, input->len, (unsigned char *) sha1sum);
 #else
     sha1_starts(&ctx);
     sha1_update(&ctx, (uint8 *) input->val, input->len);
@@ -79,7 +87,7 @@ make_hash(char *str, octet_t * input)
 #endif
 
     for (j = 0, ucp = (unsigned char *) str; j < 20; j++, ucp += 2)
-        sprintf((char *) ucp, "%02x", sha1sum[j]);
+        (void) snprintf((char *) ucp, 21, "%02x", (unsigned int) sha1sum[j]);
 
     str[0] = '_';
     *ucp++ = '_';
@@ -107,7 +115,7 @@ all_rule_users(bcdef_t * head, varr_t * rules)
         for (vp = varr_first(head->users); vp;
              vp = varr_next(head->users, vp)) {
             bcd = (bcdef_t *) vp;
-            if (bcd->users || bcd->rules)
+            if (bcd->users != NULL || bcd->rules != NULL)
                 rules = all_rule_users(bcd, rules);
         }
     }
@@ -145,7 +153,8 @@ bcond_eval(element_t * qp, element_t * rp, bcspec_t * bcond, octet_t * oct)
     spocp_result_t  rc = SPOCP_DENIED;
     cmd_param_t     cpt;
 
-    octln(&spec, bcond->spec);
+    memset(&spec, 0, sizeof(octet_t));
+    (void) octln(&spec, bcond->spec);
 
     while (spec.len && *spec.val == '{') {
         spec.len--;
@@ -153,8 +162,8 @@ bcond_eval(element_t * qp, element_t * rp, bcspec_t * bcond, octet_t * oct)
         if ((sl = octchr(&spec, '}')) < 0)
             break;
 
-        rl = spec.len - (sl + 1);
-        spec.len = sl;
+        rl = (int) spec.len - (sl + 1);
+        spec.len = (size_t) sl;
 
         if ((tmp = element_eval(&spec, qp, &rc)) == NULL) {
             tmp = element_new();
@@ -163,11 +172,15 @@ bcond_eval(element_t * qp, element_t * rp, bcspec_t * bcond, octet_t * oct)
         xp = element_list_add(xp, tmp);
 
         spec.val += sl + 1;
-        spec.len = rl;
+        spec.len = (size_t) rl;
     }
 
-    if (*spec.val != ':')
+    if (*spec.val != ':'){
+        if (xp)
+            element_free(xp);
         return SPOCP_SYNTAXERROR;
+    }
+        
     spec.val++;
     spec.len--;
 
@@ -206,7 +219,7 @@ bcexp_eval(element_t * qp, element_t * rp, bcexp_t * bce, octarr_t ** oa)
     octet_t         oct;
     octarr_t       *lo = 0, *po = 0;
 
-    oct.size = oct.len = 0;
+    memset(&oct, 0, sizeof(octet_t));
 
     switch (bce->type) {
     case SPEC:
@@ -228,11 +241,11 @@ bcexp_eval(element_t * qp, element_t * rp, bcexp_t * bce, octarr_t ** oa)
         break;
 
     case AND:
-        n = varr_len(bce->val.arr);
+        n = (int) varr_len(bce->val.arr);
         r = SPOCP_SUCCESS;
         for (i = 0; r == SPOCP_SUCCESS && i < n; i++) {
             r = bcexp_eval(qp, rp, (bcexp_t *) varr_nth(bce->val.arr, i), &po);
-            if (r == SPOCP_SUCCESS && po)
+            if (r == SPOCP_SUCCESS && po != NULL)
                 lo = octarr_extend(lo, po);
         }
         if (r != SPOCP_SUCCESS)
@@ -240,7 +253,7 @@ bcexp_eval(element_t * qp, element_t * rp, bcexp_t * bce, octarr_t ** oa)
         break;
 
     case OR:
-        n = varr_len(bce->val.arr);
+        n = (int) varr_len(bce->val.arr);
         r = SPOCP_DENIED;
         for (i = 0; r != SPOCP_SUCCESS && i < n; i++) {
             r = bcexp_eval(qp, rp, (bcexp_t *) varr_nth(bce->val.arr, i), &lo);
@@ -252,7 +265,7 @@ bcexp_eval(element_t * qp, element_t * rp, bcexp_t * bce, octarr_t ** oa)
         break;
     }
 
-    if (r == SPOCP_SUCCESS && lo)
+    if (r == SPOCP_SUCCESS && lo != NULL)
         *oa = octarr_extend(*oa, lo);
 
     return r;
@@ -271,7 +284,9 @@ is_bcref(octet_t * o, octet_t * res)
 
     if (*o->val == '(') {
 
-        octln(&lc, o);
+        memset(&lc, 0, sizeof(octet_t));
+        memset(&op, 0, sizeof(octet_t));
+        (void) octln(&lc, o);
         lc.val++;
         lc.len--;
 
