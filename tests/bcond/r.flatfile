@@ -1,0 +1,6 @@
+friends := "flatfile:{//user[1]}{//target[1]}:friends:${0}:${1}"
+
+(ical (user)(target)) => (ref friends)
+
+//*/server/(server(ip 127.0.0.1)(host))
+//*/operation/(operation)

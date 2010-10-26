@@ -1,0 +1,4 @@
+OK (ical (user roland_h)(target ann_w))
+DENIED (ical (user roland_h)(target rene_s))
+DENIED (ical (user tom_b)(target keith_h))
+OK (ical (user keith_h)(target tom_b))
