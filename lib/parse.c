@@ -45,6 +45,30 @@ chunk_free(spocp_chunk_t * c)
     }
 }
 
+char *chunks2str(spocp_chunk_t *c)
+{
+    char            *res, *cp ;
+    int             len = 0;
+    spocp_chunk_t   *sc;
+    
+    /* calculate the necessary string length */
+    for( sc = c; sc; sc = sc->next){
+        len += sc->val->len ;
+        len += 1;
+    }
+    
+    res = Calloc( len, sizeof(char));
+
+    /* and now add the parts */
+    for( sc = c, cp = res; sc; sc = sc->next){
+        strncpy(cp, sc->val->val, sc->val->len);
+        cp += sc->val->len;
+        *cp++ = ' ';
+    }
+    *cp = '\0';
+    
+    return res;
+}
 /*------------------------------------------------------------------------- */
 
 static int
@@ -463,6 +487,7 @@ get_quote( spocp_charbuf_t * io)
 
     do {
         for (cp = io->start; *cp; cp++) {
+            /* printf("%c (%d)\n", *cp, expect) ; */
             if (expect) {
                 if (expect == HEXCHAR || expect == HEXDUO) {
                     if (HEX(*cp)) {
@@ -510,21 +535,23 @@ get_quote( spocp_charbuf_t * io)
 
     if (cp != io->start) {
         len = cp - io->start;
+        /* printf("len() = %d\n", len); */
         res = mycpy(res, io->start, len, sofar);
+        /* printf("res = '%s'\n", res); */
         sofar += len;
         io->start = ++cp;
     }
 
     if (res) {
         DEBUG(SPOCP_DSTORE)
-            traceLog(LOG_DEBUG,"quoted string:", res);
+            traceLog(LOG_DEBUG, "quoted string: '%s'", res);
         oct = str2oct( res, 1 );
         /*
          * de escape 
          */
         oct_de_escape(oct,'\\');
         DEBUG(SPOCP_DSTORE)
-            traceLog(LOG_DEBUG,"quoted string (de_escaped):", oct->val);
+            traceLog(LOG_DEBUG,"quoted string (de_escaped): '%s'", oct->val);
     }
 
     if (res == 0 || oct->len == 0) { /* trusting the lazy evaluation here */
