@@ -71,6 +71,8 @@ char *strndup(const char *s, size_t n);
  */
 #define YEAR  31536000
 
+#define CONFIG_SPY 0
+
 extern char *pidfile;
 
 static char *err_msg = "Error in configuration file, line %d: %s";
@@ -491,7 +493,8 @@ read_config(char *file, srv_t *srvp)
                     /*
                      * The last one is placed last 
                      */
-                    traceLog(LOG_INFO, "Loaded plugin: '%s'", pluginname);
+                    if (CONFIG_SPY)
+                        printf("Loaded plugin: '%s'\n", pluginname);
                     for (; pl->next; pl = pl->next);
                 }
 

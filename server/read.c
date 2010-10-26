@@ -14,7 +14,8 @@ char *strndup(const char *old, size_t sz);
 /*
  * ----------------------------------------------------------------------------- 
  */
-static void print_chunks(spocp_chunk_t *pp, char *label){
+static void print_chunks(spocp_chunk_t *pp, char *label)
+{
     char            *pps;
 
     pps = chunks2str(pp);
@@ -299,7 +300,7 @@ read_rules(srv_t * srv, char *file, dbackdef_t * dbc)
                 traceLog(LOG_DEBUG,"We've got a boundary condition definition");
             }
             
-            if(1)
+            if(0)
                 print_chunks(chunk, "");
             
             key = chunk->val ;
