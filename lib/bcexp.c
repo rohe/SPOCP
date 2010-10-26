@@ -110,6 +110,7 @@ parse_bcexp(octet_t * sexp)
 {
     bcstree_t   *ptp, *ntp = 0, *ptr = NULL;
     
+    /* oct_print(LOG_INFO, "[parse_bcexp]", sexp ); */
     if (*sexp->val == '(') {
         ptp = (bcstree_t *) Calloc(1, sizeof(bcstree_t));
         ptp->list = 1;
@@ -192,8 +193,8 @@ transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, bcdef_t * parent)
     if (st == NULL)
         return NULL;
         
-    if (st->list != NULL) {
-        if (st->next != NULL) {    /* should be a bcond spec */
+    if (st->list == 0) {
+        if (st->next == NULL) {    /* should be a bcond spec */
             if (plt == 0 ) {
                 traceLog(LOG_ERR, "Reference to plugin while non is defined");
                 return 0;
