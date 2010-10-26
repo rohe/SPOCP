@@ -374,6 +374,8 @@ bcdef_add(bcdef_t **rbc, plugin_t *p, dbackdef_t *dbc, octet_t *name,
     bcstree_t   *st;
     octet_t     tmp;
 
+    /* oct_print(LOG_INFO, "[bcdef_add]data", data ); */
+
     if (*data->val == '(') {
         if ((st = parse_bcexp(data)) == 0)
             return 0;
