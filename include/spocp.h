@@ -75,6 +75,7 @@ spocp_result_t  octseq2octarr(octet_t *arg, octarr_t **oa);
 
 spocp_chunk_t	*chunk_new(octet_t *);
 spocp_charbuf_t *charbuf_new( FILE *fp, size_t size );
+char            *chunks2str(spocp_chunk_t *c);
 void            charbuf_free( spocp_charbuf_t * );
 
 void            chunk_free(spocp_chunk_t *);
