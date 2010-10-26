@@ -1,4 +1,4 @@
-friends := "flatfile:{//user[1]}{//target[1]}:friends:${0}:${1}"
+friends := "flatfile:{//target[1]}{//user[1]}:friends:${0}:${1}"
 
 (ical (user)(target)) => (ref friends)
 
