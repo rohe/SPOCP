@@ -81,7 +81,8 @@ to_gmt(octet_t * s, octet_t * t)
     time_t          tid;
 
     if (s->len == 19 || s->len == 20) {
-        octcpy(t, s);
+        if (octcpy(t, s) != SPOCP_SUCCESS)
+            return -1;
         t->len = 19;
     } else {        /* with offset, will be at least 21 characters long */
         /* Get me the time without offset */
@@ -121,6 +122,8 @@ to_gmt(octet_t * s, octet_t * t)
         strftime(t->val, 20, "%Y-%m-%dT%H:%M:%S", &tm);
         t->len = 19;
     }
+
+    return 0;
 }
 
 void
