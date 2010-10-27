@@ -14,15 +14,6 @@ char *strndup(const char *old, size_t sz);
 /*
  * ----------------------------------------------------------------------------- 
  */
-static void print_chunks(spocp_chunk_t *pp, char *label)
-{
-    char            *pps;
-
-    pps = chunks2str(pp);
-    printf("CHUNKS [%s]: %s\n", label, pps );
-    Free(pps); 
-}
- 
 static void
 ptree_free(ptree_t * ptp)
 {

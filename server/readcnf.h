@@ -17,7 +17,8 @@ typedef struct _chunkwrap {
 } spocp_chunkwrap_t;
 
 spocp_chunkwrap_t	*get_object(spocp_charbuf_t *, spocp_chunk_t *);
-void		ruledef_return(spocp_ruledef_t *, spocp_chunk_t *);
+void    ruledef_return(spocp_ruledef_t *, spocp_chunk_t *);
+void    print_chunks(spocp_chunk_t *pp, char *label);
 
 #endif
 
