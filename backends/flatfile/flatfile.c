@@ -56,6 +56,8 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
     int             j, i, ne, cv = 0;
     becon_t        *bc = 0;
 
+    traceLog(LOG_DEBUG,"<<flatfile_test>>");
+    
     if (cpp->arg == 0)
         return SPOCP_MISSING_ARG;
 
@@ -66,7 +68,7 @@ flatfile_test(cmd_param_t * cpp, octet_t * blob)
         cv = cached(cpp->pd->cv, oct, &cb);
 
     if (cv) {
-        traceLog(LOG_DEBUG,"ipnum: cache hit");
+        traceLog(LOG_DEBUG,"flatfile: cache hit");
 
         if (cv == EXPIRED) {
             cached_rm(cpp->pd->cv, oct);
