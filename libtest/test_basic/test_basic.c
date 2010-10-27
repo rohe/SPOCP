@@ -87,10 +87,12 @@ static unsigned int test_ipv4cmp(void)
 static unsigned int test_to_gmt(void)
 {
     octet_t *loc, gmt;
+    int     r;
     
     loc = oct_new(0, "2009-12-07T21:48:00-06:00");
-    to_gmt(loc, &gmt);
-    /* printf("gmt: %s\n", gmt.val);*/
+    r = to_gmt(loc, &gmt);
+    printf("\n=>: %d\n", r);
+    printf("gmt: %s (%d)\n", gmt.val, (int) gmt.len);
     TEST_ASSERT(strcmp(gmt.val, "2009-12-07T15:48:00") == 0);
 
     oct_free(loc);

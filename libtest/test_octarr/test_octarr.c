@@ -311,27 +311,28 @@ static unsigned int test_oct_split(void)
     octarr_t    *octarr=NULL;
     octet_t     *oct;
 
-    oct = oct_new(0, "abc:def:ghi:jkl");
+    oct = oct_new(0, "abc:def:ghi:jkl:mno");
     octarr = oct_split(oct, ':', 0, 0, 0);
     
-    TEST_ASSERT_EQUALS(octarr->n, 4);
+    TEST_ASSERT_EQUALS(octarr->n, 5);
     TEST_ASSERT(oct2strcmp(octarr->arr[0], "abc") == 0);
     TEST_ASSERT(oct2strcmp(octarr->arr[1], "def") == 0);
     TEST_ASSERT(oct2strcmp(octarr->arr[2], "ghi") == 0);
     TEST_ASSERT(oct2strcmp(octarr->arr[3], "jkl") == 0);
+    TEST_ASSERT(oct2strcmp(octarr->arr[4], "mno") == 0);
     octarr_free(octarr);
     
     octarr = oct_split(oct, ':', 0, 0, 2);
     TEST_ASSERT_EQUALS(octarr->n, 2);
     TEST_ASSERT(oct2strcmp(octarr->arr[0], "abc") == 0);
-    TEST_ASSERT(oct2strcmp(octarr->arr[1], "def:ghi:jkl") == 0);
+    TEST_ASSERT(oct2strcmp(octarr->arr[1], "def:ghi:jkl:mno") == 0);
 
     octarr_free(octarr);
     octarr = oct_split(oct, ':', 0, 0, 3);
     TEST_ASSERT_EQUALS(octarr->n, 3);
     TEST_ASSERT(oct2strcmp(octarr->arr[0], "abc") == 0);
     TEST_ASSERT(oct2strcmp(octarr->arr[1], "def") == 0);
-    TEST_ASSERT(oct2strcmp(octarr->arr[2], "ghi:jkl") == 0);
+    TEST_ASSERT(oct2strcmp(octarr->arr[2], "ghi:jkl:mno") == 0);
 
     octarr_free(octarr);
     oct_free(oct);

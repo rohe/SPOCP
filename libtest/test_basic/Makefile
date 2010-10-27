@@ -10,7 +10,7 @@
 
 #CC=lint
 CC=gcc
-INCLUDE_OBJ = -I../ando/include -I../../include -I. -I..
+INCLUDE_OBJ = -I../ando/include -I../../include -I. -I.. -I../../
 SLIB=../../lib/
 OBJS = \
 	${SLIB}basic.o\
