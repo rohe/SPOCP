@@ -24,6 +24,6 @@ int		ipv6cmp(struct in6_addr *ia1, struct in6_addr *ia2);
 #endif
 
 void	hms2int(octet_t * op, long int *li);
-void    to_gmt(octet_t * s, octet_t * t);
+int     to_gmt(octet_t * s, octet_t * t);
 
 #endif
