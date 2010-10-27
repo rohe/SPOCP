@@ -64,8 +64,7 @@ bcond_check(element_t * ep, ruleinst_t *ri, octarr_t ** oa, checked_t **cr)
             loa->n = 0;
             octarr_free(loa);
         }
-        traceLog(LOG_INFO, "boundary condition \"%s\" returned %d\n",
-                 ri->bcond->name, r);
+        traceLog(LOG_INFO, "boundary condition returned %d", r);
     }
     
     if (r == SPOCP_SUCCESS) {
