@@ -30,9 +30,7 @@
 #include <arpa/inet.h>
 
 #ifdef HAVE_STRNDUP
-#ifndef _GNU_SOURCE 
 #define _GNU_SOURCE 
-#endif
 #endif
 
 #include <errno.h>
