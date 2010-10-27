@@ -1,7 +1,10 @@
 [server]
-rulefile=r.flatfile
+rulefile=rules
 port=5678
 log=file:spocd.log
+
+[time]
+load=/usr/local/spocp/lib/libtimeplugin.so
 
 [flatfile]
 load=/usr/local/spocp/lib/libflatfplugin.so

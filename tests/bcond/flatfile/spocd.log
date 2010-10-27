@@ -1,0 +1,561 @@
+2010-10-26 09:04:59 [61422]: Using loglevel 0
+2010-10-26 09:04:59 [61422]: queue_not_empty:0x10010fd38
+2010-10-26 09:04:59 [61422]: Thread 0 looking for work
+2010-10-26 09:04:59 [61422]: Thread 0 got the lock
+2010-10-26 09:04:59 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:04:59 [61422]: queue_not_empty:0x10010fd38
+2010-10-26 09:04:59 [61422]: Thread 1 looking for work
+2010-10-26 09:04:59 [61422]: Thread 1 got the lock
+2010-10-26 09:04:59 [61422]: Thread 1 waiting for something to appear
+2010-10-26 09:04:59 [61422]: queue_not_empty:0x10010fd38
+2010-10-26 09:04:59 [61422]: Thread 2 looking for work
+2010-10-26 09:04:59 [61422]: Thread 2 got the lock
+2010-10-26 09:04:59 [61422]: Thread 2 waiting for something to appear
+2010-10-26 09:04:59 [61422]: queue_not_empty:0x10010fd38
+2010-10-26 09:04:59 [61422]: Thread 3 looking for work
+2010-10-26 09:04:59 [61422]: Thread 3 got the lock
+2010-10-26 09:04:59 [61422]: Thread 3 waiting for something to appear
+2010-10-26 09:04:59 [61422]: queue_not_empty:0x10010fd38
+2010-10-26 09:04:59 [61422]: Thread 4 looking for work
+2010-10-26 09:04:59 [61422]: Thread 4 got the lock
+2010-10-26 09:04:59 [61422]: Thread 4 waiting for something to appear
+2010-10-26 09:05:00 [61422]: Running server!!
+2010-10-26 09:05:02 [61422]: Active: 0, Free: 64
+2010-10-26 09:05:02 [61422]: Accepted connection from lingon.ladok.umu.se on fd=5
+2010-10-26 09:05:02 [61422]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:05:02 [61422]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:05:02 [61422]: ------------------------
+2010-10-26 09:05:02 [61422]: tpool_add_work: 1288076702.262784
+2010-10-26 09:05:02 [61422]: cur_queue_size:64
+2010-10-26 09:05:02 [61422]: max_queue_size:64
+2010-10-26 09:05:02 [61422]: shutdown:0
+2010-10-26 09:05:02 [61422]: queue_closed:0
+2010-10-26 09:05:02 [61422]: ------------------------
+2010-10-26 09:05:02 [61422]: get_free
+2010-10-26 09:05:02 [61422]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 working
+2010-10-26 09:05:02 [61422]: boundary condition "friends" returned 1
+
+2010-10-26 09:05:02 [61422]: loopturn done: 1288076702.263095
+2010-10-26 09:05:02 [61422]: Thread 0 looking for work
+2010-10-26 09:05:02 [61422]: Thread 0 got the lock
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:05:02 [61422]: Thread 0 waiting for something to appear
+2010-10-26 09:05:02 [61422]: Thread 0 awaken
+2010-10-26 09:07:09 [62864]: Using loglevel 0
+2010-10-26 09:07:35 [63093]: Using loglevel 0
+2010-10-26 09:07:35 [63093]: queue_not_empty:0x10010fd38
+2010-10-26 09:07:35 [63093]: Thread 0 looking for work
+2010-10-26 09:07:35 [63093]: Thread 0 got the lock
+2010-10-26 09:07:35 [63093]: Thread 0 waiting for something to appear
+2010-10-26 09:07:35 [63093]: queue_not_empty:0x10010fd38
+2010-10-26 09:07:35 [63093]: Thread 1 looking for work
+2010-10-26 09:07:35 [63093]: Thread 1 got the lock
+2010-10-26 09:07:35 [63093]: Thread 1 waiting for something to appear
+2010-10-26 09:07:35 [63093]: queue_not_empty:0x10010fd38
+2010-10-26 09:07:35 [63093]: Thread 2 looking for work
+2010-10-26 09:07:35 [63093]: Thread 2 got the lock
+2010-10-26 09:07:35 [63093]: Thread 2 waiting for something to appear
+2010-10-26 09:07:35 [63093]: queue_not_empty:0x10010fd38
+2010-10-26 09:07:35 [63093]: Thread 3 looking for work
+2010-10-26 09:07:35 [63093]: Thread 3 got the lock
+2010-10-26 09:07:35 [63093]: Thread 3 waiting for something to appear
+2010-10-26 09:07:35 [63093]: queue_not_empty:0x10010fd38
+2010-10-26 09:07:35 [63093]: Thread 4 looking for work
+2010-10-26 09:07:35 [63093]: Thread 4 got the lock
+2010-10-26 09:07:35 [63093]: Thread 4 waiting for something to appear
+2010-10-26 09:07:36 [63093]: Running server!!
+2010-10-26 09:07:39 [63093]: Active: 0, Free: 64
+2010-10-26 09:07:39 [63093]: Accepted connection from lingon.ladok.umu.se on fd=5
+2010-10-26 09:07:39 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:07:39 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: tpool_add_work: 1288076859.525698
+2010-10-26 09:07:39 [63093]: cur_queue_size:64
+2010-10-26 09:07:39 [63093]: max_queue_size:64
+2010-10-26 09:07:39 [63093]: shutdown:0
+2010-10-26 09:07:39 [63093]: queue_closed:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: get_free
+2010-10-26 09:07:39 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:07:39 [63093]: Thread 0 awaken
+2010-10-26 09:07:39 [63093]: Thread 0 working
+2010-10-26 09:07:39 [63093]: boundary condition "friends" returned 1
+
+2010-10-26 09:07:39 [63093]: loopturn done: 1288076859.526132
+2010-10-26 09:07:39 [63093]: Thread 0 looking for work
+2010-10-26 09:07:39 [63093]: Thread 0 got the lock
+2010-10-26 09:07:39 [63093]: Thread 0 waiting for something to appear
+2010-10-26 09:07:39 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:07:39 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:07:39 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: tpool_add_work: 1288076859.526458
+2010-10-26 09:07:39 [63093]: cur_queue_size:64
+2010-10-26 09:07:39 [63093]: max_queue_size:64
+2010-10-26 09:07:39 [63093]: shutdown:0
+2010-10-26 09:07:39 [63093]: queue_closed:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: get_free
+2010-10-26 09:07:39 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:07:39 [63093]: Thread 1 awaken
+2010-10-26 09:07:39 [63093]: Thread 1 working
+2010-10-26 09:07:39 [63093]: boundary condition "friends" returned 3
+
+2010-10-26 09:07:39 [63093]: loopturn done: 1288076859.526658
+2010-10-26 09:07:39 [63093]: Thread 1 looking for work
+2010-10-26 09:07:39 [63093]: Thread 1 got the lock
+2010-10-26 09:07:39 [63093]: Thread 1 waiting for something to appear
+2010-10-26 09:07:39 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:07:39 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:07:39 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: tpool_add_work: 1288076859.526860
+2010-10-26 09:07:39 [63093]: cur_queue_size:64
+2010-10-26 09:07:39 [63093]: max_queue_size:64
+2010-10-26 09:07:39 [63093]: shutdown:0
+2010-10-26 09:07:39 [63093]: queue_closed:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: get_free
+2010-10-26 09:07:39 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:07:39 [63093]: Thread 2 awaken
+2010-10-26 09:07:39 [63093]: Thread 2 working
+2010-10-26 09:07:39 [63093]: boundary condition "friends" returned 1
+
+2010-10-26 09:07:39 [63093]: loopturn done: 1288076859.527064
+2010-10-26 09:07:39 [63093]: Thread 2 looking for work
+2010-10-26 09:07:39 [63093]: Thread 2 got the lock
+2010-10-26 09:07:39 [63093]: Thread 2 waiting for something to appear
+2010-10-26 09:07:39 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:07:39 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:07:39 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: tpool_add_work: 1288076859.528734
+2010-10-26 09:07:39 [63093]: cur_queue_size:64
+2010-10-26 09:07:39 [63093]: max_queue_size:64
+2010-10-26 09:07:39 [63093]: shutdown:0
+2010-10-26 09:07:39 [63093]: queue_closed:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: get_free
+2010-10-26 09:07:39 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:07:39 [63093]: Thread 3 awaken
+2010-10-26 09:07:39 [63093]: Thread 3 working
+2010-10-26 09:07:39 [63093]: boundary condition "friends" returned 3
+
+2010-10-26 09:07:39 [63093]: loopturn done: 1288076859.528992
+2010-10-26 09:07:39 [63093]: Thread 3 looking for work
+2010-10-26 09:07:39 [63093]: Thread 3 got the lock
+2010-10-26 09:07:39 [63093]: Thread 3 waiting for something to appear
+2010-10-26 09:07:39 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:07:39 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:07:39 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: tpool_add_work: 1288076859.529300
+2010-10-26 09:07:39 [63093]: cur_queue_size:64
+2010-10-26 09:07:39 [63093]: max_queue_size:64
+2010-10-26 09:07:39 [63093]: shutdown:0
+2010-10-26 09:07:39 [63093]: queue_closed:0
+2010-10-26 09:07:39 [63093]: ------------------------
+2010-10-26 09:07:39 [63093]: get_free
+2010-10-26 09:07:39 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:07:39 [63093]: Thread 4 awaken
+2010-10-26 09:07:39 [63093]: Thread 4 working
+2010-10-26 09:07:39 [63093]: loopturn done: 1288076859.529451
+2010-10-26 09:07:39 [63093]: Thread 4 looking for work
+2010-10-26 09:07:39 [63093]: Thread 4 got the lock
+2010-10-26 09:07:39 [63093]: Thread 4 waiting for something to appear
+2010-10-26 09:07:39 [63093]: connection on 5 closed
+2010-10-26 09:12:53 [63093]: Active: 0, Free: 64
+2010-10-26 09:12:53 [63093]: Accepted connection from lingon.ladok.umu.se on fd=5
+2010-10-26 09:12:53 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:12:53 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: tpool_add_work: 1288077173.636217
+2010-10-26 09:12:53 [63093]: cur_queue_size:64
+2010-10-26 09:12:53 [63093]: max_queue_size:64
+2010-10-26 09:12:53 [63093]: shutdown:0
+2010-10-26 09:12:53 [63093]: queue_closed:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: get_free
+2010-10-26 09:12:53 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:12:53 [63093]: Thread 0 awaken
+2010-10-26 09:12:53 [63093]: Thread 0 working
+2010-10-26 09:12:53 [63093]: boundary condition "friends" returned 1
+
+2010-10-26 09:12:53 [63093]: loopturn done: 1288077173.636721
+2010-10-26 09:12:53 [63093]: Thread 0 looking for work
+2010-10-26 09:12:53 [63093]: Thread 0 got the lock
+2010-10-26 09:12:53 [63093]: Thread 0 waiting for something to appear
+2010-10-26 09:12:53 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:12:53 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:12:53 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: tpool_add_work: 1288077173.636940
+2010-10-26 09:12:53 [63093]: cur_queue_size:64
+2010-10-26 09:12:53 [63093]: max_queue_size:64
+2010-10-26 09:12:53 [63093]: shutdown:0
+2010-10-26 09:12:53 [63093]: queue_closed:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: get_free
+2010-10-26 09:12:53 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:12:53 [63093]: Thread 1 awaken
+2010-10-26 09:12:53 [63093]: Thread 1 working
+2010-10-26 09:12:53 [63093]: boundary condition "friends" returned 3
+
+2010-10-26 09:12:53 [63093]: loopturn done: 1288077173.637288
+2010-10-26 09:12:53 [63093]: Thread 1 looking for work
+2010-10-26 09:12:53 [63093]: Thread 1 got the lock
+2010-10-26 09:12:53 [63093]: Thread 1 waiting for something to appear
+2010-10-26 09:12:53 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:12:53 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:12:53 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: tpool_add_work: 1288077173.637452
+2010-10-26 09:12:53 [63093]: cur_queue_size:64
+2010-10-26 09:12:53 [63093]: max_queue_size:64
+2010-10-26 09:12:53 [63093]: shutdown:0
+2010-10-26 09:12:53 [63093]: queue_closed:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: get_free
+2010-10-26 09:12:53 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:12:53 [63093]: Thread 2 awaken
+2010-10-26 09:12:53 [63093]: Thread 2 working
+2010-10-26 09:12:53 [63093]: boundary condition "friends" returned 1
+
+2010-10-26 09:12:53 [63093]: loopturn done: 1288077173.637677
+2010-10-26 09:12:53 [63093]: Thread 2 looking for work
+2010-10-26 09:12:53 [63093]: Thread 2 got the lock
+2010-10-26 09:12:53 [63093]: Thread 2 waiting for something to appear
+2010-10-26 09:12:53 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:12:53 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:12:53 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: tpool_add_work: 1288077173.637820
+2010-10-26 09:12:53 [63093]: cur_queue_size:64
+2010-10-26 09:12:53 [63093]: max_queue_size:64
+2010-10-26 09:12:53 [63093]: shutdown:0
+2010-10-26 09:12:53 [63093]: queue_closed:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: get_free
+2010-10-26 09:12:53 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:12:53 [63093]: Thread 3 awaken
+2010-10-26 09:12:53 [63093]: Thread 3 working
+2010-10-26 09:12:53 [63093]: boundary condition "friends" returned 3
+
+2010-10-26 09:12:53 [63093]: loopturn done: 1288077173.638068
+2010-10-26 09:12:53 [63093]: Thread 3 looking for work
+2010-10-26 09:12:53 [63093]: Thread 3 got the lock
+2010-10-26 09:12:53 [63093]: Thread 3 waiting for something to appear
+2010-10-26 09:12:53 [63093]: Nothing left in the output buffer, state=6
+2010-10-26 09:12:53 [63093]: is00 [buf]0x10087e000 [r]0x10087e000 [w]0x10087e000 [left]4095
+2010-10-26 09:12:53 [63093]: .... r-buf:0 w-r:0 w-buf:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: tpool_add_work: 1288077173.638225
+2010-10-26 09:12:53 [63093]: cur_queue_size:64
+2010-10-26 09:12:53 [63093]: max_queue_size:64
+2010-10-26 09:12:53 [63093]: shutdown:0
+2010-10-26 09:12:53 [63093]: queue_closed:0
+2010-10-26 09:12:53 [63093]: ------------------------
+2010-10-26 09:12:53 [63093]: get_free
+2010-10-26 09:12:53 [63093]: --- Signal queue_not_empty: 0x10010fd38 [0]
+2010-10-26 09:12:53 [63093]: Thread 4 awaken
+2010-10-26 09:12:53 [63093]: Thread 4 working
+2010-10-26 09:12:53 [63093]: loopturn done: 1288077173.638342
+2010-10-26 09:12:53 [63093]: Thread 4 looking for work
+2010-10-26 09:12:53 [63093]: Thread 4 got the lock
+2010-10-26 09:12:53 [63093]: Thread 4 waiting for something to appear
+2010-10-26 09:12:53 [63093]: connection on 5 closed
+2010-10-26 10:01:44 [63093]: Received SIGTERM
+2010-10-26 10:01:44 [63093]: Closing down

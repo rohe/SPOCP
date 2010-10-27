@@ -1,0 +1,7 @@
+[server]
+rulefile=rules
+port=5678
+log=file:spocd.log
+
+[flatfile]
+load=/usr/local/spocp/lib/libflatfplugin.so

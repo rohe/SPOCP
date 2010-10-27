@@ -1,0 +1,15 @@
+#
+OK (passage (building A 1st_floor)(user ann_w))
+OK (passage (building A 1st_floor)(user roland_h))
+OK (passage (building A 2nd_floor)(user keith_h))
+OK (passage (building A 2nd_floor)(user tom_b))
+#
+OK (passage (building B room_123)(user roland_h))
+OK (passage (building B room_123)(user keith_h))
+#
+DENIED (passage (building A 2nd_floor)(user ann_w))
+DENIED (passage (building A 2nd_floor)(user roland_h))
+DENIED (passage (building A 1st_floor)(user keith_h))
+DENIED (passage (building A 1st_floor)(user tom_b))
+DENIED (passage (building B room_123)(user ann_w))
+DENIED (passage (building A room_123)(user tom_b))
