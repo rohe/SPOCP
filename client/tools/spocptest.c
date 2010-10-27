@@ -147,7 +147,7 @@ main(int argc, char **argv)
             while (*cp == '\n' || *cp == '\r' || *cp == ' ')
                 *cp-- = '\0';
 
-            if (strlen(buf) < 2 || buf[0] == "#"){
+            if (strlen(buf) < 2 || buf[0] == '#'){
                 continue;
             }
                 
