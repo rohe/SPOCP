@@ -62,8 +62,6 @@ bcexp_free(bcexp_t * bce)
                 
             case SPEC:
                 bcspec_free(bce->val.spec);
-
-            /*@fallthrough@*/
             default:
                 break;
                 
@@ -77,14 +75,14 @@ bcexp_free(bcexp_t * bce)
  */
 
 void
-bcstree_free(/*@null@*/ bcstree_t * stp)
+bcstree_free(bcstree_t * stp)
 {
-    if (stp != NULL) {
+    if (stp) {
         if (stp->part)
             bcstree_free(stp->part);
         if (stp->next)
             bcstree_free(stp->next);
-        if (stp->val.size != 0)
+        if (stp->val.size)
             Free(stp->val.val);
         Free(stp);
     }
@@ -104,25 +102,21 @@ bcstree_free(/*@null@*/ bcstree_t * stp)
  *
  */
 
-/*@null@*/
 bcstree_t *
 parse_bcexp(octet_t * sexp)
 {
-    bcstree_t   *ptp, *ntp = 0, *ptr = NULL;
+    bcstree_t   *ptp, *ntp = 0, *ptr;
     
-    /* oct_print(LOG_INFO, "[parse_bcexp]", sexp ); */
     if (*sexp->val == '(') {
         ptp = (bcstree_t *) Calloc(1, sizeof(bcstree_t));
         ptp->list = 1;
         sexp->val++;
         sexp->len--;
-        while (sexp->len != 0 && *sexp->val != ')') {
+        while (sexp->len && *sexp->val != ')') {
             if ((ptr = parse_bcexp(sexp)) == 0) {
                 bcstree_free(ptp);
                 return 0;
             }
-            
-            ntp = ptp->part;
             
             if (ptp->part == 0) {
                 if (ptr->list == 0) {
@@ -132,13 +126,11 @@ parse_bcexp(octet_t * sexp)
                     else if (oct2strcmp( &ptr->val, "not") == 0 );
                     else {
                         bcstree_free(ptr);
-                        bcstree_free(ptp);
                         return 0;
                     }
                 }
                 else {
                     bcstree_free(ptr);
-                    bcstree_free(ptp);
                     return 0;
                 }
                 
@@ -154,14 +146,12 @@ parse_bcexp(octet_t * sexp)
             sexp->len--;
         } else {    /* error */
             bcstree_free(ptp);
-            bcstree_free(ptr);
             return 0;
         }
     } else {
         ptp = (bcstree_t *) Calloc(1, sizeof(bcstree_t));
         if (get_str(sexp, &ptp->val) != SPOCP_SUCCESS) {
             bcstree_free(ptp);
-            bcstree_free(ptr);
             return 0;
         }
     }
@@ -182,7 +172,6 @@ parse_bcexp(octet_t * sexp)
  * \param parent
  * \return a struct representing a boundary expression
  */
-/*@null@*/
 bcexp_t *
 transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, bcdef_t * parent)
 {
@@ -193,15 +182,12 @@ transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, bcdef_t * parent)
     if (st == NULL)
         return NULL;
         
-    if (st->list == 0) {
-        if (st->next == NULL) {    /* should be a bcond spec */
-            if (plt == 0 ) {
-                traceLog(LOG_ERR, "Reference to plugin while non is defined");
-                return 0;
-            }
-            bcs = bcspec_new(plt, &st->val);
-            if (bcs == 0) {
-                traceLog(LOG_ERR, "Could not create new boundary condition spec");
+    if (!st->list) {
+        if (!st->next) {    /* should be a bcond spec */
+            if (plt == 0 || (bcs = bcspec_new(plt, &st->val)) == 0) {
+                if (plt == 0)
+                    traceLog(LOG_ERR,
+                             "Reference to plugin while non is defined");
                 return 0;
             }
             bce = bcexp_new();
@@ -213,10 +199,9 @@ transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, bcdef_t * parent)
                 /*
                  * if the ref isn't there this def isn't valid 
                  */
-                if ((bcd = bcdef_find(list, &st->next->val)) == 0) {
-                    traceLog(LOG_ERR, "Could not find boundary condition");
+                if ((bcd =
+                     bcdef_find(list, &st->next->val)) == 0)
                     return 0;
-                }
                 bce = bcexp_new();
                 bce->type = REF;
                 bce->parent = parent;
@@ -231,22 +216,30 @@ transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, bcdef_t * parent)
                 bce->type = AND;
                 bce->parent = parent;
                 for (st = st->next; st; st = st->next) {
-                    if ((tmp = transv_stree(plt, st, list, parent)) == 0) {
+                    if ((tmp =
+                         transv_stree(plt, st, list,
+                                      parent)) == 0) {
                              bcexp_free(bce);
                              return 0;
                          }
-                    bce->val.arr = varr_add(bce->val.arr, (void *) tmp);
+                    bce->val.arr =
+                    varr_add(bce->val.arr,
+                             (void *) tmp);
                 }
             } else if (oct2strcmp(&st->val, "or") == 0) {
                 bce = bcexp_new();
                 bce->type = OR;
                 bce->parent = parent;
                 for (st = st->next; st; st = st->next) {
-                    if ((tmp = transv_stree(plt, st, list, parent)) == 0) {
+                    if ((tmp =
+                         transv_stree(plt, st, list,
+                                      parent)) == 0) {
                              bcexp_free(bce);
                              return 0;
                          }
-                    bce->val.arr = varr_add(bce->val.arr, (void *) tmp);
+                    bce->val.arr =
+                    varr_add(bce->val.arr,
+                             (void *) tmp);
                 }
             } else if (oct2strcmp(&st->val, "not") == 0) {
                 if (st->next->next)
@@ -254,14 +247,16 @@ transv_stree(plugin_t * plt, bcstree_t * st, bcdef_t * list, bcdef_t * parent)
                 bce = bcexp_new();
                 bce->type = NOT;
                 bce->parent = parent;
-                bce->val.single = transv_stree(plt, st->next, list, parent);
-                if (bce->val.single == 0) {
-                     Free(bce);
-                     return 0;
-                }
+                if ((bce->val.single =
+                     transv_stree(plt, st->next, list,
+                                  parent)) == 0) {
+                         Free(bce);
+                         return 0;
+                     }
             } else
                 return 0;
         }
+        
         return bce;
     } else
         return transv_stree(plt, st->part, list, parent);
@@ -288,7 +283,7 @@ bcexp_deref(bcexp_t * bce)
 void
 bcexp_delink(bcexp_t * bce)
 {
-    unsigned int    i, n;
+    int             i, n;
     varr_t         *va;
     
     switch (bce->type) {
@@ -300,7 +295,7 @@ bcexp_delink(bcexp_t * bce)
             va = bce->val.arr;
             n = varr_len(va);
             for (i = 0; i < n; i++)
-                bcexp_delink((bcexp_t *) varr_nth(va, (int)i));
+                bcexp_delink((bcexp_t *) varr_nth(va, i));
             break;
             
         case NOT:
@@ -328,10 +323,10 @@ bcdef_free(bcdef_t * bcd)
             Free(bcd->name);
         if (bcd->exp)
             bcexp_free(bcd->exp);
-        while (bcd->users != NULL && bcd->users->n != 0) {
+        while (bcd->users && bcd->users->n) {
             bce = varr_bcexp_pop(bcd->users);
             /*
-             * don't free bce it's just a pointer 
+             * don't free the bce it's just a pointer 
              */
         }
         
@@ -358,7 +353,6 @@ bcdef_new(void)
  * ---------------------------------------------------------------------- 
  */
 
-/*@null@*/
 bcdef_t *
 bcdef_find(bcdef_t * bcd, octet_t * pattern)
 {
@@ -373,7 +367,6 @@ bcdef_find(bcdef_t * bcd, octet_t * pattern)
  * ---------------------------------------------------------------------- 
  */
 
-/*@null@*/
 bcspec_t *
 bcspec_new(plugin_t * plt, octet_t * spec)
 {
@@ -391,26 +384,22 @@ bcspec_new(plugin_t * plt, octet_t * spec)
         return 0;
     }
     
-    /* oct and namn are used to manage parts of the original octet without
-       messing with the original. So they must absolutely *not* be freed */
-    memset(&oct, 0, sizeof(octet_t));
-    (void) octln(&oct, spec);
+    octln(&oct, spec);
     oct.len -= n + 1;
     oct.val += n + 1;
     /* make it non intrusive */
-    memset(&namn, 0, sizeof(octet_t));
-    (void) octln(&namn, spec);
-    namn.len = (size_t) n;
+    octln(&namn, spec);
+    namn.len = n;
     
     if ((p = plugin_match(plt, &namn)) == 0) {
-        traceLog(LOG_ERR, "Doesn't match any known plugin:", &namn);
+        traceLog(LOG_ERR,"Doesn't match any known plugin:",&namn);
         return 0;
     }
     
     bcs = (bcspec_t *) Calloc(1,sizeof(bcspec_t));
     
     bcs->plugin = p;
-    bcs->name = oct2strdup(&namn, '\0');
+    bcs->name = oct2strdup(&namn, 0);
     bcs->spec = octdup(&oct);
     
     return bcs;
