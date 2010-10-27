@@ -56,7 +56,7 @@ atom_t         *atom_new( octet_t *op ) ;
 set_t          *set_new( int size ) ;
 
 void            hms2int( octet_t *op, long int *li ) ;
-void            to_gmt( octet_t *s, octet_t *t ) ;
+int             to_gmt( octet_t *s, octet_t *t ) ;
 
 
 /* io.c */
