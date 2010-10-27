@@ -21,11 +21,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <syslog.h>
 
 #include <octet.h>
 #include <log.h>
 #include <proto.h>
 #include <wrappers.h>
+
+/* #define AVLUS 1 */
 
 /*
  * ====================================================================== 
