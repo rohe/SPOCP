@@ -89,9 +89,7 @@ octarr_add(octarr_t * oa, octet_t * op)
         oa->n = 0;
     } else if (oa->n == oa->size) {
         oa->size *= 2;
-        arr =
-            (octet_t **) Realloc(oa->arr,
-                     oa->size * sizeof(octet_t *));
+        arr = (octet_t **) Realloc(oa->arr, oa->size * sizeof(octet_t *));
         oa->arr = arr;
     }
 
@@ -295,14 +293,16 @@ oct_split(octet_t * o, char c, char ec, int flag, int max)
     if (o == 0)
         return 0;
 
+    /* make sure I don't mess with the original */
     oct = octdup(o);
     oa = octarr_new(4);
 
     for (sp = oct->val, l = oct->len, i = 1; l && (max == 0 || i < max);
          sp = cp) {
         for (cp = sp, n = 0; l; cp++, n++, l--) {
-            if (*cp == ec)
-                cp++;   /* skip escaped characters */
+            if (*cp == ec){
+                cp++;   /* skip escape character */
+            }
             if (*cp == c)
                 break;
         }
