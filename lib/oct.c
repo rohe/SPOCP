@@ -55,7 +55,7 @@ char *optimized_allocation(octet_t *base, int *size)
     
     if (base->size || base->len) {
         offset = base->val - base->base;
-        *size = base->len + offset;
+        *size = base->len + offset + 1;
         return (char *) Calloc(*size, sizeof(char));
     }
     else {
